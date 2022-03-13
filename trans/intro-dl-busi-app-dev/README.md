@@ -1,6 +1,6 @@
-# Python 深度学习教程
+# 深度学习企业级应用开发入门指南
 
-> 原文：[Deep Learning with Python](https://zh.book4you.org/book/11985566/08eb20)
+> 原文：[Introduction to Deep Learning Business Applications for Developers](https://zh.book4you.org/book/3506962/641773)
 > 
 > 协议：[CC BY-NC-SA 4.0](http://creativecommons.org/licenses/by-nc-sa/4.0/)
 > 

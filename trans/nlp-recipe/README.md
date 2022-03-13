@@ -1,6 +1,6 @@
-# Python 深度学习教程
+# 自然语言处理秘籍
 
-> 原文：[Deep Learning with Python](https://zh.book4you.org/book/11985566/08eb20)
+> 原文：[Natural Language Processing Recipes](https://zh.book4you.org/book/17102202/85fef2)
 > 
 > 协议：[CC BY-NC-SA 4.0](http://creativecommons.org/licenses/by-nc-sa/4.0/)
 > 

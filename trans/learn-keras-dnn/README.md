@@ -1,6 +1,6 @@
-# Python 深度学习教程
+# Keras 深度神经网络学习手册
 
-> 原文：[Deep Learning with Python](https://zh.book4you.org/book/11985566/08eb20)
+> 原文：[Learn Keras for Deep Neural Networks](https://zh.book4you.org/book/3691506/3e0726)
 > 
 > 协议：[CC BY-NC-SA 4.0](http://creativecommons.org/licenses/by-nc-sa/4.0/)
 > 

@@ -1,6 +1,6 @@
-# Python 深度学习教程
+# R 深度学习入门指南
 
-> 原文：[Deep Learning with Python](https://zh.book4you.org/book/11985566/08eb20)
+> 原文：[Introduction to Deep Learning Using R](https://zh.book4you.org/book/9528965/e4c70e)
 > 
 > 协议：[CC BY-NC-SA 4.0](http://creativecommons.org/licenses/by-nc-sa/4.0/)
 > 
