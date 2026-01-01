@@ -11,6 +11,7 @@
 +   [Python 深度学习教程](docs/dl-py/README.md)
 +   [Swift 和 TensorFlow 深度学习教程](docs/dl-swift-tf/README.md)
 +   [Python 深度强化学习教程](docs/drl-py/README.md)
++   [自然语言处理的基础模型](docs/fund-mdl-nlp/README.md)
 +   [深度学习企业级应用开发入门指南](docs/intro-dl-busi-app-dev/README.md)
 +   [R 深度学习入门指南](docs/intro-dl-r/README.md)
 +   [Keras 深度神经网络学习手册](docs/learn-keras-dnn/README.md)
