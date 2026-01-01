@@ -1,0 +1,2839 @@
+- en: '© The Author(s) 2023G. Paaß, S. GiesselbachFoundation Models for Natural Language
+    ProcessingArtificial Intelligence: Foundations, Theory, and Algorithms[https://doi.org/10.1007/978-3-031-23190-2_2](https://doi.org/10.1007/978-3-031-23190-2_2)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2. Pre-trained Language Models
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Gerhard Paaß^([1](#Aff5)  ) and Sven Giesselbach^([1](#Aff5))(1)Knowledge Discovery
+    Department, Team NLU, Fraunhofer Institute for Intelligent Analysis and Information
+    Systems (IAIS), Sankt Augustin, Nordrhein-Westfalen, Germany
+  prefs: []
+  type: TYPE_NORMAL
+- en: Abstract
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'This chapter presents the main architecture types of attention-based language
+    models, which describe the distribution of tokens in texts: Autoencoders similar
+    to BERT receive an input text and produce a contextual embedding for each token.
+    Autoregressive language models similar to GPT receive a subsequence of tokens
+    as input. They produce a contextual embedding for each token and predict the next
+    token. In this way, all tokens of a text can successively be generated. Transformer
+    Encoder-Decoders have the task to translate an input sequence to another sequence,
+    e.g. for language translation. First they generate a contextual embedding for
+    each input token by an autoencoder. Then these embeddings are used as input to
+    an autoregressive language model, which sequentially generates the output sequence
+    tokens. These models are usually pre-trained on a large general training set and
+    often fine-tuned for a specific task. Therefore, they are collectively called
+    Pre-trained Language Models (PLM). When the number of parameters of these models
+    gets large, they often can be instructed by prompts and are called Foundation
+    Models. In further sections we described details on optimization and regularization
+    methods used for training. Finally, we analyze the uncertainty of model predictions
+    and how predictions may be explained.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'KeywordsBERTLanguage modelGPT-2TransformerPre-trainingFine-tuningSequence-to-sequence
+    modelA model that either computes the joint probability or the conditional probability
+    of natural language texts is called a *language model* as it potentially covers
+    all information about the language. In this chapter, we present the main architecture
+    types of attention-based *language models* (*LMs*), which process texts consisting
+    of sequences of *tokens*, i.e. words, numbers, punctuation, etc.:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Autoencoders* (*AE*) receive an input text and produce a contextual embedding
+    for each token. These models are also called *BERT models* and are described in
+    Sect. [2.1](#Sec1).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Autoregressive**language models* (*AR*) receive a subsequence *v*[1], …, *v*[*t*−1]
+    of tokens of the input text. They generate contextual embeddings for each token
+    and use them to predict the next token *v*[*t*]. In this way, they can successively
+    predict all tokens of the sequence. These models are also called *GPT models*
+    and are outlined in Sect. [2.2](#Sec11).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Transformer Encoder-Decoders* have the task to translate an input sequence
+    in to another sequence, e.g. for language translation. First they generate a contextual
+    embedding for each input token by an autoencoder. Then these embeddings are used
+    as input to an autoregressive language model, which sequentially generates the
+    output sequence tokens. These models are also called *Transformers* and are defined
+    in Sect. [2.3](#Sec19).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In this chapter, we focus on NLP, where we consider sequences of text tokens.
+    Historically, the transformer encoder-decoder was developed in 2017 by Vaswani
+    et al. [[141](#CR141)] to perform translation of text into another language. The
+    *autoencoder* [[39](#CR39)] and the *autoregressive language model* [[118](#CR118)]
+    are the encoder-part and the decoder-part of this transformer encoder-decoder
+    and were proposed later. As they are conceptually simpler, they are introduced
+    in preceding sections. A final section (Sect. [2.4](#Sec27)) describes methods
+    for optimizing models during training, determining a model architecture, and estimating
+    the uncertainty of model predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It turned out that the models can first be trained on a large training set of
+    general text documents and are able to acquire the distribution of tokens in correct
+    and fluent language. Subsequently, they can be adapted to a specific task, e.g.
+    by fine-tuning with a small supervised classification task. Therefore, the models
+    are called *Pre-trained Language models*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As we will see later, all models can be applied to arbitrary sequences, e.g.
+    musical notes, sound, speech, images, or even videos. When the number of parameters
+    of these models gets large, they often can be instructed by prompts and are called
+    *Foundation Models*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '2.1 BERT: Self-Attention and Contextual Embeddings'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Common words often have a large number of different meanings. For the word *“bank”*,
+    for instance, the lexical database WordNet [[94](#CR94)] lists 18 different senses
+    from *“sloping land”* to *“financial institution”*. In a simple embedding of the
+    word *“bank”* introduced in Sect. [1.​5](528393_1_En_1_Chapter.xhtml#Sec5) all
+    these meanings are conflated. As a consequence, the interpretation of text based
+    on these embeddings is flawed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As an alternative, *contextual embeddings* or contextualized embeddings were
+    developed, where the details of a word embedding depend on the word itself as
+    well as on the neighboring words occurring in the specific document. Consequently,
+    each occurrence of the same word in the text has a different embedding depending
+    on the context. Starting with the Transformer [[141](#CR141)], a number of approaches
+    have been designed to generate these contextual embeddings, which are generally
+    trained in an unsupervised manner using a large corpus of documents.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**BERT** (Bidirectional Encoder Representations from Transformers) was proposed
+    by Devlin et al. [[39](#CR39)] and is the most important approach for generating
+    contextual embeddings. BERT is based on the concept of attention [[8](#CR8)] and
+    on prior work by Vaswani et al. [[141](#CR141)]. The notion of **attention** is
+    inspired by a brain mechanism that tends to focus on distinctive parts of memory
+    when processing large amounts of information. The details of the computations
+    are explained by Rush [[126](#CR126)].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1.1 BERT Input Embeddings and Self-Attention
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As input BERT takes some text which is converted to tokens, e.g. by the Wordpiece
+    tokenizer (Sect. [1.​2](528393_1_En_1_Chapter.xhtml#Sec2)) with a vocabulary of
+    a selected size, e.g. 30,000\. This means that frequent words like *“dog”* are
+    represented by a token of their own, but more rare words like *“playing”* are
+    split into several tokens, e.g. *“play”* and *“##ing”*, where *“##”* indicates
+    that the token is part of a word. As all characters are retained as tokens, arbitrary
+    words may be represented by a few tokens. In addition, there are special tokens
+    like *[CLS]* at the first position of the input text and two *“[SEP]”* tokens
+    marking the end of text segments. Finally, during training, there are *[MASK]*
+    tokens as explained later. Each token is represented by a *token embedding*, a
+    vector of fixed length *d*[*emb*], e.g. *d*[*emb*] = 768\. Input sequences of
+    variable length are padded to the maximal length with a special padding token.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since all token embeddings are processed simultaneously, the tokens need an
+    indication of their position in the input text. Therefore, each position is marked
+    with *position embeddings* of the same length as the token embeddings, which encode
+    the position index. The BERT paper encodes the position number by trainable embeddings,
+    which are added to the input token embeddings [[39](#CR39)]. Finally, BERT compares
+    the first and second input segment. Therefore, the algorithm needs the information,
+    which token belongs to the first and second segment. This is also encoded by a
+    trainable segment embedding added to the token and position embedding. The sum
+    of all embeddings is used as *input embedding* for BERT. An example is shown in
+    Fig. [2.1](#Fig1).![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig1_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A table has 3 rows of position embeddings, segment embeddings, and token embeddings
+    x subscript t for the input tokens v subscript t with their respective rows of
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The input of the BERT model consist of a sequence of embeddings corresponding
+    to the input tokens. Each token is represented by a sum consisting of the embedding
+    of the token text, the embedding of its segment indicator and an embedding of
+    its position [[39](#CR39)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Self-Attention to Generate Contextual Embeddings
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: BERT starts with input embeddings ***x***[*t*] of length *d*[*emb*] for each
+    token *v*[*t*] of the input sequence *v*[1], …, *v*[*T*]. These embeddings are
+    transformed by linear mappings to so-called *query-vectors****q***[*t*], *key-vectors****k***[*t*]
+    and *value-vectors****v***[*t*]. These are computed by multiplying ***x***[*t*]
+    with the matrices ***W***^((*q*)), ***W***^((*k*)), and ***W***^((*v*)) with dimensions
+    *d*[*emb*] × *d*[*q*], *d*[*emb*] × *d*[*q*] and *d*[*emb*] × *d*[*v*] respectively![$$\displaystyle
+    \begin{aligned} \boldsymbol{q}_t^\intercal={\boldsymbol{x}}_t^\intercal {\boldsymbol{W}}^{(q)}
+    \qquad  \boldsymbol{k}_t^\intercal = {\boldsymbol{x}}_t^\intercal {\boldsymbol{W}}^{(k)}
+    \qquad  {\boldsymbol{v}}_t^\intercal={\boldsymbol{x}}_t^\intercal {\boldsymbol{W}}^{(v)}.
+    {} \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ1.png)(2.1)Note
+    that the query- and key-vectors have the same length. Then scalar products ![$$\boldsymbol
+    {q}^\intercal _r\boldsymbol {k}_t$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq1.png)
+    between the query-vector ***q***[*r*] of a target token *v*[*r*] and the key-vectors
+    ***k***[*t*] of all tokens of the sequence are computed:![$$\displaystyle \begin{aligned}
+    (\alpha_{r,1},\ldots,\alpha_{r,T})=\operatorname{\mathrm{softmax}}\left( \frac{\boldsymbol{q}^\intercal_r\boldsymbol{k}_1}{\sqrt{d_k}},\ldots,
+    \frac{\boldsymbol{q}^\intercal_r\boldsymbol{k}_T}{\sqrt{d_k}}\right). {} \end{aligned}
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ2.png)(2.2)Each
+    scalar product yields a real-valued *association score*![$$(\boldsymbol {q}^\intercal
+    _r\boldsymbol {k}_t)/\sqrt {d_k}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq2.png)
+    between the tokens, which depends on the matrices ***W***^((*q*)) and ***W***^((*k*)).
+    This association score is called *scaled dot-product attention*. It is normalized
+    to a probability score *α*[*r*,*t*] by the softmax function. The factor ![$$1/\sqrt
+    {d_k}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq3.png) avoids
+    large values, where the softmax function has only tiny gradients. With these weights
+    a weighted average of the value vectors ***v***[*t*] of all sequence elements
+    is formed yielding the new embedding ***x***̆[*r*] of length *d*[*v*] for the
+    target token *v*[*r*]:![$$\displaystyle \begin{aligned} \breve{{\boldsymbol{x}}}_r
+    = \alpha_{r,1}*{\boldsymbol{v}}_1+\cdots+\alpha_{r,T}*{\boldsymbol{v}}_T {}. \end{aligned}
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ3.png)(2.3)This
+    algorithm is called *self-attention* and was first proposed by Vaswani et al.
+    [[141](#CR141)]. Figure [2.2](#Fig2) shows the computations for the *r*-th token
+    *“mouse”*. Note that the resulting embedding is a *contextual embedding* as it
+    includes information about all words in the input text. A component of ***v***[*t*]
+    gets a high weight whenever the scalar product ![$$\boldsymbol {q}^\intercal _r\boldsymbol
+    {k}_t$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq4.png) is
+    large. It measures a specific form of a correlation between ***x***[*r*] and ***x***[*t*]
+    and is maximal if the vector ![$${\boldsymbol {x}}_r^\intercal {\boldsymbol {W}}^{(q)}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq5.png)
+    points in the same direction as ![$${\boldsymbol {x}}_t^\intercal {\boldsymbol
+    {W}}^{(k)}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq6.png).![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig2_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A flow diagram of the input tokens the, mouse, MASK within square brackets,
+    and cheese have an interconnected system of embedding. They are divided into sections
+    of embedding vector, query and key and value vectors, association and probability
+    scores, weighted value vectors, and new embedding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Computation of a contextual embedding for a single token *“mouse”* by self-attention.
+    By including the embedding of “cheese”, the embedding of mouse can be shifted
+    to the meaning of “rodent” and away from “computer pointing device”. Such an embedding
+    is computed for every word of the input sequence
+  prefs: []
+  type: TYPE_NORMAL
+- en: The self-attention mechanism in general is non-symmetric, as the matrices ***W***^((*q*))
+    and ***W***^((*k*)) are different. If token *v*[*i*] has a high attention to token
+    *v*[*j*] (i.e. ![$$\boldsymbol {q}^\intercal _i\boldsymbol {k}_j$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq7.png)
+    is large), this does not necessarily mean that *v*[*j*] will highly attend to
+    token *v*[*i*] (i.e. ![$$\boldsymbol {q}^\intercal _j\boldsymbol {k}_i$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq8.png)
+    also is large). The influence of *v*[*i*] on the contextual embedding of *v*[*j*]
+    therefore is different from the influence of *v*[*j*] on the contextual embedding
+    of *v*[*i*]. Consider the following example text *“Fred gave roses to Mary”*.
+    Here the word *“gave”* has different relations to the remaining words. *“Fred”*
+    is the person who is performing the giving, *“roses”* are the objects been given,
+    and *“Mary”* is the recipient of the given objects. Obviously these semantic role
+    relations are non-symmetric. Therefore, they can be captured with the different
+    matrices ***W***^((*q*)) and ***W***^((*k*)) and can be encoded in the embeddings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Self-attention allows for shorter computation paths and provides direct avenues
+    to compare distant elements in the input sequence, such as a pronoun and its antecedent
+    in a sentence. The multiplicative interaction involved in attention provides a
+    more flexible alternative to the inflexible fixed-weight computation of MLPs and
+    CNNs by dynamically adjusting the computation to the input at hand. This is especially
+    useful for language modeling, where, for instance, the sentence *“She ate the
+    ice-cream with the X”* is processed. While a feed-forward network would always
+    process it in the same way, an attention-based model could adapt its computation
+    to the input and update the contextual embedding of the word *“ate”* if *X* is
+    *“spoon”*, or update the embedding of *“ice-cream”* if *X* refers to *“strawberries”*
+    [[17](#CR17)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: In practice all query, key, and value vectors are computed in parallel by ***Q*** = ***XW***^((*q*)),
+    ***K*** = ***XW***^((*k*)), ***V***  = ***XW***^((*v*)), where ***X*** is the
+    *T* × *d*[*emb*] matrix of input embeddings [[141](#CR141)]. The query-vectors
+    ***q***[*t*], key-vectors ***k***[*t*] and value vectors ***v***[*t*] are the
+    rows of ***Q***, ***K***, ***V*** respectively. Then the self-attention output
+    matrix ATTL(X) is calculated by one large matrix expression![$$\displaystyle \begin{aligned}
+    \breve{{\boldsymbol{X}}}=\text{ATTL}({\boldsymbol{X}})=\text{ATTL}(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V})=\operatorname{\mathrm{softmax}}\left(\frac{\boldsymbol{Q}\boldsymbol{K}^\intercal}{\sqrt{d_k}}\right)\boldsymbol{V}
+    {}, \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ4.png)(2.4)resulting
+    in a *T* × *d*[*v*]-matrix ***X***̆. Its *r*-th row contains the new embedding
+    ***x***̆[*r*] of the *r*-th token *v*[*r*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: A number of alternative compatibility measures instead of the scaled dot-product
+    attention ([2.2](#Equ2)) have been proposed. They are, however, rarely used in
+    PLMs, as described in the surveys [[27](#CR27), [46](#CR46)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: It turns out that a single self-attention module is not sufficient to characterize
+    the tokens. Therefore, in a layer *d*[head] parallel self-attentions are computed
+    with different matrices ![$${\boldsymbol {W}}^{(q)}_m$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq9.png),
+    ![$${\boldsymbol {W}}^{(k)}_m$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq10.png),
+    and ![$${\boldsymbol {W}}^{(v)}_m$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq11.png),
+    *m* = 1, …, *d*[head], yielding partial new embeddings![$$\displaystyle \begin{aligned}
+    \breve{{\boldsymbol{X}}}_m = \text{ATTL}({\boldsymbol{X}}{\boldsymbol{W}}^{(q)}_m,
+    {\boldsymbol{X}}{\boldsymbol{W}}^{(k)}_m, {\boldsymbol{X}}{\boldsymbol{W}}^{(v)}_m)
+    {}. \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ5.png)(2.5)The
+    emerging partial embeddings ***x***̆[*m*,*t*] for a token *v*[*t*] are able to
+    concentrate on complementary semantic aspects, which develop during training.The
+    BERT[BASE] model has *d*[head]=12 of these parallel *attention heads*. The lengths
+    of these head embeddings are only a fraction *d*[*emb*]∕*d*[head] of the original
+    length *d*[*emb*]. The resulting embeddings are concatenated and multiplied with
+    a (*d*[head] ∗ *d*[*v*]) × *d*[*emb*]-matrix *W*^((*o*)) yielding the matrix of
+    intermediate embeddings![$$\displaystyle \begin{aligned} \breve{{\boldsymbol{X}}}
+    &amp;= \left[\breve{{\boldsymbol{X}}}_1,\ldots,\breve{{\boldsymbol{X}}}_{d_{\text{head}}}\right]
+    {\boldsymbol{W}}_0 {}, \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ6.png)(2.6)where
+    ***W***[0] is a parameter matrix. If the length of the input embeddings is *d*[*emb*],
+    the length of the query, key, and value vector is chosen as *d*[*k*] = *d*[*v*] = *d*[*emb*]∕*d*[head].
+    Therefore, the concatenation again creates a *T* × *d*[*emb*] matrix ***X***̆.
+    This setup is called *multi-head self-attention*. Because of the reduced dimension
+    of the individual heads, the total computational cost is similar to that of a
+    single-head attention with full dimensionality.Subsequently, each row of ***X***̆,
+    the intermediate embedding vectors ![$$\breve {{\boldsymbol {x}}}_t^\intercal
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq12.png), is converted
+    by a *fully connected layer*Fcl with a ReLU activation followed by another linear
+    transformation [[141](#CR141)]![$$\displaystyle \begin{aligned} \tilde{{\boldsymbol{x}}}_t^\intercal
+    &amp;= \text{FCL}(\breve{{\boldsymbol{x}}}_t) =ReLU(\breve{{\boldsymbol{x}}}_t^\intercal*{\boldsymbol{W}}_1+\boldsymbol{b}_1^\intercal)*{\boldsymbol{W}}_2
+    + \boldsymbol{b}_2^\intercal {}. \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ7.png)(2.7)The
+    matrices ***W***[0], ***W***[1], ***W***[2] and the vectors ***b***[1], ***b***[2]
+    are parameters. These transformations are the same for each token *v*[*t*] of
+    the sequence yielding the embedding ![$$\tilde {{\boldsymbol {x}}}_t $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq13.png).To
+    improve training speed, *residual connections* are added as a “bypass”, which
+    simply copy the input. They were shown to be extremely helpful for the optimization
+    of multi-layer image classifiers [[54](#CR54)]. In addition, *layer normalization*
+    [[6](#CR6)] is used for regularization (Sect. [2.4.2](#Sec32)), as shown in Fig.
+    [2.3](#Fig3). Together the multi-head self-attention ([2.5](#Equ5)), the concatenation
+    ([2.6](#Equ6)), and the fully connected layer ([2.7](#Equ7)) form an *encoder
+    block*.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig3_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A flow diagram of the inputs the, mouse, MASK within square brackets, and cheese
+    have an interconnected system of embedding divided into sections of input embeddings,
+    self-attention, concatenation of partial embeddings, feed-forward and non-linearity,
+    and output embedding via residual connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multi-head self-attention computes self-attentions for each layer *l* and head
+    *m* with different matrices ![$${ \boldsymbol {W}}^{(q)}_{l,m}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq14.png),
+    ![$${ \boldsymbol {W}}^{(k)}_{l,m}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq15.png),
+    and ![$${ \boldsymbol {W}}^{(v)}_{l,m}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq16.png).
+    In this way, different aspects of the association between token pairs, e.g. “mouse”
+    and “cheese”, can be computed. The resulting embeddings are concatenated and transformed
+    by a feedforward network. In addition, residual connections and layer normalization
+    improve training convergence [[39](#CR39)] This procedure is repeated for a number
+    of *k* layers with different encoder blocks, using the output embeddings of one
+    block as input embeddings of the next block. This setup is shown in Fig. [2.4](#Fig4).
+    The embeddings ![$$\tilde {{\boldsymbol {x}}}_{k,t}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq17.png)
+    of the last encoder block provides the desired contextual embeddings. The structure
+    of an encoder block overcomes the limitations of RNNs (namely the sequential nature
+    of RNNs) by allowing each token in the input sequence to directly determine associations
+    with every other token in the sequence. BERT[BASE] has *k*=12 encoder blocks.
+    It was developed at Google by Devlin et al. [[39](#CR39)]. More details on the
+    implementation of self-attention can be found in these papers [[38](#CR38), [41](#CR41),
+    [126](#CR126)].![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig4_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A flow diagram of the input tokens the, mouse, MASK within square brackets,
+    and cheese have an interconnected system of embedding. They are divided into sections
+    of input embedding, parallel self-attention, embedding vector, fully connected
+    layer, and target word, among others via encoder blocks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parallel computation of contextual embeddings in each encoder block by BERT.
+    The output embeddings of an encoder block are used as input embeddings of the
+    next encoder block. Finally, masked tokens are predicted by a logistic classifier
+    *L* using the corresponding contextual embedding of the last encoder block as
+    input
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1.2 Training BERT by Predicting Masked Tokens
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The BERT model has a large number of unknown parameters. These parameters are
+    trained in a two-step procedure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Pre-training* enables the model to acquire general knowledge about language
+    in an unsupervised way. The model has the task to fill in missing words in a text.
+    As no manual annotation is required, pre-training can use large text corpora.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Fine-tuning* adjusts the pre-trained model to a specific task, e.g. sentiment
+    analysis. Here, the model parameters are adapted to solve this task using a smaller
+    labeled training dataset.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The performance on the fine-tuning task is much better than without pre-training
+    because the model can use the knowledge acquired during pre-training through *transfer
+    learning*.To pre-train the model parameters, a training task is designed: the
+    *masked language model* (*MLM*). Roughly 15% of the input tokens in the training
+    documents are selected for prediction, which is performed by a logistic classifier
+    (Sect. [1.​3](528393_1_En_1_Chapter.xhtml#Sec3))![$$\displaystyle \begin{aligned}
+    p(V_t|v_1,\ldots,v_{t-1},v_{t+1}\ldots,v_T)=\operatorname{\mathrm{softmax}}(A\tilde{{\boldsymbol{x}}}_{k,t}+\boldsymbol{b})
+    {}, \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ8.png)(2.8)receiving
+    the embedding ![$$\tilde {{\boldsymbol {x}}}_{k,t}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq18.png)
+    of the last layer at position *t* as input to predict the random variable *V*[*t*]
+    of possible tokens at position *t*. This approach avoids cycles where words can
+    indirectly “see themselves”.The tokens to be predicted have to be changed, as
+    otherwise the prediction would be trivial. Therefore, a token selected for prediction
+    is replaced by:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: a special *[MASK]* token for 80% of the time (e.g., *“the mouse likes cheese”*
+    becomes *“the mouse [MASK] cheese”*);
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: a random token for 10% of the time (e.g., *“the mouse likes cheese”* becomes
+    *“the mouse absent cheese”*);
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: the unchanged label token for 10% of the time (e.g., *“the mouse likes cheese”*
+    becomes *“the mouse likes cheese”*).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The second and third variants were introduced, as there is a discrepancy between
+    pre-training and the subsequent fine-tuning, were there is no *[MASK]* token.
+    The authors mitigate this issue by occasionally replacing *[MASK]* with the original
+    token, or by sampling from the vocabulary. Note that in 1.5% of the cases a random
+    token is inserted. This occasional noise encourages BERT to be less biased towards
+    the masked token (especially when the label token remains unchanged) in its bidirectional
+    context encoding. To predict the masked token, BERT has to concentrate all knowledge
+    about this token in the corresponding output embedding of the last layer, which
+    is the input to the logistic classifier. Therefore, it is often called an *autoencoder*,
+    which generates extremely rich output embeddings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition to predicting the masked tokens, BERT also has to predict, whether
+    the next sentence is a randomly chosen sentence or the actual following sentence
+    (*next sentence prediction*). This requires BERT to consider the relation between
+    two consecutive pieces of text. Again a logistic classifier receiving the embedding
+    of the first *[CLS]* token is used for this classification. However, this task
+    did not have a major impact on BERT’s performance, as BERT simply learned if the
+    topics of both sentences are similar [[158](#CR158)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Fig. [2.4](#Fig4) the task is to predict a high probability of the token
+    *“likes”* for the input text *“The mouse [MASK] cheese”*. At the beginning of
+    the training this probability will be very small (≈ 1∕no. of tokens). By backpropagation
+    for each unknown parameter the derivative can be determined, indicating how the
+    parameters should be changed to increase the probability of *“likes”*. The unknown
+    parameters of BERT comprise the input embeddings for each token of the vocabulary,
+    the position embeddings for each position, matrices![$${\boldsymbol {W}}^{(q)}_{l,m}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq19.png),
+    ![$${\boldsymbol {W}}^{(k)}_{l,m}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq20.png),
+    ![$${\boldsymbol {W}}^{(v)}_{l,m}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq21.png)
+    for each layer *l* and attention head *m* ([2.4](#Equ4)), the parameters of the
+    fully connected layers ([2.7](#Equ7)) as well as *A*, ***b*** of the logistic
+    classifier ([2.8](#Equ8)). BERT uses the Adam algorithm [[69](#CR69)] for stochastic
+    gradient descent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The BERT[BASE] model has a hidden size of *d*[*emb*]=768, *k*=12 encoder blocks
+    each with *d*[head]=12 attention heads, and a total of 110 million parameters.
+    The BERT[LARGE] model has a hidden size of *d*[*emb*]=1024, and *k*=24 encoder
+    blocks each with *d*[head]=16 attention heads and a total of 340 million parameters
+    [[39](#CR39)]. The English Wikipedia and a book corpus with 3.3 billion words
+    were encoded by the WordPiece tokenizer [[154](#CR154)] with a vocabulary of 30,000
+    tokens and used to pre-train BERT. No annotations of the texts by humans were
+    required, so the training is self-supervised. The pre-training took 4 days on
+    64 TPU chips, which are very fast GPU chips allowing parallel processing. Fine-tuning
+    can be done on a single Graphical Processing Unit (GPU).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To predict the masked tokens, the model has to learn many types of language
+    understanding features: syntax (*[MASK]* is a good position for a verb), semantics
+    (e.g. the mouse prefers cheese), pragmatics, coreference, etc. Note that the computations
+    can be processed in parallel for each token of the input sequence, eliminating
+    the sequential dependency in Recurrent Neural Networks. This parallelism enables
+    BERT and related models to leverage the full power of modern SIMD (single instruction
+    multiple data) hardware accelerators like GPUs/TPUs, thereby facilitating training
+    of NLP models on datasets of unprecedented size. Reconstructing missing tokens
+    in a sentence has long been used in psychology. Therefore, predicting masked tokens
+    is also called a *cloze task* from ‘closure’ in Gestalt theory (a school of psychology).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It turns out that BERT achieves excellent results for the prediction of the
+    masked tokens, and that additional encoder blocks markedly increase the accuracy.
+    For example, BERT is able to predict the original words (or parts of words) with
+    an accuracy of 45.9%, although in many cases several values are valid at the target
+    position [[125](#CR125)]. In contrast to conventional language models, the MLM
+    takes into account the tokens before and after the masked target token. Hence,
+    it is called a *bidirectional encoder*. In addition, self-attention directly provides
+    the relation to distant tokens without recurrent model application. Finally, self-attention
+    is fast, as it can be computed in parallel for all input tokens of an encoder
+    block.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1.3 Fine-Tuning BERT to Downstream Tasks
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Neural networks have already been pre-trained many years ago [[16](#CR16)],
+    but the success of pre-training has become more evident in recent years. During
+    pre-training BERT learns general syntactic and semantic properties of the language.
+    This can be exploited for a special training task during subsequent *fine-tuning*
+    with a modified training task. This approach is also called *transfer learning*
+    as the knowledge acquired during pre-training is transferred to a related application.
+    In contrast to other models, BERT requires minimal architecture changes for a
+    wide range of natural language processing tasks. At the time of its publication,
+    BERT improved the Sota on various natural language processing tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Usually, a fine-tuning task requires a classification, solved by applying a
+    logistic classifier *L* to the output embedding ![$$\tilde {{\boldsymbol {x}}}_{k,1}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq22.png)
+    of the *[CLS]* token at position 1 of BERT’s last encoder block. There are different
+    types of fine-tuning tasks, as shown in Fig. [2.5](#Fig5).![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig5_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4 block diagrams explain the text classification and text annotation on the
+    left and text pair classification and span prediction on the right via B E R T
+    encoder blocks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.5
+  prefs: []
+  type: TYPE_NORMAL
+- en: For fine-tuning, BERT is enhanced with an additional layer containing one or
+    more logistic classifiers *L* using the embeddings of the last layer as inputs.
+    This setup may be employed for text classification and comparison of texts with
+    the embedding of *[CLS]* as input of the logistic classifier. For sequence tagging,
+    *L* predicts a class for each sequence token. For span prediction, two logistic
+    classifiers *L*[1] and *L*[2] predict the start and end of the answer phrase [[39](#CR39)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Text classification* assigns a sentence to one of two or more classes. Examples
+    are the classification of restaurant reviews as positive/negative or the categorization
+    of sentences as good/bad English. Here the output embedding of the start token
+    *[CLS]* is used as input to *L* to generate the final classification.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Text pair classification* compares two sentences separated by *“[SEP]”*. Examples
+    include classifying whether the second sentence implies, contradicts, or is neutral
+    with respect to the first sentence, or whether the two sentences are semantically
+    equivalent. Again the output embedding of the start token *[CLS]* is used as input
+    to *L*. Sometimes more than one sentence is compared to the root sentence. Then
+    outputs are computed for every sentence pair and jointly normalized to a probability.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Word annotation* marks each word or token of the input text with a specific
+    property. An example is *Named Entity Recognition* (*NER*) annotating the tokens
+    with five name classes (e.g. “person”, “location”, …, “other”). Here the same
+    logistic model *L* is applied to every token output embedding ![$$\tilde {{\boldsymbol
+    {x}}}_{k,t}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq23.png)
+    at position *t* and yields a probability vector of the different entity classes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Span prediction* tags a short sequence of tokens within a text. An example
+    is *question answering*. The input to BERT consists of a question followed by
+    *“[SEP]”* and a context text, which is assumed to contain the answer. Here two
+    different logistic classifiers *L* and ![$$\tilde {L}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq24.png)
+    are applied to every token output embedding ![$$\tilde {{\boldsymbol {x}}}_{k,t}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq25.png)
+    of the context and generate the probability that the answer to the question starts/ends
+    at the specific position. The valid span (i.e. the end is not before the start)
+    with the highest sum of start/end scores is selected as the answer. An example
+    is the input *“[CLS] When did Caesar die ? [SEP] … On the Ides of March, 44 BC,
+    Caesar was assassinated by a group of rebellious senators …”*, where the answer
+    to the question is the span *“Ides*[*start*]*of March, 44 BC*[*end*]*”*. Span
+    prediction may be applied to a number of similar tasks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Therefore, BERT just needs an extra layer with one or more logistic classifiers
+    for fine-tuning. During fine-tuning with a downstream application, parameters
+    of the logistic models are learned from scratch and usually all parameters in
+    the pre-trained BERT model are adapted. The parameters for the logistic classifiers
+    of the masked language model and the next sentence prediction are not used during
+    fine-tuning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1.4 Visualizing Attentions and Embeddings
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: According to Bengio et al. [[14](#CR14)], a good representation of language
+    should capture the implicit linguistic rules and common sense knowledge contained
+    in text data, such as lexical meanings, syntactic relations, semantic roles, and
+    the pragmatics of language use. The contextual word embeddings of BERT can be
+    seen as a big step in this direction. They may be used to disambiguate different
+    meanings of the same word.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The self-attention mechanism of BERT computes a large number of “associations”
+    between tokens and merges embeddings according to the strengths of these associations.
+    If ***x***[1], …, ***x***[*T*] are the embeddings of the input tokens *v*[1],
+    …, *v*[*T*], the associations ![$$\boldsymbol {q}^\intercal _r\boldsymbol {k}_t$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq26.png)
+    are determined between the query ![$$\boldsymbol {q}_r^\intercal ={\boldsymbol
+    {x}}_r^\intercal {\boldsymbol {W}}^{(q)}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq27.png)
+    and the key ![$$\boldsymbol {k}_t^\intercal = {\boldsymbol {x}}_t^\intercal {\boldsymbol
+    {W}}^{(k)}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq28.png)
+    vectors ([2.1](#Equ1)). Then a sum of value vectors ![$${\boldsymbol {v}}_t^\intercal
+    ={\boldsymbol {x}}_t^\intercal {\boldsymbol {W}}^{(v)}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq29.png)
+    weighted with the normalized associations is formed yielding the new embeddings
+    ([2.3](#Equ3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is repeated with different matrices ![$${\boldsymbol {W}}^{(q)}_{l,m},{\boldsymbol
+    {W}}^{(k)}_{l,m},{\boldsymbol {W}}^{(v)}_{l,m}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq30.png)
+    in *m* self-attention heads and *l* layers. Each layer and head the new embeddings
+    thus captures different aspects of the relations between the embeddings of each
+    layer. For BERT[BASE] we have *l* = 12 layers and *m* = 12 bidirectional self-attention
+    heads in each layer yielding 144 different “associations” or self-attentions.
+    For the input sentence *“The girl and the boy went home. She entered the door.”*
+    Figure [2.6](#Fig6) shows on the left side the strength of associations for one
+    of the 144 self-attention heads. Between every pair of tokens of the sentence
+    an attention value is calculated and its strength is symbolized by lines of different
+    widths. We see that the pronoun *“she”* is strongly associated with *“the girl”*.
+    In the subsequent calculations (c.f. Fig. [2.2](#Fig2)) the word *“she”* is disambiguated
+    by merging its embedding with the embeddings of *“the”* and *“girl”* generating
+    a new *contextual embedding* of *“she”*, which includes its relation to *“girl”*.
+    On the right side of the figure the input *“The girl and the boy went home. He
+    entered the door.”* is processed. Then the model creates an association of *“boy”*
+    with *“he”*.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig6_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2 screenshots with layer spin boxes have a horizontal color gradient bar. A
+    list of words read the, girl, and, the, boy, walked, home divided into 2 sections.
+    In the first one, she is linked to the and girl. In the second one, he is linked
+    to the and boy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of a specific self-attention in the fifth layer of a BERT model
+    with BERTviz [[142](#CR142)]. If the next sentence contains the pronoun *“she”*
+    this is associated with *“the girl”*. If this pronoun is changed to *“he”* it
+    is related to *“the boy”*. Image created with BERTviz [[142](#CR142)], with kind
+    permission of the author Figure [2.7](#Fig7) shows a subset of the self-attention
+    patterns for the sentence *“[CLS] the cat sat on the mat [SEP] the cat lay on
+    the rug [SEP]”*. The self-attention patterns are automatically optimized in such
+    a way that they jointly lead to an optimal prediction of the masked tokens. It
+    can be seen that the special tokens *[CLS]* and *[SEP]* often are prominent targets
+    of attentions. They usually function as representatives of the whole sentence
+    [[124](#CR124)]. Note, however, that in a multilayer PLM the embeddings generated
+    by different heads are concatenated and transformed by a nonlinear transformation.
+    Therefore, the attention patterns of a single head do not contain the complete
+    information [[124](#CR124)]. Whenever the matrices are randomly initialized, the
+    self-attention patterns will be completely different, if the training is restarted
+    with new random parameter values. However, the overall pattern of attentions between
+    tokens will be similar.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig7_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A matrix of 24 color gradient interconnected patterns divided into 0 by 3 and
+    0 by 5 grids labeled heads.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of some of the 144 self-attention patterns computed for the sentence
+    *“[CLS] the cat sat on the mat [SEP] the cat lay on the rug[SEP]”* with BERTviz.
+    Image reprinted with kind permission of the author [[142](#CR142)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [2.10](#Fig10) shows on the left side a plot of six different senses
+    of the token embeddings of *“bank”* in the *Senseval-3 dataset* projected to two
+    dimensions by *T-SNE* [[140](#CR140)]. The different senses are identified by
+    different colors and form well-separated clusters of their own. Senses which are
+    difficult to distinguish, like *“bank building”* and *“financial institution”*
+    show a strong overlap [[153](#CR153)]. The graphic demonstrates that BERT embeddings
+    have the ability to distinguish different senses of words which are observed frequently
+    enough.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is an ongoing discussion on the inner workings of self attention.Tay et
+    al [[134](#CR134)] empirically evaluated the importance of the dot product ![$$\boldsymbol
+    {q}^\intercal _r\boldsymbol {k}_s$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq31.png)
+    on natural language processing tasks and concluded that query-key interaction
+    is “useful but not that important”. Consequently they derived alternative formulae,
+    which in some cases worked well and failed in others. A survey of attention approaches
+    is provided by de Santana Correia et al. [[37](#CR37)]. There are a number of
+    different attention mechanisms computing the association between embedding vectors
+    [[50](#CR50), [61](#CR61), [104](#CR104), [151](#CR151)]. However, most current
+    large-scale models still use the original scaled dot-product attention with minor
+    variations, such as other activation functions and regularizers (c.f. Sect. [3.​1.​4](528393_1_En_3_Chapter.xhtml#Sec5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The fully connected layers Fcl(***x***̆[*t*]) in ([2.7](#Equ7)) contain 2/3
+    of the parameters of BERT, but their role in the network has hardly been discussed.
+    Geva et al. [[49](#CR49)] show that fully connected layers operate as key-value
+    memories, where each key is correlated with text patterns in the training samples,
+    and each value induces a distribution over the output vocabulary. For a key the
+    authors retrieve the training inputs, which yield the highest activation of the
+    key. Experts were able to assign one or more interpretations to each key. Usually
+    lower fully connected layers were associated with shallow patterns often sharing
+    the last word. The upper layers are characterized by more semantic patterns that
+    describe similar contexts. The authors demonstrate that the output of a feed-forward
+    layer is a composition of its memories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1.5 Natural Language Understanding by BERT
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: An outstanding goal of PLMs is *Natural Language Understanding* (*NLU*). This
+    cannot be evaluated against a single task, but requires a set of benchmarks covering
+    different areas to assess the ability of machines to understand natural language
+    text and acquire linguistic, common sense, and world knowledge. Therefore, PLMs
+    are fine-tuned to corresponding real-world downstream tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**GLUE** [[146](#CR146)] is a prominent benchmark for NLU. It is a collection
+    of nine NLU tasks with public training data, and an evaluation server using private
+    test data. Its benchmarks cover a number of different aspects, which can be formulated
+    as classification problems:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Determine the sentiment (positive/negative) of a sentences (SST-2).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Classify a sentence as grammatically acceptable or unacceptable (CoLA).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Check if two sentences are similar or are paraphrases (MPRC, STS-B, QQP).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Determine if the first sentence entails the second one (MNLI, RTE).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Check if sentence *B* contains the answer to question *A* (QNLI).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Specify the target of a pronoun from a set of alternatives (WNLI). Each task
+    can be posed as *text classification* or *text pair classification* problem. The
+    performance of a model is summarized in a single average value, which has the
+    value 87.1 for human annotators [[145](#CR145)]. Usually, there is an online leaderboard
+    where the performance of the different models are recorded. A very large repository
+    of leaderboards is on the PapersWithCode website [[109](#CR109)]. Table [2.1](#Tab1)
+    describes the tasks by examples and reports the performance of BERT[LARGE]. BERT
+    was able to lift the Sota of average accuracy from 75.2 to 82.1%. This is a remarkable
+    increase, although the value is still far below the human performance of 87.1
+    with much room for improvement. Recent benchmark results for NLU are described
+    in Sect. [4.​1](528393_1_En_4_Chapter.xhtml#Sec1) for the more demanding SuperGLUE
+    and other benchmarks.Table 2.1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: GLUE language understanding tasks. BERT[LARGE] was trained for three epochs
+    on the fine-tuning datasets [[38](#CR38)]. The performance of the resulting models
+    is printed in the last column yielding an average value of 82.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Task | Description | Example | Metric | BERT |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| CoLA | Is the sentence grammatical or ungrammatical? | *“This building is
+    than that one.”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq32.png)*Ungrammatical*
+    | Matthews correlation | 60.5 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SST-2 | Is the movie positive, negative, or neutral? | *“The movie is funny,
+    smart, visually inventive, and most of all, alive.”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq33.png)*Positive*
+    | Accuracy | 94.9 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| MRPC | Is the sentence *B* a paraphrase of sentence *A*? | *A*: *“Today,
+    Taiwan reported 35 new infections.”**B*: *“Taiwan announced another 35 probable
+    cases at noon.”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq34.png)*Paraphrase*
+    | Accuracy | 89.3 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| STS-B | How similar are sentences *A* and *B*? | *A*: *“Elephants are walking
+    down a trail.”**B*: *“A herd of elephants is walking down a trail.”*![$$\rightarrow
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq35.png)*Similar*
+    | Pearson/ Spearman correlation | 86.5 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| QQP | Are the two questions similar? | *A*: *“How can I increase the speed
+    of my Internet connection while using a VPN?”**B*: *“How can Internet speed be
+    increased by hacking through DNS?”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq36.png)*Not
+    Similar* | Accuracy | 72.1 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| MNLI-mm | Does sentence *A* entail or contradict sentence *B*? | *A*: *“Tourist
+    information offices can be very helpful.”**B*: *“Tourist information offices are
+    never of any help.”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq37.png)*Contradiction*
+    | Accuracy | 85.9 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| QNLI | Does sentence *B* contain the answer to the question in sentence *A*?
+    | *A*: *“Which collection of minor poems are sometimes attributed to Virgil.”**B*:
+    *“A number of minor poems, collected in the Appendix Vergiliana, are often attributed
+    to him.”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq38.png)*contains
+    answer* | Accuracy | 92.7 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| RTE | Does sentence *A* entail sentence *B*? | *A*: *“Yunus launched the
+    microcredit revolution, funding 50,000 beggars, whom Grameen Bank respectfully
+    calls ‘Struggling Members.”’**B*: *“Yunus supported more than 50,000 Struggling
+    Members.”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq39.png)*Entailed*
+    | Accuracy | 70.1 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| WNLI | Sentence *B* replaces sentence *A*’s pronoun with a noun - is this
+    the correct noun? | *A*: *“Lily spoke to Donna, breaking her concentration.”**B*:
+    *“Lily spoke to Donna, breaking Lily’s concentration.”*![$$\rightarrow $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq40.png)*Incorrect*
+    | Accuracy | 60.5 |'
+  prefs: []
+  type: TYPE_TB
+- en: BERT’s Performance on Other Fine-Tuning Tasks
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The pre-training data is sufficient to adapt the large number of BERT parameters
+    and learn very detailed peculiarities about language. The amount of training data
+    for pre-training usually is much higher than for fine-tuning. Fine-tuning usually
+    only requires two or three passes through the fine-tuning training data. Therefore,
+    the stochastic gradient optimizer changes most parameters only slightly and sticks
+    relatively close to the optimal pre-training parameters. Consequently, the model
+    is usually capable to preserve its information about general language and to combine
+    it with the information about the fine-tuning task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because BERT can reuse its general knowledge about language acquired during
+    pre-training, it produces excellent results even with small fine-tuning training
+    data [[39](#CR39)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**CoNLL 2003** [[128](#CR128)] is a benchmark dataset for *Named entity recognition*
+    (*NER*), where each token has to be marked with a named entity tag, e.g. PER (for
+    person), LOC (for location), …, O (for no name) (Sect. [5.​3](528393_1_En_5_Chapter.xhtml#Sec12)).
+    The task involves text annotation, where a label is predicted for every input
+    token. BERT increased Sota from 92.6% to 92.8% F1-value on the test data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**SQuAD 1.0** [[120](#CR120)] is a collection of 100k triples of questions,
+    contexts, and answers. The task is to mark the span of the answer tokens in the
+    context. An example is the question *“When did Augustus die?”*, where the answer
+    *“14 AD”* has to be marked in the context *“…the death of Augustus in AD 14 …”*
+    (Sect. [6.​2](528393_1_En_6_Chapter.xhtml#Sec9)). Using span prediction BERT increased
+    the Sota of SQuAD from 91.7% to 93.2%, while the human performance was measured
+    as 91.2%.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: From these experiments a large body of evidence has been collected demonstrating
+    the strengths and weaknesses of BERT [[124](#CR124)]. This is discussed in Sect.
+    [4.​2](528393_1_En_4_Chapter.xhtml#Sec7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In summary, the advent of the BERT model marks a new era of NLP. It combines
+    two pre-training tasks, i.e., predicting masked tokens and determining whether
+    the second sentence matches the first sentence. Transfer learning with unsupervised
+    pre-training and supervised fine-tuning becomes the new standard.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1.6 Computational Complexity
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'It is instructive to illustrate the computational effort required to train
+    PLMs. Its growth determines the time needed to train larger models that can massively
+    improve the quality of language representation. Assume *D* is the size of the
+    hidden embeddings and the input sequence has length *T*, then the intermediate
+    dimension of the fully connected layer Fcl is set to 4*D* and the dimension of
+    the keys and values are set to *D*∕*H* as in Vaswani et al. [[141](#CR141)]. Then
+    according to Lin et al. [[81](#CR81)] we get the following computational complexities
+    and parameters counts of self-attention and the position-wise Fcl ([2.7](#Equ7)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Module | Complexity | # Parameters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Self-attention | *O*(*T*² ∗ *D*) | 4*D*² |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Position-wise Fcl | *O*(*T* ∗ *D*²) | 8*D*² |'
+  prefs: []
+  type: TYPE_TB
+- en: As long as the input sequence length *T* is small, the hidden dimension *D*
+    mainly determines the complexity of self-attention and position-wise Fcl. The
+    main limiting factor is the Fcl. But when the input sequences become longer, the
+    sequence length *T* gradually dominates the complexity of these modules, so that
+    self-attention becomes the bottleneck of the PLM. Moreover, the computation of
+    self-attention requires that an attention score matrix of size *T* × *T* is stored,
+    which prevents the computation for long input sequences. Therefore, modifications
+    reducing the computational effort for long input sequences are required.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To connect all input embeddings with each other, we could employ different modules.
+    Fully connected layers require *T* ∗ *T* networks between the different embeddings.
+    Convolutional layers with a kernel width *K* do not connect all pairs and therefore
+    need *O*(log[*K*](*T*)) layers in the case of dilated convolutions. RNNs have
+    to apply a network *T* times. This leads to the following complexities per layer
+    [[81](#CR81), [141](#CR141)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   |   | Sequential | Maximum |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Layer type | Complexity per layer | operations | path length |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Self-attention | *O*(*T*² ∗ *D*) | *O*(1) | *O*(1) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Recurrent | *O*(*T* ∗ *D*²) | *O*(*T*) | *O*(*T*) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Fully connected | *O*(*T*² ∗ *D*²) | *O*(1) | *O*(1) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Convolutional | *O*(*K* ∗ *T* ∗ *D*²) | *O*(1) | *O*(log[*K*](*T*)) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Restricted self-attention | *O*(*R* ∗ *T* ∗ *D*) | *O*(1) | *O*(*T*∕*R*)
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: The last line describes a restricted self-attention, where self-attention only
+    considers a neighborhood of size *R* to reduce computational effort. Obviously
+    the computational complexity per layer is a limiting factor. In addition, computation
+    for recurrent layers need to be sequential and cannot be parallelized, as shown
+    in the column for sequential operations. The last column shows the path length,
+    i.e. the number of computations to communicate information between far-away positions.
+    The shorter these paths between any combination of positions in the input and
+    output sequences, the easier it is to learn long-range dependencies. Here self-attention
+    has a definite advantage compared to all other layer types. Section [3.​2](528393_1_En_3_Chapter.xhtml#Sec7)
+    discusses advanced approaches to process input sequences of larger length. In
+    conclusion, BERT requires less computational effort than alternative layer types.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1.7 Summary
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '*BERT* is an autoencoder model whose main task is to derive context-sensitive
+    embeddings for tokens. In a preliminary step, tokens are generated from the words
+    and letters of the training data in such a way that most frequent words are tokens
+    and arbitrary words can be composed of tokens. Each token is encoded by an input
+    embedding. To mark the position of each input token, a position embedding is added
+    to the input embedding.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In each layer of BERT, the lower layer embeddings are transformed by self-attention
+    to a new embedding. Self-attention involves the computation of scalar products
+    between linear transformations of embeddings. In this way, the embeddings in the
+    next layer can adapt to tokens from the context, and the embeddings become context-sensitive.
+    The operation is performed in parallel for several attention heads involving different
+    linear projections. The heads can compute associations in parallel with respect
+    to different semantic features. The resulting partial embeddings are concatenated
+    to a new embedding. In addition to self-attention heads, each encoder block contains
+    a fully connected layer as well as normalization operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The original BERT model consists of six encoder blocks and generates a final
+    embedding for each input token. BERT is pre-trained on a very large document collection.
+    The main pre-training task is to predict words from the input sequence, which
+    have been replaced by a [MASK] token. This is done by using the last layer embedding
+    of the token as input to a logistic classifier, which predicts the probabilities
+    of tokens for this position. During pre-training the model parameters are optimized
+    by stochastic gradient descent. This forces the model to collect all available
+    information about that token in the output embedding. The first input token is
+    the [CLS] token. During pre-training, it is used for next sentence prediction,
+    where a logistic classifier with the [CLS]-embedding as input has to decide, if
+    the first and second sentence of the input sequence belong together or not.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Typically, the pre-trained model is fine-tuned for a specific task using a small
+    annotated training dataset. An example is the supervised classification task of
+    whether the input text expresses a positive, negative or neutral sentiment. Again
+    a logistic classifier with the [CLS]-embedding as input has to determine the probability
+    of the three sentiments. During pre-training all parameters of the model are adjusted
+    slightly. It turns out that this transfer learning approach has a much higher
+    accuracy than supervised training only on the small training dataset, since the
+    model can use knowledge about language acquired during pre-training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiments show that BERT is able to raise the Sota considerably in many language
+    understanding tasks, e.g. the GLUE benchmark. Other applications are named entity
+    recognition, where names of persons, locations, etc. have to be identified in
+    a text, or question answering, where the answer to a question has to be extracted
+    from a paragraph. An analysis of computational complexity shows that BERT requires
+    less computational effort than alternative layer types. Overall, BERT is the workhorse
+    of natural language processing and is used in different variants to solve language
+    understanding problems. Its encoder blocks are reused in many other models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [3](528393_1_En_3_Chapter.xhtml) describes ways to improve the performance
+    of BERT models, especially by designing new pre-training tasks (Sect. [3.​1.​1](528393_1_En_3_Chapter.xhtml#Sec2)).
+    In Chap. [4](528393_1_En_4_Chapter.xhtml) the knowledge acquired by BERT models
+    is discussed. In the Chaps. [5](528393_1_En_5_Chapter.xhtml)–[7](528393_1_En_7_Chapter.xhtml),
+    we describe a number of applications of BERT models such as relation extraction
+    (Sect. [5.​4](528393_1_En_5_Chapter.xhtml#Sec19)) or document retrieval (Sect.
+    [6.​1](528393_1_En_6_Chapter.xhtml#Sec1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '2.2 GPT: Autoregressive Language Models'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 2.2.1 The Task of Autoregressive Language Models
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To capture the information in natural language texts the conditional probability
+    of tokens can be described by a language model. These *autoregressive language
+    models* aim to predict the probability of the next token in a text given the previous
+    tokens. If *V*[*t*+1] is a random variable whose values are the possible tokens
+    *v*[*t*+1] at position *t* + 1, we have to calculate the conditional probability
+    distribution *p*(*V*[*t*+1]|*v*[1], …, *v*[*t*]). According to the definition
+    of conditional probability the probability of the complete text *v*[1], …, *v*[*T*]
+    can be computed as![$$\displaystyle \begin{aligned} p(V_1\mkern1.5mu{=}\mkern1.5mu
+    v_1,\ldots,V_T\mkern1.5mu{=}\mkern1.5mu v_T)= p(V_T\mkern1.5mu{=}\mkern1.5mu v_{T}|v_1,\ldots,v_{T-1})*\cdots*p(V_1\mkern1.5mu{=}\mkern1.5mu
+    v_1) {}. \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ9.png)(2.9)Therefore,
+    the conditional probability can represent all information about valid sentences,
+    including adequate and bad usage of language. Qudar et al. [[115](#CR115)] provide
+    a recent survey of language models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Sect. [1.​6](528393_1_En_1_Chapter.xhtml#Sec6), we used RNNs to build language
+    models. However, these had problems determining long-range interactions between
+    tokens. As an alternative, we can employ self-attention to infer contextual embeddings
+    of the past tokens *v*[1], …, *v*[*t*] and predict the next token *v*[*t*+1] based
+    on these embeddings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consequently, we need to restrict self-attention to the tokens *v*[1], …, *v*[*t*].
+    This is the approach taken by the **Generative Pre-trained Transformer** (**GPT**)
+    [[116](#CR116), [118](#CR118)]. Before training, the text is transformed to tokens,
+    e.g. by byte-pair encoding (Sect. [1.​2](528393_1_En_1_Chapter.xhtml#Sec2)). On
+    input, these tokens are represented by token embeddings and position embeddings
+    (Sect. [2.1.1](#Sec2)). During training the GPT-model performs the self-attention
+    computations described in Sect. [2.1.1](#Sec3) in the same way as for BERT. For
+    predicting the probabilities of different tokens at position *t* + 1, the self-attentions
+    are restricted to previous tokens *v*[1], …, *v*[*t*] and their embeddings. The
+    probability of the possible next tokens at position *t* + 1 is computed by a logistic
+    classifier![$$\displaystyle \begin{aligned} p(V_{t+1}|v_1,\ldots,v_{t})=\operatorname{\mathrm{softmax}}(A\tilde{{\boldsymbol{x}}}_{k,t}+\boldsymbol{b})
+    {}, \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ10.png)(2.10)which
+    takes as input the embedding ![$$\tilde {{\boldsymbol {x}}}_{k,t}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq41.png)
+    of the last layer *k* at position *t* to predict the random variable *V*[*t*+1]
+    of possible tokens at position *t* + 1 (Fig. [2.8](#Fig8)). This approach is called
+    *masked self-attention* or *causal self-attention* because the prediction depends
+    only on past tokens. Since GPT generates the tokens by sequentially applying the
+    same model, it is called an *autoregressive language model*.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig8_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Two block diagrams of BERT encoder blocks and four different levels. The lowest
+    level is the input block, followed by input embeddings, and output embeddings.
+    The highest level is token probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.8
+  prefs: []
+  type: TYPE_NORMAL
+- en: The input of the GPT model are the embeddings of tokens *v*[1], …, *v*[*t*]
+    up to position *t*. GPT computes contextual self-embeddings of these tokens in
+    different layers and uses the output embedding of the last token *v*[*t*] = *“to”*
+    in the highest layer to predict the probabilities of possible tokens at position
+    *t* + 1 with a logistic classifier *L*. This probability should be high for the
+    actually observed token *“new”* (left). Then the observed token *v*[*t*+1] = *“new”*
+    is appended to the input sequence and included in the self-attention computation
+    for predicting the probabilities of possible tokens at position *t* + 2, which
+    should be high for *“york”* (right)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 block diagrams have various input tokens that go through B E R T encoder blocks
+    and L classifiers to embed with other tokens. The diagrams have layers of input
+    tokens, input embeddings, output embeddings, and token probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of embeddings with PCA together with the corresponding part-of
+    speech tags. On the left side are GPT-2 embeddings of layer 0 of tokens of positions
+    > 0 which form ribbon-like structures for the different POS tags, with function
+    words close to the top. On the right side the embeddings of BERT for layer 0 are
+    shown. Image reprinted with kind permission of the author [[66](#CR66)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.2.2 Training GPT by Predicting the Next Token
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The training objective is adapted to the language modeling task of GPT. Figure
+    [2.8](#Fig8) shows the range of computations for two consecutive tokens. By *teacher
+    forcing* the model uses the observed tokens *v*[1], …, *v*[*t*] up to position
+    *t* to compute self-attentions and predict the token probabilities for the next
+    token *v*[*t*+1]. This is justified by the factorization ([2.9](#Equ9)) of the
+    full distribution. Note that the contextual embedding of a token *v*[*s*], *s* < *t*,
+    changes each time when a new token *v*[*t*+1], *v*[*t*+2], … is taken into account
+    in the masked self-attention. As GPT considers only the tokens before the target
+    token *v*[*t*+1], it is called an *unidirectional encoder*. An intuitive high-level
+    overview over GPT is given by Alammar [[3](#CR3)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: During training the model parameters have to be changed by optimization such
+    that the probabilities of observed documents ([2.9](#Equ9)) get maximal. By this
+    *Maximum Likelihood estimation* (*MLE*) the parameters can be optimized for a
+    large corpus of documents. To avoid numerical problems this is solved by maximizing
+    the *log-likelihood*, sum of logarithms of ([2.9](#Equ9))![$$\displaystyle \begin{aligned}
+    \log p(v_1,\ldots,v_T)= \log p(v_{T}|v_1,\ldots,v_{T-1})+\cdots+\log p(v_{2}|v_1)
+    +\log p(v_1) {}. \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ11.png)(2.11)Alternatively
+    we can minimize the negative log-likelihood ![$$-\log p(v_1,\ldots ,v_T)$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq42.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: GPT-2 can process an input sequence of 1024 tokens with an embedding size of
+    1024\. In its medium version it has 345M parameters and contains 24 layers, each
+    with 12 attention heads. For the training with gradient descent a batch size of
+    512 was utilized. The model was trained on 40 GB of text crawled from Reddit,
+    a social media platform. Only texts that were well rated by other users were included,
+    resulting in a higher quality data set. The larger model was trained on 256 cloud
+    TPU v3 cores. The training duration was not disclosed, nor the exact details of
+    training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The quality of a language model may be measured by the probability *p*(*v*[1],
+    …, *v*[*T*]) of a given text collection *v*[1], …, *v*[*T*]. If we normalize its
+    inverse by the number *T* of tokens we get the *perplexity* [[28](#CR28)]![$$\displaystyle
+    \begin{aligned} ppl(v_1,\ldots,v_T):=p(v_1,\ldots,v_T)^{-\frac 1T} {}. \end{aligned}
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ12.png)(2.12)A
+    low perplexity indicates a high probability of the text. If we assume that the
+    conditional probabilities *p*(*v*[*t*]|*v*[1], …, *v*[*t*−1]) are identical for
+    all *t*, we get *ppl*(*v*[1], …, *v*[*T*]) = 1∕*p*(*v*[*t*]|*v*[1], …, *v*[*t*−1]),
+    i.e. the inverse probability of the next token. GPT-2 was able to substantially
+    reduce the perplexity on a number of benchmark data sets, e.g. from 46.5 to 35.8
+    for the *Penn Treebank corpus* [[117](#CR117)] meaning that the actual words in
+    the texts were predicted with higher probability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualizing GPT Embeddings
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Kehlbeck et al. [[66](#CR66)] investigated the relative location of embeddings
+    in multivariate space for both BERT and GPT-2, each with 12 layers. They calculated
+    3-D projections using both *principal component analysis**(PCA)* [[111](#CR111)]
+    and UMAP [[89](#CR89)]. The latter can preserve the local structure of neighbors,
+    but—differently to PCA—is unable to correctly maintain the global structure of
+    the data. These 3d-scatterplots can be interactively manipulated on the website
+    [[66](#CR66)]. It turns out that GPT-2 forms two separate clusters: There is a
+    small cluster containing just all tokens at position 0, while the embeddings at
+    other positions form ribbon-like structures in the second cluster.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Careful investigations have indicated that most embedding vectors are located
+    in a narrow cone, leading to high cosine similarities between them [[25](#CR25)].
+    The authors identify isolated clusters and low dimensional manifolds in the contextual
+    embedding space. Kehlbeck et al. [[66](#CR66)] show that tokens with the same
+    part-of-speech tag form ribbon-like structures in the projections (Fig. [2.9](#Fig9)
+    left). Function words are all located on a tight circular structure, whereas content
+    words like nouns and verbs are located in other elongated structures and have
+    overlap with other POS-tags. The embeddings generated by BERT form one or more
+    clusters (Fig. [2.9](#Fig9) right). They are quite separated for function words,
+    but show some overlap for content words like nouns, verbs, or adjectives.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig10_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Two scatterplots. The left one plots a financial institution, sloping land,
+    a bank building, a long ridge, arrangement of objects, and a flight maneuver.
+    A financial institution has the highest concentration. The second one plots P
+    C A projections of embeddings such as banks and material.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot of BERT-embeddings of different senses of *“bank”* projected to two dimensions
+    by T-SNE (left). The legend contains a short description of the respective WordNet
+    sense and the frequency of occurrence in the training data. Image[[153](#CR153)].
+    The right side shows PCA projections of the embeddings of *“banks”* (lower strip)
+    and *“material”* (middle strip) as well as other words computed for different
+    contexts. Image interactively generated, printed with kind permission of the authors
+    [[66](#CR66)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: The GPT-2 embeddings of content words like *“banks”* and *“material”* at positions
+    > 0 form elongated band-structures, as shown in the right part of Fig. [2.10](#Fig10).
+    For higher layers the PCA projections get more diffuse. The user can read the
+    token context by pointing to each dot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Token-based *self-similarity* is the mean cosine similarity of the same token
+    found in different sentences. In BERT as well as GPT-2, the self-similarity is
+    higher for content than function words [[66](#CR66)]. This may indicate that function
+    words have more diverse semantic roles in different contexts. It is interesting
+    to evaluate the 10 nearest neighbors of a token with respect to cosine similarity.
+    In the lower layers, for both models the nearest tokens were in most cases the
+    same tokens, except for a few content words. In the higher layers this changed
+    and different tokens were the nearest tokens. This shows that more and more context
+    is included in the embeddings of higher layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The authors also investigated the embeddings generated by a number of other
+    PLM types. They find that their structure is very different as they form different
+    clusters and manifolds. They argue that this structure has to be taken into account
+    for new applications of the models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.2.3 Generating a Sequence of Words
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: After training the GPT model can predict the probabilities of the tokens at
+    the next position *t* + 1 given the previous tokens *v*[1], …, *v*[*t*]. To generate
+    a text we have to select a sequence of tokens according to these probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Random sampling* selects the next token according to the predicted probabilities.
+    This approach sometimes can select very improbable tokens such that the probability
+    of the whole sentence gets too low. Although the individual probabilities are
+    tiny, the probability of selecting an element of the group of improbable tokens
+    is quite high. In addition, the estimates of small probability are often affected
+    by errors.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Top-k**sampling* takes into account only the *k* tokens with the highest probability
+    to generate the next token. The probability mass is redistributed among them [[42](#CR42)]
+    and used for randomly selecting a token.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Top-p**sampling* considers the smallest set of top candidates with the cumulative
+    probability above a threshold (e.g. *p* = 0.95) and then selects the next token
+    according to the redistributed probabilities [[58](#CR58)]. This approach limits
+    the probability mass of rare tokens which are ignored.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: There are also strategies which explicitly avoid previously generated tokens
+    by reducing the corresponding scores in the update formula [[67](#CR67)]. Both
+    top-*k* and top-*p* sampling usually generate plausible token sequences and are
+    actually employed to generate texts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are a number of approaches to improve token selection. Meister et al.
+    [[90](#CR90)] found that human-produced text tends to have evenly distribution
+    of “surprise”. This means that the next token should on average not be too rare
+    and not be too frequent. They propose a number of sampling criteria, e.g. a variance
+    regularizer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Martins et al. [[86](#CR86)] argue that softmax-generated output distributions
+    are unrealistic, as they assign a positive probability to every output token.
+    They propose the *Entmax transformation* which generates a sparse probability
+    distribution from the computed scores, where part of the probabilities are exactly
+    zero. The Entmax transformation can be controlled by a parameter *α* ≥ 1\. For
+    *α* = 1 we get softmax and *α* = *∞* recovers ![$$\arg \max $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq43.png).
+    For intermediate values *∞* > *α* > 1.0 some tokens get exactly zero probability.
+    Entmax losses are convex and differentiable and therefore may be trained by backpropagation.
+    As in top-*p* sampling and in opposition to top-*k* sampling, Entmax sampling
+    considers a varying number of tokens depending on the context. Experiments show
+    that Entmax leads to better perplexities and less repetitions than other approaches.
+    Compared with top-*p* sampling it has a higher variation in the number of tokens
+    considered.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Khandelwal et al. [[68](#CR68)] try to improve the estimated probabilities of
+    the language model by statistics of token *n*-grams. They perform a nearest neighbor
+    search on the last tokens already processed. As distance measure they use the
+    distances of the pre-trained embedding space. From the retrieved nearest neighbors
+    they get additional evidence on the probable next token, which is merged with
+    the token probabilities of the language model. In this way, they are able to improve
+    the perplexity of language models. The approach is particularly helpful in predicting
+    rare patterns, e.g. factual knowledge.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Yang et al. [[157](#CR157)] analyze the properties of the softmax function.
+    They find that the standard softmax does not have enough capacity to model natural
+    language, as it restricts the rank of the mapping to probabilities. They propose
+    to predict probabilities by a *Mixture of Softmaxes*, a convex combination of
+    different logistic classifiers, which is more expressive than a single softmax.
+    The authors show that this modification yields better perplexities in language
+    modeling and also improves the performance of other transformer architectures
+    [[101](#CR101)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.2.4 The Advanced Language Model GPT-2
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '**GPT-2** [[118](#CR118)] is the first language model, which is able to generate
+    documents of grammatically correct and semantically plausible text. Its largest
+    version has 48 encoder blocks with 1.5B parameters and covers sequences of 1600
+    tokens. Given an initial text the model adapts to the style and content of this
+    text and generates an answer, which often cannot be distinguished from human-generated
+    continuations. Longer generated texts, however, sometimes tend to be repetitive
+    and less coherent.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For GPT-2 top-*k* truncated sampling was used to generate the example text [[117](#CR117)]
+    shown in Fig. [2.11](#Fig11). As can be seen there are no syntax errors and the
+    generated content is plausible. The authors remark that one in two trials were
+    of high quality. The model adapts to the style and content of the input text.
+    This allows the user to generate realistic and coherent continuations about a
+    topic they like. Obviously the topic has to be mentioned in the Reddit training
+    data, which covers a broad spectrum of themes such as news, music, games, sports,
+    science, cooking, and pets.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig11_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A screenshot of the input and generated by G P T 2 input texts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Given the input text, GPT-2 generates a continuation by top-*k* sampling [[117](#CR117)].
+    Quoted with kind permission of the authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model was able to solve many tasks better than previous models without being
+    trained on the specific task. This type of learning is called *zero-shot learning*.
+    For example, GPT-2 had a perplexity of 35.8 on the test set of the Penn Treebank
+    compared to the inferior prior Sota of 46.5 [[117](#CR117)]. This was achieved
+    without training GPT-2 on the *Penn Treebank corpus* [[135](#CR135)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.2.5 Fine-Tuning GPT
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: By fine-tuning, GPT-2 may be adapted to new types of text, for example new genres
+    of text. To create song lyrics, for example, St-Amant [[4](#CR4)] uses a dataset
+    of 12,500 English rock song lyrics and fine-tunes GPT-2 for 5 epochs. Then the
+    model is able to continue the lyrics of pop songs, which had not been seen by
+    the model during training. The model had a high Bleu score of 68 when applied
+    to song lyrics. Another experiment describes the generation of poetry [[19](#CR19)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similar to BERT, a pre-trained GPT-2 can also be modified to perform a classification
+    task. An example is fine-tuning to the classification of the sentiment of a document
+    as positive or negative. Radford et al. [[116](#CR116)] encode the classification
+    task as a text with specific tokens and a final end token *[END]*. Then the model
+    has to predict the sequence. The embedding of *[END]* in the highest layer is
+    used as input to a logistic classifier, which is trained to predict the probability
+    of classes. The authors found that including language modeling ([2.11](#Equ11))
+    of the fine-tuning data as an auxiliary objective to fine-tuning improved generalization
+    and accelerated convergence. They were able to improve the score on GLUE (Sect.
+    [2.1.5](#Sec7)) from 68.9 to 72.8 and achieved Sota in 7 out of 8 GLUE tasks for
+    natural language understanding. The results show that language models capture
+    relevant information about syntax and semantics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, GPT operates from left to right when predicting the next token. In
+    the sentences *“I went to the bank to deposit cash”* and *“I went to the bank
+    to sit down”*, it will create the same context-sensitive embedding for *“bank”*
+    when predicting *“sit”* or *“deposit”*, although the meaning of the token *“bank”*
+    is different in both contexts. In contrast, BERT is bidirectional and takes into
+    account all tokens of the text when predicting masked tokens. This fact explains
+    why BERT for some tasks shows a better performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.2.6 Summary
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: GPT has an architecture similar to a BERT model that generates the tokens of
+    a sentence one by one. It starts with an input sequence of tokens, which can be
+    empty. Tokens are encoded as a sum of token embeddings and position embeddings.
+    GPT uses the same encoder blocks as BERT, but the computations are masked, i.e.
+    restricted to the already generated tokens. For these tokens the model produces
+    contextual embeddings in several layers. The embedding of the last token in the
+    top layer is entered into a logistic classifier and this calculates the probability
+    of the tokens for the next position. Subsequently, the observed token is appended
+    to the input at the next position and the computations are repeated for the next
+    but one position. Therefore, GPT is called an autoregressive language model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: During training the parameters are changed by stochastic gradient descent in
+    such a way that the model predicts high probabilities of the observed tokens in
+    the training data. The maximum likelihood criterion is used, which optimizes the
+    probability of the input data. When the model has been trained on a large text
+    dataset it can be applied. Conditional to a start text it can sequentially compute
+    the probability of the next token. Then a new token can be selected according
+    to the probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If all alternative tokens are taken into account, rare tokens are often selected.
+    Usually, the number of eligible tokens is restricted to *k* high-probability tokens
+    (top-*k* sampling) or only high-probability tokens are included up to a prescribed
+    probability sum *p* (top-*p* sampling). In this way, much better texts are generated.
+    Advanced language models like GPT-2 have billions of parameters and are able to
+    generate plausible stories without syntactic errors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: GPT models can also be fine-tuned. A first type of fine-tuning adapts the model
+    to a specific text genre, e.g. poetry. Alternatively, GPT can be used as a classifier,
+    where the output embedding of the most recently generated token for an input text
+    is input to a logistic classifier. With this approach, GPT-2 was able to improve
+    Sota for most natural language understanding task in the GLUE benchmark. This
+    shows that GPT-2 has acquired a comprehensive knowledge about language. However,
+    since self-attention is only aware of past tokens, models like BERT are potentially
+    better as they can take into account all input tokens during computations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [3](528393_1_En_3_Chapter.xhtml) discusses how to improve the performance
+    of GPT models, in particular by using more parameters (Sect. [3.​1.​2](528393_1_En_3_Chapter.xhtml#Sec3)).
+    These large models with billions of parameters can be instructed to perform a
+    number of tasks without fine-tuning (Sect. [3.​6.​3](528393_1_En_3_Chapter.xhtml#Sec41)).
+    In the Chaps. [5](528393_1_En_5_Chapter.xhtml)–[7](528393_1_En_7_Chapter.xhtml),
+    we describe a number of applications of GPT-models such as question-answering
+    (Sect. [6.​2.​3](528393_1_En_6_Chapter.xhtml#Sec14)), story generation (Sect.
+    [6.​5](528393_1_En_6_Chapter.xhtml#Sec31)), or image generation from text (Sect.
+    [7.​2.​6](528393_1_En_7_Chapter.xhtml#Sec18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '2.3 Transformer: Sequence-to-Sequence Translation'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 2.3.1 The Transformer Architecture
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Translation models based on Recurrent Neural Networks (Sect. [1.​6](528393_1_En_1_Chapter.xhtml#Sec6))
+    have a major limitation caused by the sequential nature of RNNs. The number of
+    operations required to determine the relation between tokens *v*[*s*] and *v*[*t*]
+    grows with the distance *t* − *s* between positions. The model has to store the
+    relations between all tokens simultaneously in a vector, making it difficult to
+    learn complex dependencies between distant positions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *Transformer* [[141](#CR141)]—similar to RNN-translation models—is based
+    on an encoder and a decoder module (Fig. [2.13](#Fig13)). The encoder is very
+    similar to BERT, while the decoder resembles GPT. It is a *sequence-to-sequence
+    model* (*Seq2seq*), which translates a source text of the input language to a
+    target text in the target language. Instead of relating distant tokens by a large
+    number of computation steps, it directly computes the self-attention between these
+    token in parallel in one step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *encoder* generates contextual embeddings ![$$\tilde {{\boldsymbol {x}}}_1,\ldots
+    ,\tilde {{\boldsymbol {x}}}_{T_{\text{src}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq44.png)
+    of the source text tokens ![$$v_1, \ldots , v_{T_{\text{src}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq45.png)
+    with exactly the same architecture as the BERT model (Fig. [2.4](#Fig4)). The
+    original transformer [[141](#CR141)] uses 6 encoder blocks. The generated embeddings
+    of the last layer are denoted as ![$$\breve {\boldsymbol {x}}_1,\ldots ,\breve
+    {\boldsymbol {x}}_{T_{\text{src}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq46.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The transformer *decoder* step by step computes the probability distributions
+    ![$$p(S_{t}|s_1,\ldots ,s_{t-1},v_1,\ldots ,v_{T_{\text{src}}})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq47.png)
+    of target tokens *s*[*t*] similar to the Recurrent Neural Network. Note that the
+    source tokens *v*[*i*] as well as observed target tokens *s*[*j*] are taken as
+    conditions. By the definition of conditional probability this yields the total
+    probability of the output distribution![$$\displaystyle \begin{aligned} \begin{array}{rcl}
+    &amp; &amp;\displaystyle {p(S_{1}\mkern1.5mu{=}\mkern1.5mu s_1,\ldots,S_{T}\mkern1.5mu{=}\mkern1.5mu
+    s_T|v_1,\ldots,v_{T_{\text{src}}}) }\\ ~\qquad &amp; =&amp;\displaystyle p(S_T\mkern1.5mu{=}\mkern1.5mu
+    s_T|s_1,\ldots,s_{T-1},v_1,\ldots,v_{T_{\text{src}}}) \cdots p(S_{1}\mkern1.5mu{=}\mkern1.5mu
+    s_1|v_1,\ldots,v_{T_{\text{src}}}) , {} \end{array} \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ13.png)(2.13)where
+    *S*[*t*] is a random variable with the possible target tokens *s*[*t*] at position
+    *t* as its values. This probability is maximized during training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We denote the already translated tokens by *s*[0], *s*[1], …, *s*[*t*−1] were
+    *s*[0] is the token *“[BOS]”* indicating the beginning of the output text. The
+    decoder first computes a self-attention for these tokens using the formula ([2.4](#Equ4))
+    as for BERT. As only part of the target tokens are covered and the rest is ‘masked’,
+    this layer is called *masked multi-head self-attention* yielding intermediate
+    contextual embeddings ![$$\tilde {\boldsymbol {s}}_0,\tilde {\boldsymbol {s}}_1,\ldots
+    ,\tilde {\boldsymbol {s}}_{t-1}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq48.png)
+    for the target tokens *s*[0], *s*[1], …, *s*[*t*−1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross-Attention
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Then the decoder performs a *cross-attention*![$$\text{CATL}(\tilde {{\boldsymbol
+    {V}}},\breve {{\boldsymbol {X}}})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq49.png)
+    with the input text embeddings of the highest encoder block (Fig. [2.12](#Fig12)).
+    Here the query-vectors are computed for the embeddings of the target tokens ![$$\tilde
+    {\boldsymbol {S}}_t=(\tilde {\boldsymbol {s}}_0,\tilde {\boldsymbol {s}}_1,\ldots
+    ,\tilde {\boldsymbol {s}}_{t-1}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq50.png))
+    provided by the respective decoder block. The key and value vectors are computed
+    for the embeddings ![$$\breve {{\boldsymbol {X}}}=\breve {\boldsymbol {x}}_1,\ldots
+    ,\breve {\boldsymbol {x}}_{T_{\text{src}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq51.png)
+    of the last encoder block. Note that cross attention employs the same Eq. ([2.4](#Equ4))
+    with matrices ***W***^((*q*)), ***W***^((*k*)), ***W***^((*v*)) as the BERT self-attentions.
+    This is done in parallel and called *multi-head cross-attention*. In this way,
+    information from the source text is taken into account. Subsequently, the embeddings
+    computed by different heads are concatenated ([2.6](#Equ6)) and the result is
+    transformed by a fully connected layer with ReLU activation ([2.7](#Equ7)). In
+    addition, residual “bypass” connections are used as well as layer normalization
+    [[6](#CR6)] for regularization. The output of the fully connected layer yields
+    a new ‘output’ embedding ![$$\tilde {\boldsymbol {s}}_0,\ldots ,\tilde {\boldsymbol
+    {s}}_{t-1}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq52.png)
+    for the target tokens *s*[1], …, *s*[*t*−1]. Together these layers are called
+    a *decoder block* (Fig. [2.13](#Fig13)).![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig12_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A flow diagram of a series of input tokens gives a new embedding via multi-head
+    self-attention, k encoder blocks, cross-attention layer, decoder block, weighted
+    value vectors, and fully connected layer, among others.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.12
+  prefs: []
+  type: TYPE_NORMAL
+- en: The transformer [[141](#CR141)] uses *k* encoder blocks with the same architecture
+    as in BERT (Fig. [2.4](#Fig4)) to generate contextual embeddings of all tokens
+    of the input text. The decoder block is an autoregressive language model (Fig.
+    [2.8](#Fig8)) and sequentially predicts the next token in the target language.
+    Each encoder block contains a multi-head self-attention for the current sequence
+    of output tokens. By cross-attention the information from the input sequence is
+    included. The calculations are repeated for all current input tokens and are very
+    similar to the self-attention computations. The resulting vector is transformed
+    by a fully connected layer yielding the embeddings of that layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig13_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of a series of input tokens gives the target tokens via multi-head
+    self-attention, multi-head cross-attention, encoder and decoder blocks, fully
+    connected layers, further encoder blocks, final embedding vectors, logistic regression,
+    and token probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.13
+  prefs: []
+  type: TYPE_NORMAL
+- en: The transformer [[141](#CR141)] uses an encoder with the same architecture as
+    BERT to generate embeddings of all tokens of the input sentence. Each encoder
+    block performs multi-head self-attention of the input sequence followed by a fully
+    connected layer (FCL) . The decoder is similar to a GPT model and sequentially
+    predicts the next token in the target language. Each encoder block contains a
+    multi-head cross-attention including the final embeddings of the encoder. Using
+    the last output embedding of the final decoder block, a logistic classifier *L*
+    predicts probabilities of the next token of the output sentence
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next decoder block gets the computed token output embeddings of the previous
+    block as input and computes a new embedding of the target tokens *s*[1], …, *s*[*t*−1].
+    The decoder consists of several decoder blocks (6 in the original model). Using
+    the output embedding ***s***̆[*t*−1] of the righmost token *s*[*t*−1] in the last
+    decoder block, the token probabilities ![$$p(S_{t}=s_t|s_1,\ldots ,s_{t-1},v_1,\ldots
+    ,v_{T_{\text{src}}})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq53.png)
+    of the next token *s*[*t*] of the target text at position *t* are predicted by
+    a logistic classifier, e.g. for the token *“Maus”* in Fig. [2.13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that for the prediction of a further token at position *t* + 1 the observed
+    token *s*[*t*] is added to the computation ([2.13](#Equ13)) of the self-attentions
+    in the decoder. Hence, the decoder embeddings change and all decoder computations
+    have to be repeated. In this respect the model still works in a recursive way.
+    Nevertheless, all self-attentions and cross-attentions in each layer are computed
+    in parallel. However, the computations for the encoder are only performed once.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sequences of variable length are padded with a special token up to the maximal
+    length. This is done for the input and the output sequence. If a sequence is very
+    short, a lot of space is wasted. Therefore, the sequence length may be varied
+    in different mini-batches called buckets in the training data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The transformer has a large set of parameters. First it requires embeddings
+    of the input and target token vocabularies. Then there are the ***W***^((*q*)),
+    ***W***^((*k*)), ***W***^((*v*)) matrices for the multi-head self-attention, the
+    masked multi-head self-attention and the multi-head cross-attention of the different
+    heads and layers. In addition, the parameters of the fully connected networks
+    and the final logistic classifier have to be specified. While the base model had
+    an input sequence length of 512 and 65M parameters, the big model had an input
+    sequence length of 1024 and 213M parameters [[141](#CR141)]. The values of all
+    these parameters are optimized during training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The training data consists of pairs of an input sentence and the corresponding
+    target sentence. Training aims to generate the target tokens with maximal probability
+    for the given input tokens to maximize the joint conditional probability ([2.13](#Equ13))
+    of the output sequence by stochastic gradient descent. In our example in Fig.
+    [2.13](#Fig13) for the given input text *“The mouse likes cheese”* the product
+    of conditional probabilities of the output tokens *“Die Maus mag Käse”* has to
+    be maximized. The original model [[141](#CR141)], for instance, used 36M sentences
+    of the WMT English-French benchmark data encoded as 32,000 wordpiece tokens. Both
+    the encoder and decoder are trained simultaneously by stochastic gradient descent
+    end-to-end, requiring 3.5 days with 8 GPUs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross-attention is the central part of the transformer, where the information
+    from the input sentence is related to the translated output sentence. In Fig.
+    [2.14](#Fig14) a German input sentence is displayed together with its English
+    translation. Both sentences are tokenized by byte-pair encoding, where the beginning
+    of a word is indicated by *“_”*. Below the strength of cross-attentions between
+    the input tokens and output tokens is depicted for two different heads. Obviously
+    the first input token *“_The”* has a special role.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig14_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Two color gradient cross-attention graphs for the English input sentence and
+    the German translation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.14
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An English input sentence tokenized by Byte-Pair encoding and the translated
+    tokenized German output sentence. Below are two cross-attention graphs from different
+    heads of the 4-th decoder layer [[126](#CR126)]. Dark values indicate a low cross-attention
+    score. Image source: [[126](#CR126)]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.3.2 Decoding a Translation to Generate the Words
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: After training, the Transformer is able to predict the probabilities of output
+    tokens for an input sentence. For a practical translation, however, it is necessary
+    to generate an explicit sequence of output tokens. Computing the output sequence
+    with maximal probability is computationally hard, as then all output possible
+    sequences have to be considered. Therefore, an approximate solution is obtained
+    using greedy decoding or beam search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Greedy decoding** simply picks the most likely token with the highest probability
+    at each decoding step until the end-of-sentence token is generated. The problem
+    with this approach is that once the output is chosen at any time step *t*, it
+    is impossible to go back and change the selection. In practice there are often
+    problems with greedy decoding, as the available probable continuation tokens may
+    not fit to a previously assigned token. As the decision cannot be revised, this
+    may lead to suboptimal generated translations.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Beam search** [[52](#CR52)] keeps a fixed number *k* of possible translations
+    *s*[1], …, *s*[*t*] of growing length (Fig. [2.15](#Fig15)). At each step each
+    translation of length *t* is enlarged by *k* different tokens at position *t* + 1
+    with the highest conditional probabilities ![$$p(S_{t+1}=s_{t+1}|s_1,\ldots ,s_{t},v_1,\ldots
+    ,v_{T_{\text{src}}})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq54.png).
+    From these *k* ∗ *k* token sequences only the *k* sequences with largest total
+    probabilities ![$$p(s_1,\ldots ,s_{t+1}|v_1,\ldots ,v_{T_{\text{src}}})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq55.png)
+    are retained. A complete translation (containing the end-of-sentence token) is
+    added to the final candidate list. The algorithm then picks the translation with
+    the highest probability (normalized by the number of target words) from this list.
+    For *k* = 1 beam search reduces to greedy decoding. In practice, the translation
+    quality obtained via beam search (size of 4) is significantly better than that
+    obtained via greedy decoding. Larger beam sizes often lead to suboptimal solutions
+    [[31](#CR31)]. However, beam search is computationally very expensive (25%–50%
+    slower depending on the base architecture and the beam size) in comparison to
+    greedy decoding [[29](#CR29)].![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A tree diagram of the beam search technique. It includes the B O S within square
+    brackets block and the subsequent words with their scores.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Beam search is a technique for decoding a language model and producing text.
+    At every step, the algorithm keeps track of the *k* most probable partial translations
+    (bold margin). The score of each translation is equal to its log probability.
+    The beam search continues until it reaches the end token for every branch [[78](#CR78)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.3.3 Evaluation of a Translation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Traditionally, evaluation is done by comparing one or more reference translations
+    to the generated translation, as described in the survey [[127](#CR127)]. There
+    are a number of automatic evaluation metrics:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Bleu** compares counts of 1-grams to 4-grams of tokens. The Bleu metric ranges
+    from 0 to 1, where 1 means an identical output with the reference. Although Bleu
+    correlates well with human judgment [[110](#CR110)], it relies on precision alone
+    and does not take into account recall—the proportion of the matched *n*-grams
+    out of the total number of *n*-grams in the reference translation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Rouge** [[80](#CR80)] unlike Bleu is a recall-based measure and determines
+    which fraction of the words or n-grams in the reference text appear in the generated
+    text. It determines, among other things, the overlap of unigrams or bigrams as
+    well as the longest common subsequence between a pair of texts. Different versions
+    are used: Rouge-1 measures the overlap of unigram (single words) between the pair
+    of texts. Rouge-2 determines the overlap of bigrams (two-words sequences) between
+    the pair of texts. Rouge-L: measures the length of the longest sequence of words
+    (not necessarily consecutive, but still in order) that is shared between both
+    texts. This length is divided by the number of words in the reference text.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Meteor** [[75](#CR75)] was proposed to address the deficits of Bleu. It performs
+    a word-to-word alignment between the translation output and a given reference
+    translation. The alignments are produced via a sequence of word-mapping modules.
+    These check, if the words are exactly the same, same after they are stemmed using
+    the Porter stemmer, and if they are synonyms of each other. After obtaining the
+    final alignment, Meteor computes an F-value, which is a parameterized harmonic
+    mean of unigram precision and recall. Meteor has also demonstrated to have a high
+    level of correlation with human judgment, often even better than Bleu.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**BERTscore** [[164](#CR164)] takes into account synonyms and measures the
+    similarity of embeddings between the translation and the reference. It computes
+    the cosine similarity between all token embeddings of both texts. Then a greedy
+    matching approach is used to determine assignments of tokens. The maximum assignment
+    similarity is used as BERTscore.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For high-quality translations, however, there is a noticeable difference between
+    human judgment and automatic evaluation. Therefore, most high-end comparisons
+    today use human experts to assess the quality of translation and other text generation
+    methods. Since the transformer was proposed by Vaswani et al. [[141](#CR141)]
+    in 2017, its variants were able to raise the Sota in language translation performance,
+    e.g. for translation on WMT2014 English-French from 37.5 to 46.4 Bleu score.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The transformer architecture was analyzed theoretically. Yun et al. [[160](#CR160),
+    [161](#CR161)] showed that transformers are expressive enough to capture all continuous
+    sequence to sequence functions with a compact domain. Pérez et al. [[112](#CR112)]
+    derived that the full transformer is Turing complete, i.e. can simulate a full
+    Turing machine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.3.4 Pre-trained Language Models and Foundation Models
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A model *language model* either computes the joint probability or the conditional
+    probability of natural language texts and potentially includes all information
+    about the language. BERT is an *autoencoder* language models containing encoder
+    blocks to generate contextual embeddings of tokens. GPT is an *autoregressive
+    language models* which predicts the next token of a sequence and restricts self-attention
+    to tokens which already have been generated. *Transformers* (or *Transformer encoder-decoders*)
+    use a transformer encoder to convert the input text to contextual embeddings and
+    generate the translated text with an autoregressive transformer decoder utilizing
+    the encoder embeddings as inputs (Fig. [2.16](#Fig16)). These models are the backbone
+    of modern NLP and are collectively called *Pre-trained Language Models* (*PLM*).![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig16_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 3 flow diagrams of the B E R T autoencoder, G P T language model, and transformer
+    encoder-decoder from left to right. They include input tokens, transformer encoder
+    and decoder blocks, L classifiers, and target tokens.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders like BERT (left) and autoregressive LMs like GPT-2 (middle) use
+    transformer blocks to generate contextual embeddings of tokens. The transformer
+    (right) combines a transformer encoder and an autoregressive transformer decoder
+    to produce a translation. All models predict the probability of tokens with a
+    logistic classifier *L*. Collectively these models are called Pre-trained Language
+    Models (PLMs)
+  prefs: []
+  type: TYPE_NORMAL
+- en: All these models, especially BERT and GPT, are initialized via pre-training
+    on a large corpus of text documents. During pre-training, parts of the input are
+    hidden from the model, and the model is trained to reconstruct these parts. This
+    has proven to be extremely effective in building strong representations of language
+    and in finding parameter initializations for highly expressive NLP models that
+    can be adapted to specific tasks. Finally, these models provide probability distributions
+    over language that we can sample from.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Most network types have some built-in assumptions called *inductive bias*. Convolutional
+    networks have local kernel functions that are shifted over the input matrix and
+    therefore have an inductive bias of translation invariance and locality. Recurrent
+    networks apply the same network to each input position and have a temporal invariance
+    and locality. The BERT architecture makes only few assumptions about the structural
+    dependency in data. The GPT model is similar to the RNN as it assumes a Markovian
+    structure of dependencies to the next token. As a consequence, PLMs often require
+    more training data to learn the interactions between different data points, but
+    can later represent these interactions more accurately than other model types.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Historically, learned embedding vectors were used as representations of words
+    for downstream tasks (Fig. [2.17](#Fig17)). As early as 2003 Bengio et al. [[15](#CR15)]
+    proposed a distributed vector representation of words to predict the next word
+    by a recurrent model. In 2011 Collobert et al. [[32](#CR32)] successfully employed
+    word embeddings for part-of-speech tagging, chunking, named entity recognition,
+    and semantic role labeling. In 2013 Mikolov et al. [[93](#CR93)] derived their
+    word embeddings using a logistic classifier. In 2015 Dai et al. [[33](#CR33)]
+    trained embeddings with an RNN language model in a self-supervised way and later
+    applied it to text classification. In 2017 McCann et al. [[87](#CR87)] pre-trained
+    multilayer LSTMs for translation computing contextualized word vectors, which
+    are later used for various classification tasks.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig17_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A chronological timeline of the developments from 2011 to 2022\. They include
+    word embeddings for N E R, word embeddings by logistic regression, and embeddings
+    by R N N, among others.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Timeline for the development of embeddings, pre-training and fine-tuning
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the same year Vaswani et al. [[141](#CR141)] developed the attention-only
+    transformer for language translation. In 2018 Howard et al. [[59](#CR59)] pre-trained
+    a language model (ULMFiT), and demonstrated the effectiveness of fine-tuning to
+    different target tasks by updating the full (pre-trained) model for each task.
+    In the same year Howard et al. [[116](#CR116)] used a pre-trained autoregressive
+    part of the transformer [[141](#CR141)] to solve a large number of text understanding
+    problems by fine-tuned models. At the same time Devlin et al. [[39](#CR39)] pre-trained
+    the autoencoder using the masked language model objective and adapted this BERT
+    model to many downstream tasks by fine-tuning. In 2019 Radford et al. [[118](#CR118)]
+    presented the GPT-2 language model, which was able to generate semantically convincing
+    texts. Brown et al. [[21](#CR21)] proposed the GPT-3 model, which could be instructed
+    to solve NLP-tasks by a task description and some examples. In 2021 Ramesh et
+    al. [[121](#CR121)] applied language modeling to text and pictures and were able
+    to create impressive pictures from textual descriptions. Borgeaud et al. [[18](#CR18)]
+    presented the Retro model that answers questions by retrieving information from
+    a text collection of 2 trillion tokens and composes an answer in natural language.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Almost all state-of-the-art NLP models are now adapted from one of a few Pre-trained
+    Language Models, such as BERT, GPT-2, T5, etc. PLMs are becoming larger and more
+    powerful, leading to new breakthroughs and attracting more and more research attention.
+    Due to the huge increase in performance, some research groups have suggested that
+    large-scale PLMs should be called *Foundation Models*, as they constitute a ‘foundational’
+    breakthrough technology that can potentially impact many types of applications
+    [[17](#CR17), p. 3]. In this book, we reserve the term ‘Foundation Models’ for
+    large Pre-trained Language Models with more than a billion parameters, since these
+    models are able of generating fluent text, can potentially handle different media,
+    and can usually be instructed by prompts to perform specific tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If one of these models is improved, this high degree of homogeneity can lead
+    to immediate benefits for many NLP applications. On the other hand all systems
+    could share the same problematic biases present in a few basic models. As we will
+    see in later chapters PLM-based sequence modeling approaches are now applied to
+    text (Sect. [2.2](#Sec11)), speech (Sect. [7.​1](528393_1_En_7_Chapter.xhtml#Sec1)),
+    images (Sect. [7.​2](528393_1_En_7_Chapter.xhtml#Sec12)), videos (Sect. [7.​3](528393_1_En_7_Chapter.xhtml#Sec23)),
+    computer code (Sect. [6.​5.​6](528393_1_En_6_Chapter.xhtml#Sec46)), and control
+    (Sect. [7.​4](528393_1_En_7_Chapter.xhtml#Sec30)). These overarching capabilities
+    of Foundation Models are depicted in Fig. [2.18](#Fig18).![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig18_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: An illustrated process flow of the foundation model. It includes 5 types of
+    data, training, a foundation model, and a series of tasks via adaption.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.18
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Foundation Model can integrate the information in the data from different
+    modalities. Subsequently it can be adapted, e.g. by fine-tuning, to a wide range
+    of downstream tasks [[17](#CR17), p. 6]. Credits for image parts in Table [A.​1](https://doi.org/10.1007/978-3-031-23190-2_BM1#Tab1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next Sect. [2.4](#Sec27) discusses some common techniques for optimizing
+    and regularizing pre-trained language models. In addition, some approaches to
+    modify the architecture of these networks are presented. In Chap. [3](528393_1_En_3_Chapter.xhtml)
+    we present a number of approaches to improve the capabilities of PLMs, especially
+    by modifying the training tasks (Sect. [3.​1.​3](528393_1_En_3_Chapter.xhtml#Sec4)).
+    In the Chaps. [5](528393_1_En_5_Chapter.xhtml)–[7](528393_1_En_7_Chapter.xhtml)
+    we discuss a number of applications of PLMs. Chapter [5](528393_1_En_5_Chapter.xhtml)
+    covers traditional NLP tasks like named entity recognition and relation extraction,
+    where PLMs currently perform best. Most important applications of Foundation Models
+    are on the one hand text generation and related tasks like question-answering
+    and dialog systems, which are introduced in Chap. [6](528393_1_En_6_Chapter.xhtml).
+    On the other hand Foundation Models can simultaneously process different media
+    and perform tasks like image captioning, object detection in images, image generation
+    following a text description, video interpretation, or computer game control,
+    which are discussed in Chap. [7](528393_1_En_7_Chapter.xhtml). Because of the
+    potential social and societal consequences of such Foundation Models, it is particularly
+    important that researchers in this field keep society’s values and human rights
+    in mind when developing and applying these models. These aspects are summarized
+    in Sect. [8.​2](528393_1_En_8_Chapter.xhtml#Sec10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Available Implementations
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The source code for many pre-trained language models (BERT, GPT, Transformers)
+    as well as pre-trained models for different languages and text corpora can be
+    downloaded from Hugging Face [https://​huggingface.​co/​transformers/​](https://huggingface.co/transformers/),
+    Fairseq [https://​github.​com/​pytorch/​fairseq](https://github.com/pytorch/fairseq),
+    TensorFlow [https://​www.​tensorflow.​org/​](https://www.tensorflow.org/) and
+    PyTorch [https://​pytorch.​org/​](https://pytorch.org/). These toolkits also allow
+    the flexible formulation of Deep Neural Networks and provide the automatic computation
+    of gradients as well as optimization methods. All are able to execute computations
+    in parallel and distribute them to different CPUs and Graphical Processing Units
+    (GPUs).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PLMs are getting larger than the memory of a single GPU and require to distribute
+    training code among several GPUs. This is supported by libraries like FastSeq
+    [https://​github.​com/​microsoft/​fastseq](https://github.com/microsoft/fastseq),
+    LightSeq [https://​github.​com/​bytedance/​lightseq](https://github.com/bytedance/lightseq),
+    and FastT5 [https://​github.​com/​Ki6an/​fastT5](https://github.com/Ki6an/fastT5).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: DeepSpeed [[122](#CR122)] was used to train the MT-NLG autoregressive LM with
+    530B parameters (Sect. [3.​1.​2](528393_1_En_3_Chapter.xhtml#Sec3)) [https://​github.​com/​microsoft/​DeepSpeed](https://github.com/microsoft/DeepSpeed).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Ecco [[2](#CR2)] [https://​github.​com/​jalammar/​ecco](https://github.com/jalammar/ecco)
+    and BertViz [[144](#CR144)] [https://​github.​com/​jessevig/​bertviz](https://github.com/jessevig/bertviz)
+    are tools to visualize the attentions and embeddings of PLMs.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Transformers-interpret [https://​github.​com/​cdpierse/​transformers-interpret](https://github.com/cdpierse/transformers-interpret)
+    is a model explainability tool designed for the Hugging Face package.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Captum [[70](#CR70)] is a library [https://​captum.​ai/​](https://captum.ai/)
+    to generate interpretations and explanations for the predictions of PyTorch models.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 2.3.5 Summary
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A transformer is a sequence-to-sequence model, which translates a source text
+    of the input language into a target text in the target language. It consists of
+    an encoder with the same architecture as an autoencoder BERT model that computes
+    contextual embeddings of tokens of the source text. The decoder resembles an autoregressive
+    GPT model and sequentially generates the tokens of the target text. Internally,
+    contextual embeddings of the target tokens are computed in the different layers.
+    Each decoder block has an additional cross-attention module in which the query
+    vectors are taken from the embeddings of the target tokens and the key and value
+    vectors are computed for the embeddings of the source tokens of the last layer.
+    In this way, the information from the source text is communicated to the decoder.
+    The embedding of the last token in the top layer is entered into a logistic classifier
+    and this calculates the probability of the tokens for the next position. Subsequently,
+    the observed token at the next position is appended to the target input and the
+    computations are repeated for the next but one position.
+  prefs: []
+  type: TYPE_NORMAL
+- en: During training the parameters of the transformer are adapted by stochastic
+    gradient descent in such a way that the model assigns high probabilities to the
+    observed target tokens of the translation in the training data. When the model
+    has been trained on a large text dataset it can be applied for translation. Conditional
+    on an input text, it can sequentially compute the probability of the next token
+    of the translation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: During application of a trained model either the token with the maximal probability
+    is selected or several alternatives are generated by beam search and the final
+    output sequence with maximal probability is chosen. The evaluation of the translations
+    quality is difficult as different translations may be correct. A number of metrics,
+    e.g. Bleu, have been developed, which compare the machine translation to one or
+    more reference translations by comparing the number of common word *n*-grams with
+    *n* = 1, …, 4\. Often the results are assessed by human raters. The transformer
+    was able to generate better translation than prior models. In the meantime the
+    translation quality for a number of language pairs is on par with human translators.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the previous sections, we discussed *autoencoder BERT* models, *autoregressive
+    GPT* models and the *encoder-decoder Transformers*. Collectively these models
+    are called *pre-trained language models*, as transfer learning with a pre-training
+    step using a large training set and a subsequent fine-tuning step is a core approach
+    for all three variants. The self-attention and cross-attention modules are central
+    building blocks used by all three models. Despite the development of many variations
+    in recent years, the original architecture developed by Vaswani et al. [[141](#CR141)]
+    is still commonly employed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It turns out that these models can be applied not only to text, but to various
+    types of sequences, such as images, speech, and videos. In addition, they may
+    be instructed to perform various tasks by simple prompts. Therefore, large PLMs
+    are also called *Foundation Models*, as they are expected to play a crucial role
+    in the future development of text and multimedia systems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.4 Training and Assessment of Pre-trained Language Models
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section describes some techniques required to train and apply PLMs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We need *optimization techniques* which can process millions and billions of
+    parameters and training examples.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Specific *regularization* methods are required to train the models and to avoid
+    overfitting.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The *uncertainty* of model predictions has to be estimated to asses the performance
+    of models.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The *explanation* of model predictions can be very helpful for the acceptance
+    of models.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Approaches to solving these problems are discussed in this section. PLMs are
+    usually specified in one of the current Deep Learning frameworks. Most popular
+    are *TensorFlow* provided from Google [[137](#CR137)] and *PyTorch* from Meta
+    [[114](#CR114)]. Both are based on the Python programming language and include
+    language elements to specify a network, train it in parallel on dedicated hardware,
+    and to deploy it to different environments. A newcomer is the *JAX* framework
+    [[22](#CR22)], which is especially flexible for rapid experimentation. It has
+    a compiler for linear algebra to accelerate computations for machine learning
+    research.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.4.1 Optimization of PLMs
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Basics of PLM Optimization
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: For the i.i.d. training sample *Tr* = {(***x***^([1]), *y*^([1])), …, (***x***^([*N*]),
+    *y*^([*N*]))} parameter optimization for Deep Neural Networks aims to find a model
+    that minimizes the loss function *L*(***x***^([*i*]), *y*^([*i*]);***w***)![$$\displaystyle
+    \begin{aligned} \min_{\boldsymbol{w}} L({\boldsymbol{w}})=L({\boldsymbol{x}}^{[1]},y^{[1]};{\boldsymbol{w}})
+    +\cdots+L({\boldsymbol{x}}^{[N]},y^{[N]};{\boldsymbol{w}}). {} \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ14.png)(2.14)First-order
+    optimization methods, also known as gradient-based optimization, are based on
+    first-order derivatives. A requirement is that the loss function *L*(***w***)
+    is smooth, i.e. is continuous and in addition differentiable at almost all parameter
+    values ***w*** = (*w*[1], …, *w*[*k*]). Then the partial derivatives ![$$\frac
+    {\partial L({\boldsymbol {w}})}{\partial w_j}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq56.png)
+    of *L*(***w***) with respect to any component *w*[*j*] of ***w*** can be computed
+    at almost all points. The *gradient* of *L*(***w***) in a specific point ***w***
+    is the vector![$$\displaystyle \begin{aligned} \frac{\partial L({\boldsymbol{w}})}{\partial
+    {\boldsymbol{w}}} = \left( \frac{\partial L({\boldsymbol{w}})}{\partial w_1},\ldots,\frac{\partial
+    L({\boldsymbol{w}})}{\partial w_k}\right)^\intercal . {} \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ15.png)(2.15)The
+    gradient points into the direction, where *L*(***w***) in point ***w*** has its
+    steepest ascent. Consequently, the direction of the steepest descent is in the
+    opposite direction ![$$-\frac {\partial L({\boldsymbol {w}})}{\partial {\boldsymbol
+    {w}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq57.png).
+    The batch *gradient descent* algorithm therefore changes the current parameter
+    ***w***[(*t*)] in the direction of the negative gradient to get closer to the
+    minimum![$$\displaystyle \begin{aligned} {\boldsymbol{w}}_{(t+1)} = {\boldsymbol{w}}_{(t)}
+    - \lambda\frac{\partial L({\boldsymbol{w}})}{\partial {\boldsymbol{w}}} {}. \end{aligned}
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ16.png)(2.16)The
+    *learning rate**λ* determines the step-size or how much to move in each iteration
+    until an optimal value is reached. As the gradient is usually different for each
+    parameter ***w***[(*t*)] it has to be recomputed for every new parameter vector
+    (Fig. [2.19](#Fig19)). The iteration process is repeated until the derivative
+    becomes close to zero. A zero gradient indicates a *local minimum* or a *saddle
+    point* [[51](#CR51), p. 79]. In practical applications it is sufficient to repeat
+    the optimization beginning with different ***w***-values and stop, if the derivative
+    is close to zero.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig19_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2 illustrations of color gradient grids with light to dark shades from top to
+    bottom.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.19
+  prefs: []
+  type: TYPE_NORMAL
+- en: On all points of a grid the negative gradients are computed for this two-dimensional
+    function *L*(***w***) (left). The gradient descent algorithm follows the negative
+    gradients and approaches the local minima (right). The blue lines are the paths
+    taken during minimization. Image credits in Table [A.​1](https://doi.org/10.1007/978-3-031-23190-2_BM1#Tab1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deep Neural Networks often require many millions of training examples. The repeated
+    computation of the gradient for all these examples is extremely costly. The **Stochastic
+    Gradient Descent** (*SGD*) algorithm does not use the entire dataset but rather
+    computes the gradient only for a small *mini-batch* of *m* training examples at
+    a time. In general, a mini-batch has sizes *m* ranging from 32 up to 1024, with
+    even higher values for recent extremely large models. Subsequently, the parameters
+    of the model are changed according to ([2.16](#Equ16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: For each iteration a new mini-batch is selected randomly from the training data.
+    According to the law of large numbers the gradients computed from these mini-batches
+    fluctuate around the true gradient for the whole training set. Therefore, the
+    mini-batch gradient on average indicates an adequate direction for changing the
+    parameters. Mertikopoulos et al. [[91](#CR91)] show that by iteratively reducing
+    the learning rate to 0, the SGD exhibits almost sure convergence, avoids spurious
+    critical points such as saddle points (with probability 1), and stabilizes quickly
+    at local minima. There are a number of variations of the SGD algorithm, which
+    are described below [[65](#CR65)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: An important step of optimization is the *initialization of parameters*. Their
+    initial values can determine whether the algorithm converges at all and how fast
+    the optimization approaches the optimum. To break symmetry, the initial parameters
+    must be random. Furthermore, the mean and variance of the parameters in each layer
+    are set such that the resulting outputs of the layer have a well-behaved distribution,
+    e.g. expectation 0.0 and variance 1.0\. In addition, all gradients also should
+    have such a benign distribution to avoid exploding or vanishing gradients. All
+    Deep Learning software frameworks contain suitable initialization routines. A
+    thorough introduction is given by Goodfellow et al. [[51](#CR51), p. 292].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variants of Stochastic Gradient Descent
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '**Momentum** is a method that helps SGD to increase the rate of convergence
+    in the relevant direction and reduce oscillations. Basically a moving average
+    ***u***[(*t*)] of recent gradients with a parameter *γ* ≈ 0.9 is computed and
+    the parameter update is performed with this average by![$$\displaystyle \begin{aligned}
+    \boldsymbol{u}_{(t)} = \gamma \boldsymbol{u}_{(t-1)}- \lambda\frac{\partial L({\boldsymbol{w}})}{\partial
+    {\boldsymbol{w}}} \qquad  \text{where}\qquad  {\boldsymbol{w}}_{(t)} = {\boldsymbol{w}}_{(t-1)}
+    - \boldsymbol{u}_{(t)}. {} \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ17.png)(2.17)Note
+    that in addition to the parameter vector ***w***[(*t*)] the moving average ***u***[(*t*)]
+    of the same length has to be stored requiring the same memory as the parameter
+    vector ***w***. This can consume a large additional memory size if the number
+    of parameters approaches the billions. In recent years a number of further optimizers
+    were developed [[65](#CR65)]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**AdaGrad** adapts the learning rate dynamically based on the previous gradients.
+    It uses smaller learning rates for features occurring often, and higher learning
+    rates for features occurring rarely.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**AdaDelta** modifies AdaGrad. Instead of accumulating all past gradients,
+    it restricts the accumulation window of the past gradients to some fixed size
+    *k*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**RMSProp** is also a method in which the learning rate is adapted for each
+    of the parameters. The idea is to divide the learning rate for a weight by a running
+    average of the magnitudes of recent gradients for that weight.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Adam** combines the advantages of both AdaGrad and RMSProp. Adam is based
+    on adaptive estimates of lower-order moments. It uses running averages of both
+    the gradients and the second moments of the gradients.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Due to the extremely large number of parameters of PLMs second order optimization
+    methods like *Conjugate Gradient* or *Quasi-Newton* are rarely employed. As the
+    number of second order derivatives grows quadratically, only crude approximations
+    may be used. An example is Adam, as described before.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An important architectural addition to PLMs to improve training are *residual
+    connections*, which were proposed by Vaswani et al. [[141](#CR141)] for the Transformer.
+    Residual connections have been shown to be very successful for image classification
+    networks such as ResNet [[54](#CR54)] and allowed training networks with several
+    hundred layers. The identity shortcuts skip blocks of layers to preserve features.
+    Zhang et al. [[163](#CR163)] analyze the representational power of networks containing
+    residual connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parallel Training for Large Models
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Recently, there have been suggestions to reduce the optimization effort by employing
+    larger mini-batches. You et al. [[159](#CR159)] propose the **LAMB optimizer**
+    with layerwise adaptive learning rates to accelerate training of PLMs using large
+    mini-batches. They prove the convergence of their approach to a stationary point
+    in a general nonconvex setting. Their empirical results demonstrate the superior
+    performance of LAMB. It is possible to reduce the BERT training time from 3 days
+    to just 76 min with very little hyperparameter tuning and batch sizes of 32,868
+    without any degradation of performance. The LAMB program code is available online
+    [[97](#CR97)]. In addition, the memory requirements of the optimization may be
+    reduced [[119](#CR119)] to enable parallelization of models resulting in a higher
+    training speed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Large models such as GPT-3 have many billion parameters that no longer fit
+    into the memory of a single computational device, e.g. a GPU. Therefore, the computations
+    have to be distributed among several GPUs. There are different parallelization
+    techniques [[156](#CR156)]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Data parallelism* assigns the same model code and parameters to each GPU but
+    different training examples [[72](#CR72)]. Gradients are computed in parallel
+    and finally summarized.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Pipeline parallelism* partitions the model into different parts (e.g. layers)
+    that are executed on different GPUs. If a part is computed it sends its results
+    to the next GPU. This sequence is reversed in the backward pass of training.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Within-layer model parallelism* distributes the weights of a single layer
+    across multiple GPUs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The implementation of a parallelization strategy for a model is a tedious process.
+    Support is given by the **DeepSpeed** library [[122](#CR122)] that makes distributed
+    training easy, efficient, and effective. Recently the **GSPMD** system [[156](#CR156)]
+    was developed which automates this process and is able to combine different parallelism
+    paradigms in a unified way. GSPMD infers the distribution of computations to a
+    network of GPUs based on limited user annotations to the model definition. It
+    was, for instance, applied to distribute models with 1 trillion parameters on
+    2048 GPUs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.4.2 Regularization of Pre-trained Language Models
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If a model contains too many parameters it can nearly perfectly adapt to the
+    training data by optimization, reflecting nearly all details of the training data.
+    During this *overfitting* the model learns the random variations expressed in
+    the training data and deviates from the mean underlying distribution. Consequently,
+    it has usually a lower performance on test data and a larger *generalization error*.
+    To avoid this phenomenon, the representational capacity of the model has to be
+    reduced by *regularization methods*, which often have the same effect as reducing
+    the number of parameters. Well known approaches for Deep Learning models are the
+    *L*[2] regularization and *L*[1] regularization penalizing large parameter values,
+    or *Dropout* temporarily setting randomly selected hidden variables to 0\. A survey
+    of regularization strategies for Deep Neural Networks is given by Moradi et al.
+    [[96](#CR96)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: The training of PLMs is often non-trivial. One problem is the occurrence of
+    vanishing or exploding gradients, which is connected to the problem of the vanishing
+    or exploding variance of input values of different layers [[55](#CR55)]. *Batch
+    normalization* normalizes the values of the components of hidden units to mean
+    0.0 and variance 1.0 and thus reduces the variation of input values. For a mini-batch
+    of training cases the component values are aggregated to compute a mean and variance,
+    which are then used to normalize the input of that component on each training
+    case [[62](#CR62)]. It can be shown that batch normalization makes hidden representations
+    increasingly orthogonal across layers of a Deep Neural Network [[35](#CR35)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: In their paper on the Transformer, Vaswani et al. [[141](#CR141)] use a variant
+    called *layer normalization* [[6](#CR6)] for regularization. The authors compute
+    the mean and variance of the different components of hidden units for each training
+    example and use this to normalize the input to mean 0.0 and variance 1.0\. In
+    addition, they apply dropout to the output of self-attention. Finally, they use
+    *label smoothing* [[133](#CR133)] where the loss function is reformulated such
+    that the observed tokens are not certain but alternative tokens may be possible
+    with a small probability. This is a form of regularization which makes optimization
+    easier. The RMSNorm [[162](#CR162)] is a variant of the layer normalization, which
+    only normalizes the input by division with the root-mean-square error without
+    shifting the mean. In experiments, it compares favorably with the layer normalization
+    [[101](#CR101)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.4.3 Neural Architecture Search
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The structure of the self-attention block was manually designed, and it is not
+    clear, whether it is optimal in all cases. Therefore, there are some approaches
+    to generate the architecture of PLMs in an automatic way called *Neural Architecture
+    Search* (*NAS*). A survey is provided by He et al. [[56](#CR56)], who argue that
+    currently the contributions of architecture search to NLP tasks are minor. Zöller
+    [[166](#CR166)] evaluate architecture search for machine learning models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Wang et al. [[149](#CR149)] propose an architecture search space with flexible
+    encoder-decoder attentions and heterogeneous layers. The architecture search produces
+    several transformer versions and finally concentrates on hardware restrictions
+    to adapt the computations to processors at hand. The authors report a speedup
+    of 3 and a size reduction factor of 3.7 with no performance loss. For relation
+    classification Zhu et al. [[165](#CR165)] design a comprehensive search space.
+    They explore the search space by reinforcement learning strategy and yield models
+    which have a better performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture search may also be formulated as a ranking task. **RankNAS** [[60](#CR60)]
+    solves this by a series of binary classification problems. The authors investigate
+    translation and language models. For translation the usual encoder-decoder is
+    included in a super-net, where each of the 10^(23) subnetworks is a unique architecture.
+    The importance of an architectural feature (e.g., the number of layers) is measured
+    by the increase in the model error after permuting the feature. The authors use
+    an evolutionary optimization strategy and evaluate their approach on translation
+    (WMT2014 En-De). They get increases in Bleu-values at a fraction of cost of other
+    approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recently differentiable architecture search has been developed, which embeds
+    architecture search in a continuous search space and finds the optimal architecture
+    by gradient descent. This leads to an efficient search process that is orders
+    of magnitude faster than the discrete counterparts. This idea is applied by Fan
+    et al. [[43](#CR43)], who propose a gradient-based NAS algorithm for machine translation.
+    They explore attention modules and recurrent units, automatically discovering
+    architectures with better performances. The topology of the connection among different
+    units is learned in an end-to-end manner. On a number of benchmarks they were
+    able to improve the performance of the Transformer, e.g. from 28.8 to 30.1 Bleu
+    scores for the WMT2014 English-to-German translation. There are other successful
+    architecture search approaches for neural translation [[130](#CR130)], named entity
+    recognition [[64](#CR64)], and image classification models [[34](#CR34), [147](#CR147),
+    [148](#CR148)], which may possibly be applied to other NLP tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.4.4 The Uncertainty of Model Predictions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Variations in the outcome of a PLM can have two main sources:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Epistemic uncertainty* reflects our limited knowledge about the real world.
+    The real world situation corresponding to the training set can change causing
+    a distribution shift. Moreover, the collected documents can have biases or errors
+    and cover unwanted types of content. It is clear that the structure of the real
+    world and the PLM differ. Therefore, a PLM can only approximate the correct conditional
+    probabilities of language. This type of uncertainty is often called *structural
+    uncertainty* and is difficult to estimate.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Aleatoric uncertainty* is caused by random variations which can be assessed
+    more easily. The training data is usually a sample of the underlying data in the
+    population and therefore affected by the sampling variation. If a model is randomly
+    re-initialized, it generates a completely different set of parameter values which
+    leads to different predictions. Finally, language models predict probabilities
+    of tokens and the generation of new tokens is also affected by uncertainty. The
+    Bayesian framework offers a well-founded tool to assess this type of uncertainty
+    in Deep Learning [[44](#CR44)].'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'A recent survey of methods for estimating the model uncertainty is provided
+    by Gawlikowski et al.[[47](#CR47)]. We will describe three approaches to capture
+    model uncertainty: Bayesian statistics, a Dirichlet distributions, and ensemble
+    distributions.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bayesian Neural Networks
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '*Bayesian Neural Networks* directly represent the uncertainty of the estimated
+    parameters ![$${\boldsymbol {w}}=(w_1,\ldots ,w_{d_w})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq58.png)
+    by the *posterior distribution*![$$\displaystyle \begin{aligned} p({\boldsymbol{w}}|\boldsymbol{X},\boldsymbol{Y})\propto
+    p({\boldsymbol{y}}|\boldsymbol{X},{\boldsymbol{w}})p({\boldsymbol{w}}) {}. \end{aligned}
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ18.png)(2.18)Here
+    ***X*** and ***Y*** are the observed inputs and outputs in the training set and
+    *p*(***Y*** |***X***, ***w***) is the *likelihood*, i.e. the probability of the
+    outputs given ***X*** and a parameter vector ***w***. The *prior distribution**p*(***w***)
+    describes the distribution of parameters before data is available. The distribution
+    of predictions for a new input ![$$\tilde {{\boldsymbol {x}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq59.png)
+    is given by![$$\displaystyle \begin{aligned} p(\tilde{{\boldsymbol{y}}}|\tilde{{\boldsymbol{x}}},\boldsymbol{X},\boldsymbol{Y})
+    = \int p(\tilde{{\boldsymbol{y}}}|\tilde{{\boldsymbol{x}}},{\boldsymbol{w}}) p({\boldsymbol{w}}|\boldsymbol{X},\boldsymbol{Y})
+    d{\boldsymbol{w}} {}. \end{aligned} $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_Equ19.png)(2.19)The
+    integral usually cannot be solved analytically and has to be approximated. Often
+    a *Monte Carlo* approximation is used, which infers the integral by a sum over
+    different parameter values ***w***^([*i*]) distributed according to the posterior
+    distribution *p*(***w***|***X***, ***Y*** ). If ![$$\tilde {{\boldsymbol {y}}}^{[i]}=f(\tilde
+    {{\boldsymbol {x}}},{\boldsymbol {w}}^{[i]})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq60.png)
+    is a deterministic network predicting the output for a parameter ***w***^([*i*])
+    and input ![$$\tilde {{\boldsymbol {x}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq61.png),
+    the resulting sample ![$$\tilde {{\boldsymbol {y}}}^{[1]},\ldots ,\tilde {{\boldsymbol
+    {y}}}^{[k]}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq62.png)
+    can be considered as a sample of the output distribution ![$$p(\tilde {{\boldsymbol
+    {y}}}|\tilde {{\boldsymbol {x}}},\boldsymbol {X},\boldsymbol {Y})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq63.png)
+    [[108](#CR108)].Bayesian predictive distributions can be approximated in different
+    ways:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Sampling approaches* use a *Markov Chain Monte Carlo* algorithm to generate
+    parameter values distributed according to the posterior distributions, from which
+    realizations can be sampled [[102](#CR102)]. Markov Chain Monte Carlo defines
+    a sampling strategy, where first a new parameter value ***w*** is randomly generated
+    and then the algorithm computes the probability to accept ***w***, or to keep
+    the previous parameter value. Welling et al. [[150](#CR150)] combined this approach
+    with stochastic gradient descent and demonstrated that Bayesian inference on Deep
+    Neural Networks can be done by a noisy SGD. A review of the favorable convergence
+    properties has been given by Nemeth et al. [[103](#CR103)]. Practical evaluations
+    of this technique are performed by Wenzel et al. [[152](#CR152)].'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Variational inference* approximates the posterior distribution by a product
+    *q*(***w***) of simpler distributions, which are easier to evaluate [[9](#CR9)].
+    Using multiple GPUs and practical tricks, such as data augmentation, momentum
+    initialization and learning rate scheduling, and learning rate scheduling, Osawa
+    et al. [[105](#CR105)] demonstrated that variational inference can be scaled up
+    to ImageNet size data-sets and architectures.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: It can be shown [[45](#CR45)] that dropout regularization (Sect. [2.4.2](#Sec32))
+    can be considered as approximate variational inference. Hence, the predictive
+    uncertainty can be estimated by employing dropout not only during training, but
+    also at test time. A variant called *Drop connect* randomly removes incoming activations
+    of a node, instead of dropping an activation for all following nodes. This approach
+    yields a more reliable uncertainty estimate and can even be combined with the
+    original dropout technique [[88](#CR88)].
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '*Laplace approximation* considers the logarithm of the posterior distribution
+    around a local mode ![$$\hat {{\boldsymbol {w}}}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq64.png)
+    and approximate it by a normal distribution ![$$N(\hat {{\boldsymbol {w}}},[H+\beta
+    I]^{-1})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq65.png)
+    over the network weights [[9](#CR9)]. *H* is the Hessian, the matrix of second
+    derivatives, of ![$$\log p({\boldsymbol {w}}|\boldsymbol {X},\boldsymbol {Y})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq66.png).
+    This approximation may be computed for already trained networks and can be applied
+    to Deep Neural Networks [[76](#CR76)]. A problem is the large number of coefficients
+    of *H*, which limits the computations to elements on the diagonal. Extensions
+    have been proposed by George et al. [[48](#CR48)].'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Estimating Uncertainty by a Single Deterministic Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Most PLMs predict tokens by a discrete probability distribution. If the softmax
+    function is used to compute these probabilities, the optimization over the training
+    set usually leads to very extreme probabilities close to 0 or 1\. The network
+    is often overconfident and generates inaccurate uncertainty estimates. To assess
+    uncertainty, the difference between the estimated distribution and the actual
+    distribution has to be described. If ![$$v_1,\ldots ,v_{d_v}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq67.png)
+    is the vocabulary of tokens and ***π*** a discrete distribution over these tokens,
+    then we can use the *Dirichlet distribution**p*(***π***|***α***(***x***)) to characterize
+    a distribution over these discrete distributions. The vector ***α*** depends on
+    the input ***x*** and has a component *α*[*i*] for each *v*[*i*]. The sum ∑[*i*]*α*[*i*]
+    characterizes the variance. If it gets larger, the estimate for the probability
+    of *v*[*i*] has a lower variance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Malinin et al. [[85](#CR85)] use the expected divergence between the empirical
+    distribution and the predicted distribution to estimate the *p*(***π***|***α***(***x***))
+    for a given input ***x***. In the region of the training data the network is trained
+    to minimize the expected *Kullback-Leibler* (*KL*) divergence between the predictions
+    of in-distribution data and a low-variance Dirichlet distribution. In the region
+    of out-of-distribution data a Dirichlet distribution with a higher variance is
+    estimated. The distribution over the outputs can be interpreted as a quantification
+    of the model uncertainty, trying to emulate the behavior of a Bayesian modeling
+    of the network parameters [[44](#CR44)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Liu et al. [[83](#CR83)] argue that the distance between training data elements
+    is relevant for prediction uncertainty. To avoid that the layers of a network
+    cause a high distortion of the distances of the input space, the authors propose
+    a spectral normalization. This **SNGP** approach limits the distance ![$$\lVert
+    h({\boldsymbol {x}}^{[1]}) - h({\boldsymbol {x}}^{[2]}) \rVert $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq68.png)
+    compared to ![$$\lVert {\boldsymbol {x}}^{[1]} - {\boldsymbol {x}}^{[2]} \rVert
+    $$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq69.png), where
+    ***x***^([1]) and ***x***^([2]) are two inputs and *h*(***x***) is a deep feature
+    extractor. Then they pass *h*(***x***) into a distance-aware *Gaussian Process*
+    output layer. The Gaussian Process posterior is approximated by a Laplace approximation,
+    which can be predicted by a deterministic Deep Neural Network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The authors evaluate SNGP on BERT[BASE] to decide, if a natural utterance input
+    is covered by the training data (so that it can be handled by the model) or outside.
+    The model is only trained on in-domain data, and their predictive accuracy is
+    evaluated on in-domain and out-of-domain data. While ensemble techniques have
+    a slightly higher prediction accuracy, SNGP has a better calibration of probabilities
+    and out-of-distribution detection. An implementation of the approach is available
+    [[138](#CR138)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: A number of alternative approaches are described in [[47](#CR47), p. 10f], which
+    also discuss mixtures of Dirichlet distributions to characterize predictive uncertainty.
+    In general single deterministic methods are computational less demanding in training
+    and evaluation compared to other approaches. However, they rely on a single network
+    configuration and may be very sensitive to the underlying network structure and
+    the training data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representing the Predictive Distribution by Ensembles
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: It is possible to emulate the sampling variability of a training set by resampling
+    methods. A well-founded approach is *bagging*, where *n*[*b*] samples of size
+    *n* are drawn with replacement from a training set of *n* elements [[20](#CR20),
+    [107](#CR107)]. For the *i*-th sample a model may be trained yielding a parameter
+    ![$$\hat {{\boldsymbol {w}}}^{[i]}$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq70.png).
+    Then the distribution of predictions ![$$f({\boldsymbol {x}},\hat {{\boldsymbol
+    {w}}}^{[i]})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq71.png)
+    represent the uncertainty in the model prediction for an input ***x***, and it
+    can be shown that their mean value ![$$\frac {1}{n_b}\sum _i f({\boldsymbol {x}},\hat
+    {{\boldsymbol {w}}}^{[i]})$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq72.png)
+    has a lower variance than the original model prediction [[73](#CR73)]. In contrast
+    to many approximate methods, ensemble approaches may take into account different
+    local maxima of the likelihood function and may cover different network architectures.
+    There are other methods to introduce data variation, e.g. random parameter initialization
+    or random data augmentation. A survey on ensemble methods is provided by Dong
+    et al. [[40](#CR40)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Besides the improvement in the accuracy, ensembles are widely used for representing
+    prediction uncertainty of Deep Neural Networks [[73](#CR73)]. In empirical investigations,
+    the approach was at least as reliable as Bayesian approaches (Monte Carlo Dropout,
+    Probabilistic Backpropagation) [[73](#CR73)]. Reordering the training data and
+    a random parameter initialization induces enough variability in the models for
+    the prediction of uncertainty, while bagging may reduce the reliability of uncertainty
+    estimation [[77](#CR77)]. Compared to Monte Carlo Dropout, ensembles yield more
+    reliable and better calibrated prediction uncertainties and are applicable to
+    real-world training data [[13](#CR13), [53](#CR53)]. Already for a relatively
+    small ensemble size of five, deep ensembles seem to perform best and are more
+    robust to data set shifts than the compared methods [[106](#CR106)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although PLMs have been adapted as a standard solution for most NLP tasks, the
+    majority of existing models is unable to estimate the uncertainty associated with
+    their predictions. This seems to be mainly caused by the high computational effort
+    of uncertainty estimation approaches. In addition, the concept of uncertainty
+    of a predicted probability distribution is difficult to communicate. However,
+    it is extremely important to get a diagnosis, when a PLM is given an input outside
+    the support of its training data, as then the predictions get unreliable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Among the discussed approaches the ensemble methods seem to be most reliable.
+    However, they require a very high computational effort. New algorithms like SNGP
+    are very promising. More research is needed to reduce this effort or develop alternative
+    approaches. Recently benchmark repositories and datasets have been developed to
+    provide high-quality implementations of standard and Sota methods and describe
+    best practices for uncertainty and robustness benchmarking [[99](#CR99)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementations
+  prefs: []
+  type: TYPE_NORMAL
+- en: Uncertainty Baselines [[10](#CR10), [98](#CR98)] provide a collection high-quality
+    implementations of standard and state-of-the-art methods for uncertainty assessment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.4.5 Explaining Model Predictions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PLMs such as BERT are considered as black box models, as it is hard to understand,
+    what they really learn and what determines their outputs. Hence, a lot of research
+    goes into investigating the behavior of these models. There are three main reasons
+    to explain the model predictions. *Trust* in the model predictions is needed,
+    i.e. that the model generates reliable answers for the problem at hand and can
+    be deployed in real-world applications. *Causality* asserts that the change of
+    input attributes leads to sensible changes in the model predictions. *Understanding*
+    of the model enables domain experts to compare the model prediction to the existing
+    domain knowledge. This is a prerequisite for the ability to adjust the prediction
+    model by incorporating domain knowledge.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Explanations can also be used to debug a model. A striking example was an image
+    classification, where a horse was not detected by its shape, but by a label in
+    the image [[74](#CR74)]. Explanations are most important for critical decisions
+    that involve humans or can cause high damage. Examples are health care, the judicial
+    system, banking, or self-driving cars.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Explanation methods roughly can be grouped into local explanations or global
+    explanations. A local explanation provides information or justification for the
+    model’s prediction for a specific input ***x***, whereas global explanations cover
+    the model in general. A large majority of models aims at local explanations, as
+    these may be used to justify specific predictions. Surveys on methods for the
+    explanation of PLMs are provided by Danilevsky et al. [[36](#CR36)], Burkart and
+    Huber [[23](#CR23)], Xu et al. [[155](#CR155)], Bauckhage et al. [[11](#CR11)],
+    Tjoa and Guan [[139](#CR139)], and Belle and Papantonis [[12](#CR12)]. Molnar
+    [[95](#CR95)] devotes a whole book to this topic and Bommasani et al. [[17](#CR17),
+    p. 125] provide a recent overview. For language models different types of explanation
+    can be used:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Feature importance** measures the influence of single input features, e.g.
+    tokens, on the prediction. It often corresponds to the first derivative of a feature
+    with respect to the output [[79](#CR79)]. As the meaning of input tokens is easily
+    understood, this type of explanation is readily interpretable by humans.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Counterfactual explanations** investigate, how an input ***x*** has to be
+    modified, to generate a different target output.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Surrogate models** explain model predictions by a second, simpler model.
+    One well-known example is *LIME* [[123](#CR123)], which trains a local linear
+    model around a single input ***x*** of interest.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Example-driven** explanations illustrate the prediction of an input ***x***
+    by selecting other labeled instances that are semantically similar to ***x***.
+    This is close to the nearest neighbor approach to prediction and has, for instance,
+    been used for text classification [[1](#CR1)].'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Source citation** is a general practice of scientific work in which a claim
+    is supported by citing respectable scientific sources. The same can be done for
+    a text generated by language models with a retrieval component [[57](#CR57)].'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Other approaches like a sequence of reasoning steps or rule invocations are
+    unusable for PLMs with many millions of parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The self-attention mechanism is the central function unit of PLMs. **BertViz**
+    [[144](#CR144)] is a visualization tool that allows users to explore the strength
+    of attention between different tokens for the heads and layers in a PLM and allows
+    users to get a quick overview of relevant attention heads. However, Jain et al.
+    [[63](#CR63)] demonstrate that attention does not correlate with feature importance
+    methods and counterfactual changes of attention do not lead to corresponding changes
+    in prediction. This may, for instance, be caused by the concatenation of head
+    outputs and their subsequent processing by a fully connected nonlinear layer.
+    Attentions are noisy predictors of the overall importance of components, but are
+    not good at identifying the importance of features [[129](#CR129)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linear Local Approximations
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: An important concept is the contribution of input *x*[*i*] towards an output
+    *y*[*j*], e.g. a class probability. Gradient-based explanations estimate the contribution
+    of input *x*[*i*] towards an output *y*[*j*], e.g. a class probability, by computing
+    the partial derivative *∂y*[*j*]∕*∂x*[*i*]. This derivative is often called *saliency*
+    and can be interpreted as linear approximation to the prediction function at input
+    ***x***. **LIME** [[123](#CR123)] defines a local linear regression model around
+    a single input ***x***. Because of correlation of features, the coefficients of
+    the input features depend on the presence or absence of the other input features.
+    The **SHAP** approach therefore determines the influence of a feature by the average
+    influence of the feature for all combinations of other features [[84](#CR84)].
+    The authors show the favorable theoretical properties of this approach and derive
+    several efficient computation strategies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nonlinear Local Approximations
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Sundararajan et al. [[132](#CR132)] formulate two basic requirements for this
+    type of explanation. *Sensitivity*: if the inputs ***x***^([1]) and ***x***^([2])
+    differ in just one feature and lead to different predictions, then the differing
+    feature should be given a non-zero contribution. *Implementation invariance*:
+    i.e., the attributions are always identical for two functionally equivalent networks.
+    As the prediction functions are usually nonlinear, gradient-based methods violate
+    both requirements and may focus on irrelevant attributes.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Integrated Gradients** [[132](#CR132)] generates an approximation to the
+    prediction function ![$$F:\mathbb {R}^n\to [0,1]$$](../images/528393_1_En_2_Chapter/528393_1_En_2_Chapter_TeX_IEq73.png),
+    which captures nonlinear dependencies. To assess the difference from baseline
+    input ***x***^([1]) to another input ***x***^([2]), the authors compute the mean
+    value of gradients *∂F*(***x***)∕*∂****x*** of the output with respect to inputs
+    along the line from ***x***^([1]) to ***x***^([2]) by an integral. It can be shown
+    that this approach meets the above requirements. The authors apply the approach
+    to question classification according to the type of the answer (Fig. [2.20](#Fig20)).
+    The baseline input is the all zero embedding vector. Another application considers
+    neural machine translation. Here the output probability of every output token
+    is attributed to the input tokens. As baseline all tokens were zeroed except the
+    start and end markers. A similar analysis is based on a Taylor expansion of the
+    prediction function [[7](#CR7)] .![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A questionnaire on the left illustrates the classification task. On the right,
+    a confusion matrix illustrates the task of translating an English input sentence
+    into German.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Contributions for the question classification task (left). Red marks positive
+    influence, blue negative, and black tokens are neutral. Contributions for the
+    task of translating *“good morning ladies and gentlemen”* to the German *“Guten
+    Morgen Damen und Herren”* are shown on the right side [[132](#CR132)]. Words are
+    tokenized to word pieces
+  prefs: []
+  type: TYPE_NORMAL
+- en: Liu et al. [[82](#CR82)] propose a generative explanation framework which simultaneously
+    learns to make classification decisions and generate fine-grained explanations
+    for them. In order to reach a good connection between classification and explanation
+    they introduce a classifier that is trained on their explanation. For product
+    reviews they, for instance, generate the following positive explanations *“excellent
+    picture, attractive glass-backed screen, hdr10 and dolby vision”* and negative
+    reasons *“very expensive”*. The authors introduce an explanation factor, which
+    represents the distance between the probabilities of the classifier trained on
+    the explanations vs. the classifier trained on the original input and the gold
+    labels. They optimize their models with minimum risk training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Explanation by Retrieval
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Recently, Deep Learning models have been playing an increasingly important role
+    in science and technology. The algorithms developed by Facebook are able to predict
+    user preferences better than any psychologist [[24](#CR24), [71](#CR71)]. AlphaFold,
+    developed by DeepMind, makes the most accurate predictions of protein structures
+    based on their amino acids [[131](#CR131)]. And the PaLM and Retro models are
+    capable of generating stories in fluent English, the latter with the knowledge
+    of the Internet as background. However, none of the programs were actually able
+    to justify their decisions and cannot indicate why a particular sequence was generated
+    or on what information a decision was based on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In 2008, Anderson [[5](#CR5)] predicted the end of theory-based science. In
+    his view, theories are an oversimplification of reality, and the vast amount of
+    accumulated data contains knowledge in a much more detailed form, so theories
+    are no longer necessary. This is also the problem of *Explainable AI*, which aims
+    to explain the decisions of Deep Learning models. It is always faced with a trade-off
+    where predictive accuracy must be sacrificed in order to interpret the model output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As large autoregressive language models are combined with retrieval components,
+    document retrieval can be used not only to incorporate more accurate knowledge
+    into the language generation process, but also to support the generated answers
+    by authoritative citations. Metzler et al. [[92](#CR92)] argues that future PLMs
+    should justify created text by referring to supporting documents in the training
+    data or background document collection. To implement this approach Nakano et al.
+    [[100](#CR100)] combine *GPT-3* with the search engine *BING* to enhance language
+    generation for question-answering by retrieved documents. Their **WebGPT** [[100](#CR100)]
+    first creates a text in natural language (Sect. [6.​2.​3](528393_1_En_6_Chapter.xhtml#Sec16)).
+    After that, it enhances the generated sentences by different references to the
+    found documents, similar to the way a scientist expands his texts by references.
+    By this procedure WebGPT is able to justify and explain the created answer. This
+    could be a way to make the generated text more trustworthy. Note that the advanced
+    dialog model **LaMDA** can include links to external documents supporting an answer
+    (Sect. [6.​6.​3](528393_1_En_6_Chapter.xhtml#Sec52)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Explanation by Generating a Chain of Thought
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Large autoregressive PLMs like GPT-3 are able to produce a very convincing continuation
+    of a start text, and, for instance, generate the answer for a question. It turned
+    out that their ability to generate the correct answer could drastically be improved
+    by giving a few examples with a chain of thought (Sect. [3.​6.​4](528393_1_En_3_Chapter.xhtml#Sec42))
+    for deriving the correct answer. This has been demonstrated for the PaLM language
+    model [[30](#CR30)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: A generated *thought chain* can be used for other purposes. First, it can be
+    checked whether the model produces the correct answer for the “right reasons”,
+    rather than just exploiting superficial statistical correlations. In addition,
+    the explanation can potentially be shown to an end-user of the system to increase
+    or decrease their confidence in a given prediction. Finally, for some queries
+    (e.g., explaining a joke), the explanation itself is the desired output [[30](#CR30)].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [2.21](#Fig21) contains a few-shot query and the resulting answer. For
+    application only a few example chains of thought are necessary, which can be reused.
+    To generate the best answer for the question greedy decoding has to be used, yielding
+    the optimal prediction. As PaLM shows, the enumeration of argument steps works
+    empirically. However, a sound theory of how models actually use such arguments
+    internally is still lacking. Further, it is not known under which circumstances
+    the derivation of such a chain of thoughts succeeds. It should be investigated
+    to what extent the reasoning of a model corresponds to the reasoning steps performed
+    by humans.![](../images/528393_1_En_2_Chapter/528393_1_En_2_Fig21_HTML.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A screenshot of 2 boxes with titles and descriptions. The first box includes
+    example chain of thoughts and input query. The second one has the model output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fig. 2.21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Explaining by a chain of thoughts. The first box contains two examples of thought
+    chains, which are used for every query. This chain-of-thought prompt was input
+    to the PaLM model together with the input query, and the model output was generated
+    by PaLM [[30](#CR30), p. 38]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementations
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ecco [[2](#CR2)] and BertViz [[143](#CR143)] are tools to visualize the attentions
+    and embeddings of PLMs. An implementation and a tutorial on integrated gradients
+    is available for TensorFlow [[136](#CR136)]. Captum [[26](#CR26), [70](#CR70)]
+    is an open-source library to generate interpretations and explanations for the
+    predictions of PyTorch models containing most of the approaches discussed above.
+    Transformers-interpret [[113](#CR113)] is an alternative open-source model explainability
+    tool for the Hugging Face package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.4.6 Summary
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Similar to other large neural networks, PLMs are optimized with simple stochastic
+    gradient descent optimizers that are able to approach the region of minimal cost
+    even for huge models with billions of parameters and terabytes of training data.
+    This requires parallel training on computing networks which can be controlled
+    by suitable software libraries. There are many recipes in the literature for setting
+    hyperparameters such as batch size and learning rate schedules. Important ingredients
+    are residual connections to be able to optimize networks with many layers and
+    regularization modules to keep parameters in a manageable range.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural architecture search is a way to improve performance and reduce memory
+    requirements of networks. A number of approaches have been proposed that significantly
+    speed up training. Some methods provide models with better performance and lower
+    memory footprint. There are new differential methods that have the potential to
+    derive better architectures with little effort.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PLMs aim to capture relations between language concepts and can only do so approximately.
+    Therefore, it is important to evaluate their inherent uncertainty. Three different
+    approaches to analyze the uncertainty are described. Among these, ensemble methods
+    appear to be the most reliable, but involve a high computational cost. New algorithms
+    such as SNGP, which are based on a single model, are very promising.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To enable a user to decide whether a model result makes sense, it is necessary
+    to explain how the result was obtained. Explanations can be provided by showing
+    the importance of features for a result, by exploring the PLM by related examples
+    or by approximating the PLM with a simple model. Some libraries are available
+    that allow routine use of these methods. A new way of explaining texts generated
+    by PLMs is to enhance the texts with appropriate citations of relevant supporting
+    documents. Finally, a PLM can be instructed by chain-of-thought prompts to provide
+    an explanation for the model response. This type of explanation is particularly
+    easy to understand and can reflect the essential parts of a chain of arguments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next chapter discusses approaches to improve the three basic PLM types by
+    new pre-training tasks or architectural changes. The fourth chapter examines the
+    knowledge, which can be acquired by PLMs and that can be used to interpret text
+    and to generate new texts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![Creative Commons](../css/cc-by.png)](https://creativecommons.org/licenses/by/4.0)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Open Access** This chapter is licensed under the terms of the Creative Commons
+    Attribution 4.0 International License ([http://​creativecommons.​org/​licenses/​by/​4.​0/​](http://creativecommons.org/licenses/by/4.0/)),
+    which permits use, sharing, adaptation, distribution and reproduction in any medium
+    or format, as long as you give appropriate credit to the original author(s) and
+    the source, provide a link to the Creative Commons license and indicate if changes
+    were made.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The images or other third party material in this chapter are included in the
+    chapter's Creative Commons license, unless indicated otherwise in a credit line
+    to the material. If material is not included in the chapter's Creative Commons
+    license and your intended use is not permitted by statutory regulation or exceeds
+    the permitted use, you will need to obtain permission directly from the copyright
+    holder.
+  prefs: []
+  type: TYPE_NORMAL
