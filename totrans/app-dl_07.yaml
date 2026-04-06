@@ -1,7 +1,9 @@
 - en: 7. Hyperparameter Tuning
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 7. 超参数调整
 - en: 'In this chapter, you will look at the problem of finding the best hyperparameters
     to get the best results from your models. First, I will describe what a black-box
     optimization problem is, and how that class of problems relate to hyperparameter
@@ -11,50 +13,69 @@
     are very helpful for improving optimization and sampling on a logarithmic scale.
     At the end of the chapter, I will show you how you can use those techniques to
     tune a deep model, using the Zalando dataset.'
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，你将了解如何找到最佳超参数以从你的模型中获得最佳结果的问题。首先，我将描述什么是黑盒优化问题，以及这类问题与超参数调整有何关联。你将看到解决这类问题的三种最知名的方法：网格搜索、随机搜索和贝叶斯优化。我将通过示例展示在什么条件下哪种方法有效，并给你一些在对数尺度上改进优化和采样的非常有用的技巧。在本章的结尾，我将展示如何使用这些技术来调整深度模型，使用Zalando数据集。
 - en: Black-Box Optimization
+  id: totrans-2
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 黑盒优化
 - en: 'The problem of hyperparameter tuning is just a subclass of a much more general
     type of problem: black-box optimization. A black-box function *f* (*x*)'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 超参数调整问题只是更一般类型问题的一个子类：黑盒优化。一个黑盒函数 *f* (*x*)
 - en: '![$$ f(x):{\mathbb{R}}^n\to \mathbb{R} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equa.png)'
+  id: totrans-4
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ f(x):{\mathbb{R}}^n\to \mathbb{R} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equa.png)'
 - en: 'is a function whose analytic form is unknown. A black-box function can be evaluated
     to obtain its value for all values of *x* that are defined, but no other information
     (such as its gradient) can be obtained. Generally, by the term *global optimization*
     *of a black-box function* (sometimes called a black-box problem), we mean that
     we are trying to find the maximum or minimum of *f* (*x*), sometimes under certain
     constraints. Here are some examples of this kind of problem:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 是一个解析形式未知的函数。黑盒函数可以评估以获得其定义的所有 *x* 值的值，但无法获得其他信息（例如其梯度）。通常，通过术语“黑盒函数的全局优化”（有时称为黑盒问题），我们是指我们试图找到
+    *f* (*x*) 的最大值或最小值，有时在一定的约束条件下。以下是一些这类问题的例子：
 - en: Finding the hyperparameter for a given machine-learning model that maximizes
     the chosen optimizing metric
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 寻找给定机器学习模型的最大化所选优化指标的超参数
 - en: Finding the maximum or minimum of a function that can only be evaluated numerically
     or with code that we cannot look at. In some industry contexts, there can be legacy
     code that is very complicated, and there are some functions that must be maximized,
     based on its outcome.
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 寻找只能通过数值或我们无法查看的代码评估的函数的最大值或最小值。在某些行业环境中，可能存在非常复杂的遗留代码，并且有一些函数必须基于其结果进行最大化。
 - en: Finding the best place to drill for oil. In this case, your function would be
     how much oil you can find and *x* your location.
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 寻找最佳的石油钻井位置。在这种情况下，你的函数将是你可以找到的石油量，而 *x* 是你的位置。
 - en: Finding the best combination of parameters for situations that are too complex
     to model, for example, when launching a rocket in space, how to optimize the amount
     of fuel, diameter of each stage of the rocket, precise trajectory, etc.
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 寻找过于复杂以至于无法建模的情况的最佳参数组合，例如，在太空中发射火箭时，如何优化燃料量、火箭各阶段的直径、精确轨迹等。
 - en: 'This is a very fascinating class of problems, which has produced smart solutions.
     You will see three of them: grid search, random search, and Bayesian optimization.
     If you are curious about the subject, you can check out the black-box optimization
@@ -63,8 +84,11 @@
     optimize a function (find the maximum or minimum) through a black-box interface
     . You can get the value of the function for all values of *x*, but you cannot
     get any other information, as its gradients, for example.'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个非常迷人的问题类别，它产生了智能的解决方案。你将看到其中的三个：网格搜索、随机搜索和贝叶斯优化。如果你对这个主题感兴趣，可以查看黑盒优化竞赛[https://goo.gl/LY7huY](https://goo.gl/LY7huY)。竞赛的规则反映了现实生活中的问题。为这个问题设定了一个场景，你必须通过黑盒接口优化一个函数（找到最大值或最小值）。你可以得到函数在所有
+    *x* 值下的值，但你无法获取任何其他信息，例如其梯度。
 - en: Why does finding the best hyperparameters for neural networks constitute a black-box
     problem? Because we cannot calculate information, such as the gradients of our
     network output, with respect to the hyperparameters, especially when using complex
@@ -72,18 +96,24 @@
     the best hyperparameters that maximize the chosen optimizing metric. Note that
     if we could have the gradients, we could use an algorithm as the gradient descent
     to find the maximum or minimum.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 为什么寻找神经网络最佳超参数构成一个黑盒问题？因为我们无法计算关于超参数的信息，例如网络输出的梯度，特别是当使用复杂优化器或自定义函数时，我们需要其他方法，以便找到最佳超参数，以最大化选择的优化指标。请注意，如果我们能够获得梯度，我们可以使用梯度下降等算法来找到最大值或最小值。
 - en: Note
+  id: totrans-12
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 注意
 - en: Our black-box function *f* will be our neural network model (including things
     such as the optimizer, cost function form, etc.) that gives as output our optimizing
     metric, given the hyperparameters as input, and *x* will be the array containing
     the hyperparameters.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的黑盒函数*f*将是我们的神经网络模型（包括优化器、损失函数形式等），它以优化指标作为输出，以超参数作为输入，而*x*将是包含超参数的数组。
 - en: 'The problem may seem quite trivial. Why not try all the possibilities? Well,
     this may be possible in the examples you have looked at in previous chapters,
     but if you are working on a problem and training your model takes a week, this
@@ -92,35 +122,51 @@
     this better. Suppose we are training a model of a neural network with several
     layers. We may decide to consider the following hyperparameters, to see which
     combination works better:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 问题可能看起来相当简单。为什么不尝试所有可能性呢？好吧，这可能在你之前章节中看到的例子中是可能的，但如果你正在处理一个问题，并且训练模型需要一周时间，这可能是一个挑战。因为，通常情况下，你将有几个超参数，尝试所有可能性将不可行。让我们通过一个例子来更好地理解这一点。假设我们正在训练一个具有多个层的神经网络模型。我们可能决定考虑以下超参数，以查看哪种组合效果更好：
 - en: '*Learning rate*: Suppose we want to try the values *n* · 10^(−4) for *n* = 1,
     …, 10². (100 values)'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*学习率*：假设我们想尝试*n*·10^(-4)的值，其中*n* = 1, …, 10^2。（100个值）'
 - en: '*Regularization parameter*: 0, 0.1, 0.2, 0.3, 0.4, and 0.5 (6 values)'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*正则化参数*：0、0.1、0.2、0.3、0.4和0.5（6个值）'
 - en: '*Choice of optimizer*: GD, RMSProp, or Adam (3 values)'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*优化器选择*：GD、RMSProp或Adam（3个值）'
 - en: '*Number of hidden layers*: 1, 2, 3, 5, and 10 (5 values)'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*隐藏层数量*：1、2、3、5和10（5个值）'
 - en: '*Number of neurons in the hidden layers*: 100, 200, and 300 (3 values)'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*隐藏层中的神经元数量*：100、200和300（3个值）'
 - en: Consider that you will need to train your network
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑到你将需要训练你的网络
 - en: '![$$ 100\times 6\times 3\times 5\times 3=27000 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equb.png)'
+  id: totrans-21
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ 100\times 6\times 3\times 5\times 3=27000 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equb.png)'
 - en: times, if you want to test all possible combinations. If your training takes
     5 minutes, you will require 13.4 weeks of computing time. If the training takes
     hours or days, you will not have any chance. If the training takes one day, for
@@ -131,118 +177,164 @@
     layers or learning rate. You can reduce the number of combinations you need with
     experience (as with the optimizer), or with some smart algorithm, as you will
     see later in this chapter.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你想测试所有可能的组合，那么需要多次尝试。如果你的训练需要5分钟，你将需要13.4周的计算机时间。如果训练需要数小时或数天，你将没有机会。例如，如果训练需要一天，你将需要73.9年才能尝试所有可能性。大多数超参数的选择将来自经验。例如，你总是可以安全地使用Adam，因为它是可用的更好优化器（在几乎所有情况下）。但你将无法避免尝试调整其他参数，例如隐藏层的数量或学习率。你可以通过经验（就像优化器一样）或一些智能算法来减少你需要尝试的组合数量，正如你将在本章后面看到的。
 - en: Notes on Black-Box Functions
+  id: totrans-23
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 黑盒函数注意事项
 - en: 'Black-box functions are usually classified into two main classes:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数通常分为两大类：
 - en: '*Cheap functions*: Functions that can be evaluated thousands of times'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*低成本函数*：可以评估数千次的函数'
 - en: '*Costly functions*: Functions that can only be evaluated a few times, usually
     less than 100 times'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*高成本函数*：只能评估几次的函数，通常少于100次'
 - en: If the black-box function is cheap, the choice of the optimization method is
     not critical. For example, we can evaluate the gradient with respect to the *x*
     numerically, or simply search the maximum evaluating the functions on a high number
     of points. If the function is costly, we need much smarter approaches. One of
     these is Bayesian optimization, which I will discuss later in this chapter, to
     give you an idea of how these methods work and how complex they are.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果黑盒函数便宜，优化方法的选择并不关键。例如，我们可以通过数值计算相对于*x*的梯度，或者简单地通过在大量点上评估函数来搜索最大值。如果函数昂贵，我们需要更智能的方法。其中之一是贝叶斯优化，我将在本章后面讨论，以给您一个了解这些方法如何工作以及它们有多复杂的概念。
 - en: Note
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 备注
 - en: Especially in the deep-learning world, neural networks are almost always costly
     functions.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 尤其是在深度学习领域，神经网络几乎总是昂贵的函数。
 - en: For costly functions, we must find methods that solve our problem with the smallest
     number of evaluations possible.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于昂贵的函数，我们必须找到用尽可能少的评估次数解决我们问题的方法。
 - en: The Problem of Hyperparameter Tuning
+  id: totrans-31
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 超参数调整问题
 - en: 'Before looking at how we can find the best hyperparameters, I would like to
     quickly go back to neural networks and discuss what can we tune in deep models.
     Typically, when talking about hyperparameters, beginners think only of numerical
     parameters, such as the learning rate or regularization parameter, for example.
     Remember that the following also can be varied, to see if you can get better results:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在探讨如何找到最佳超参数之前，我想快速回顾一下神经网络，并讨论我们可以在深度模型中调整什么。通常，当谈到超参数时，初学者只会想到数值参数，例如学习率或正则化参数，例如。记住，以下也可以变化，看看您是否能得到更好的结果：
 - en: '*Number of epochs* : Sometimes, simply training your network longer will give
     you better results.'
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*训练轮数*：有时，简单地训练您的网络更长一些会得到更好的结果。'
 - en: '*Choice of optimizer* : You can try choosing a different optimizer. If you
     are using plain gradient descent, you may try Adam and see if you get better results.'
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*优化器选择*：您可以尝试选择不同的优化器。如果您正在使用普通的梯度下降，您可以尝试使用Adam，看看是否能得到更好的结果。'
 - en: '*Varying the* *regularization method* : As discussed previously, there are
     several ways of applying regularization. Varying the method may well be worth
     trying.'
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*调整正则化方法*：如前所述，有几种应用正则化的方法。尝试改变方法可能值得尝试。'
 - en: '*Choice of* *activation function* : Although the activation function always
     used in the previous chapters for neurons in hidden layers was ReLU, others may
     work a lot better. Trying sigmoid or Swish, for example, may help you get better
     results.'
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*激活函数选择*：尽管之前章节中用于隐藏层神经元的激活函数一直是ReLU，但其他函数可能效果更好。尝试sigmoid或Swish，例如，可能有助于您得到更好的结果。'
 - en: '*Number of layers and number of neurons* *in each layer: try different configurations*:
     Try layers with different numbers of neurons, for example.'
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*层数和每层的神经元数量*：尝试不同的配置：尝试具有不同神经元数量的层，例如。'
 - en: '*Learning rate decay methods* : Try (if you are not using optimizers that do
     this already) different learning rate decay methods.'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*学习率衰减方法*：尝试（如果您没有使用已经执行此操作的优化器）不同的学习率衰减方法。'
 - en: '*Mini-batch size* : Vary the size of mini-batches. When you have little data,
     you can use batch gradient descent. When you have a lot of data, mini-batches
     are more efficient.'
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*小批量大小*：调整小批量的大小。当您数据量较少时，可以使用批量梯度下降。当您数据量较多时，小批量更有效率。'
 - en: '*Weight initialization methods*'
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*权重初始化方法*'
 - en: 'Let’s classify the parameters we can tune in our models in the following three
     categories:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将我们可以在模型中调整的参数分为以下三个类别：
 - en: 'Parameters that are continuous real numbers or, in other words, that can assume
     any value. Example: learning rate, regularization parameter'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可以是连续实数或换句话说，可以假设任何值的参数。例如：学习率、正则化参数
 - en: 'Parameters that are discrete but can theoretically assume an infinite number
     of values. Example: number of hidden layers, number of neurons in each layer,
     or number of epochs'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可以离散但理论上可以假设无限数量的值的参数。例如：隐藏层的数量、每层的神经元数量或训练轮数
 - en: 'Parameters that are discrete and can only assume a finite number of possibilities.
     Example: optimizer, activation function, learning rate decay method.'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可以离散且只能假设有限数量的可能性的参数。例如：优化器、激活函数、学习率衰减方法。
 - en: For category 3, there is not much to do except try all possibilities. Typically,
     these parameters will completely change the model itself, and, therefore, it is
     impossible to model their effects, making a test the only possibility. This is
@@ -251,55 +343,84 @@
     your efforts somewhere else at the beginning. For categories 1 and 2, this is
     a bit more difficult, and we will have to come up with some smart ideas to find
     the best values.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于类别 3，除了尝试所有可能性之外，没有太多可做的事情。通常，这些参数将完全改变模型本身，因此无法模拟它们的影响，这使得测试成为唯一的选择。这也是经验可能最有帮助的类别。众所周知，Adam
+    优化器几乎是最佳选择，例如，因此你可以在一开始就集中精力在其他地方。对于类别 1 和 2，这要困难一些，我们不得不想出一些聪明的想法来找到最佳值。
 - en: Sample Black-Box Problem
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 样本黑盒问题
 - en: 'To try our hands at solving a black-box problem, let’s create a “fake” black-box
     problem. The problem is the following: find the maximum of the function *f*(*x*)
     given by the formula'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了尝试解决一个黑盒问题，让我们创建一个“假”的黑盒问题。问题是这样的：给定公式，找到函数 *f*(*x*) 的最大值
 - en: '![$$ {\displaystyle \begin{array}{l}g(x)=\cos \frac{x}{4}-\sin \frac{x}{4}-\frac{5}{2}\cos
     \frac{x}{2}+\frac{1}{2}\sin \frac{x}{2}\\ {}h(x)=-\cos \frac{x}{3}-\sin \frac{x}{3}-\frac{5}{2}\cos
     \frac{2}{3}x+\frac{1}{2}\sin \frac{2}{3}x\\ {}f(x)=10+g(x)+\frac{1}{2}h(x)\end{array}}
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equc.png)'
+  id: totrans-48
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\displaystyle \begin{array}{l}g(x)=\cos \frac{x}{4}-\sin \frac{x}{4}-\frac{5}{2}\cos
+    \frac{x}{2}+\frac{1}{2}\sin \frac{x}{2}\\ {}h(x)=-\cos \frac{x}{3}-\sin \frac{x}{3}-\frac{5}{2}\cos
+    \frac{2}{3}x+\frac{1}{2}\sin \frac{2}{3}x\\ {}f(x)=10+g(x)+\frac{1}{2}h(x)\end{array}}
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equc.png)'
 - en: pretending not to know the formula itself. The formula will allow us to check
     our results, but we will pretend they are unknown. You may wonder why we use such
     a complicated formula. I wanted to have something with a few maxima and minima,
     to give you an idea of how the methods work on a non-trivial example. *f*(*x*)
     can be implemented in Python with the code
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 假装不知道公式本身。这个公式将允许我们检查我们的结果，但我们将假装它们是未知的。你可能想知道为什么我们使用如此复杂的公式。我想有一个带有几个极大值和极小值的函数，以便给你一个关于方法如何在非平凡示例上工作的概念。*f*(*x*)
+    可以用以下 Python 代码实现
 - en: '[PRE0]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: In Figure [7-1](#Fig1), you can see how *f*(*x*) looks.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [7-1](#Fig1) 中，你可以看到 *f*(*x*) 的样子。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg)'
+  id: totrans-52
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg)'
 - en: Figure 7-1
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-1
 - en: Plot of the function f(x), as described in the text
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数 f(x) 的图像，如文本所述
 - en: The maximum is at an approximate value *x* = 69.18 and has a value of 15.027\.
     Our challenge is to find this maximum in the most efficient way possible, without
     knowing anything about *f*(*x*), except its value at any point we want. When we
     say “efficient,” we mean, of course, with the smallest number of evaluations possible.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 最大值大约在 *x* = 69.18 处，其值为 15.027。我们的挑战是以最有效的方式找到这个最大值，而不了解 *f*(*x*) 的任何信息，除了我们想要点的值。当我们说“有效”时，当然是指尽可能少的评估次数。
 - en: Grid Search
+  id: totrans-56
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 网格搜索
 - en: The first method we look at, grid search, is also the least “intelligent.” Grid
     search entails simply trying the function at regular intervals and seeing for
     which *x* the function *f*(*x*) assumes the highest value. In this example, we
@@ -307,34 +428,56 @@
     and *x*[*max*]. What we will do is simply take *n* points equally spaced between
     *x*[*min*] and *x*[*max*] and evaluate the function at these points. We will define
     a vector of points
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先考虑的方法是网格搜索，也是最不“智能”的方法。网格搜索只是简单地尝试在规则间隔处尝试函数，并查看对于哪个 *x*，函数 *f*(*x*) 取得最高值。在这个例子中，我们想要找到在两个
+    *x* 值 *x*[*min*] 和 *x*[*max*] 之间的函数 *f*(*x*) 的最大值。我们将做的是简单地取 *x*[*min*] 和 *x*[*max*]
+    之间等间距的 *n* 个点，并在这些点上评估函数。我们将定义一个点向量
 - en: '![$$ x=\left({x}_{min},{x}_{min}+\frac{\varDelta x}{n},\dots, {x}_{min}+\left(n-1\right)\frac{\varDelta
     x}{n}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equd.png)'
+  id: totrans-58
   prefs: []
   type: TYPE_IMG
+  zh: '![x=({x}_{min},{x}_{min}+\frac{\varDelta x}{n},\dots, {x}_{min}+\left(n-1\right)\frac{\varDelta
+    x}{n})](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equd.png)'
 - en: where we defined Δ*x* = *x*[*max*] − *x*[*min*]. Then we evaluate the function
     *f*(*x*) at those points, obtaining a vector ***f*** of values
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中我们定义 Δ*x* = *x*[*max*] - *x*[*min*]。然后我们在这些点上评估函数 *f*(*x*)，得到一个包含值的向量 ***f***
 - en: '![$$ f=\left(f\left({x}_{min}\right),f\left(\ {x}_{min}+\frac{\varDelta x}{n}\right),\dots,
     f\left({x}_{min}+\left(n-1\right)\frac{\varDelta x}{n}\right)\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Eque.png)'
+  id: totrans-60
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ f=\left(f\left({x}_{min}\right),f\left(\ {x}_{min}+\frac{\varDelta x}{n}\right),\dots,
+    f\left({x}_{min}+\left(n-1\right)\frac{\varDelta x}{n}\right)\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Eque.png)'
 - en: The estimate of the maximum ![$$ \left(\tilde{x},\tilde{f}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq1.png)
     will then be
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 对最大值 ![$$ \left(\tilde{x},\tilde{f}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq1.png)
+    的估计如下
 - en: '![$$ \tilde{f}=\underset{0\le i\le n-1}{\max }{f}_i $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equf.png)'
+  id: totrans-62
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \tilde{f}=\underset{0\le i\le n-1}{\max }{f}_i $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equf.png)'
 - en: and, assuming the maximum is found at ![$$ i=\tilde{i} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq2.png),
     we will also have
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 并且，假设最大值在 ![$$ i=\tilde{i} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq2.png)
+    处找到，我们还将有
 - en: '![$$ \tilde{x}={x}_{\mathrm{min}}+\frac{\tilde{i}\varDelta x}{n} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equg.png)'
+  id: totrans-64
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \tilde{x}={x}_{\mathrm{min}}+\frac{\tilde{i}\varDelta x}{n} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equg.png)'
 - en: 'Now, as you may imagine, the more points you use, the more accurate your maximum
     estimation will be. The problem is that, if the evaluation of *f*(*x*) is costly,
     you will not be able to take as many points as you might like. You will need to
@@ -343,110 +486,170 @@
     and *x*[*min*] = 0, and let’s take *n* = 40 points. We will have ![$$ \frac{\varDelta
     x}{n}=2 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq3.png).
     We can create the vector ***x*** easily in Python with the following code:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，正如您可能想象的那样，您使用的点越多，您的最大估计值就越准确。问题是，如果对 *f*(*x*) 的评估代价高昂，您将无法像您希望的那样使用那么多点。您需要在点数和精度之间找到一个平衡。让我们通过我之前描述的函数
+    *f*(*x*) 来探索一个例子。让我们考虑 *x*[*max*] = 80 和 *x*[*min*] = 0，并且让我们取 *n* = 40 个点。我们将有
+    ![$$ \frac{\varDelta x}{n}=2 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq3.png)。我们可以用以下代码轻松地在
+    Python 中创建 ***x*** 向量：
 - en: '[PRE1]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'The array `gridsearch` will look like this:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 数组 `gridsearch` 将看起来像这样：
 - en: '[PRE2]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: In Figure [7-2](#Fig2), you can see the function *f*(*x*) as a continuous line;
     the crosses mark the points we sample in the grid search; and the black square
     marks the precise maximum of the function. The right plot shows a zoom around
     the maximum.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [7-2](#Fig2) 中，您可以看到函数 *f*(*x*) 作为一条连续线；交叉点标记了我们在网格搜索中采样的点；黑色方块标记了函数的精确最大值。右侧的图显示了最大值周围的放大视图。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg)'
+  id: totrans-70
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg)'
 - en: Figure 7-2
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-2
 - en: Function f(x) on the range [0, 80]. The crosses mark the point we sample in
     the grid search, and the black square marks the maximum.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数 f(x) 在范围 [0, 80] 上。交叉点标记了我们在网格搜索中采样的点，黑色方块标记了最大值。
 - en: You can see how the points we sample in Figure [7-2](#Fig2) get close to the
     maximum but don’t get it exactly. Of course, sampling more points would get us
     closer to the maximum but would cost us more evaluations of *f*(*x*). We can find
     the maximum ![$$ \left(\tilde{x},\tilde{f}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq4.png)
     easily with the trivial code
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以看到我们在图 [7-2](#Fig2) 中采样的点如何接近最大值但并不完全达到。当然，采样更多的点会使我们更接近最大值，但会花费我们更多对 *f*(*x*)
+    的评估。我们可以通过简单的代码轻松找到最大值 ![$$ \left(\tilde{x},\tilde{f}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq4.png)
 - en: '[PRE3]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: This gives us
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 这给我们
 - en: '[PRE4]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: This is close to the actual maximum (69.18, 15.027) but not quite right. Let’s
     try the previous example, varying the number of points we sample, and then see
     what results we get. We will vary the number of points sampled *n* from 4 to 160\.
     For each case, we will find the maximum and its location, as described earlier.
     We can do it with the code
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 这接近实际的最大值（69.18, 15.027），但并不完全准确。让我们尝试先前的例子，改变我们采样的点数，然后看看我们得到什么结果。我们将从 4 到
+    160 变化采样的点数 *n*。对于每种情况，我们将找到最大值及其位置，如前所述。我们可以用以下代码来完成
 - en: '[PRE5]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: In the lists `xlistg` and `flistg`, we will find the position of the maximum
     found and the value of the maximum for the various values of *n*.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 在列表 `xlistg` 和 `flistg` 中，我们将找到最大值的位置和最大值的各种 *n* 值。
 - en: In Figure [7-3](#Fig3), we plot the distributions of the results. The black
     vertical line is the correct value of the maximum.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [7-3](#Fig3) 中，我们绘制了结果分布。黑色垂直线是最大值的正确值。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg)'
+  id: totrans-81
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg)'
 - en: Figure 7-3
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-3
 - en: Distribution of the results for ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq5.png)
     obtained by varying the number of points n sampled in the grid search. The black
     vertical line indicates the real maximum of f(x).
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过改变网格搜索中采样的点数 n 得到的 ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq5.png)
+    的结果分布。黑色垂直线表示 f(x) 的真实最大值。
 - en: As you can see, the results vary quite a lot and can be very far from the correct
     value, as far as 10\. This tells us that using the wrong number of points can
     yield very wrong results. As you can imagine , the best results are the ones with
     the smallest step Δ*x*, because it is more probable to get closer to the maximum.
     In Figure [7-4](#Fig4), you can see how the value of the found maximum varies
     with the step Δ*x*.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 如你所见，结果差异很大，可能非常远离正确值，甚至达到 10。这告诉我们，使用错误数量的点可能会导致非常错误的结果。正如你可以想象的那样，最好的结果是步长
+    Δ*x* 最小的结果，因为它更有可能接近最大值。在图 [7-4](#Fig4) 中，你可以看到找到的最大值如何随着步长 Δ*x* 的变化而变化。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg)'
+  id: totrans-85
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg)'
 - en: Figure 7-4
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-4
 - en: Behavior of the found value of the maximum vs. the x step Δx
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 最大值找到的值与 x 步 Δx 的关系
 - en: In the zoom in the right plot in Figure [7-4](#Fig4), it is evident how smaller
     values of Δ*x* get you better values of ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq6.png).
     Note that a step of 1.0 means sampling 80 values of *f*(*x*). If, for example,
     the evaluation takes 1 day, you will have to wait 80 days to get all the measurements
     you require.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [7-4](#Fig4) 右侧的放大图中，很明显，较小的 Δ*x* 值可以得到更好的 ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq6.png)
+    值。注意，步长为 1.0 意味着采样 80 个 *f*(*x*) 的值。例如，如果评估需要 1 天，你将需要等待 80 天才能得到所需的全部测量值。
 - en: Note
+  id: totrans-89
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 注意
 - en: Grid search is a method that is efficient only when the black-box function is
     cheap. To get good results, a big number of sampling points is usually needed.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 网格搜索是一种在黑盒函数便宜时才有效的方法。为了得到好的结果，通常需要大量的采样点。
 - en: 'To make sure you are really getting the maximum, you should decrease the step
     Δ*x*, or increase the number of sampling points, until the maximum value you find
     does not change appreciably anymore. In the preceding example, as you see from
@@ -460,20 +663,31 @@
     a long grid search. Additionally, keep in mind that when doing hyperparameter
     tuning, you are moving in a multidimensional space (you are not optimizing only
     one parameter, but many), so the number of evaluations needed gets big very fast.'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了确保你真的得到了最大值，你应该减小步长 Δ*x*，或者增加采样点的数量，直到你找到的最大值不再明显变化。在先前的例子中，如图 [7-4](#Fig4)
+    右侧的图所示，当我们的步长 Δ*x* 小于大约 2.0 时，或者换句话说，当采样点的数量大于或大约等于 40 时，我们确信我们已经接近最大值。记住：一开始
+    40 可能看起来相当少，但如果 *f*(*x*) 评估的是你的深度学习模型的度量标准，并且训练需要 2 小时，例如，你就是在查看 3.3 天的计算机时间。通常，在深度学习领域，2
+    小时对于训练一个模型来说并不多，所以在开始长时间网格搜索之前，先快速计算一下。此外，请记住，在进行超参数调整时，你是在一个多维空间中移动（你不仅仅是在优化一个参数，而是许多参数），所以所需的评估数量会迅速增加。
 - en: 'Let’s create a quick example. Suppose you decide you can afford 50 evaluations
     of your black-box function. If you decide you want to try the following hyperparameters:'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们快速举一个例子。假设你决定你可以承担 50 次你的黑盒函数的评估。如果你决定你想尝试以下超参数：
 - en: Optimizer (RMSProp, Adam, or plain GD) (3 values)
+  id: totrans-93
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 优化器（RMSProp、Adam 或普通 GD）（3 个值）
 - en: Number of epochs (1000, 5000, or 10,000) (3 values)
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 迭代次数（1000、5000 或 10,000）（3 个值）
 - en: you are already looking at nine evaluations. How many values of the learning
     rate can you then afford to try? Only five! And with five values, it is not probable
     to get close to the optimal value. This example has the goal of helping you to
@@ -482,42 +696,63 @@
     cloud platform to train your network, you are paying for the hardware you use
     by the second. Maybe you have lots of time at your disposal, but costs may exceed
     your budget very quickly.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 您现在已经看到了九个评估结果。那么您能尝试多少个学习率的值呢？只有五个！而且只有五个值，您不太可能接近最优值。这个例子旨在帮助您理解网格搜索仅适用于成本较低的黑盒函数。请记住，时间往往不是唯一的问题。例如，如果您正在使用
+    Google 云平台来训练您的网络，您将按秒支付您使用的硬件费用。也许您有很多时间可以利用，但成本可能会很快超过您的预算。
 - en: Random Search
+  id: totrans-96
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 随机搜索
 - en: A strategy that is as “dumb” as grid search but works amazingly a lot better
     is random search. Instead of sampling *x* points regularly in the range (*x*[*min*],
     *x*[*max*]), you sample the points randomly. We can do it with the code
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 一种与网格搜索一样“愚蠢”的策略，但效果却好得多的是随机搜索。您不是在 (*x*[*min*], *x*[*max*]) 范围内定期采样 *x* 个点，而是随机采样点。我们可以用以下代码来实现：
 - en: '[PRE6]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'The array `randomsearch` will look like this:'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '`randomsearch` 数组看起来是这样的：'
 - en: '[PRE7]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Depending on the seed you used, the actual numbers you get may be different.
     As we have done for grid search, you can see in Figure [7-5](#Fig5) the plot of
     *f*(*x*), where the crosses mark the sampled points, and the black square the
     maximum . On the right plot, you see a zoom around the maximum.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据您使用的种子，您得到的确切数字可能会有所不同。正如我们在网格搜索中所做的，您可以在图 [7-5](#Fig5) 中看到 *f*(*x*) 的图像，其中交叉点标记了采样点，黑色方块标记了最大值。在右侧的图像中，您可以看到围绕最大值的放大图。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg)'
+  id: totrans-102
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg)'
 - en: Figure 7-5
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-5
 - en: Function f(x) on the range [0, 80]. The crosses mark the point we sampled with
     random search, and the black square marks the maximum.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数 f(x) 在范围 [0, 80] 上的图像。交叉点标记了我们用随机搜索采样的点，黑色方块标记了最大值。
 - en: The risk with this method is that if you are very unlucky, your random chosen
     points are nowhere close to the real maximum. But that probability is quite low.
     Note that if you take a constant probability distribution for your random points,
@@ -526,36 +761,57 @@
     points, obtained by varying the random seed used in the code. The distributions
     of the maximum found ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq7.png)
     is plotted in Figure [7-6](#Fig6).
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法的潜在风险是，如果您非常不幸，随机选择的点与真实最大值相去甚远。但这种概率相当低。请注意，如果您为随机点选择一个恒定的概率分布，那么在各个地方得到点的概率是相同的。看看这种方法的表现很有趣。让我们考虑
+    200 个不同的随机集合，每个集合包含 40 个点，这些点是通过在代码中改变随机种子获得的。最大值 ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq7.png)
+    的分布绘制在图 [7-6](#Fig6) 中。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg)'
+  id: totrans-106
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg)'
 - en: Figure 7-6
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-6
 - en: Distribution of the results for ![$$ \tilde{\mathrm{f}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq8.png)
     obtained by 200 different random sets of 40 points sampled in the random search.
     The black vertical line indicates the real maximum of f(x).
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过在随机搜索中采样 200 个不同的 40 点随机集合获得 ![$$ \tilde{\mathrm{f}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq8.png)
+    的结果分布。黑色垂直线表示 f(x) 的真实最大值。
 - en: As you can see, regardless of the random sets used, you get, in the most cases,
     very close to the real maximum. In Figure [7-7](#Fig7), you can see the distributions
     of the maximum found with random search varying the number of points sampled,
     from 10 to 80.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如您所看到的，无论使用的是哪种随机集合，在大多数情况下，您得到的值都非常接近真实最大值。在图 [7-7](#Fig7) 中，您可以看到通过随机搜索找到的最大值的分布，样本点数量从
+    10 到 80 变化。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg)'
+  id: totrans-110
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg)'
 - en: Figure 7-7
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-7
 - en: Distribution of the results for ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq9.png)
     obtained by varying the number of points n sampled in the random search, from
     10 to 80\. The black vertical line indicates the real maximum of f(x).
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过改变随机搜索中采样的点数 n（从 10 到 80），得到的 ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq9.png)
+    结果分布。黑色垂直线表示 f(x) 的真实最大值。
 - en: If you compare it with grid search, you can see that random search is consistently
     better at getting results closer to the real maximum. In Figure [7-8](#Fig8),
     you can see a comparison between the distribution you get for your maximum ![$$
@@ -563,81 +819,118 @@
     when using a different number of sampling points *n* with random and grid searches.
     In both cases, the plots were generated with 38 different sets, so that the total
     count is the same.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你将其与网格搜索进行比较，你可以看到随机搜索始终能更好地得到接近真实最大值的结果。在图 [7-8](#Fig8) 中，你可以看到使用随机和网格搜索时，使用不同数量的采样点
+    *n* 得到的最大值 ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq10.png)
+    的分布比较。在两种情况下，图表都是使用 38 个不同的集合生成的，因此总计数相同。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg)'
+  id: totrans-114
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg)'
 - en: Figure 7-8
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-8
 - en: Comparison of the distribution of ![$$ \tilde{\mathrm{f}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq11.png)
     between grid (right) and random (left) searches , while varying the number of
     sampling points n. Both plots count sums to 38, the number of different numbers
     of sampling points used. The correct value of the maximum is marked by the vertical
     black line in both plots.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 在改变采样点数量 n 的同时，比较网格（右侧）和随机（左侧）搜索中 ![$$ \tilde{\mathrm{f}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq11.png)
+    的分布，两个图表的总和均为 38，这是使用不同数量采样点的次数。两个图表中最大值的正确值均由垂直的黑线标记。
 - en: It is easy to see how on average random search is better than grid search. The
     values you get are consistently closer to the right maximum.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 很容易看出，平均而言，随机搜索比网格搜索更好。你得到的结果始终更接近正确的最大值。
 - en: Note
+  id: totrans-118
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 注意
 - en: Random search is consistently better than grid search, and you should use it
     whenever possible. The difference between random search and grid search becomes
     even more marked when dealing with a multidimensional space for your variable
     *x*. Hyperparameter tuning is practically always a multidimensional optimization
     problem.
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机搜索始终优于网格搜索，你应该尽可能使用它。当处理变量 *x* 的多维空间时，随机搜索和网格搜索之间的差异变得更加明显。超参数调整实际上始终是一个多维优化问题。
 - en: If you are interested in a very good paper on how random search scales for high
     dimensional problems, read James Bergstra and Yoshua Bengio, *Random Search for
     Hyper-Parameter Optimization,* available at [`https://goo.gl/efc8Qv`](https://goo.gl/efc8Qv)
     .
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你感兴趣的是一篇关于如何为高维问题进行随机搜索缩放的非常好的论文，请阅读 James Bergstra 和 Yoshua Bengio 的 *Random
+    Search for Hyper-Parameter Optimization*，可在[`https://goo.gl/efc8Qv`](https://goo.gl/efc8Qv)找到。
 - en: Coarse-to-Fine Optimization
+  id: totrans-121
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 粗到细优化
 - en: There is still an optimization trick that helps with grid or random search.
     It is called coarse-to-fine optimization. Suppose we want to find the maximum
     of *f*(*x*) between *x*[*min*] and *x*[*max*]. I will explain the concept behind
     random search, but it works the same way for grid search. The following steps
     give you the algorithm you require to follow for this optimization.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 仍然有一个优化技巧可以帮助网格或随机搜索。它被称为粗到细优化。假设我们想在 *x*[*min*] 和 *x*[*max*] 之间找到 *f*(*x*)
+    的最大值。我将解释随机搜索背后的概念，但这也适用于网格搜索。以下步骤为你提供了进行此优化的算法。
 - en: Do a random search in the region *R*[1] = (*x*[*min*], *x*[*max*]). Let’s indicate
     the maximum found with (*x*[1], *f*[1]).
+  id: totrans-123
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在区域 *R*[1] = (*x*[*min*], *x*[*max*]) 中进行随机搜索。让我们用 (*x*[1], *f*[1]) 表示找到的最大值。
 - en: Consider now a smaller region around *x*[1], *R*[2] = (*x*[1] − *δx*[1], *x*[1] + *δx*[1]),
     for some *δx*[1], which I will discuss later, and again do a random search in
     this region. The hypothesis is, of course, that the real maximum lies in this
     region. We will indicate the maximum you find here with (*x*[2], *f*[2]).
+  id: totrans-124
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 现在考虑一个围绕 *x*[1] 的较小区域 *R*[2] = (*x*[1] − *δx*[1], *x*[1] + *δx*[1])，其中 *δx*[1]
+    我稍后会讨论，并在该区域再次进行随机搜索。假设，当然，真实最大值位于这个区域。我们将用 (*x*[2], *f*[2]) 表示在这里找到的最大值。
 - en: Repeat step 2 around *x*[2], in the region we will indicate with *R*[3], with
     a *δx*[2] smaller than *δx*[1], and indicate the maximum you find in this step
     with (*x*[3], *f*[3]).
+  id: totrans-125
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在 *x*[2] 附近重复步骤 2，在我们将用 *R*[3] 表示的区域，使用比 *δx*[1] 更小的 *δx*[2]，并在此步骤中找到的最大值用 (*x*[3],
+    *f*[3]) 表示。
 - en: Now repeat step 2 around *x*[3], in the region we will indicate with *R*[4],
     with a *δx*[3] smaller than *δx*[2].
+  id: totrans-126
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 现在重复步骤 2，在 *x*[3] 附近，在我们将用 *R*[4] 表示的区域，使用比 *δx*[2] 更小的 *δx*[3]。
 - en: Continue in the same way as often as you require, until the maximum (*x*[*i*],
     *f*[*i*]) in the region *R*[*i* + 1] no longer changes.
+  id: totrans-127
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 按照这种方式，根据需要重复进行，直到区域 *R*[*i* + 1] 中的最大值 (*x*[*i*], *f*[*i*]) 不再改变。
 - en: Usually, just one or two iterations are used, but, theoretically, you could
     go on for a large number of iterations. The problem with this method is that you
     cannot be really sure that your real maximum lies in your regions *R*[*i*]. But
@@ -655,20 +948,36 @@
     only 20 times, instead of 100, so by a factor 5 fewer! For example, let’s just
     sample the function we used previously between *x*[*min*] = 0 and *x*[*max*] = 80
     with 10 points, with the code
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常情况下，只需要进行一到两次迭代，但理论上，你可以进行大量的迭代。这种方法的问题在于，你无法真正确定你的真实最大值是否位于你的区域 *R*[*i*]
+    中。但如果这种方法有效，它有一个很大的优点。让我们考虑我们进行标准随机搜索的情况。如果我们想要样本点之间的平均距离为 *x*[*max*] − *x*[*min*]
+    的 1%，那么如果我们只进行一次随机搜索，就需要大约 100 个点，因此我们必须进行 100 次评估。现在让我们考虑我刚才描述的算法。我们可以从区域 *R*[1] = (*x*[*min*],
+     *x*[*max*]) 中的 10 个点开始。在这里，我们将用 (*x*[1], *f*[1]) 表示我们找到的最大值。然后让我们取 ![$$ 2\delta
+    x=\frac{x_{max}-{x}_{min}}{10} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq12.png)
+    并再次在区域 *R*[2] = (*x*[1] − *δx*, *x*[1] + *δx*) 中取 10 个点。在 (*x*[1] − *δx*, *x*[1] + *δx*)
+    区间内，我们将有平均距离为 *x*[*max*] − *x*[*min*] 的 1%，但我们只采样了函数 20 次，而不是 100 次，所以减少了 5 倍！例如，让我们用
+    10 个点在 *x*[*min*] = 0 和 *x*[*max*] = 80 之间采样我们之前使用的函数，代码如下
 - en: '[PRE8]'
+  id: totrans-129
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'This gives us the maximum location and value of *x*[1] = 69.65 and *f*[1] = 14.89,
     not bad, but not yet as precise as the real ones: 69.18 and 15.027\. Now let’s
     again sample 10 points around the maximum we have found in the regions *R*[2] = (*x*[1] − 4,
     *x*[1] + 4).'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 这给我们提供了 *x*[1] = 69.65 和 *f*[1] = 14.89 的最大位置和值，还不错，但还没有像真实值 69.18 和 15.027
+    那样精确。现在让我们再次在区域 *R*[2] = (*x*[1] − 4, *x*[1] + 4) 附近对找到的最大值进行采样。
 - en: '[PRE9]'
+  id: totrans-131
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'This gives us the result 69.189 and 15.027\. Quite a precise result, with only
     20 evaluations of the function. If we do a plain random search with *500* (25
     times more than what we just did) sampling points, we get *x*[1] = 69.08 and *f*[1] = 15.022\.
@@ -683,39 +992,62 @@
     In the plot on the left, you see the first 10 points, and on the right, the region
     *R*[2] with the additional 10 points. The small rectangle on the left plot marks
     the *x* region *R*[2].'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 这给出了结果 69.189 和 15.027。相当精确的结果，只对函数进行了 20 次评估。如果我们用 *500*（比我们刚才做的多 25 倍）个采样点进行简单的随机搜索，我们得到
+    *x*[1] = 69.08 和 *f*[1] = 15.022。这个结果展示了这个技巧如何真正有用。但记住风险：如果你的最大值不在你的区域 *R*[*i*]
+    中，你将永远找不到它，因为你仍在处理随机数。所以，总是选择相对较大的区域 (*x*[*i*] − *δx*[*i*]，*x*[*i*] + *δx*[*i*])
+    是一个好主意，以确保它们包含你的最大值。大小取决于，就像深度学习世界中的几乎所有事情一样，你的数据集和问题，这些可能事先无法知道。不幸的是，需要进行测试。在图
+    [7-9](#Fig9) 中，你可以看到函数 *f*(*x*) 上的采样点。在左侧的图中，你可以看到前 10 个点，在右侧，有额外的 10 个点的区域 *R*[2]。左侧图中的小矩形标记了
+    *x* 区域 *R*[2]。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg)'
+  id: totrans-133
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg)'
 - en: Figure 7-9
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-9
 - en: 'Function f(x). The crosses mark the sampled points: on the left, the 10 points
     sampled in the regions R[1] (entire range), on the right, the 10 points sampled
     in R[2]. The black square marks the real maximum. The plot on the right is a zoom
     of the region R[2].'
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数 f(x)。交叉点标记了采样点：在左侧，标记了在区域 R[1]（整个范围）中采样的 10 个点，在右侧，标记了在 R[2] 中采样的 10 个点。黑色方块标记了实际的最大值。右侧的图是区域
+    R[2] 的放大图。
 - en: Now the choice of how many points you should sample at the beginning is crucial.
     We had luck here. Let’s consider a different seed when choosing our initial 10
     random points and then see what can happen (see Figure [7-10](#Fig10)). Choosing
     the wrong initial points leads to disaster!
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在选择最初应该采样多少个点至关重要。在这里我们很幸运。让我们考虑在选择最初的 10 个随机点时使用不同的种子，然后看看会发生什么（见图 [7-10](#Fig10)）。选择错误的初始点会导致灾难！
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg)'
+  id: totrans-137
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg)'
 - en: Figure 7-10
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-10
 - en: 'Function f(x). The crosses mark the sampled points: on the left, the 10 points
     sampled in the regions R[1] (entire range), on the right, the 10 points sampled
     in R[2]. The black square marks the real maximum. The algorithm finds a maximum
     very well around 16, simply not the absolute maximum. The small rectangle on the
     left marks the region R[2]. The plot on the right is a zoom of the region R[2].'
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数 f(x)。交叉点标记了采样点：在左侧，标记了在区域 R[1]（整个范围）中采样的 10 个点，在右侧，标记了在 R[2] 中采样的 10 个点。黑色方块标记了实际的最大值。算法在
+    16 附近找到了一个非常好的最大值，但不是绝对最大值。左侧图中的小矩形标记了区域 R[2]。右侧图是区域 R[2] 的放大图。
 - en: 'Note, in Figure [7-10](#Fig10), how the algorithm finds the maximum at around
     16, because in the initial sampled points, the maximum value is about *x* = 16,
     as you can see on the plot at the left in Figure [7-10](#Fig10). No points are
@@ -726,31 +1058,45 @@
     plot at the left in Figure [7-11](#Fig11) how the algorithm completely misses
     any maximum. It simply gives as a result the highest values of the points marked
     by crosses on the points on the right plot: (58.4, 9.78).'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，在图[7-10](#Fig10)中，算法是如何在约16处找到最大值的，因为在初始采样点中，最大值大约是 *x* = 16，如图[7-10](#Fig10)左边的图中所示。没有点接近实际的最大值，大约是
+    *x* = 69。算法非常成功地找到了一个最大值，只是不是绝对最大值。这就是使用这个技巧时面临的风险。事情甚至可能比这更糟。考虑图[7-11](#Fig11)，其中最初只采样了一个点。你可以在图[7-11]左边的图中看到算法是如何完全错过任何最大值的。它只是给出了右侧图中标记交叉点的点的最高值：(58.4,
+    9.78)。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg)'
+  id: totrans-141
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg)'
 - en: Figure 7-11
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-11
 - en: 'Function f(x). The crosses mark the sampled points: on the left, the 1 point
     is sampled in the regions R[1] (entire range), on the right, the 10 points are
     sampled in R[2]. The black square marks the real maximum. The algorithm does not
     find any maximum, because none is present in the region R[2]. The plot on the
     right is the zoom of the region R[2].'
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数f(x)。交叉点标记了采样点：在左侧，1个点在R[1]（整个范围）内采样，在右侧，10个点在R[2]内采样。黑色方块标记了实际的最大值。算法没有找到任何最大值，因为在该区域R[2]内没有最大值。右侧的图是区域R[2]的放大图。
 - en: If you decide to use this method, keep in mind that you will still require a
     good number of points at the beginning, to get close to the maximum, before refining
     your search. After you are relatively sure to have points around your maximum,
     you can use this technique to refine your search.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你决定使用这种方法，请记住，你仍然需要在开始时拥有足够多的点，以便接近最大值，然后再细化你的搜索。在你相对有把握地找到最大值附近的点之后，你可以使用这种技术来细化你的搜索。
 - en: Bayesian Optimization
+  id: totrans-145
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 贝叶斯优化
 - en: In this section, we will look at a specific and efficient technique for finding
     the minimum (or maximum) of a black-box function. This is a rather clever algorithm
     that basically consists of choosing the sampling points from which to evaluate
@@ -758,12 +1104,16 @@
     or on a grid. To understand how this works, you must first look at a few new mathematical
     concepts, because the method is not trivial and requires some understanding of
     more advanced concepts. Let’s start with the Nadaraya-Watson regression.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将探讨一种寻找黑盒函数最小值（或最大值）的具体且有效的方法。这是一个相当巧妙的算法，基本上包括以比随机选择或网格选择更智能的方式选择采样点来评估函数。要理解它是如何工作的，你必须首先了解一些新的数学概念，因为这种方法并不简单，需要理解一些更高级的概念。让我们从Nadaraya-Watson回归开始。
 - en: Nadaraya-Watson Regression
+  id: totrans-147
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Nadaraya-Watson回归
 - en: This method was developed in 1964 by Èlizbar Akakevič (E. A.) Nadaraya in “On
     Estimating Regression,” published in the Russian journal *Theory of Probability
     and Its Applications*. The basic idea is quite simple. Given an unknown function
@@ -771,132 +1121,200 @@
     with *i* = 1, …, *N*, the value of the function calculated at the different *x*[*i*].
     The idea of the Nadaraya-Watson regression is that we can evaluate the unknown
     function at an unknown point *x* using the formula
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法是在1964年由Èlizbar Akakevič (E. A.) Nadaraya在《关于回归估计》一文中提出的，该文发表在俄罗斯期刊《概率论及其应用理论》上。基本思想相当简单。给定一个未知的函数
+    *y*(*x*)，以及给定的 *N* 个点 *x*[*i*] = 1, …, *N*，我们用 *y*[*i*] = *f*(*x*[*i*]) 表示在不同的
+    *x*[*i*] 处计算的函数值，其中 *i* = 1, …, *N*。Nadaraya-Watson回归的思想是，我们可以使用以下公式在未知点 *x* 处评估未知函数：
 - en: '![$$ y(x)=\sum \limits_{i=1}^N{w}_i(x){y}_i $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equh.png)'
+  id: totrans-149
   prefs: []
   type: TYPE_IMG
+  zh: '![y(x)=∑(i=1)^N w_i(x)y_i](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equh.png)'
 - en: where *w*[*i*](*x*) are weights that are calculated according to the formula
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 *w*[*i*](*x*) 是根据公式计算的权重
 - en: '![$$ {w}_i(x)=\frac{K\left(x,{x}_i\right)}{\sum_{j=1}^NK\left(x,{x}_j\right)}
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equi.png)'
+  id: totrans-151
   prefs: []
   type: TYPE_IMG
+  zh: '![此处插入图片](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equi.png)'
 - en: where *K*(*x*, *x*[*i*]) is called a kernel. Note that given how the weights
     are defined we have
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 *K*(*x*, *x*[*i*]) 被称为核。请注意，根据权重的定义，我们有
 - en: '![$$ \sum \limits_{i=1}^N{w}_i(x)=1 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equj.png)'
+  id: totrans-153
   prefs: []
   type: TYPE_IMG
+  zh: '![此处插入图片](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equj.png)'
 - en: In the literature, you can find several kernels, but the one we are interested
     in is the Gaussian one, often called the *radial basis function* (RBF)
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 在文献中，你可以找到几个核，但我们感兴趣的是高斯核，通常称为**径向基函数**（RBF）
 - en: '![$$ K\left(x,{x}_i\right)={\sigma}^2{e}^{-\frac{1}{2{l}^2}{\left\Vert x-{x}_i\right\Vert}^2}
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equk.png)'
+  id: totrans-155
   prefs: []
   type: TYPE_IMG
+  zh: '![此处插入图片](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equk.png)'
 - en: The parameter *l* makes the Gaussian shape wider or narrower. The *σ* is typically
     the variance of your data, but, in this case, it plays no role, because the weights
     are normalized to one. This is at the basis of Bayesian optimization, as you will
     see later.
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数 *l* 使得高斯形状更宽或更窄。*σ* 通常是你数据的方差，但在这个例子中，它不起作用，因为权重被归一化到1。这是贝叶斯优化的基础，你稍后会看到。
 - en: Gaussian Process
+  id: totrans-157
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 高斯过程
 - en: Before talking about Gaussian processes, first I must define what a random process
     is. A *random process* refers to any point *x* ∈ *ℝ*^(*d*) to which we assign
     a random variable *f*(*x*) ∈ *ℝ*. A random process is Gaussian, if for any finite
     number of points, their joint distribution is normal. This means that ∀*n* ∈ *ℕ*,
     and for ∀*x*[1], …*x*[*n*] ∈ *ℝ*^(*d*), the vector is
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 在讨论高斯过程之前，首先我必须定义什么是随机过程。一个**随机过程**指的是任何属于 *ℝ*^(*d*) 的点 *x*，我们为其分配一个随机变量 *f*(*x*)
+    ∈ *ℝ*。如果一个随机过程对于任意有限数量的点，它们的联合分布是正态的，那么它就是高斯过程。这意味着对于 ∀*n* ∈ *ℕ*，以及对于 ∀*x*[1]，…*x*[*n*]
+    ∈ *ℝ*^(*d*)，向量是
 - en: '![$$ f\equiv \left(\begin{array}{c}f\left({x}_1\right)\\ {}\vdots \\ {}f\left({x}_n\right)\end{array}\right)\sim
     \mathcal{N} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equl.png)'
+  id: totrans-159
   prefs: []
   type: TYPE_IMG
+  zh: '![此处插入图片](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equl.png)'
 - en: where with the notation we intend that the vector components follow a normal
     distribution, indicated with ![$$ \mathcal{N} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq13.png).
     Remember that a random variable with a Gaussian distribution is said to be normally
     distributed. From this comes the name Gaussian process. The probability distribution
     of the normal distribution is given by the function
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中，我们用符号表示向量分量遵循正态分布，用 ![$$ \mathcal{N} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq13.png)
+    表示。记住，具有高斯分布的随机变量被称为正态分布。由此得名高斯过程。正态分布的概率分布由以下函数给出
 - en: '![$$ g\left(x\ |\ \mu, {\sigma}^2\right)=\frac{1}{\sqrt{2\pi {\sigma}^2}}{e}^{\frac{{\left(x-\mu
     \right)}^2}{2{\sigma}^2}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equm.png)'
+  id: totrans-161
   prefs: []
   type: TYPE_IMG
+  zh: '![此处插入图片](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equm.png)'
 - en: 'where *μ* is the mean or expectation of the distribution, and *σ* is the standard
     deviation. I will use the following notation from here on:'
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 *μ* 是分布的均值或期望，*σ* 是标准差。从现在开始，我将使用以下符号：
 - en: '![$$ Mean\ value\ of\ f:\kern0.75em m $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equn.png)'
+  id: totrans-163
   prefs: []
   type: TYPE_IMG
+  zh: '![此处插入图片](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equn.png)'
 - en: and the covariance of the random values will be indicated here by *K*.
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 并且随机值的协方差将用 *K* 表示。
 - en: '![$$ \mathit{\operatorname{cov}}\left[f\left({x}_1\right),f\left({x}_2\right)\right]=K\left({x}_1,{x}_2\right)
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equo.png)'
+  id: totrans-165
   prefs: []
   type: TYPE_IMG
+  zh: '![此处插入图片](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equo.png)'
 - en: The choice of the letter *K* has a reason. We will assume in what follows that
     the covariance will have a Gaussian shape , and we will use for *K* the RBF function
     defined previously.
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 字母 *K* 的选择有原因。在以下内容中，我们将假设协方差将具有高斯形状，我们将使用之前定义的径向基函数（RBF）作为 *K*。
 - en: Stationary Process
+  id: totrans-167
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 静态过程
 - en: For simplicity, we will consider here only stationary processes. A random process
     is stationary if its joint probability distribution does not change with time.
     That means also that mean and variance will not change when shifted in time. We
     will also consider a process whose distribution depends only on the relative position
     of the points. This leads to the conditions
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了简化，我们在这里只考虑平稳过程。一个随机过程是平稳的，如果其联合概率分布不随时间变化。这也意味着均值和方差在时间平移时不会改变。我们还将考虑一个其分布只依赖于点之间相对位置的进程。这导致以下条件
 - en: '![$$ {\displaystyle \begin{array}{l}K\left({x}_1,{x}_2\right)=\tilde{K}\left({x}_1-{x}_2\right)\\
     {} Var\left[f(x)\right]=\tilde{K}(0)\end{array}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equp.png)'
+  id: totrans-169
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\displaystyle \begin{array}{l}K\left({x}_1,{x}_2\right)=\tilde{K}\left({x}_1-{x}_2\right)\\
+    {} Var\left[f(x)\right]=\tilde{K}(0)\end{array}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equp.png)'
 - en: Note that to apply the method we are describing, first you must convert your
     data to be stationary, if that is not already the case, eliminating seasonality
     or trends in time, for example.
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，要应用我们描述的方法，首先您必须将数据转换为平稳的，如果尚未这样做，则消除时间序列中的季节性或趋势，例如。
 - en: Prediction with Gaussian Processes
+  id: totrans-171
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 高斯过程预测
 - en: 'Now we have reached the interesting part: given the vector ***f***, how can
     we estimate *f*(*x*) at an arbitrary point *x*? Because we are dealing with random
     processes, what we will estimate is the probability that the unknown function
     assumes a given value *f*(*x*). Mathematically, we will predict the following
     quantity:'
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经到达了有趣的部分：给定向量 ***f***，我们如何估计任意点 *x* 处的 *f*(*x*)？因为我们处理的是随机过程，我们将估计未知函数取给定值
+    *f*(*x*) 的概率。从数学上讲，我们将预测以下量：
 - en: '![$$ p\left(f(x)\ |\ f\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equq.png)'
+  id: totrans-173
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ p\left(f(x)\ |\ f\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equq.png)'
 - en: Or, in other words, the probability of getting the value *f*(*x*), given the
     vector ***f***, composed by all the points *f*(*x*[1]), …, *f*(*x*[*n*]).
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者换句话说，给定由所有点 *f*(*x*[1])，…，*f*(*x*[*n*])组成的向量 ***f***，得到值 *f*(*x*) 的概率。
 - en: Assuming that *f*(*x*) is a stationary Gaussian process with *m* = 0, the prediction
     can be shown to be given by
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设 *f*(*x*) 是一个平稳高斯过程，其 *m* = 0，预测可以证明由以下公式给出
 - en: '![$$ p\left(f(x)\ |\ f\right)=\frac{p\left(f(x),f\left({x}_1\right),\dots,
     f\left({x}_n\right)\right)}{p\left(f\left({x}_1\right),\dots, f\left({x}_n\right)\right)}=\frac{\mathcal{N}\left(f(x),f\left({x}_1\right),\dots,
     f\left({x}_n\right)\ |\ 0,\kern0.375em \tilde{C}\right)}{\mathcal{N}\left(f\left({x}_1\right),\dots,
     f\left({x}_n\right)\ |\ 0,\kern0.375em C\right)} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equr.png)'
+  id: totrans-176
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ p\left(f(x)\ |\ f\right)=\frac{p\left(f(x),f\left({x}_1\right),\dots,
+    f\left({x}_n\right)\right)}{p\left(f\left({x}_1\right),\dots, f\left({x}_n\right)\right)}=\frac{\mathcal{N}\left(f(x),f\left({x}_1\right),\dots,
+    f\left({x}_n\right)\ |\ 0,\kern0.375em \tilde{C}\right)}{\mathcal{N}\left(f\left({x}_1\right),\dots,
+    f\left({x}_n\right)\ |\ 0,\kern0.375em C\right)} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equr.png)'
 - en: Where, with ![$$ \mathcal{N}\left(f(x),f\left({x}_1\right),\dots, f\left({x}_n\right)\
     |\ 0,\kern0.375em \tilde{C}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq14.png),
     we have indicated the normal distribution calculated on the points with average
@@ -908,257 +1326,397 @@
     , in which everything is explained in elaborate detail. To understand what Bayesian
     optimization is, we can simply use the formula without derivation. *C* will have
     dimensions *n* × *n*, because we have only *n* points in the denominator.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们用 ![$$ \mathcal{N}\left(f(x),f\left({x}_1\right),\dots, f\left({x}_n\right)\
+    |\ 0,\kern0.375em \tilde{C}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq14.png)
+    表示在平均值为 0 且协方差矩阵为 ![$$ \tilde{C} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq15.png)
+    的 *n* + 1 × *n* + 1 维度上计算的正态分布，因为我们分子中有 *n* + 1 个点。推导过程相对复杂，基于几个定理，例如贝叶斯定理。更多信息，您可以参考
+    Chuong B. Do 在“高斯过程”（2007年）中的（高级）解释，可在[`https://goo.gl/cEPYwX`](https://goo.gl/cEPYwX)找到，其中所有内容都进行了详细的解释。为了理解贝叶斯优化是什么，我们可以简单地使用公式而不进行推导。*C*
+    将具有 *n* × *n* 维度，因为我们只有 *n* 个点在分母中。
 - en: We have
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们有
 - en: '![$$ C=\left(\begin{array}{ccc}K(0)&amp; K\left({x}_1-{x}_2\right)&amp; \dots
     \\ {}K\left({x}_2-{x}_1\right)&amp; \ddots &amp; \vdots \\ {}\vdots &amp; \dots
     &amp; K(0)\end{array}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equs.png)'
+  id: totrans-179
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ C=\left(\begin{array}{ccc}K(0)&amp; K\left({x}_1-{x}_2\right)&amp; \dots
+    \\ {}K\left({x}_2-{x}_1\right)&amp; \ddots &amp; \vdots \\ {}\vdots &amp; \dots
+    &amp; K(0)\end{array}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equs.png)'
 - en: and
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 并且
 - en: '![$$ \tilde{C}=\left(\begin{array}{cc}K(0)&amp; {k}^T\\ {}k&amp; C\end{array}\right)
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equt.png)'
+  id: totrans-181
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \tilde{C}=\left(\begin{array}{cc}K(0)&amp; {k}^T\\ {}k&amp; C\end{array}\right)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equt.png)'
 - en: where we have defined
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中我们定义了
 - en: '![$$ k=\left(\begin{array}{c}K\left(x-{x}_1\right)\\ {}\vdots \\ {}K\left(x-{x}_n\right)\end{array}\right)
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equu.png)'
+  id: totrans-183
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ k=\left(\begin{array}{c}K\left(x-{x}_1\right)\\ {}\vdots \\ {}K\left(x-{x}_n\right)\end{array}\right)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equu.png)'
 - en: It can be shown^([1](#Fn1)) that the ratio of two normal distributions is again
     a normal distribution, so that we can write
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以证明^([1](#Fn1))，两个正态分布的比值仍然是一个正态分布，因此我们可以写成
 - en: '![$$ p\left(f(x)\ |\ f\right)=\mathcal{N}\left(f(x)\ |\ \mu, {\sigma}^2\right)
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equv.png)'
+  id: totrans-185
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ p\left(f(x)\ |\ f\right)=\mathcal{N}\left(f(x)\ |\ \mu, {\sigma}^2\right)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equv.png)'
 - en: with
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 与
 - en: '![$$ {\displaystyle \begin{array}{l}\mu ={k}^T{C}^{-1}f\\ {}{\sigma}^2=K(0)-{k}^T{C}^{-1}k\end{array}}
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equw.png)'
+  id: totrans-187
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\displaystyle \begin{array}{l}\mu ={k}^T{C}^{-1}f\\ {}{\sigma}^2=K(0)-{k}^T{C}^{-1}k\end{array}}
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equw.png)'
 - en: The derivation of the exact form for *μ* and *σ* is quite long and would be
     beyond the scope of the book. Basically, we know now that, on average, our unknown
     function will assume the value *μ* in *x*, with a variance *σ*. Let’s now see
     how this method really works in practice in Python. Let’s first define our kernel
     *K*(*x*).
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于*μ*和*σ*的精确形式的推导相当长，并且超出了本书的范围。基本上，我们现在知道，平均而言，我们的未知函数将在*x*处取值为*μ*，具有方差*σ*。现在让我们看看这种方法在Python中的实际应用。首先，让我们定义我们的核*K*(*x*)。
 - en: '[PRE10]'
+  id: totrans-189
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Let’s simulate our unknown function with an easy one
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们用一个简单的函数来模拟我们的未知函数
 - en: '![$$ f(x)={x}^2-{x}^3+3+10x+0.07{x}^4 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equx.png)'
+  id: totrans-191
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ f(x)={x}^2-{x}^3+3+10x+0.07{x}^4 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equx.png)'
 - en: which can be implemented as
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 这可以实施为
 - en: '[PRE11]'
+  id: totrans-193
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Let’s consider the function in the range (0, 12). In Figure [7-12](#Fig12),
     you can see how the function looks.
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们考虑范围(0, 12)内的函数。在图[7-12](#Fig12)中，你可以看到函数的外观。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg)'
+  id: totrans-195
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg)'
 - en: Figure 7-12
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-12
 - en: Plot of our unknown test function, as described in the text
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 如文本所述，我们的未知测试函数的图像
 - en: 'Let’s build first our ***f*** vector with five points, as follows:'
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们先构建一个包含五个点的***f***向量，如下所示：
 - en: '[PRE12]'
+  id: totrans-199
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'where we have used the seed 42 for the random numbers: `np.random.seed(42)`.
     In Figure [7-13](#Fig13), you can see the random points marked with crosses on
     the plot.'
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中我们使用了随机数种子42：`np.random.seed(42)`。在图[7-13](#Fig13)中，你可以看到用十字标记的随机点。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg)'
+  id: totrans-201
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg)'
 - en: Figure 7-13
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-13
 - en: Plot of the unknown function. The crosses mark the random point chosen in the
     text.
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: 未知函数的图像。十字标记在文本中选择的随机点。
 - en: 'We can apply the method described earlier with the following code:'
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用以下代码应用前面描述的方法：
 - en: '[PRE13]'
+  id: totrans-205
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'Now please take some time to understand it. In the list `ybayes`, we will find
     the values of *μ*(*x*) evaluated on the values contained in the array `xsampling`.
     Here are some hints that will help you to understand the code:'
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在请花些时间来理解它。在`ybayes`列表中，我们将找到在`xsampling`数组中的值上评估的*μ*(*x*)的值。以下是一些有助于你理解代码的提示：
 - en: We do a loop over a range of *x* points, where we want to evaluate our function,
     with the code `for x in xsampling:`.
+  id: totrans-207
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们在一个*x*点的范围内进行循环，其中我们想要评估我们的函数，使用代码`for x in xsampling:`。
 - en: 'We build our ***k*** and ***f*** vectors with the code for each element of
     the vectors: `k = K(x-randompoints, 2 , sigm_)` and `f1 = f(randompoints)`. For
     the kernel, we have chosen a value for the parameter `l`, as defined in the function
     of `2`. We have subtracted, in the vector ***f***, the average to obtain *m*(*x*) = 0,
     to be able to apply the formulas as derived.'
+  id: totrans-208
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们使用代码为向量的每个元素构建 ***k*** 和 ***f*** 向量：`k = K(x-randompoints, 2 , sigm_)` 和 `f1
+    = f(randompoints)`。对于核，我们为参数 `l` 选择了一个值，如函数 `2` 中定义的那样。我们在向量 ***f*** 中减去平均值，以获得
+    *m*(*x*) = 0，以便能够应用推导出的公式。
 - en: We build the matrices *C* and ![$$ \tilde{C} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq16.png).
+  id: totrans-209
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们构建矩阵 *C* 和 ![~C](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq16.png)。
 - en: We calculate *μ* with `mu = np.dot(np.dot(np.transpose(k), np.linalg.inv(C)),
     f_)` and the standard deviation.
+  id: totrans-210
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们使用 `mu = np.dot(np.dot(np.transpose(k), np.linalg.inv(C)), f_)` 和标准差来计算 *μ*。
 - en: At the end, we reapply all the transformation that we have done to make our
     process stationary in the opposite order, simply adding the average of *f*(*x*)
     again to the evaluated surrogate function `ybayes = np.asarray(ybayes_)+np.average(f1)`.
+  id: totrans-211
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 最后，我们以相反的顺序重新应用我们为使过程平稳所做的所有转换，简单地将 *f*(*x*) 的平均值再次添加到评估的代理函数 `ybayes = np.asarray(ybayes_)+np.average(f1)`
+    中。
 - en: In Figure [7-14](#Fig14), you can see how this method works. The dashed line
     is the predicted function obtained by plotting *μ*(*x*), as calculated in the
     code, when we have five points at our disposal (*n* = 5). The gray area is the
     region between the estimated function and +/- *σ*.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [7-14](#Fig14) 中，你可以看到这种方法是如何工作的。虚线是预测函数，通过绘制 *μ*(*x*) 得到，如代码中计算的那样，当我们有五个可用点时
+    (*n* = 5)。灰色区域是估计函数和 +/- *σ* 之间的区域。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg)'
+  id: totrans-213
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg)'
 - en: Figure 7-14
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-14
 - en: Predicted function (dashed line), calculated by evaluating μ(x). The gray area
     is the region between the estimated function and +/- σ.
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过评估 μ(x) 计算得到的预测函数（虚线），灰色区域是估计函数和 +/- σ 之间的区域。
 - en: Given the few points we have, it is not a bad result. Now keep in mind that
     you still need a few points, to be able to get a reasonable approximation. In
     Figure [7-15](#Fig15), you can see the result, if we have only two points at our
     disposal. The result is not as good. The gray area is the region around the estimated
     function and +/- *σ*. You can see how, as far as we are from the points we have,
     the higher the uncertainty, or the variance, of the predicted function.
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑到我们拥有的点很少，这不是一个坏的结果。现在请记住，你仍然需要一些点，才能得到一个合理的近似。在图 [7-15](#Fig15) 中，你可以看到如果我们只有两个可用点时的结果。结果并不那么好。灰色区域是估计函数周围的区域和
+    +/- *σ*。你可以看到，我们离我们拥有的点越远，预测函数的不确定性或方差就越高。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg)'
+  id: totrans-217
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg)'
 - en: Figure 7-15
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-15
 - en: Predicted function (dashed line), when we have only two points at our disposal.
     The gray area is the region between the estimated function +/- σ.
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们只有两个可用点时，预测函数（虚线），灰色区域是估计函数和 +/- σ 之间的区域。
 - en: Let’s stop for a second and think about why we do all this. The idea is to find
     a so-called surrogate function ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq17.png)
     that approximates our function *f* and has the property
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们暂停一下，思考一下我们为什么要做所有这些。目的是找到一个所谓的代理函数 ![~f](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq17.png)，它近似我们的函数
+    *f* 并具有以下属性
 - en: '![$$ \max \tilde{f}\approx \max f $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equy.png)'
+  id: totrans-221
   prefs: []
   type: TYPE_IMG
+  zh: '![~f 的最大值 ≈ f 的最大值](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equy.png)'
 - en: 'This surrogate function must have another very important property: it must
     be cheap to evaluate. In this way, we can find easily the maximum of ![$$ \tilde{f}
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq18.png), and,
     using the previous property, we will have the maximum of *f*, which, by hypothesis,
     is costly.'
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个代理函数必须具有另一个非常重要的属性：它必须易于评估。这样，我们就可以轻松找到 ![~f](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq18.png)
+    的最大值，并且，使用前面的属性，我们将得到 *f* 的最大值，根据假设，这是昂贵的。
 - en: But as you have seen, it may be very difficult to know if we have enough points
     to find the right value of the maximum . After all, by definition, we don’t have
     any idea how our black-box function looks. So, how to solve this problem?
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 但正如你所看到的，知道我们是否有足够的数据点来找到最大值的正确值可能非常困难。毕竟，根据定义，我们根本不知道我们的黑盒函数看起来像什么。那么，如何解决这个问题呢？
 - en: 'The main idea behind the method can be described by the following algorithm:'
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 该方法背后的主要思想可以通过以下算法来描述：
 - en: We start with a small number of sample points randomly chosen (how small it
     should be will depend on your problem).
+  id: totrans-225
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们从一个小的样本点集合开始，这些点随机选择（它应该有多小将取决于你的问题）。
 - en: We use this set of points to get a surrogate function, as described.
+  id: totrans-226
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们使用这个点集来获取一个代理函数，如描述的那样。
 - en: We add an additional point to our set, with a specific method that I will discuss
     later, and reevaluate the surrogate function.
+  id: totrans-227
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们使用一种特定的方法（我将在稍后讨论）向我们的集合中添加一个额外的点，并重新评估代理函数。
 - en: If the maximum we find with the surrogate function continues to change, we will
     continue adding points, as in step 3, until the maximum does not change anymore,
     or we run out of time or budget and cannot perform any further evaluation.
+  id: totrans-228
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果我们用代理函数找到的最大值继续变化，我们将继续添加点，就像步骤3中那样，直到最大值不再变化，或者我们耗尽时间或预算，无法进行任何进一步的评估。
 - en: If the method I hinted at in step 3 is smart enough, we will be able to find
     our maximum relatively quickly and accurately.
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我在步骤3中暗示的方法足够聪明，我们将能够相对快速和准确地找到我们的最大值。
 - en: Acquisition Function
+  id: totrans-230
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 获取函数
 - en: 'But how to choose the additional points I mentioned in step 3 in the previous
     section? The idea is to use a so-called acquisition function. The algorithm works
     in this way:'
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 但如何在上一节步骤3中提到的附加点中进行选择呢？思路是使用所谓的获取函数。算法以这种方式工作：
 - en: We choose a function (and we will see a few possibilities in a moment) called
     an acquisition function.
+  id: totrans-232
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们选择一个函数（我们将在一会儿看到一些可能性），称为获取函数。
 - en: Then we choose, as additional point *x*, the one at which the acquisition function
     has a maximum.
+  id: totrans-233
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 然后我们选择，作为额外的点 *x*，获取函数达到最大值的位置。
 - en: There are several acquisition functions we can use. I will describe here only
     one that we will use to see how this method works, but there are several that
     you may want to check out, such as entropy search, probability of improvement,
     expected improvement, and upper confidence bound.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用几种获取函数。在这里，我将只描述我们将使用的一个来了解这种方法是如何工作的，但还有几个你可能想检查的，例如熵搜索、改进概率、期望改进和上置信界。
 - en: Upper Confidence Bound (UCB)
+  id: totrans-235
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 上置信界 (UCB)
 - en: In the literature, you find two variations of this acquisition function. We
     can write the function as
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 在文献中，你可以找到这种获取函数的两个变体。我们可以将函数写成
 - en: '![$$ {a}_{UCB}(x)=\mathbb{E}\tilde{f}(x)+\eta \sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equz.png)'
+  id: totrans-237
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {a}_{UCB}(x)=\mathbb{E}\tilde{f}(x)+\eta \sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equz.png)'
 - en: where we have indicated with ![$$ \mathbb{E}\tilde{f}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq19.png)
     the “expected” value of the surrogate function on the *x*-range we have in our
     problem. The expected value is nothing other than the average of the function
@@ -1169,79 +1727,119 @@
     [7-15](#Fig15). The method selects the points at which the variance is greater,
     so, points as far as possible from the points we have already. In this way, the
     approximation tends to get better and better.
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中，我们用 ![$$ \mathbb{E}\tilde{f}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq19.png)
+    表示代理函数在我们问题中的 *x* 范围内的“期望”值。期望值不过是函数在给定 *x* 范围内的平均值。*σ*(*x*) 是我们在点 *x* 处使用我们的方法计算的代理函数的方差。我们选择的新点是
+    *a*[*UCB*](*x*) 最大的点。*η* > 0 是一个权衡参数。这个获取函数基本上选择方差最大的点。请参阅图 [7-15](#Fig15)。该方法选择方差较大的点，因此尽可能远离我们已有的点。这样，近似值往往会变得越来越好。
 - en: 'Another variation of the UCB acquisition function is the following:'
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
+  zh: UCB获取函数的另一种变体如下：
 - en: '![$$ {\tilde{a}}_{UCB}(x)=\tilde{f}\left(\mathrm{x}\right)+\eta \sigma (x)
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equaa.png)'
+  id: totrans-240
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\tilde{a}}_{UCB}(x)=\tilde{f}\left(\mathrm{x}\right)+\eta \sigma (x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equaa.png)'
 - en: This time, the acquisition function will make a trade-off between choosing points
     around the surrogate function maximum and points where its variance is biggest.
     This second method works best to find quickly good approximation of the maximum
     of *f*, while the first tends to give good approximation of *f* over the entire
     *x* range. In the next section, we will see how these methods works.
+  id: totrans-241
   prefs: []
   type: TYPE_NORMAL
+  zh: 这次，获取函数将在选择代理函数最大值周围的点和其方差最大的点之间进行权衡。第二种方法最适合快速找到*f*的最大值的良好近似，而第一种方法则倾向于在整个*x*范围内给出*f*的良好近似。在下一节中，我们将看到这些方法是如何工作的。
 - en: Example
+  id: totrans-242
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 示例
 - en: 'Let’s start with the complex trigonometric function, as described at the beginning
     of the chapter, and consider the *x* range [0, 40]. Our goal is to find its maximum
     and approximate the function. To facilitate our coding, let’s define two functions:
     one to evaluate the surrogate function and one to evaluate the new point. To evaluate
     the surrogate function, we can use the following function:'
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从本章开头描述的复杂三角函数开始，并考虑*x*的范围[0, 40]。我们的目标是找到它的最大值并近似该函数。为了方便我们的编码，让我们定义两个函数：一个用于评估代理函数，另一个用于评估新点。为了评估代理函数，我们可以使用以下函数：
 - en: '[PRE14]'
+  id: totrans-244
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: This function has the same code I have already discussed in our example in the
     previous sections, but it is packed in a function that returns the surrogate function,
     contained in the array `ybayes`, and the *σ*², contained in the array `sigmabayes`.
     Additionally, we require a function that evaluates the new points, using the acquisition
     function *a*[*UCB*](*x*). We can get it easily with the function
+  id: totrans-245
   prefs: []
   type: TYPE_NORMAL
+  zh: 此函数与我们在前几节示例中已经讨论过的代码相同，但它被封装在一个函数中，该函数返回包含在数组`ybayes`中的代理函数，以及包含在数组`sigmabayes`中的*σ*²。此外，我们还需要一个函数来评估新点，使用获取函数*a*[*UCB*](*x*)。我们可以很容易地用以下函数得到它
 - en: '[PRE15]'
+  id: totrans-246
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: To make things simpler, I decided to define the array that contains all the
     *x* values we want at the beginning outside the functions. Let’s start with just
     six randomly selected points. To check how our method is doing, let’s start with
     some definitions.
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了使事情更简单，我决定在函数外部定义包含所有我们想要*x*值的数组。让我们从六个随机选择的点开始。为了检查我们的方法表现如何，让我们先定义一些东西。
 - en: '[PRE16]'
+  id: totrans-248
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: In the array `randompoints1`, we will have our first six selected random points.
     We can easily get the surrogate function of our function with
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
+  zh: 在数组`randompoints1`中，我们将有我们首先选择的六个随机点。我们可以轻松地用以下方法得到我们函数的代理函数
 - en: '[PRE17]'
+  id: totrans-250
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: In Figure [7-16](#Fig16), you can see the result. The dotted line is the acquisition
     function *a*[*UCB*](*x*), normalized to fit in the plot.
+  id: totrans-251
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图[7-16](#Fig16)中，你可以看到结果。虚线是获取函数*a*[*UCB*](*x*)，已归一化以适应图表。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig16_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig16_HTML.jpg)'
+  id: totrans-252
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq20.png](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq20.png)'
 - en: Figure 7-16
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-16
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points (marked by crosses), the surrogate function (dashed line), and the acquisition
     function a[UCB](x) (dotted line), shifted to fit in the plot. The gray area is
     the region contained between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq20.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq21.png).
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数f(x)（实线）、随机选择的点（用十字标记）、代理函数（虚线）和获取函数a[UCB](x)（虚线），已移位以适应图表。灰色区域是位于线条 ![$$
+    \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq20.png)
+    和 ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq21.png)
+    之间的区域。
 - en: The surrogate function is not yet very good, because we don’t have enough points,
     and the big variance (the gray area) makes this evident. The only region that
     is well approximated is the region *x* ≳ 35\. You can see how the acquisition
@@ -1253,82 +1851,123 @@
     you can see the same plot as in Figure [7-16](#Fig16), but with the acquisition
     function ![$$ {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq22.png)
     and with *η* = 3.0.
+  id: totrans-255
   prefs: []
   type: TYPE_NORMAL
+  zh: 代理函数还不够好，因为我们没有足够的数据点，大的方差（灰色区域）使得这一点很明显。唯一被很好地近似的是*x* ≳ 35的区域。你可以看到当代理函数没有很好地近似黑盒函数时，获取函数很大，而当它做到了，例如*x* ≳ 35时，获取函数很小。所以，直观地选择*a*[*UCB*](*x*)最大的点作为新点，相当于选择函数被较差近似的点，或者说，用更数学的语言来说，方差较大的点。相比之下，在图[7-17](#Fig17)中，你可以看到与图[7-16](#Fig16)相同的图表，但带有获取函数![${\tilde{a}}_{UCB}(x)$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq22.png)和*η* = 3.0。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg)'
+  id: totrans-256
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg)'
 - en: Figure 7-17
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-17
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points (marked by crosses), the surrogate function (dashed line), and the acquisition
     function ![$$ {\tilde{a}}_{UCB}\ (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq23.png)
     (dotted line), shifted to fit in the plot. The gray area is the region contained
     between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq24.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq25.png).
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数f(x)（实线）、随机选择的点（用十字标记）、代理函数（虚线）和获取函数![${\tilde{a}}_{UCB}\ (x)$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq23.png)（点线），已调整以适应图表。灰色区域是位于![${\tilde{f}}\
+    (x)+\sigma (x)$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq24.png)和![${\tilde{f}}\
+    (x)-\sigma (x)$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq25.png)之间的区域。
 - en: As you can see, ![$$ {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq26.png)
     tends to have a maximum around the maximum of the surrogate function. Keep in
     mind that if *η* is big, the maximum of the acquisition function will shift toward
     regions with high variance. But this acquisition function tends to find “a” maximum
     slightly faster. I said “a,” because it depends on where the maximum of the surrogate
     function is, and not where the maximum of the black-box function is.
+  id: totrans-259
   prefs: []
   type: TYPE_NORMAL
+  zh: 如您所见，![${\tilde{a}}_{UCB}(x)$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq26.png)倾向于在代理函数的最大值附近达到最大值。请记住，如果*η*很大，获取函数的最大值将向高方差区域移动。但这个获取函数往往能更快地找到“一个”最大值。我说“一个”，因为这与代理函数的最大值位置有关，而不是黑盒函数的最大值位置。
 - en: 'Let’s see now what happens while using *a*[*UCB*](*x*) with *η* = 1.0\. For
     the first additional point, we must simply run the following three lines of code:'
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来看看使用*η* = 1.0时，*a*[*UCB*](*x*)会发生什么。对于第一个额外的点，我们只需简单地运行以下三行代码：
 - en: '[PRE18]'
+  id: totrans-261
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: For the sake of simplicity, I named each array for each step differently, instead
     of creating a list. But, typically, you should make these iterations automatic.
     In Figure [7-18](#Fig18), you can see the result with the additional point, marked
     with a black circle.
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了简化，我为每个步骤分别命名了每个数组，而不是创建一个列表。但，通常，你应该使这些迭代自动进行。在图[7-18](#Fig18)中，你可以看到带有额外点的结果，用黑色圆圈标记。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg)'
+  id: totrans-263
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg)'
 - en: Figure 7-18
+  id: totrans-264
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-18
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points (marked with crosses), and with the new selected point around x ≈ 27 (marked
     by a circle), the surrogate function (dashed line), and the acquisition function
     a[UCB](x) (dotted line), shifted to fit in the plot. The gray area is the region
     contained between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq27.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq28.png).
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数f(x)（实线）、随机选择的点（用十字标记），以及新选择的点位于 x ≈ 27 附近（用圆圈标记），代理函数（虚线），以及获取函数 a[UCB](x)（点线），调整以适应图表。灰色区域是位于线
+    ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq27.png)
+    和 ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq28.png)
+    之间的区域。
 - en: The new point is around *x* ≈ 27\. Let’s continue to add points. In Figure [7-19](#Fig19),
     you can see the results after adding five points.
+  id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: 新点位于 *x* ≈ 27 附近。让我们继续添加点。在图[7-19](#Fig19)中，你可以看到添加五个点后的结果。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg)'
+  id: totrans-267
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg)'
 - en: Figure 7-19
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-19
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points with the six selected new points (marked by crosses), the surrogate function
     (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}\ (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq29.png)
     (dotted line), shifted to fit in the plot. The gray area is the region contained
     between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq30.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq31.png).
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数f(x)（实线）、随机选择的点（用十字标记）以及六个新选择的点（用十字标记），代理函数（虚线），以及获取函数 ![$$ {\tilde{a}}_{UCB}\
+    (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq29.png)（点线），调整以适应图表。灰色区域是位于线
+    ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq30.png)
+    和 ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq31.png)
+    之间的区域。
 - en: Note the dashed line. Now our surrogate function approximates the black-box
     function quite well, especially around the real maximum. Using this surrogate
     function, we can find a very good approximation of our original function with
     just 11 evaluations in total! Keep in mind that we don’t have any additional information
     about *f*, except the 11 evaluations.
+  id: totrans-270
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意虚线。现在我们的代理函数很好地逼近了黑盒函数，尤其是在真实最大值附近。使用这个代理函数，我们只需总共11次评估就能找到原始函数的一个非常好的近似！记住，我们除了这11次评估外，没有关于*f*的任何额外信息。
 - en: Now let’s see what happens with the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
     $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq32.png), and
     let’s check how fast we can find the maximum. In this case, we’ll use *η* = 3.0,
@@ -1336,14 +1975,21 @@
     variance. In Figure [7-20](#Fig20), you can see the result after just adding one
     single additional point, marked by a black circle. We have already a quite good
     approximation of the real maximum!
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来看看获取函数 ![$$ {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq32.png)
+    会发生什么，并检查我们多快能找到最大值。在这种情况下，我们将使用 *η* = 3.0，以获得代理函数最大值和其方差之间的更好平衡。在图[7-20](#Fig20)中，你可以看到仅添加一个额外点（用黑色圆圈标记）后的结果。我们已经得到了一个相当好的真实最大值的近似！
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg)'
+  id: totrans-272
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg)'
 - en: Figure 7-20
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-20
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points with the additional selected points (marked by crosses), the surrogate
     function (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
@@ -1351,19 +1997,31 @@
     line), shifted to fit in the plot. The gray area is the region contained between
     the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq34.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq35.png).
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数 f(x)（实线）、随机选择的点以及额外选择的点（用十字标记）、代理函数（虚线）和获取函数 ![$$ {\tilde{a}}_{UCB}(x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq33.png)（点线），调整以适应图表。灰色区域是位于线
+    ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq34.png)
+    和 ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq35.png)
+    之间的区域。
 - en: Now let’s add an additional point. You can see in Figure [7-21](#Fig21) that
     the additional point is now still close to the maximum but shifted in the direction
     of the area with a high variance around 30.
+  id: totrans-275
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们再添加一个额外的点。你可以在图 [7-21](#Fig21) 中看到，额外的点现在仍然接近最大值，但方向上偏向于 30 附近具有高方差的区域。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg)'
+  id: totrans-276
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg)'
 - en: Figure 7-21
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-21
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points with the additional selected points (marked by crosses), the surrogate
     function (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
@@ -1371,22 +2029,35 @@
     line), shifted to fit in the plot. The gray area is the region contained between
     the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq37.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq38.png).
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数 f(x)（实线）、随机选择的点以及额外选择的点（用十字标记）、代理函数（虚线）和获取函数 ![$$ {\tilde{a}}_{UCB}(x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq36.png)（点线），调整以适应图表。灰色区域是位于线
+    ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq37.png)
+    和 ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq38.png)
+    之间的区域。
 - en: If we choose to make *η* smaller, the point would be closer to the maximum,
     and if we choose to make it bigger, the point would be closer to the point with
     the highest variance, between 25 and roughly 32\. Now let’s add an additional
     point and see what happens. In Figure [7-22](#Fig22), you can see how the method
     now chooses a point close to another region with high variance, between 10 and
     roughly 22, again, marked by a black circle.
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们选择使 *η* 更小，点会更接近最大值，如果我们选择使其更大，点会更接近具有最高方差（大约在 25 到 32 之间）的点。现在让我们添加一个额外的点，看看会发生什么。在图
+    [7-22](#Fig22) 中，你可以看到方法现在选择了一个接近另一个具有高方差区域（大约在 10 到 22 之间）的点，同样用黑色圆圈标记。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg)'
+  id: totrans-280
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg)'
 - en: Figure 7-22
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-22
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points (marked by crosses), and the additional selected point (marked by a black
     circle), the surrogate function (dashed line), and the acquisition function ![$$
@@ -1394,18 +2065,30 @@
     (dotted line), shifted to fit in the plot. The gray area is the region contained
     between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq40.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq41.png).
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数 f(x)（实线）、随机选择的点（用十字标记）、额外选择的点（用黑色圆圈标记）、代理函数（虚线）和获取函数 ![$$ {\tilde{a}}_{UCB}(x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq39.png)（点线），调整以适应图表。灰色区域是位于线
+    ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq40.png)
+    和 ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq41.png)
+    之间的区域。
 - en: And, finally, the method refines the maximum area around 15, as you can see
     in Figure [7-23](#Fig23), adding a point around 14, marked by the black circle.
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，方法在 15 附近细化了最大区域，如图 [7-23](#Fig23) 所示，添加了一个标记为黑色圆圈的点。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg)'
+  id: totrans-284
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg)'
 - en: Figure 7-23
+  id: totrans-285
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-23
 - en: Overview of the black-box function f(x) (solid line), the randomly selected
     points with the additional selected points (marked by crosses), the surrogate
     function (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
@@ -1413,42 +2096,62 @@
     line), shifted to fit in the plot. The gray area is the region contained between
     the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq43.png)
     and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq44.png).
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数 f(x)（实线），随机选择的点以及额外选择的点（用十字标记），代理函数（虚线），以及获取函数 ![~a_{UCB}(x)](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq42.png)（点线），已移动以适应图表。灰色区域是位于线
+    ![~f(x)+σ(x)](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq43.png)
+    和 ![~f(x)-σ(x)](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq44.png)
+    之间的区域。
 - en: The previous discussion and comparison of the behavior of the two types of acquisition
     functions should have made clear how, depending on what strategy you want to apply
     to approximate your black-box function, you should choose the right acquisition
     function.
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
+  zh: 前面的讨论和比较两种类型获取函数的行为应该已经清楚地说明了，根据你想应用什么策略来近似你的黑盒函数，你应该选择合适的获取函数。
 - en: Note
+  id: totrans-288
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 注意
 - en: Different types of acquisition functions will give different strategies in approximating
     the black-box function. For example, *a*[*UCB*](*x*) will add points in regions
     with the highest variance, while ![$$ {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq45.png)
     will add points finding a balance, regulated by *η*, between the maximum of the
     surrogate function and areas with high variance.
+  id: totrans-289
   prefs: []
   type: TYPE_NORMAL
+  zh: 不同的获取函数类型在近似黑盒函数时将给出不同的策略。例如，*a*[*UCB*](*x*) 将在方差最高的区域添加点，而 ![~a_{UCB}(x)](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq45.png)
+    将通过 *η* 调节代理函数的最大值和具有高方差区域之间的平衡来添加点。
 - en: An analysis of all the different types of acquisition functions would exceed
     the scope of this book. A good deal of research and reading of published papers
     is required to gain sufficient experience and understand how different acquisition
     functions work and behave.
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: 对所有不同类型的获取函数的分析将超出本书的范围。要获得足够的经验并了解不同的获取函数如何工作和表现，需要进行大量的研究和阅读已发表的论文。
 - en: 'If you want to use Bayesian optimization with your TensorFlow model, you don’t
     have to develop the method completely from scratch. You can try the library GPflowOpt
     that is described in a paper by Nicolas Knudde et al., “GPflowOpt: A Bayesian
     Optimization Library using TensorFlow,” available at [`https://goo.gl/um4LSy`](https://goo.gl/um4LSy)
     or [`arXiv.org`](http://arxiv.org) .'
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
+  zh: '如果你想在 TensorFlow 模型中使用贝叶斯优化，你不必完全从头开始开发该方法。你可以尝试由 Nicolas Knudde 等人描述的库 GPflowOpt，该库在论文“GPflowOpt:
+    A Bayesian Optimization Library using TensorFlow”中有描述，可在 [https://goo.gl/um4LSy](https://goo.gl/um4LSy)
+    或 [arXiv.org](http://arxiv.org) 上找到。'
 - en: Sampling on a Logarithmic Scale
+  id: totrans-292
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 对数尺度上的采样
 - en: There is a last small subtlety that I would like to discuss. Sometimes, you
     will find yourself in a situation in which you want to try a big range of possible
     values for a parameter, but you know from experience that the best value of it
@@ -1457,39 +2160,59 @@
     but you know, or at least suspect, that your best value probably lies between
     10^(−3) and 10^(−4). Now let’s suppose you are working with grid search, and you
     sample 1000 points. You may think you have enough points, but you will get
+  id: totrans-293
   prefs: []
   type: TYPE_NORMAL
+  zh: 有一个最后的微小细节我想讨论一下。有时，你可能会发现自己处于想要尝试一个参数可能值的广泛范围的情况，但你根据经验知道最佳值可能在一个特定的范围内。假设你想找到你模型的学习率最佳值，你决定测试从
+    10^(-4) 到 1 的值，但你知道，或者至少怀疑，最佳值可能位于 10^(-3) 和 10^(-4) 之间。现在假设你正在使用网格搜索，并采样 1000
+    个点。你可能认为你有了足够的点，但你将会得到
 - en: 0 points between 10^(−4) and 10^(−3)
+  id: totrans-294
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 介于 10^(-4) 和 10^(-3) 之间的 0 个点
 - en: 8 points between 10^(−3) and 10^(−2)
+  id: totrans-295
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 介于 10^(-3) 和 10^(-2) 之间的 8 个点
 - en: 89 points between 10^(−1) and 10^(−2)
+  id: totrans-296
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 介于 10^(-1) 和 10^(-2) 之间的 89 个点
 - en: 899 points between 1 and 10^(−1)
+  id: totrans-297
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 介于 1 和 10^(-1) 之间的 899 个点
 - en: You get a lot more points in the less interesting ranges, and zero where you
     want them. In Figure [7-24](#Fig24), you can see the distribution of the points.
     Note that on the *x* axis, I am using a logarithmic scale. You can clearly see
     how you get much more points for bigger values of the learning rate.
+  id: totrans-298
   prefs: []
   type: TYPE_NORMAL
+  zh: 在不太有趣的范围内，你得到了更多的点，而在你想要的地方得到零点。在图[7-24](#Fig24)中，你可以看到点的分布。请注意，在*x*轴上，我使用了对数刻度。你可以清楚地看到，对于较大的学习率值，你得到了更多的点。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg)'
+  id: totrans-299
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg)'
 - en: Figure 7-24
+  id: totrans-300
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-24
 - en: Distribution of 1000 points selected with grid search on a logarithmic x scale
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用网格搜索在以对数x轴选择的1000个点上的分布
 - en: You probably want to sample in a much finer way for smaller values of the learning
     rate than for bigger ones. What you should do is sample your points on a logarithmic
     scale. Let me explain. The basic idea is that you want to sample the same number
@@ -1497,39 +2220,59 @@
     and 10^(−1) and 1\. To do this, you can use the following Python code. First,
     select a random number between 0 and subtract the absolute value of the highest
     number of the power of 10 you have, in this case -4.
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可能希望对于学习率较小的值以更细的方式采样，而不是对于较大的值。你应该在以对数刻度上采样你的点。让我来解释一下。基本思想是，你希望在10^(−4)和10^(−3)、10^(−3)和10^(−2)、10^(−1)和10^(−2)、10^(−1)和1之间采样相同数量的点。为此，你可以使用以下Python代码。首先，选择一个介于0和减去10的幂的最高绝对值之间的随机数，在这个例子中是-4。
 - en: '[PRE19]'
+  id: totrans-303
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Then your array with the selected points can be created with
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后你可以创建包含所选点的数组
 - en: '[PRE20]'
+  id: totrans-305
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: In Figure [7-25](#Fig25), you can see now how the distributions of the points
     contained in the array `points2` is completely flat, as we wanted.
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图[7-25](#Fig25)中，你现在可以看到包含在数组`points2`中的点的分布是完全平坦的，正如我们希望的那样。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg)'
+  id: totrans-307
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg)'
 - en: Figure 7-25
+  id: totrans-308
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-25
 - en: Distribution of 1000 points selected with grid search on a logarithmic x scale
     , with the modified selection method
+  id: totrans-309
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用网格搜索在以对数x轴选择的1000个点上的分布，使用修改后的选择方法
 - en: 'You get 250 points in each region, as you can easily check with this code for
     the range 10^(−3) and 10^(−4) (for the other ranges simply change the numbers
     in the code):'
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: 你在每个区域都得到250个点，你可以通过这段代码很容易地检查范围10^(−3)和10^(−4)（对于其他范围只需更改代码中的数字）：
 - en: '[PRE21]'
+  id: totrans-311
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Now you can see how you have the same number of points between the different
     powers of 10\. With this simple trick, you can ensure that you also get enough
     points in the region of your chosen range, where, otherwise, you would get almost
@@ -1538,77 +2281,109 @@
     interesting for the learning rate, so you want to have enough points in this range
     to optimize your model. Note that the same applies to random search. It works
     in the exact same way.
+  id: totrans-312
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，你可以看到在10的不同幂之间，你得到了相同数量的点。通过这个简单的技巧，你可以确保在所选范围的区域也得到足够多的点，否则你几乎得不到任何点。记住，在这个例子中，有1000个点，使用标准方法，我们在10^(−3)和10^(−4)之间得到零点。这个范围对于学习率来说是最有趣的，所以你希望在这个范围内有足够的点来优化你的模型。请注意，这同样适用于随机搜索。它以完全相同的方式工作。
 - en: Hyperparameter Tuning with the Zalando Dataset
+  id: totrans-313
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用Zalando数据集进行超参数调整
 - en: To give you a concrete example of how hyperparameter tuning works, let’s apply
     what we have learned in a simple case. Let’s start with the data, as usual. We’ll
     use the Zalando dataset from Chapter [3](463356_1_En_3_Chapter.xhtml). For a complete
     discussion, please refer to that chapter. Let’s quickly load and prepare the data
     and then discuss tuning.
+  id: totrans-314
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了给你一个超参数调整如何工作的具体例子，让我们应用我们所学到的知识在一个简单的案例中。让我们从数据开始，像往常一样。我们将使用第[3](463356_1_En_3_Chapter.xhtml)章中的Zalando数据集。关于完整的讨论，请参阅该章节。让我们快速加载数据并准备，然后讨论调整。
 - en: First, as usual, load the necessary libraries.
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，像往常一样，加载必要的库。
 - en: '[PRE22]'
+  id: totrans-316
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: You will require the necessary CSV files in the folder in which your Jupyter
     notebook is. To get them, refer again to Chapter [3](463356_1_En_3_Chapter.xhtml).
     Once you have the files in the same folder as your notebook, you can simply load
     the data with
+  id: totrans-317
   prefs: []
   type: TYPE_NORMAL
+  zh: 你将需要在你的Jupyter笔记本所在的文件夹中提供必要的CSV文件。要获取它们，请再次参考第[3](463356_1_En_3_Chapter.xhtml)章。一旦你将文件放在与你的笔记本相同的文件夹中，你就可以简单地使用以下方式加载数据：
 - en: '[PRE23]'
+  id: totrans-318
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'Remember: We have 60,000 observations in the train dataset and 10,000 in the
     dev dataset. For example, printing the shape of the `data_train` array with'
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE24]'
+  id: totrans-320
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: will give you (60000, 785). Remember that one of the columns in the `data_train`
     array contains the labels, and 784 are the gray values of the image pixels (that
     have a size of 28 × 28 pixels). We must separate the labels from the features
     (the gray values of the pixels), then we need to reshape the arrays.
+  id: totrans-321
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE25]'
+  id: totrans-322
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Checking the dimensions with
+  id: totrans-323
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE26]'
+  id: totrans-324
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: will give us
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE27]'
+  id: totrans-326
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: as desired. (For a detailed discussion on data preparation for this dataset,
     refer to Chapter [3](463356_1_En_3_Chapter.xhtml).) We must, of course, do the
     same for the dev dataset.
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE28]'
+  id: totrans-328
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Now let’s normalize the features and transform everything in a `numpy` array
     .
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE29]'
+  id: totrans-330
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: 'We have prepared the data as required. Now let’s move on to the model. Let’s
     start with something easy. As the metric, we’ll use accuracy for this example,
     because the dataset is balanced. Let’s consider a network with just one layer
@@ -1618,11 +2393,14 @@
     number of neurons in the hidden layer) and train it. We will require two functions:
     one to build the network and one to train it. To build the model, we can define
     the following function :'
+  id: totrans-331
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE30]'
+  id: totrans-332
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: 'You should understand this function, since we have used the code several times
     in the book already. This function has an input parameter: `number_neurons` ,
     that will contain, as the name indicates, the number of neurons in the hidden
@@ -1631,112 +2409,166 @@
     tensor during training. If we don’t return them to the caller, they will be visible
     only inside this function, and we will not be able to train this model. The function
     to train the model will look like this:'
+  id: totrans-333
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE31]'
+  id: totrans-334
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: You have already seen a function very similar to this one several times. The
     main parts should be clear. You will find a few things that are new. First, we
     build the model in the function itself with
+  id: totrans-335
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE32]'
+  id: totrans-336
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: 'and, additionally, we evaluate the accuracy on the train dataset and on the
     dev dataset and return the values to the caller. In this way, we can run a loop
     for several values of the number of neurons in the hidden layer and get the accuracies.
     Note, this time, that the function has an additional input parameter: `number_neurons`.
     We must pass this number to the function that builds the model.'
+  id: totrans-337
   prefs: []
   type: TYPE_NORMAL
 - en: 'Let’s suppose we choose the following parameters: minibatch size = 50, we train
     for 100 epochs, the learning rate =0.00 , and we build our model with 15 neurons
     in the hidden layer.'
+  id: totrans-338
   prefs: []
   type: TYPE_NORMAL
 - en: We then run the model.
+  id: totrans-339
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE33]'
+  id: totrans-340
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: For the train dataset, we get 0.75755 accuracy and for the dev dataset 0.754
     accuracy. Can we do better? Well, we can surely do a grid search to start with.
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE34]'
+  id: totrans-342
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: Keep in mind that this will take quite some time. Three thousand neurons is
     quite a high number, so be warned, in case you want to attempt this. We get the
     results, as found in Table [7-1](#Tab1).
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
+  zh: 请记住，这将花费相当长的时间。3000个神经元是一个相当高的数字，所以如果你想要尝试这个，请小心。我们得到了如表[7-1](#Tab1)所示的结果。
 - en: Table 7-1
+  id: totrans-344
   prefs: []
   type: TYPE_NORMAL
+  zh: 表7-1
 - en: Overview of the Accuaracy on the Train and Test Datasets for a Different Number
     of Neurons
+  id: totrans-345
   prefs: []
   type: TYPE_NORMAL
+  zh: 不同神经元数量下训练和测试数据集准确率的概述
 - en: '| Number of Neurons | Accuracy on the Train Dataset | Accuracy on the Test
     Dataset |'
+  id: totrans-346
   prefs: []
   type: TYPE_TB
+  zh: '| 神经元数量 | 训练数据集准确率 | 测试数据集准确率 |'
 - en: '| --- | --- | --- |'
+  id: totrans-347
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- |'
 - en: '| 1 | 0.201383 | 0.2042 |'
+  id: totrans-348
   prefs: []
   type: TYPE_TB
+  zh: '| 1 | 0.201383 | 0.2042 |'
 - en: '| 5 | 0.639417 | 0.6377 |'
+  id: totrans-349
   prefs: []
   type: TYPE_TB
+  zh: '| 5 | 0.639417 | 0.6377 |'
 - en: '| 10 | 0.639183 | 0.6348 |'
+  id: totrans-350
   prefs: []
   type: TYPE_TB
+  zh: '| 10 | 0.639183 | 0.6348 |'
 - en: '| 15 | 0.687183 | 0.6815 |'
+  id: totrans-351
   prefs: []
   type: TYPE_TB
+  zh: '| 15 | 0.687183 | 0.6815 |'
 - en: '| 25 | 0.690917 | 0.6917 |'
+  id: totrans-352
   prefs: []
   type: TYPE_TB
+  zh: '| 25 | 0.690917 | 0.6917 |'
 - en: '| 30 | 0.6965 | 0.6887 |'
+  id: totrans-353
   prefs: []
   type: TYPE_TB
+  zh: '| 30 | 0.6965 | 0.6887 |'
 - en: '| 50 | 0.73665 | 0.7369 |'
+  id: totrans-354
   prefs: []
   type: TYPE_TB
+  zh: '| 50 | 0.73665 | 0.7369 |'
 - en: '| 150 | 0.78545 | 0.7848 |'
+  id: totrans-355
   prefs: []
   type: TYPE_TB
+  zh: '| 150 | 0.78545 | 0.7848 |'
 - en: '| 300 | 0.806267 | 0.8067 |'
+  id: totrans-356
   prefs: []
   type: TYPE_TB
+  zh: '| 300 | 0.806267 | 0.8067 |'
 - en: '| 1000 | 0.828117 | 0.8316 |'
+  id: totrans-357
   prefs: []
   type: TYPE_TB
+  zh: '| 1000 | 0.828117 | 0.8316 |'
 - en: '| 3000 | 0.8468 | 0.8416 |'
+  id: totrans-358
   prefs: []
   type: TYPE_TB
+  zh: '| 3000 | 0.8468 | 0.8416 |'
 - en: Not surprisingly, more neurons deliver better accuracy , with no signs of overfitting
     of the train dataset, because the accuracy on the dev dataset is almost equal
     to that of the train dataset. In Figure [7-26](#Fig26), you can see a plot of
     the accuracy on the test dataset vs. the number of neurons in the hidden layer.
     Note that the x axis uses a logarithmic scale, to make the changes more evident.
+  id: totrans-359
   prefs: []
   type: TYPE_NORMAL
+  zh: 并不出奇，更多的神经元可以提供更好的准确率，没有训练数据集过拟合的迹象，因为开发数据集的准确率几乎等于训练数据集。在图[7-26](#Fig26)中，你可以看到测试数据集准确率与隐藏层中神经元数量关系的图表。注意，x轴使用对数尺度，以便更明显地显示变化。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg)'
+  id: totrans-360
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg)'
 - en: Figure 7-26
+  id: totrans-361
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-26
 - en: Accuracy on the test dataset vs. the number of neurons in the hidden layer
+  id: totrans-362
   prefs: []
   type: TYPE_NORMAL
+  zh: 测试数据集上的准确率与隐藏层中神经元数量的关系
 - en: If your goal was to reach 80% accuracy, you could well stop here. But there
     are a few things to consider. First, we may be able to do better, and, second,
     training the network with 3000 neurons takes quite some time—on my laptop, roughly
@@ -1748,40 +2580,58 @@
     for learning rate, mini-batch size, number of neurons in each layer, and number
     of epochs. We will use random search. For each parameter, we will select randomly
     10 values.
+  id: totrans-363
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你的目标是达到80%的准确率，你完全可以在这里停止。但是，还有一些事情需要考虑。首先，我们可能做得更好，其次，使用3000个神经元的网络训练需要相当长的时间——在我的笔记本电脑上，大约35分钟。我们应该看看是否能在更短的时间内得到相同的结果。我们希望模型训练得尽可能快。让我们尝试一种稍微不同的方法。因为我们想更快，所以让我们考虑一个有四层的模型。实际上，我们也可以调整层数，但为了这个例子，我们还是坚持四层，并调整其他参数。我们将尝试找到学习率、批量大小、每层神经元数量和训练轮数的最佳值。我们将使用随机搜索。对于每个参数，我们将随机选择10个值。
 - en: '*Number of neurons*: Between 35 and 60'
+  id: totrans-364
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*神经元数量*：介于35到60之间'
 - en: '*Learning rate*: We will use the search on the logarithmic scale between 10^(−1)
     and 10^(−3).'
+  id: totrans-365
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*学习率*：我们将使用对数尺度在10^(-1)和10^(-3)之间的搜索。'
 - en: '*Mini-batch size*: Between 20 and 80'
+  id: totrans-366
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*批量大小*：介于20到80之间'
 - en: '*Number of epochs*: Between 40 and 100'
+  id: totrans-367
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*训练轮数*：介于40到100之间'
 - en: 'We can create arrays with the possible values with this code:'
+  id: totrans-368
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用以下代码创建包含可能值的数组：
 - en: '[PRE35]'
+  id: totrans-369
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: 'Note that we will not try all possible combinations, but we will consider only
     ten possible combinations: the first value of each array, the second value of
     each array, and so on. I want to show you how efficient random search can be with
     just ten evaluations! We can test our model with the following loop:'
+  id: totrans-370
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，我们不会尝试所有可能的组合，但我们会考虑仅十种可能的组合：每个数组的第一值，每个数组的第二值，依此类推。我想向你展示随机搜索在仅十次评估中可以有多高效！我们可以使用以下循环测试我们的模型：
 - en: '[PRE36]'
+  id: totrans-371
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: If you run this code, you will get a few combinations that end up in `nan`,
     and, therefore, it gets you an accuracy of 0.1 (basically random, because we have
     ten classes) and a few good combinations. You will find that the combinations
@@ -1795,38 +2645,52 @@
     you an idea of how powerful hyperparameter tuning can be, if done properly. Keep
     in mind that you should spend quite some time doing it, thinking especially about
     *how* to do it.
+  id: totrans-372
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你运行这段代码，你将得到一些以 `nan` 结束的组合，因此你的准确率是 0.1（基本上是随机的，因为我们有十个类别）和一些好的组合。你会发现，具有41个epoch、每层41个神经元、学习率为0.0286和批量大小为61的组合在开发数据集上的准确率为0.86。考虑到这次运行花费了2.5分钟，所以比只有一层、3000个神经元和6%更好的模型快了14倍。我们的初始测试给出了0.75的准确率，所以通过超参数调整，我们比初始猜测提高了11%。在深度学习中，11%的准确率增加是一个令人难以置信的结果。通常，即使是1%或2%的提高也被认为是很好的结果。我们所做的工作应该给你一个关于如果做得好的话，超参数调整可以多么强大的想法。请记住，你应该花相当多的时间来做这件事，特别是要考虑*如何*来做。
 - en: Note
+  id: totrans-373
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 注意
 - en: Always think about *how* you want to do your hyperparameter tuning, and use
     your experience, or ask for help from someone with experience. It is useless to
     invest time and resources to try combinations of parameters that you know will
     not work. For example, it is better to spend time testing learning rates that
     are very small than to test learning rates around one. Remember that every training
     round of your network will cost time, even if the results are not useful!
+  id: totrans-374
   prefs: []
   type: TYPE_NORMAL
+  zh: 总是先思考你想要如何进行超参数调整，并利用你的经验，或者向有经验的人寻求帮助。尝试那些你知道不会工作的参数组合，浪费时间和资源是毫无意义的。例如，测试非常小的学习率比测试接近1的学习率更有意义。记住，你网络的每一次训练轮都会消耗时间，即使结果没有用！
 - en: The point of this last section is not to get the best model possible but to
     give you an idea of how the tuning process may work. You could continue, trying
     different optimizers (for example Adam), considering wider ranges for the parameters,
     more parameter combinations, and so on.
+  id: totrans-375
   prefs: []
   type: TYPE_NORMAL
+  zh: 这一部分的目的不是得到最好的模型，而是给你一个关于调整过程可能如何进行的想法。你可以继续尝试不同的优化器（例如Adam），考虑更宽的参数范围，更多的参数组合等等。
 - en: A Quick Note on the Radial Basis Function
+  id: totrans-376
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 关于径向基函数的简要说明
 - en: Before completing this chapter, I would like to discuss a minor point about
     the radial basis function
+  id: totrans-377
   prefs: []
   type: TYPE_NORMAL
+  zh: 在完成本章之前，我想讨论一下关于径向基函数的一个小问题
 - en: '![$$ K\left(x,\kern0.375em {x}_i\right)={\sigma}^2{e}^{-\frac{1}{2{l}^2}{\left\Vert
     x-{x}_i\right\Vert}^2} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equab.png)'
+  id: totrans-378
   prefs: []
   type: TYPE_IMG
+  zh: '![径向基函数公式](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equab.png)'
 - en: It is important that you understand what the role of the parameter *l* is. In
     the examples, I have chosen *l* = 2, but I have not discussed why. The reason
     is the following. Choosing *l* too small will make the acquisition function develop
@@ -1834,17 +2698,26 @@
     plot in Figure [7-27](#Fig27). Big values for *l* will have a smoothing effect
     on the acquisition function, as you can see in the center and right plots in Figure
     [7-27](#Fig27).
+  id: totrans-379
   prefs: []
   type: TYPE_NORMAL
+  zh: 理解参数 *l* 的作用非常重要。在示例中，我选择了 *l* = 2，但我没有讨论为什么这样做。原因是这样的。选择过小的 *l* 将会使获取函数在已有的点周围形成非常狭窄的峰值，如图[7-27](#Fig27)左边的图所示。大的
+    *l* 值将对获取函数产生平滑效果，如图[7-27](#Fig27)中间和右边的图所示。
 - en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig27_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig27_HTML.jpg)'
+  id: totrans-380
   prefs: []
   type: TYPE_IMG
+  zh: '![图7-27](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig27_HTML.jpg)'
 - en: Figure 7-27
+  id: totrans-381
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-27
 - en: Effect of changing the parameter l in the radial basis function
+  id: totrans-382
   prefs: []
   type: TYPE_NORMAL
+  zh: 改变径向基函数中的参数 *l* 的影响
 - en: Usually, it is good practice to avoid values for *l* that are too small or too
     big, to be able to have a variance that varies in a smooth way between known points,
     as in Figure [7-27](#Fig27), for *l* = 1\. Having a very small *l* will make the
@@ -1854,5 +2727,9 @@
     some acquisition functions, difficult to use. As you can see for *l* = 5 in Figure
     [7-27](#Fig27), the acquisition function is almost constant. Typical values that
     are used are around 1 or 2.
+  id: totrans-383
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，避免使用过小或过大的 *l* 值是一个好的实践，以便能够使方差在已知点之间以平滑的方式变化，如图 [7-27](#Fig27) 所示，对于 *l*
+    = 1。一个非常小的 *l* 将会使点之间的方差几乎保持不变，因此，算法几乎总是选择点之间的中点，正如你可以从获取函数中看到的那样。选择一个大的 *l* 将会使方差变小，因此，对于某些获取函数来说，可能难以使用。如图
+    [7-27](#Fig27) 中 *l* = 5 所示，获取函数几乎保持不变。常用的典型值大约是 1 或 2。
