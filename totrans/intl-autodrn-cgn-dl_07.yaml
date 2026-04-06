@@ -1,7 +1,9 @@
 - en: 7. Navigation, SLAM, and Goals
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 7. 导航、SLAM和目标
 - en: In this chapter, our intrepid rover will explore the Egyptian catacombs. Any
     autonomous rover needs to know where it is in its environment; i.e., its current
     position. That way, the rover can travel from one location to the next without
@@ -9,86 +11,118 @@
     as it travels. This chapter introduces the simultaneous localization and mapping
     (SLAM) algorithm. SLAM generates maps from navigation data, such as the odometry
     data from the rover’s wheel encoders and the laser range data from the LiDAR sensor.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，我们的勇敢漫游车将探索埃及地下墓穴。任何自主漫游车都需要知道它在环境中的位置；即，它的当前位置。这样，漫游车就可以在没有用户输入的情况下从一个位置移动到下一个位置。为此，漫游车必须在旅行过程中构建其环境的内部地图。本章介绍了同时定位与建图（SLAM）算法。SLAM从导航数据生成地图，例如来自漫游车轮编码器的里程计数据和来自激光雷达传感器的激光测距数据。
 - en: Objectives
+  id: totrans-2
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 目标
 - en: 'The following are the objectives required for successful completion of this
     chapter:'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是为成功完成本章所需的目标：
 - en: Mission types
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 任务类型
 - en: Tracking local and global location in an environment (odometry)
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在环境中跟踪局部和全局位置（里程计）
 - en: Correcting our travel (control theory)
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 纠正我们的旅行（控制理论）
 - en: Simultaneous Localization and Mapping (SLAM)
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 同时定位与建图（SLAM）
 - en: Overview
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: To create an autonomous rover, the rover must know its position and orientation
     in the environment.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 要创建一个自主漫游车，漫游车必须知道它在环境中的位置和朝向。
 - en: Mission Types
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 任务类型
 - en: 'There exist three types of rover missions: complete coverage, goal directed,
     and exploratory. We will discuss **complete coverage** missions later. The **goal-directed**
     mission goes from Point A (initial) to Point G (goal). The goal can be a simple
     straight-line path (A connects directly to G) or a segmented path that traverses
     through other waypoints (A→B→C→…→G). The intermediate waypoints can be preplanned
     or discovered autonomously.'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 存在三种类型的漫游车任务：全面覆盖、目标导向和探索性。我们将在后面讨论**全面覆盖**任务。**目标导向**任务从点A（初始点）到点G（目标点）。目标可以是一条简单的直线路径（A直接连接到G）或通过其他航点穿越的分割路径（A→B→C→…→G）。中间航点可以是预先计划的，也可以是自主发现的。
 - en: 'The **exploratory** mission discovers features of the environment and places
     them on internal local and global maps. These features can be walls, doorways,
     objects, holes in the ground, etc. Creating this internal global map is necessary
     so as to plan future missions with optimal paths. An exploratory mission can be
     one of three sub-types: one-point or two-point missions, and resource discovery.'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '**探索性**任务发现环境中的特征并将它们放置在内部局部和全局地图上。这些特征可以是墙壁、门道、物体、地面的洞等。创建这个内部全局地图是必要的，以便规划具有最佳路径的未来任务。探索性任务可以是三种子类型之一：单点或双点任务，以及资源发现。'
 - en: The one-point mission gives the rover a starting position from which to “map”
     the entire environment and to which it should return. This mission type would
     be in a new environment, such as moving to a new house and randomly exploring
     the entire neighborhood.
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 单点任务为漫游车提供一个起始位置，从该位置“绘制”整个环境，并应返回该位置。这种任务类型将适用于新环境，例如搬到一个新家并随机探索整个街区。
 - en: The two-point mission provides the rover with its starting and final or goal
     positions. We can assume the final position is in an unexplored location on the
     intermediate map. The two-point mission does not have to explore the unknown environment
     thoroughly, just enough to get to the final goal. After moving into our new home,
     we know the address of the school we will attend, so we explore the route to learn
     about landmarks. Maybe there are some road closures, etc.
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 双点任务为漫游车提供其起始和最终或目标位置。我们可以假设最终位置在中间地图上的一个未探索的位置。双点任务不必彻底探索未知环境，只需足够到达最终目标。在我们搬进新家后，我们知道我们将就读学校的地址，因此我们探索路线以了解地标。也许有一些道路关闭等。
 - en: Our third—exploratory—mission is a one-point mission with a goal resource. Assuming
     no GPS, we might explore to find a pizza shop when we move into our new house.
     We do not know where the pizza shop is. We are just exploring the neighborhood
     until we find one.
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们的第三个——探索性——任务是一个单点任务，具有目标资源。假设没有GPS，当我们搬进新家时，我们可能会探索以找到一家披萨店。我们不知道披萨店在哪里。我们只是在探索街区，直到找到一家。
 - en: Odometry
+  id: totrans-16
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 里程计
 - en: Odometry estimates the change in position based on wheel sensor data. The odometry
     is calculated using the (simulated) rover’s wheel encoder. Think of putting a
     playing card on your bicycle as a kid as an analogy. Each time the card struck
@@ -97,15 +131,19 @@
     (assuming the trip was a straight line). We know this because we know how many
     spokes (18) the wheel has and the circumference (36 inches). So, each click translates
     to “move forward two inches.”
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 里程计算基于轮传感器数据估计位置的变化。里程计算是通过使用（模拟的）漫游车轮编码器来计算的。想象一下，当你还是个孩子的时候，把一张扑克牌放在自行车上，这是一个类比。每次扑克牌击中轮辐时，都会听到一声“点击”。如果我们知道自行车的原始位置和产生了多少次点击，我们就可以计算出自行车的新的位置（假设行程是直线）。我们知道这是因为我们知道轮子有多少个辐条（18个）和周长（36英寸）。所以，每次点击相当于“前进两英寸”。
 - en: Furthermore, we can calculate the bicycle’s speed by the frequency of the clicks.
     Of course, the assumption that the bicycle is going in a straight line is relatively
     strong, and this also does not take into account any skidding or sliding, etc.
     The odometry gives us an approximation of our current position! The shorter the
     trip, the better the approximation.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，我们可以通过点击的频率来计算自行车的速度。当然，假设自行车是直线行驶的假设相对较强，这也没有考虑到任何打滑或滑动等情况。里程计算给我们提供了一个当前位置的近似值！行程越短，近似值越好。
 - en: This position approximation process is how the wheel encoder works. The rover’s
     odometry is calculated by counting each “click” of the wheels to approximate the
     rover’s speed, direction, and location. The distance-traveled calculation is accurate
@@ -116,8 +154,10 @@
     calculations. Unfortunately, the calculations will still become increasingly erroneous
     over time and distance due to round-off errors, and we cannot correct this without
     updating our location from external sources.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个位置近似过程就是轮编码器的工作原理。通过计算车轮的每一次“点击”来近似计算漫游车的速度、方向和位置，漫游车的里程计算只要模拟漫游车直线行驶（没有转弯）时是准确的。一个更复杂的里程计算算法会结合线性（前进和后退）和角加速度（左转或右转）来计算漫游车的速度和位置。我们还可以使用惯性测量单元（IMU）传感器来进行更精确的计算。不幸的是，由于舍入误差，随着时间的推移和距离的增加，计算将变得越来越不准确，而且我们无法通过更新我们的位置信息来纠正这一点。
 - en: 'Navigation, SLAM, and pathfinding algorithms use odometry’s calculated position.
     The position is its location and its orientation, known as its **pose**. The degrees
     of freedom (DoF) is the number of dimensions necessary to describe the complete
@@ -125,18 +165,25 @@
     three dimensions <x,y,z> and rotate in three dimensions <r,p,y>, where r,p,y stands
     for roll, pitch, and yaw. Similarly, in the rover’s URDF Xacro files, the initial
     position and orientation six DoF is given as follows:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 导航、SLAM和路径规划算法使用里程计算得出的位置。位置包括其位置和方向，称为其**姿态**。自由度（DoF）是描述我们漫游车完整姿态所需的维度数量。例如，飞机有六个自由度，因为它可以在三个维度<x,y,z>中移动，并在三个维度<r,p,y>中旋转，其中r,p,y代表俯仰、偏航和滚转。同样，在漫游车的URDF
+    Xacro文件中，初始位置和方向的六个自由度如下所示：
 - en: Finally, odometry is used in both local and global maps. The **local** map tells
     the rover its location based on the starting position. The **global** map places
     our rover within the environment for visualization by an external viewer such
     as the RViz environment.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，里程计算在本地和全局地图中都有应用。**本地**地图告诉漫游车其位置是基于起始位置。**全局**地图将我们的漫游车放置在环境中，以便外部查看器（如RViz环境）进行可视化。
 - en: Rover’s Local Navigation
+  id: totrans-22
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 漫游车本地导航
 - en: 'Our rover can travel from one location to the next in an environment, handling
     obstacles blocking its path based on the odometry calculations. As mentioned earlier,
     there are two coordinate systems for the rover’s navigation: local and global.
@@ -144,8 +191,10 @@
     nearby objects. The rover’s local sensing capability means the rover will know
     that it started at location (0,0) facing north; it is currently at (1,3) facing
     east and senses an object at (1,5). We will explore global navigation later.'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的漫游车可以在环境中从一个位置移动到另一个位置，根据里程计计算处理阻挡其路径的障碍物。如前所述，漫游车的导航有两个坐标系：本地和全局。本地导航是漫游车的内部理解，可以感知附近的物体。漫游车的本地感知能力意味着漫游车将知道它从位置（0,0）面向北开始；它目前位于（1,3）面向东，并感知到位置（1,5）的物体。我们将在稍后探讨全局导航。
 - en: Furthermore, if the rover keeps moving east, it may collide with an obstacle—it
     could be a wall or a stand-alone object. The local goal is to avoid the obstacle.
     To avoid the obstacle, we can 1) stop, 2) turn left/right, and 3) move forward
@@ -153,12 +202,17 @@
     first solution is easiest to implement, but it slows our rover’s exploration.
     Conveniently, Robotic Operating System (ROS) has plug-ins to assist in controlling
     the rover, so we do not have to understand the physics.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，如果漫游车继续向东移动，它可能会撞到障碍物——它可能是一堵墙或一个独立物体。局部目标是避开障碍物。为了避免障碍物，我们可以1) 停止，2) 向左/右转，3)
+    向前进入未阻塞区域，或者我们可以在进入未阻塞区域时转向。第一种解决方案最容易实现，但会减慢我们的漫游车探索速度。方便的是，机器人操作系统（ROS）有插件来协助控制漫游车，所以我们不需要理解物理知识。
 - en: Rover’s Global Navigation
+  id: totrans-25
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 漫游车全局导航
 - en: Let us assume that we are on a two-point exploratory mission. Global navigation
     is finding a path between two points located somewhere in the environment. Finding
     the route between these two points requires generating a global map of the domain.
@@ -167,14 +221,18 @@
     rover avatar at that location. Furthermore, sensor data populates the map with
     object outlines, such as walls and obstacles. After creating this map, future
     goal-directed missions can preplan the shortest path between the two points.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们假设我们正在进行一个双点探险任务。全局导航是在环境中两个位置之间找到路径。在这两个点之间找到路线需要生成该领域的全局地图。随着漫游车的探索，我们使用里程计来计算其位置。我们只需将本地坐标系转换为全局坐标系，并在该位置绘制我们的漫游车头像。此外，传感器数据通过对象轮廓填充地图，例如墙壁和障碍物。创建此地图后，未来的目标导向任务可以预先规划两点之间的最短路径。
 - en: Hopefully, it is evident that errors in calculating the rover’s location from
     the odometry can have significant repercussions on the global map rendering. Knowing
     where the rover is in the environment allows us to create accurate maps on exploratory
     missions and optimal paths on goal-directed, planned missions.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 希望很明显，从里程计计算漫游车位置时的错误可能会对全局地图渲染产生重大影响。知道漫游车在环境中的位置允许我们在探险任务中创建准确的地图，并在目标导向、计划任务中创建最佳路径。
 - en: Odometry can be used for short durations with no real consequences to the rover’s
     position and pose. However, odometry’s uncertainty in determining the precise
     location and pose of the rover can be bothersome. This uncertainty is especially
@@ -184,12 +242,16 @@
     confidence in the global map’s construction. Furthermore, an object’s permanent
     location lets us assign position tags. To reset the odometry settings, we can
     use the object’s permanent position tag as an external “verified” location.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 里程计可以在短时间内使用，而不会对漫游车的位置和姿态产生真正的后果。然而，里程计在确定漫游车精确位置和姿态时的不确定性可能会令人烦恼。这种不确定性在长时间探索不确定环境时尤其成问题。为了帮助减少这些不确定性问题，我们在每次任务中更新我们的全局地图。这种对象位置的强化可以增强对全局地图构建的信心。此外，一个物体的永久位置让我们可以分配位置标签。要重置里程计设置，我们可以使用物体的永久位置标签作为外部“验证”的位置。
 - en: Getting the Rover Heading (Orientation)
+  id: totrans-29
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 获取漫游车航向（方向）
 - en: To develop a more adaptable sense-and-avoid algorithm, we need to know our rover’s
     direction. To achieve this, the `/odom` topic provides our AI rover’s heading
     sensor data to the `Twist()` function. Recall that `Twist()` gets the new desired
@@ -198,32 +260,44 @@
     the angular velocities of each wheel. As mentioned in Chapter [6](494112_1_En_6_Chapter.xhtml),
     these controls allow the AI rover to escape tight corners and enclosed areas.
     Now the AI rover can avoid obstacles without external steering.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了开发一个更具适应性的感知和避障算法，我们需要知道我们的探测车方向。为此，`/odom`主题将我们的AI探测车的航向传感器数据提供给`Twist()`函数。回想一下，`Twist()`获取新的期望航向，并通过迭代将探测车从当前航向旋转到期望航向。然后`Twist()`通过`/cmd_vel`主题传递数据以控制每个轮子的角速度。如第[6](494112_1_En_6_Chapter.xhtml)章所述，这些控制允许AI探测车逃离狭窄的角落和封闭区域。现在AI探测车可以不依赖外部转向来避开障碍物。
 - en: Note
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We have started to create a rover that is autonomous—i.e., it can steer itself
     without human intervention. The self-driving appears “intelligent” to an outside
     observer, and this means the rover has just evolved to an artificially intelligent
     rover, or AI rover. Henceforth, *rover* and *AI rover* are synonymous.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已经开始创建一个自主式探测车——即，它可以无需人工干预自行转向。自动驾驶看起来对旁观者来说“智能”，这意味着探测车已经进化成为一个人工智能探测车，或AI探测车。从今往后，*探测车*和*AI探测车*是同义的。
 - en: Create a `rotateRobotOdom.py` script in the `catkin_ws/src` directory. This
     script retrieves orientation data from the `/odom` topic (Listing [7-1](#PC2)).
     This data lets the rover know what its heading is.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`catkin_ws/src`目录中创建一个`rotateRobotOdom.py`脚本。此脚本从`/odom`主题检索方向数据（列表[7-1](#PC2)）。这些数据让探测车知道它的航向。
 - en: '[PRE0]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Most of the script should be familiar, but a few lines need to be explained.
     The code updates the roll, pitch, and yaw of the AI rover as it travels and rotates.
     Only the yaw values change since the environment is modeled as a flat, two-dimensional
     surface. We will test this script by using the keyboard-controlled `teleop_twist_keyboard.py`
     program.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的大部分内容应该很熟悉，但有几行需要解释。代码在探测车移动和旋转时更新AI探测车的滚转、俯仰和偏航。只有偏航值会改变，因为环境被建模为平坦的二维表面。我们将通过使用键盘控制的`teleop_twist_keyboard.py`程序来测试此脚本。
 - en: 'In Line 6, we face “North” by setting the roll, pitch, and yaw values to zero
     at the start of the mission. Lines 7–14 define the `get_rotation` function. The
     argument to this function is from the navigation `msg`; in quaternion coordinates:
@@ -236,55 +310,87 @@
     topic will receive the latest `get_rotation` message. Line 19 specifies that the
     messages will be published every second. Lines 20–23 are our “infinite loop,”
     which returns the current orientation every second in quaternions [x, y, z, w].'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 在第6行，我们通过将航向、俯仰和偏航值在任务开始时设置为零来面对“北方”。第7至14行定义了`get_rotation`函数。该函数的参数来自导航`msg`；在四元数坐标中：[x,
+    y, z, w]。无需担心四元数坐标，因为第12行将它们转换为欧拉坐标。第15行将`rotateRobotOdom`节点注册到ROS中，以订阅和发布消息；即，`get_rotation`现在是一个**回调**函数。回调函数是一个“无限循环”，它会以特定间隔将结果发布给订阅者。第17行将`/odom
+    Odometry`主题链接到`get_rotation`回调函数。任何订阅`Odometry`主题的对象都将接收到最新的`get_rotation`消息。第19行指定消息将每秒发布一次。第20至23行是我们的“无限循环”，它每秒以四元数[x,
+    y, z, w]返回当前方向。
 - en: Executing the rotateRobotOdom.py
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 执行`rotateRobotOdom.py`
 - en: 'Execute the following Linux terminal commands to compile and run in terminal
     1:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 在终端1中编译和运行以下Linux终端命令：
 - en: '[PRE1]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'After success, execute the following Linux terminal commands in terminal 2:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 成功后，在终端2中执行以下Linux终端命令：
 - en: '[PRE2]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: After executing `ai_rover_cat.launch` and `rotateRobotOdom.py`, you will see
     the AI rover in the Gazebo with a scrolling list of radians in the terminal. We
     see that the initial direction that the AI rover faces is approximately zero radians.
     Figure [7-1](#Fig1) shows our initial heading, and all future headings will be
     based upon this original orientation.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行 `ai_rover_cat.launch` 和 `rotateRobotOdom.py` 后，你将在 Gazebo 中看到 AI 探索车，终端上会显示一个滚动显示弧度的列表。我们看到
+    AI 探索车最初面对的方向大约是零弧度。图 [7-1](#Fig1) 展示了我们的初始航向，所有未来的航向都将基于这个原始方向。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig1_HTML.jpg)'
+  id: totrans-43
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig1_HTML.jpg)'
 - en: A number reads 0.00884617479721.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个数字读数为 0.00884617479721。
 - en: Figure 7-1
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-1
 - en: The initial orientation angle of around 0 radians for AI rover
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: AI 探索车大约 0 弧度的初始方向角
 - en: 'If we want to control the rover with the keyboard, we must execute the `teleops_twist_keyboard.py`
     ROS node. We can do this with the following terminal commands in terminal 3:'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们想用键盘控制探索车，我们必须执行 `teleops_twist_keyboard.py` ROS 节点。我们可以在终端 3 中使用以下终端命令来完成此操作：
 - en: '[PRE3]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Using the “j” and “l” keys, turn the rover and take note of the values displayed
     in terminal 2\. These numbers reflect the orientation of the rover in radians.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用“j”和“l”键转动探索车，并注意终端 2 中显示的值。这些数字反映了探索车在弧度中的方向。
 - en: Revisiting our **exploratory** mission, let us imagine that our rover is moving
     forward when the sensors detect an object. The sensing of the object is the feedback.
     Continuing forward would be wrong because we would crash, so we have to change
@@ -292,8 +398,10 @@
     into an unblocked, unexplored area; turn right into an unblocked, unexplored location;
     or turn around and retreat to an earlier point with unexplored regions. This last
     option recognizes that we hit a dead end and that further exploration is futile.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 回顾我们的**探索**任务，让我们想象当传感器检测到物体时，我们的探索车正在向前移动。检测到物体的过程是反馈。继续前进是错误的，因为我们可能会撞到障碍物，所以我们必须改变探索车的方向——发布新的命令。为了避免物体，我们可以向未阻塞、未探索的区域左转；向未阻塞、未探索的位置右转；或者转身退回到有未探索区域的较早点。最后一个选项认识到我们已经遇到了死胡同，进一步的探索是徒劳的。
 - en: It is crucial to verify that the rover’s orientation on the screen is correct.
     Zero radians should look like the rover is pointing “North” (up) on the screen.
     From now on, if we command the AI rover to turn (yaw), we should see the radians
@@ -303,33 +411,49 @@
     position and yaw via a wheel encoder. Each encoder type is inaccurate, but it
     is accurate enough for our system. So, our rover’s pose is calculated from the
     wheel positions.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 确认屏幕上探索车的方向是否正确至关重要。零弧度应该看起来像探索车在屏幕上指向“北”（向上）。从现在开始，如果我们命令 AI 探索车转向（偏航），我们应该看到弧度发生变化（图
+    [7-2](#Fig2)），并且探索车的方向将在屏幕上改变。在后台，我们的命令被转换成针对每个轮子的独立命令。响应后，在处理命令后，每个轮子通过轮编码器发布其当前位置和偏航。每种编码器类型都不准确，但对我们系统来说足够准确。因此，我们的探索车姿态是通过轮子位置计算得出的。
 - en: In Figure [7-2](#Fig2), we changed the orientation of the rover to ~0.16 radians
     with the manual controls (j, k, l). We can see that we have now successfully tested,
     verified, and validated that the odometry and orientation of the AI rover are
     indeed correct.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [7-2](#Fig2) 中，我们通过手动控制（j, k, l）将探索车的方向改变到了 ~0.16 弧度。我们可以看到，我们现在已经成功测试、验证和确认了
+    AI 探索车的里程计和方向确实是正确的。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig2_HTML.jpg)'
+  id: totrans-53
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig2_HTML.jpg)'
 - en: A screenshot of the terminal with the data of rover orientation and a g-map
     as the visual representation of the orientation. The visual representation is
     on the left and the terminal with data is on the right.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 屏幕上探索车方向数据和以 g-map 作为方向视觉表示的截图。视觉表示在左侧，带数据的终端在右侧。
 - en: Figure 7-2
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-2
 - en: Changes of the yaw orientation in radians. Orientation is 0.16 radians and is
     facing south–southeast (SSE)
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 弧度偏航方向的变化。方向为 0.16 弧度，面向南-东南（SSE）
 - en: Control Theory
+  id: totrans-57
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 控制理论
 - en: Control theory is simply a feedback loop (Figure [7-3](#Fig3)); i.e., we do
     something, then look around to see how things have changed because of what we
     did. If the result is good, we continue doing it. If the result is wrong, we adjust
@@ -338,25 +462,37 @@
     front, we continue to move forward. However, once any of our sensors (LiDAR, radar,
     camera) detect an obstacle in our path, we change the AI rover’s course to avoid
     the obstacle and explore further.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 控制理论简单来说就是一个反馈回路（图 [7-3](#Fig3)）；即，我们做某事，然后四处看看我们做了什么之后事情发生了怎样的变化。如果结果是好的，我们继续这样做。如果结果不正确，我们调整并“纠正”我们做错的事情。例如，我们通过向前移动开始我们的探测车单点探索任务。只要传感器检测到前方没有东西，我们就继续前进。然而，一旦我们的任何传感器（激光雷达、雷达、摄像头）在我们的路径上检测到障碍物，我们就改变人工智能探测车的航向以避开障碍物并进一步探索。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig3_HTML.png)'
+  id: totrans-59
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig3_HTML.png)'
 - en: A schematic of a simple feedback loop. The controller, brain sends commands
     to the controlled object and receives feedback from the controlled object.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个简单的反馈回路示意图。控制器（大脑）向受控对象发送命令，并从受控对象接收反馈。
 - en: Figure 7-3
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-3
 - en: Simple feedback loop
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 简单反馈回路
 - en: Autonomous Navigation
+  id: totrans-63
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 自主导航
 - en: Figure [7-4](#Fig4) uses a simple Unified Modeling Language (UML) statechart
     to model navigation and control logic for our one-point exploration mission; i.e.,
     we have no goal location or resource. We are just trying to create a map. The
@@ -370,45 +506,66 @@
     diagram is what happens when no new unexplored paths are available. One option
     is to maintain a set of visited waypoints, retrace the path back to a previous
     point with unexplored paths, and resume exploring from that point.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [7-4](#Fig4) 使用简单的统一建模语言（UML）状态图来模拟我们的单点探索任务的导航和控制逻辑；即，我们没有目标位置或资源。我们只是在尝试创建一张地图。UML状态图模拟了三种状态（`GO_STRAIGHT`，`STOP`
+    和 `TURN`）。有限数量的状态转换（障碍物，无障碍物）将代表导航的动态行为。如果探测车正在直行且其路径上没有障碍物，它将继续直行。然而，如果传感器检测到障碍物，它将停止并转向。在转向过程中，如果其路径上仍有障碍物，它将继续转向。当有一条清晰（且未探索）的路径时，它将沿着这条未探索的路径继续前进。此图未显示当没有新的未探索路径时会发生什么。一个选项是维护一组已访问的航点，沿着有未探索路径的路径返回到先前的一个点，并从该点继续探索。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig4_HTML.png)'
+  id: totrans-65
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig4_HTML.png)'
 - en: A circular loop for navigation statechart. The steps are as follows. No obstacles,
     go straight; obstacle, stop; obstacle, turn; no obstacle, go straight.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 导航状态图的圆形回路。步骤如下。无障碍物，直行；障碍物，停止；障碍物，转向；无障碍物，直行。
 - en: Figure 7-4
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-4
 - en: Navigation statechart
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 导航状态图
 - en: From a programming perspective, the three states must update odometry data.
     Later, we will also use the states to update our internal map. We will review
     these concepts for autonomous navigation toward the end of this chapter. At the
     end of this chapter, we will review the following behaviors that the rover can
     accomplish when exploring the environment.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 从编程的角度来看，三种状态必须更新里程计数据。稍后，我们还将使用这些状态来更新我们的内部地图。我们将在本章末尾回顾这些概念，以实现自主导航。在本章末尾，我们将回顾探测车在探索环境时可以完成以下行为。
 - en: '**GO_STRAIGHT:** The rover starts or continues going in its current direction,
     continuously updating its position <x,y,z> [z never changes]. Roll, pitch, and
     yaw <r,p,y> are not changed. If it detects an obstacle, it stops.'
+  id: totrans-70
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '**GO_STRAIGHT:** 探测车开始或继续沿当前方向行驶，持续更新其位置 <x,y,z> [z 永远不变]。滚转、俯仰和偏航 <r,p,y>
+    不变。如果它检测到障碍物，它将停止。'
 - en: ''
+  id: totrans-71
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: '**STOP:** Upon entering the `STOP` state, we add this location <x>to the visited
     waypoint list. (If we have external location references, this is the time to correct
     odometry location errors.) We now transition to the</x> `TURN` state.'
+  id: totrans-72
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '**STOP:** 进入 `STOP` 状态时，我们将此位置 <x> 添加到已访问航点列表中。（如果我们有外部位置参考，这是纠正里程计位置错误的时间。）我们现在过渡到
+    `TURN` 状态。'
 - en: ''
+  id: totrans-73
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
@@ -418,22 +575,30 @@
     we find an unobstructed, unexplored path, we store the direction as exploring
     and return to the `GO_STRAIGHT` state. If there are no unexplored paths, we backtrack
     to a previous waypoint and continue exploring from there.'
+  id: totrans-74
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '**转向**：漫游车改变其航向以“查看”未探索的方向，更新偏航 <r,p,y> [滚转和俯仰不变]，但位置 <x,y,z> 保持不变。在转向时，我们寻找无障碍、未探索的路径。当我们找到一个无障碍、未探索的路径时，我们将该方向存储为探索状态，并返回到`GO_STRAIGHT`状态。如果没有未探索的路径，我们将回溯到先前的航点并从那里继续探索。'
 - en: We will leave to you what modifications are necessary for uneven terrain; i.e.,
     changes to <z> and <r,p>.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将把在不平地形上所需的修改留给你；即，对<z>和<r,p>的更改。
 - en: In our statechart, we chose to ignore tracking of waypoints visited. As we will
     soon see, each state in the statechart directly maps to functions in our SLAM
     results in the navigational stack and the `move_base` process.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的状态图中，我们选择忽略已访问航点的跟踪。正如我们很快就会看到的，状态图中的每个状态直接映射到导航堆栈和`move_base`过程中的我们的SLAM结果中的函数。
 - en: Simultaneous Localization and Mapping (SLAM)
+  id: totrans-77
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 同时定位与建图（SLAM）
 - en: 'We use SLAM for two reasons: to generate a map and to locate the rover (and
     objects) in the generated map. Mapping occurs during an exploration mission. The
     rover will have to sense and avoid detected objects during the map generation,
@@ -442,15 +607,19 @@
     the rover relative to other objects in the environment. The final generated map
     will have a “global” coordinate system that the rover’s “local” coordinate system
     can overlay.'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用SLAM有两个原因：生成地图和定位漫游车（以及物体）在生成的地图中。制图发生在探索任务期间。在制图过程中，漫游车必须感知并避开检测到的物体，例如墙壁、柱子等。生成地图后，漫游车可以穿越“最优路径”，避开所有物体。使用SLAM的第二个原因意味着定位漫游车相对于环境中的其他物体的位置。最终生成的地图将有一个“全局”坐标系，漫游车的“局部”坐标系可以叠加。
 - en: SLAM maps can be dynamic and evolve, but we will initially assume the environment
     is static and flat (no holes) so as to understand the SLAM algorithm better. When
     dynamic, moving objects are introduced, the map will need to change over time.
     The map will have to categorize objects as permanent or transitory. Our understanding
     means that the generated map is “final” and complete.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: SLAM地图可以是动态的并演变，但我们将最初假设环境是静态和平坦的（没有孔），以便更好地理解SLAM算法。当引入动态移动物体时，地图需要随时间变化。地图必须将物体分类为永久性或暂时性。我们的理解意味着生成的地图是“最终”和完整的。
 - en: SLAM’s exploratory algorithm (exploratory mission), called Adaptive Monte Carlo
     Library (AMCL), allows our AI rover to explore its environment. A Monte Carlo
     method randomly chooses a direction to turn toward, like rolling dice or spinning
@@ -462,8 +631,10 @@
     holes in the floor, such as stairs. Since the GoPiGo has a simple proximity sensor,
     we can repurpose it to detect holes in front of the rover. We will add that sensor
     script later.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: SLAM的探索算法（探索任务），称为自适应蒙特卡洛库（AMCL），允许我们的AI漫游车探索其环境。蒙特卡洛方法随机选择一个转向的方向，就像掷骰子或旋转轮盘赌。如果选定的随机方向被阻挡，它“再次掷骰子”。SLAM算法通过在环境中随机漫步来创建初始地图。在探索过程中，它用带有对象（墙壁、静止物体）的试探性解决方案填充地图。随着它继续探索，它在地图结构上“获得信心”。最初生成的地图将不会检测到地板上的孔，例如楼梯。由于GoPiGo有一个简单的接近传感器，我们可以将其重新用于检测漫游车前方的孔。我们将在稍后添加该传感器脚本。
 - en: One of the cool things about SLAM is generating paths to backtrack based on
     the *partially* generated map. SLAM tracks “decision points”—i.e., locations the
     rover turned—as the rover explores. If the rover arrives at a dead end—i.e., all
@@ -474,24 +645,34 @@
     location is. Once all decision-point locations are thoroughly investigated, the
     mapping process for the environment is completed. This completed exploration does
     not mean that the rover touched every spot in the environment.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: SLAM 中的一个酷特点是根据部分生成的地图生成回溯路径。SLAM 跟踪“决策点”——即探测器转弯的位置——当探测器探索时。如果探测器到达死胡同——即从该决策点位置的所有方向都已探索——SLAM
+    将生成一条路径回到之前的决策点位置以重新开始探索。如果最后一个位置现在已被完全探索，它将回溯得更远，依此类推。这意味着 SLAM 将跟踪每个决策点位置被探索的完整性。一旦所有决策点位置都彻底调查过，环境映射过程就完成了。这种完成的探索并不意味着探测器接触了环境中的每个位置。
 - en: Now we have enough information to perform goal-oriented missions. Given the
     rover’s initial location and the goal point, SLAM can generate intermediate waypoints
     to define the path the rover should traverse. Assuming the explored area is a
     flat environment, the rover follows the path.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有足够的信息来执行目标导向的任务。给定探测器的初始位置和目标点，SLAM 可以生成中间航点来定义探测器应穿越的路径。假设已探索的区域是平坦环境，探测器将遵循路径。
 - en: Installing SLAM and Associated Libraries
+  id: totrans-83
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 安装 SLAM 和相关库
 - en: Installing SLAM libraries will look complicated, but it is not. Essentially,
     we install SLAM libraries and libraries that use SLAM. The essential library is
     gMapping; most other SLAM libraries call upon it. There are many types of SLAM
     libraries. We are using OpenSLAM, and you can read about it at [`https://OpenSLAM.org`](https://openslam.org).
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装 SLAM 库看起来可能很复杂，但实际上并不复杂。本质上，我们安装 SLAM 库以及使用 SLAM 的库。基本库是 gMapping；大多数其他 SLAM
+    库都会调用它。存在许多类型的 SLAM 库。我们正在使用 OpenSLAM，您可以在[https://OpenSLAM.org](https://openslam.org)上了解相关信息。
 - en: 'OpenSLAM’s `slam_gmapping` library supplies the required ROS interface wrapper
     between the sensors, ROS, and the gMapping software. The `slam_gmapping` provides
     a 2D grid map (similar to developing the floorplan on grid paper). The gMapping
@@ -501,73 +682,110 @@
     rover location. Thus, `slam_gmapping` transforms each LiDAR scan into the odometry
     transform (TF) frame of the AI rover. Therefore, as the AI rover moves and explores,
     we see each LiDAR scan update the map details.'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: OpenSLAM 的 `slam_gmapping` 库提供了传感器、ROS 和 gMapping 软件之间的所需 ROS 接口包装器。`slam_gmapping`
+    提供了一个 2D 网格地图（类似于在网格纸上绘制楼层平面图）。gMapping 库有两个数据源：里程计和激光雷达。里程计数据为 gMapping 库提供定位（上下文），即根据起始点确定探测器的当前位置。激光雷达提供相对于当前探测器位置的物体检测数据。因此，`slam_gmapping`
+    将每个激光雷达扫描转换为 AI 探测器的里程计转换（TF）框架。因此，随着 AI 探测器的移动和探索，我们看到每个激光雷达扫描更新地图细节。
 - en: 'We must install the Noetic ROS openslam’s `gMapping` package and related support
     packages. The support packages include sensor, exploration, image processing,
     and transformation ROS packages. To do this, we must enter the following commands
     in a Linux terminal:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们必须安装 Noetic ROS openslam 的 `gMapping` 软件包和相关支持包。支持包包括传感器、探索、图像处理和转换 ROS 包。为此，我们必须在
+    Linux 终端中输入以下命令：
 - en: '[PRE4]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Setting Up SLAM
+  id: totrans-88
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 设置 SLAM
 - en: We’ll be using the stable Noetic ROS version of SLAM. To process the examples
     of Noetic ROS SLAM, we will need to make the following changes in the system.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用稳定的 Noetic ROS 版本的 SLAM。为了处理 Noetic ROS SLAM 的示例，我们需要在系统中进行以下更改。
 - en: Setting Up the Noetic ROS Environment
+  id: totrans-90
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 设置 Noetic ROS 环境
 - en: 'Please navigate to your Linux home directory and open the `.bashrc` file by
     running the following terminal command in Terminator:'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 请导航到您的 Linux 主目录，并通过在 Terminator 中运行以下终端命令打开 `.bashrc` 文件：
 - en: '[PRE5]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '**Please add the following elements at the end of the .bashrc file and source
     the file to allow SLAM to work correctly:**'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: '**请在 .bashrc 文件末尾添加以下元素，并源文件以允许 SLAM 正确工作：**'
 - en: '[PRE6]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: We have upgraded Noetic ROS and its supporting dependencies to run SLAM and
     its associated libraries and facilities.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已将 Noetic ROS 及其支持依赖项升级，以便运行 SLAM 及其相关库和设施。
 - en: Initializing the Project Workspace
+  id: totrans-96
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 初始化项目工作空间
 - en: '[PRE7]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Note
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Sourcing ROS and a ROS SLAM project directory is critical to running the project.
     Running `roscore` in the background is extremely important.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取 ROS 和 ROS SLAM 项目目录对于运行项目至关重要。在后台运行 `roscore` 非常重要。
 - en: Navigational Goals and Tasks
+  id: totrans-100
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 导航目标与任务
 - en: Although the current rover can sense and avoid objects, it can easily get trapped.
     To avoid this, the rover must navigate using course correction to map the maze
     entirely. For our purposes, we will move forward until an object obstructs our
     path. We will then either (1) turn to avoid the object in a direction we have
     never explored or (2) retrace our “steps” to a location where there are directions
     we have not explored.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管当前的漫游车能够感知和避开障碍物，但它很容易陷入困境。为了避免这种情况，漫游车必须使用航向校正来完全绘制迷宫地图。就我们的目的而言，我们将继续前进，直到遇到阻挡我们路径的物体。然后我们将要么（1）转向避开我们从未探索过的方向上的物体，要么（2）重新走回我们尚未探索方向的位置。
 - en: Create a Python ROS node script to read odometry data (yaw and position) from
     each simulated wheel encoder. This information includes the estimated precision
     and accuracy values. Therefore, we will now develop the heading correction control
@@ -585,20 +803,31 @@
     section on using simple mathematical objects such as quaternions. These objects
     will allow us to develop more reliable and efficient algorithms to determine the
     correct heading and tracking for the AI rover.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建一个 Python ROS 节点脚本，从每个模拟轮编码器读取里程计数据（偏航和位置）。这些信息包括估计的精度和准确度值。因此，我们现在将开发航向校正控制，以允许
+    AI 漫游车从一个位置点移动到下一个目的地点。这种航向校正将是 AI 漫游车的第一个实际导航任务。这种从一个航路点到下一个航路点的导航任务将仅是一个线性导航轨迹和校正程序。这种类型的导航轨迹意味着在当前开发阶段，AI
+    漫游车将不会避开和绕过障碍物，而从从一个位置点到下一个位置点。我们将首先开发这种线性导航跟踪和校正，然后在章节的后面创建感知和避开能力，以增量化和模块化的方式开发并测试
+    AI 漫游车的每个组件。我们还将在此 ROS 节点程序中揭示并审查每个轮编码器的模拟数据位置。最后，本节还将简要讨论使用简单的数学对象，如四元数。这些对象将使我们能够开发更可靠和高效的算法，以确定
+    AI 漫游车的正确航向和跟踪。
 - en: We must update the folder directories in order for our first navigational tracking
     and correction algorithm to be able to process and send information to and from
     multiple sources. These input sources include a simulated PixHawk autopilot or
     encoders in the form of an odometry source topic `(‘/ai_rover_remastered/base_controller/odom/’)`.
     The navigation trajectory commands then go to the `(’/ai_rover_remastered/base_controller/cmd_vel’)`
     output topic for the AI rover’s trajectory control.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们必须更新文件夹目录，以便我们的第一个导航跟踪和校正算法能够处理和从多个来源发送信息。这些输入源包括模拟的 PixHawk 自主飞行器或以里程计源主题（`/ai_rover_remastered/base_controller/odom/`）形式的编码器。导航轨迹命令随后发送到
+    AI 漫游车的轨迹控制输出主题（`’/ai_rover_remastered/base_controller/cmd_vel’`）。
 - en: Importance of Maps
+  id: totrans-104
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 地图的重要性
 - en: Why does our rover require a map in the first place? A fully developed map represents
     the locations of important objects in the environment. A map gives context. Not
     all objects will necessarily be represented, just the important ones. However,
@@ -608,14 +837,18 @@
     a rectangle, but instead the dumpster wheels. SLAM can still create incorrect
     map representations. That is why a camera is needed to determine what objects
     are in the pathway of the rover.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 为什么我们的漫游车最初需要一张地图呢？一个完全开发的地图代表了环境中重要物体的位置。地图提供了上下文。并非所有物体都会被表示，只是重要的那些。然而，一些地图仍然可能是错误的，因为地图上没有检测到物体。例如，如果你查看我们漫游车世界的SLAM生成的地图，你会看到四个点形成一个矩形。这些不是均匀分布在矩形中的四个物体，而是垃圾桶的轮子。SLAM仍然可以创建错误的地图表示。这就是为什么需要一个摄像头来确定漫游车路径上的物体。
 - en: Initially, the rover knows nothing about its environment. It must map the environment.
     Unfortunately, a “fog of war” (FoW) covers the entire map, in military parlance.
     The objective of the exploratory mission is to reduce the FoW, ideally to zero
     percent.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始时，漫游车对其环境一无所知。它必须绘制环境地图。不幸的是，在军事术语中，整个地图被“战争迷雾”（FoW）所覆盖。探索任务的目标是减少FoW，理想情况下减少到零。
 - en: The rover randomly walks around and maps the environment on its first mission.
     The rover does NOT touch every location in the environment, but rather, it “sees”
     walls and obstacles in the distance and marks them on the map. It does not walk
@@ -623,25 +856,34 @@
     of barriers and obstacles. SLAM can now generate optimal paths from an initial
     position to a goal position, with waypoints created to traverse the now “known”
     environment safely.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 漫游车在其首次任务中随机漫步并绘制环境地图。漫游车不会触及环境中的每个位置，而是“看到”远处的墙壁和障碍物，并在地图上标记它们。它不会走到墙壁旁边。完成这次任务后，我们得到了一个包含障碍物和障碍物位置的地图。SLAM现在可以从初始位置生成到目标位置的最优路径，并创建航点以安全穿越现在“已知”的环境。
 - en: SLAM gMapping Introduction
+  id: totrans-108
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: SLAM gMapping 简介
 - en: The algorithm serving as the foundation for our SLAM gMapping is the Rao-Blackwellized
     particle filter. SLAM uses this particle filter to outline the map’s boundaries
     based on the LiDAR sensor’s laser-range data and the rover’s odometry. This filter
     uses a probabilistic approach that is beyond this book’s scope to explain.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为我们SLAM gMapping基础算法的是Rao-Blackwellized粒子滤波器。SLAM使用这个粒子滤波器根据激光测距传感器的激光距离数据和漫游车的里程计来勾勒地图的边界。这个滤波器使用一种超出本书范围的概率方法来解释。
 - en: The `slam`_`gmapping` ROS node subscribes to the `/odom` and `sensor_msgs/LaserScan`
     topics and publishes the occupancy grid and map to `nav_msgs/OccupancyGrid`. The
     occupancy grid is the size of the map supplied by the user. We will use a 40x40
     occupancy grid ranging between ˗20 and +20\. Think of the occupancy grid as a
     map written onto a piece of paper. The drawing of the map must remain on the grid.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: '`slam`_`gmapping` ROS节点订阅 `/odom` 和 `sensor_msgs/LaserScan` 主题，并将占用网格和地图发布到
+    `nav_msgs/OccupancyGrid`。占用网格的大小由用户提供的地图大小决定。我们将使用一个40x40的占用网格，范围在-20到+20之间。将占用网格想象成写在一张纸上的地图。地图的绘制必须保持在网格上。'
 - en: The `slam`_`gmapping` node combines the LiDAR and odometry local data and transforms
     it into a global map overlayed onto the occupancy grid. The `remap` line in the
     following launch file connects `slam`_`gmapping` to the rover, thus connecting
@@ -651,8 +893,11 @@
     of the LiDAR means the laser data must be translated from its local fixed location
     (on the moving rover) to its actual global position on the map. Each laser scan
     is offset by the rover’s current position, calculated using odometry data.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: '`slam`_`gmapping` 节点将激光测距和里程计的局部数据结合起来，并将其转换为叠加在占用网格上的全局地图。以下启动文件中的 `remap`
+    行将 `slam`_`gmapping` 连接到漫游车，从而连接激光测距和里程计传感器。从激光测距传感器的角度来看，它没有移动；它固定安装在漫游车上的一个位置。漫游车在移动，但传感器“不知道”这一点！它只是完成其扫描任务。激光测距的这种移动意味着激光数据必须从其在移动漫游车上的局部固定位置转换为地图上的实际全局位置。每次激光扫描都会根据里程计数据计算出的漫游车当前位置进行偏移。'
 - en: Recall that the rover does not know what the environment looks like at the beginning
     of its journey. Its initial view is a “blank” map that needs exploration; i.e.,
     fog of war. The `slam_gmapping` starts to fill in the map as the rover moves around
@@ -660,163 +905,238 @@
     and `/Odom (tf/tfMessage)` topics published by the rover’s LiDAR and Odom sensors.
     The tf message topic changes the senor data from local rover coordinates to global
     map coordinates.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 回想一下，漫游车在其旅程开始时并不知道环境的样子。它的初始视图是一个“空白”地图，需要探索；即，战争迷雾。`slam_gmapping` 开始填充地图，当漫游车在环境中移动时。为此，`slam_gmapping`
+    订阅由漫游车的激光和欧几里得传感器发布的 `sensor_msgs/LaserScan` 和 `/Odom (tf/tfMessage)` 主题。tf消息主题将传感器数据从局部漫游车坐标转换为全局地图坐标。
 - en: Launching Our Rover
+  id: totrans-113
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 启动我们的漫游车
 - en: 'We have two launch files to run our rover using SLAM: `ai_rover_world.launch`
     and `gmapping_demo.launch`. Additionally, we will need a world map called `rover.world`.
     Since designing a world map is beyond the book’s scope, download it from the book
     website.'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们有两个启动文件来运行使用SLAM的漫游车：`ai_rover_world.launch` 和 `gmapping_demo.launch`。此外，我们还需要一个名为
+    `rover.world` 的世界地图。由于设计世界地图超出了本书的范围，请从本书网站下载。
 - en: Creating ai_rover_world.launch
+  id: totrans-115
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 创建 ai_rover_world.launch
 - en: 'To begin the mapping, first launch our rover (Listing [7-2](#PC11)) in its
     Gazebo environment (source file follows):'
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 要开始制图，首先在Gazebo环境中启动我们的漫游车（见列表[7-2](#PC11)），源文件如下：
 - en: '[PRE8]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Figure [7-5](#Fig5) displays the rover inside the Gazebo environment, indicated
     by the small dot inside the red box. Notice how the size of the environment dwarfs
     our rover. We expect this small scale of size.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[7-5](#Fig5)显示了Gazebo环境中的漫游车，红色方框内的点表示。注意环境的大小如何使我们的漫游车显得渺小。我们期望这种小规模的大小。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig5_HTML.png)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig5_HTML.png)'
 - en: An illustration of a rover, highlighted by a red box in a Gazebo environment.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Gazebo环境中，用红色方框突出显示的漫游车示意图。
 - en: Figure 7-5
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-5
 - en: Rover now spawned (in the red box)
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 漫游车现在已生成（在红色方框内）
 - en: '[PRE9]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Now, launch the `slam_gmapping` map builder in a separate terminal. The `ros.org
     gmapping_demo.launch` was modified to more closely align with our environment
     and rover. The source code is in the **“Modified gmapping_demo.launch File”**
     section.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，在单独的终端中启动 `slam_gmapping` 地图构建器。`ros.org gmapping_demo.launch` 已被修改以更接近我们的环境和漫游车。源代码在“修改后的gmapping_demo.launch文件”部分。
 - en: '[PRE10]'
+  id: totrans-125
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The slam_gmapping Launch File
+  id: totrans-126
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: slam_gmapping 启动文件
 - en: 'The `slam_gmapping` ROS node processes sensor data and generates a map while
     the rover explores its environment. The gMapping file has several parameters that
     we can set in the launch file. Most of these we do not modify; underlined parameters
     have changed:'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: '`slam_gmapping` ROS节点在漫游车探索其环境的同时处理传感器数据并生成地图。gMapping文件有几个参数，我们可以在启动文件中设置。其中大部分我们没有修改；下划线参数已更改：'
 - en: '**base_frame (default: “base_link”):** This is the frame’s name attached to
     the rover’s mobile base.'
+  id: totrans-128
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**base_frame (默认: “base_link”):** 这是附着在漫游车移动底盘上的框架名称。'
 - en: '**map_frame (default: “map”):** This is the frame’s name attached to the map.
     This is also the name of the topic we use in RViz.'
+  id: totrans-129
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**map_frame (默认: “map”):** 这是附着在地图上的框架名称。这也是我们在RViz中使用的主题名称。'
 - en: '**odom_frame (default: “odom”):** The frame’s name of the odometry system.
     We set the odometry system for the rover’s physical differential-wheel-drive encoder
     or Gazebo-simulated plug-in drive.'
+  id: totrans-130
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**odom_frame (默认: “odom”):** 欧几里得距离测量系统的框架名称。我们为漫游车的物理差动轮驱动编码器或Gazebo模拟插件驱动设置欧几里得距离测量系统。'
 - en: '**map_update_interval (default: 5.0):** Wait time (in seconds) until the next
     map update. This number is important since a shorter wait-time duration could
     cause system degradation of the rover or simulation.'
+  id: totrans-131
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**map_update_interval (默认: 5.0):** 等待时间（以秒为单位）直到下一次地图更新。这个数字很重要，因为较短的等待时间可能会导致漫游车或模拟的系统退化。'
 - en: '**maxRange (float):** Sets the maximum range of the laser. Set this value to
     the real-world range of the LiDAR.'
+  id: totrans-132
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**maxRange (浮点数):** 设置激光的最大范围。将此值设置为LiDAR的真实世界范围。'
 - en: '**maxUrange (default: 80.0):** Sets the maximum usable range of the laser.
     The laser beams will be stopped at this range of distance.'
+  id: totrans-133
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**maxUrange (默认: 80.0):** 设置激光的最大可用范围。激光束将在这个距离范围内停止。'
 - en: '**minimumScore (default: 0.0):** Sets the minimum score (distance from an object)
     to have an accurate laser reading.'
+  id: totrans-134
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**minimumScore (默认: 0.0):** 设置最小分数（物体距离）以获得准确的激光读数。'
 - en: '**xmin** **(default: -100.0, set: -20):** The minimum x-range of the map. Set
     xmin as close as possible to the actual total x-range of the environment that
     the rover will explore, which in our case is 40 meters. So we will set xmin to
     ˗20 and xmax to 20 meters.'
+  id: totrans-135
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**xmin** **(默认: -100.0, 设置: -20):** 地图的最小 x 范围。将 xmin 设置得尽可能接近漫游车将要探索的环境的实际总
+    x 范围，在我们的案例中是 40 米。因此，我们将 xmin 设置为 -20，xmax 设置为 20 米。'
 - en: '**ymin** **(default: -100.0, set: -20):** The minimum y-range of the map.'
+  id: totrans-136
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**ymin** **(默认: -100.0, 设置: -20):** 地图的最小 y 范围。'
 - en: '**xmax** **(default: 100.0, , set: 20):** The maximum x-range of the map.'
+  id: totrans-137
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**xmax** **(默认: 100.0, 设置: 20):** 地图的最大 x 范围。'
 - en: '**ymax** **(default: 100.0, set: 20):** The maximum y-range of the map.'
+  id: totrans-138
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**ymax** **(默认: 100.0, 设置: 20):** 地图的最大 y 范围。'
 - en: '**delta** **(default: 0.05, set: -0.01):** Resolution of the map.'
+  id: totrans-139
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**delta** **(默认: 0.05, 设置: -0.01):** 地图的分辨率。'
 - en: '**linearUpdate** **(default: 1.0, set: 0.5):** The required linear distance
     in the (x-direction) that the rover must move to process laser readings.'
+  id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**linearUpdate** **(默认: 1.0, 设置: 0.5):** 漫游车必须移动以处理激光读取所需的线性距离（x 方向）。'
 - en: '**angularUpdate** **(default: 0.5, set: 0.436):** The required angular distance
     the rover must move to process laser readings.'
+  id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**angularUpdate** **(默认: 0.5, 设置: 0.436):** 漫游车必须移动以处理激光读取所需的角度距离。'
 - en: '**temporalUpdate (default: -1.0):** Wait time (seconds) between laser readings.
     If this value is ˗1.0, it turns off this function, i.e., continuous.'
+  id: totrans-142
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**temporalUpdate (默认: -1.0):** 等待时间（秒）在激光读取之间。如果此值为 -1.0，则关闭此功能，即连续。'
 - en: '**particles** **(default: 30, set: 80):** Number of filter particles.'
+  id: totrans-143
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**particles** **(默认: 30, 设置: 80):** 过滤粒子数量。'
 - en: '**resampleThreshold** **(default: xx, set: 0.5):** The sensor data frequency
     in seconds.'
+  id: totrans-144
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**resampleThreshold** **(默认: xx, 设置: 0.5):** 传感器数据频率（秒）。'
 - en: Note
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We need to ensure that we shut down the previously launched `slam_gmapping`
     node by pressing CTRL+C on the same terminal before every simulation.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要确保在每次模拟之前，通过在相同终端上按 CTRL+C 来关闭之前启动的 `slam_gmapping` 节点。
 - en: Preparing slam_gmapping Package
+  id: totrans-147
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 准备 slam_gmapping 包
 - en: 'We must organize our SLAM processing software into ROS packages. We will now
     create an ROS `ai_rover_navigation` package. This particular package will contain
     a mixture of code (e.g., ROS nodes), data, libraries, images, documentation, and
@@ -824,181 +1144,281 @@
     aims to provide proper functionality and encourage the reuse of `gmapping_demo.launch`
     for other ROS systems in the rover. Use the following terminal commands to create
     the `ai_rover_navigation` package:'
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们必须将我们的 SLAM 处理软件组织成 ROS 包。我们现在将创建一个 ROS `ai_rover_navigation` 包。这个特定的包将包含代码（例如
+    ROS 节点）、数据、库、图像、文档等。每个 SLAM 程序都将包含在一个 ROS 包中。ROS 包旨在提供适当的功能并鼓励在漫游车中的其他 ROS 系统中重用
+    `gmapping_demo.launch`。使用以下终端命令创建 `ai_rover_navigation` 包：
 - en: '[PRE11]'
+  id: totrans-149
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'The package has three dependencies: `std_msgs`, `roscpp`, and `rospy`. The
     `std_msgs` are common data types that have been predefined in ROS. In ROS 1, the
     ROS libraries are two independent libraries written in C++ (`roscpp`) and Python
     (`rospy`). Both libraries do NOT have the same functionality and are not equivalent!
     The SLAM and ROS libraries depend on both of these libraries.'
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 该包有三个依赖项：`std_msgs`、`roscpp` 和 `rospy`。`std_msgs` 是在 ROS 中预定义的通用数据类型。在 ROS 1
+    中，ROS 库是两个独立由 C++（`roscpp`）和 Python（`rospy`）编写的库。这两个库的功能并不相同，也不等价！SLAM 和 ROS 库都依赖于这两个库。
 - en: Modify gmapping_demo.launch File
+  id: totrans-151
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 修改 gmapping_demo.launch 文件
 - en: Download the `gmapping_demo.launch` from the `ros.org` website.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 从 `ros.org` 网站下载 `gmapping_demo.launch`。
 - en: '[PRE12]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Modify the file from the ROS website to match our rover’s parameters (Listing
     [7-3](#PC15)).
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 从 ROS 网站修改文件以匹配我们的漫游车参数（列表 [7-3](#PC15)）。
 - en: '[PRE13]'
+  id: totrans-155
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: The last section of the launch file connects the `gMapping` package to the rover-transformed
     LiDAR data; i.e., the data is now in global coordinates. This launch file does
     not display anything on the screen. To do that, we need to use RViz (from the
     rover’s perspective) and Gazebo (from the operator’s perspective). (We will launch
     this file two sections from now.)
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动文件的最后一部分将 `gMapping` 包连接到漫游车转换后的激光数据；即数据现在是在全局坐标系中。此启动文件不会在屏幕上显示任何内容。为此，我们需要使用
+    RViz（从漫游车的视角）和 Gazebo（从操作员的视角）。（我们将在接下来的两个部分中启动此文件。）
 - en: RViz gMapping
+  id: totrans-157
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: RViz gMapping
 - en: To display the generated map in RViz, we need a launch file (`ai_rover_rviz_gmapping.launch`)
     to connect the rover sensors, RViz, and the map (Listing [7-4](#PC16)).
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在 RViz 中显示生成的地图，我们需要一个启动文件（`ai_rover_rviz_gmapping.launch`）来连接漫游车传感器、RViz 和地图（列表
+    [7-4](#PC16)）。
 - en: '[PRE14]'
+  id: totrans-159
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Since the code for defining the RViz `mapping.rviz` parameters is so large,
     it can be found in this textbook’s GitHub source code repository. The parameter
     descriptions for `mapping.rviz` can also be found in the RViz configuration file.
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于定义 RViz `mapping.rviz` 参数的代码非常大，它可以在本教材的 GitHub 源代码仓库中找到。`mapping.rviz` 参数的描述也可以在
+    RViz 配置文件中找到。
 - en: To control the rover, use the keyboard Teleop script. Remember to click on the
     appropriate terminator screen running the Teleops program to move the robot. As
     you move your rover, you should see that the SLAM gMapping process is updating
     the map in RViz with new features of the unexplored regions. Use the keyboard
     keys shown in Figure [7-6](#Fig6) to control the rover in the environment.
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 要控制探测车，请使用键盘 Teleop 脚本。请记住，要移动机器人，请点击运行 Teleops 程序的适当 terminator 屏幕。当你移动你的探测车时，你应该看到
+    SLAM gMapping 进程正在使用未探索区域的新特征在 RViz 中更新地图。使用图 [7-6](#Fig6) 中所示的键盘键来在环境中控制探测车。
 - en: 'To begin the process of manually controlling the rover, use the Teleops program
     with the following shell command:'
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 要开始手动控制探测车的过程，请使用 Teleops 程序，并使用以下 shell 命令：
 - en: '[PRE15]'
+  id: totrans-163
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: You should see something like Figure [7-7](#Fig7). The `slam_gmapping` ROS node
     updates the map with an “object” (blue box). The red lines are potential “walls,”
     and the orange box is the intrepid rover.
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 你应该看到类似图 [7-7](#Fig7) 的内容。`slam_gmapping` ROS 节点使用“对象”（蓝色方块）更新地图。红色线条是潜在的“墙壁”，橙色方块是勇敢的探测车。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig7_HTML.jpg)'
+  id: totrans-165
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig7_HTML.jpg)'
 - en: A screenshot of the display map and a terminal with the mapping node. The text
     r o s at the rate of r o s hyphen virtual box colon tilde slash R o s Bot slash
     simula is highlighted on the terminal.
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 显示地图和带有映射节点的终端的截图。终端上以 r o s 速率突出显示的文本 r o s hyphen virtual box colon tilde
+    slash R o s Bot slash simula。
 - en: Figure 7-7
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-7
 - en: The slam_gmapping node updates the map as the rover explores
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: slam_gmapping 节点在探测车探索时更新地图
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig6_HTML.jpg)'
+  id: totrans-169
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig6_HTML.jpg)'
 - en: A table with letters and corresponding commands. The commands are as follows,
     i, move forward; comma, move backward; j, turn left; l, turn right; k, stop; q
     and z, increase slash decrease speed.
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个带有字母和相应命令的表格。命令如下，i，向前移动；逗号，向后移动；j，向左转；l，向右转；k，停止；q 和 z，增加/减少速度。
 - en: Figure 7-6
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-6
 - en: The basic keyboard commands to move the rover
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 移动探测车的基本键盘命令
 - en: 'After fully exploring the environment, we save the generated map image (pgm)
     and metadata (yaml). We do this by entering the following command in a terminator
     shell window:'
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 在完全探索环境后，我们保存生成的地图图像（pgm）和元数据（yaml）。我们通过在 terminator 壳窗口中输入以下命令来完成此操作：
 - en: '[PRE16]'
+  id: totrans-174
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Convert the `test_map.pgm` into a JPG in the same directory. You can now view
     it in an image viewer, such as gimp (Figure [7-8](#Fig8)).
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 将同一目录下的 `test_map.pgm` 转换为 JPG。你现在可以在图像查看器中查看它，例如 gimp（图 [7-8](#Fig8)）。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig8_HTML.jpg)'
+  id: totrans-176
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig8_HTML.jpg)'
 - en: A screenshot of the g-mapped image file, which is depicted by a white background
     with geometrical cutouts.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: g-mapped 图像文件的截图，它由白色背景和几何切割组成。
 - en: Figure 7-8
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-8
 - en: The final gMapped image file
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 最终的 gMapped 图像文件
 - en: The pgm file is a “picture” of the map, while the yaml file describes the size
     of the map. The yaml file description comes later.
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: pgm 文件是地图的“图片”，而 yaml 文件描述了地图的大小。yaml 文件描述将在后面。
 - en: Final Launch Terminal Commands
+  id: totrans-181
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 最终启动终端命令
 - en: 'To begin the mapping, first launch the rover in its environment. We do that
     with the following commands in different terminals. In the first terminal, we
     launch rover into the environment (existing hidden map):'
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 要开始映射，首先在不同的终端中启动探测车到其环境中。我们通过以下命令来完成此操作。在第一个终端中，我们将探测车启动到环境中（现有隐藏地图）：
 - en: '[PRE17]'
+  id: totrans-183
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'Next, we add the `gMapping` package that enables the rover to explore the environment
     and create a map by launching the `slam_gmapping` map builder in a second terminal:'
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们添加 `gMapping` 包，通过在第二个终端中启动 `slam_gmapping` 地图构建器，使探测车能够探索环境并创建地图：
 - en: '[PRE18]'
+  id: totrans-185
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'Finally, in a third terminal, we open an RViz window:'
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，在第三个终端中，我们打开一个 RViz 窗口：
 - en: '[PRE19]'
+  id: totrans-187
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Your RViz display should be similar to Figure [7-9](#Fig9)
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 你的 RViz 显示应该类似于图 [7-9](#Fig9)
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig9_HTML.jpg)'
+  id: totrans-189
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig9_HTML.jpg)'
 - en: A screenshot of the mapping tab with interact options and a map. The interact
     section on the left contains displays and global options. The map on the right
     has laser scan data depicted by red points.
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 映射标签页的截图，包含交互选项和地图。左侧的交互部分包含显示和全局选项。右侧的地图用红色点表示激光扫描数据。
 - en: Figure 7-9
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-9
 - en: Initial RViz in Gazebo with laser scan data (red points). The red line in the
     blue box appears to be a wall, but this is an error
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始的 Gazebo 中 RViz 与激光扫描数据（红色点）。蓝色框中的红色线条看起来像是一堵墙，但这其实是一个错误
 - en: RViz Mapping Configurations
+  id: totrans-193
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: RViz 映射配置
 - en: We now turn our attention to mapping for ROS navigation. We should also focus
     on the critical components needed for successful ROS mapping and navigation of
     environments. We need to review what is necessary to configure RViz to display
@@ -1008,8 +1428,11 @@
     our rover. Why is mapping so critical for the navigation of our rover? Because
     mapping will allow our rover to plan pathways and avoid collisions with objects
     in our unexplored environment.
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在将注意力转向 ROS 导航的映射。我们还应该关注成功进行 ROS 映射和环境导航所需的关键组件。我们需要回顾配置 RViz 以显示地图和来自探测车（漫游车）的导航信息和数据的必要条件。我们还将讨论配置
+    RViz 以启用我们勇敢的探测车成功进行映射和导航所需的条件。我们还将回顾使用我们的探测车创建地图的多种可能性。为什么映射对我们探测车的导航如此关键？因为映射将允许我们的探测车规划路径并避免与未探索环境中的物体发生碰撞。
 - en: Our rover can only access maps from two sources during its exploration mission.
     The first source is the map already provided to the rover by the mission planner.
     The second source is for the rover to construct its very own map from sensor (LiDAR)
@@ -1019,8 +1442,12 @@
     environment responsible for monitoring information, messages, and data sent between
     the rover and human operator. The importance of RViz as a visual data environment
     is especially true for mapping.
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 在探测车的探索任务期间，探测车只能从两个来源访问地图。第一个来源是任务规划器提供给探测车的地图。第二个来源是探测车从传感器（激光雷达）和里程计数据构建其自己的地图。从探测车的传感器（激光雷达）和里程计数据创建地图的过程称为
+    SLAM（同时定位与建图）过程。我们需要一个非常重要的工具来监控我们勇敢的探测车，那就是 RViz。RViz 是 ROS 图形环境，负责监控探测车和人类操作员之间发送的信息、消息和数据。RViz
+    作为视觉数据环境的重要性，特别是在映射方面，尤为明显。
 - en: Now we will review the steps necessary to visualize the `LaserScan` data and
     the map of the environment. To display the mapping data visually on RViz will
     require us to obtain three sources or topics from the rover. We need to get the
@@ -1030,53 +1457,82 @@
     with object-oriented features with Xacro extensions in Chapter [5](494112_1_En_5_Chapter.xhtml).
     We will need to display the robot description model of the rover to see the `LaserScan`
     results so as to visually detect any abnormalities.
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们将回顾可视化 `LaserScan` 数据和环境地图所需的步骤。要在 RViz 上可视映射数据，我们需要从探测车获取三个来源或主题。我们需要获取
+    `LaserScan` 显示、`Odometry` 数据显示和 `Map` 显示作为 RViz 中的选项。我们还需要添加在第四章 [4](494112_1_En_4_Chapter.xhtml)
+    中首先在 URDF 源文件中开发的机器人描述模型，并在第五章 [5](494112_1_En_5_Chapter.xhtml) 中通过 Xacro 扩展进一步增强了面向对象特性。我们需要显示探测车的机器人描述模型，以便能够看到
+    `LaserScan` 结果，从而视觉检测任何异常。
 - en: 'We first need to execute the `gmapping_demo.launch` file, which launches the
     `slam_gmapping` ROS node. We need to have this ROS node running first in order
     to obtain the messages and data sources necessary for the map. The following are
     the terminal commands required for starting the mapping process:'
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先需要执行 `gmapping_demo.launch` 文件，该文件启动 `slam_gmapping` ROS 节点。我们需要首先运行这个 ROS
+    节点，以便获取地图所需的消息和数据源。以下是为启动映射过程所需的终端命令：
 - en: '[PRE20]'
+  id: totrans-198
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Note
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If you have an issue with the `rosrun rviz rviz` command, you’ll need to import
     our intrepid rover’s required robot description model using the RViz launch file
     `ai_rover_remastered_rviz.launch` from Chapter [5](494112_1_En_5_Chapter.xhtml).
     There, you can import the correct robot description model of our rover. Start
     RViz with `roslaunch ai_rover_remastered ai_rover_remastered_rviz.launch`.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您在 `rosrun rviz rviz` 命令中遇到问题，您需要使用 RViz 启动文件 `ai_rover_remastered_rviz.launch`
+    从第 [5](494112_1_En_5_Chapter.xhtml) 章导入我们勇敢的罗弗所需的机器人描述模型。在那里，您可以导入我们罗弗的正确机器人描述模型。使用
+    `roslaunch ai_rover_remastered ai_rover_remastered_rviz.launch` 启动 RViz。
 - en: If you successfully start the `ai_rover_remastered_rviz.launch` file from Chapter
     [5](494112_1_En_5_Chapter.xhtml), then you will see the following figure displayed
     in RViz (Figure [7-10](#Fig10)).
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您成功启动了第 [5](494112_1_En_5_Chapter.xhtml) 章中的 `ai_rover_remastered_rviz.launch`
+    文件，那么您将在 RViz 中看到以下图示（图 [7-10](#Fig10)）。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig10_HTML.jpg)'
+  id: totrans-202
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig10_HTML.jpg)'
 - en: A screenshot of the mapping tab with interact option, camera, and a map. The
     interact section on the top left contains displays and transport hint options.
     The camera option below the interact section highlights a visual inside an orange
     box. The map on the right contains two rectangular boxes, red on the left and
     blue on the right.
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有交互选项、相机和地图的映射选项卡截图。左上角的交互部分包含显示和传输提示选项。交互部分下面的相机选项突出显示了一个橙色框内的视觉。右边的地图包含两个矩形框，左边是红色，右边是蓝色。
 - en: Figure 7-10
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-10
 - en: Successful start of the RViz environment with our intrepid rover and sensor
     data display boxes (camera–orange, LaserScan–red, and IMU–blue)
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 成功启动 RViz 环境，其中包括我们勇敢的罗弗和传感器数据显示框（相机–橙色，LaserScan–红色，和 IMU–蓝色）
 - en: Checking LaserScan Configurations
+  id: totrans-206
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 检查 LaserScan 配置
 - en: 'First, we must examine the `LaserScan` display to inspect any displayed errors.
     Please search for similar solutions on `ROS.org` and other supporting websites
     if errors are detected. Examine the Displays options in RViz and choose the `LaserScan`
@@ -1084,27 +1540,44 @@
     topic of `/ai_rover_remastered/laser_scan/scan`. The rover’s `RobotModel` display
     is included. We modify the `LaserScan` size in meters and so forth. For more information
     regarding the `LaserScan` topic, go to: [`http://wiki.ros.org/laser_pipeline/Tutorials/IntroductionToWorkingWithLaserScannerData`](http://wiki.ros.org/laser_pipeline/Tutorials/IntroductionToWorkingWithLaserScannerData).'
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们必须检查 `LaserScan` 显示以检查是否有任何显示错误。如果在 `ROS.org` 和其他支持网站上发现错误，请搜索类似解决方案。在
+    RViz 中检查显示选项，并选择 `LaserScan` 选项（图 [7-11](#Fig11)）。您应该看到我们拥有正确的 `LaserScan` 主题
+    `/ai_rover_remastered/laser_scan/scan`。罗弗的 `RobotModel` 显示也包括在内。我们修改了 `LaserScan`
+    的大小（以米为单位等）。有关 `LaserScan` 主题的更多信息，请访问：[`http://wiki.ros.org/laser_pipeline/Tutorials/IntroductionToWorkingWithLaserScannerData`](http://wiki.ros.org/laser_pipeline/Tutorials/IntroductionToWorkingWithLaserScannerData)。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig11_HTML.jpg)'
+  id: totrans-208
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig11_HTML.jpg)'
 - en: A screenshot of the display tab. Displays list various options in which topic
     is selected and it selects the option of slash a i underscore rover underscore
     remastered slash laser underscore scan slash scan from a drop-down option.
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: '显示选项卡的截图。显示列表了各种选项，其中选择了主题，并从下拉选项中选择斜杠 a i 下划线 罗弗 下划线 重制 下划线 激光 下划线 扫描 下划线
+    扫描选项。 '
 - en: Figure 7-11
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-11
 - en: LaserScan RViz option with the correct topic of /ai_rover_remastered/laser_scan/scan.
     Topic defined in ai_rover_remastered.xacro file
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: 拥有正确主题 /ai_rover_remastered/laser_scan/scan 的 LaserScan RViz 选项。主题在 ai_rover_remastered.xacro
+    文件中定义
 - en: Checking Mapping Configurations
+  id: totrans-212
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 检查映射配置
 - en: If we have our rover correctly imported into RViz, we should also see the Gazebo
     world that the rover is exploring. To do this, we must go to the Display options
     in RViz and select the Add button located to the bottom left of the Display options.
@@ -1112,24 +1585,36 @@
     display properties and set our topic to `/map`. We will now visualize the gray-colored
     map generated by the `slam_gmapping` ROS node, the raw image from the RGB camera
     onboard our rover, and the IMU data in RViz (Figure [7-12](#Fig12)).
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们将罗弗正确导入 RViz，我们还应该看到罗弗正在探索的 Gazebo 世界。为此，我们必须转到 RViz 中的显示选项，并选择位于显示选项底部左边的添加按钮。点击添加按钮，并添加地图显示选项。然后我们转到地图显示属性，并将我们的主题设置为
+    `/map`。现在我们将在 RViz 中可视化由 `slam_gmapping` ROS 节点生成的灰色地图、罗弗上 RGB 相机的原始图像以及 IMU 数据（图
+    [7-12](#Fig12)）。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig12_HTML.jpg)'
+  id: totrans-214
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig12_HTML.jpg)'
 - en: A screenshot of the mapping tab with interact options and a g-map of the R viz
     environment. The interact section on the left contains a camera and displays options.
     In displays the option I m u selected.
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 映射标签页的截图，包含交互选项和 R viz 环境的 g-map。左侧的交互部分包含一个摄像头和显示选项。在显示中，选中了 i m u 选项。
 - en: Figure 7-12
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-12
 - en: Camera, LaserScan, IMU, and now gray-colored slam_gmapping ROS node mapping
     information displayed in RViz. Our rover is becoming ever more sophisticated and
     capable of autonomous navigation
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 摄像头、激光扫描、IMU 以及现在在 RViz 中显示的灰色 slam_gmapping ROS 节点映射信息。我们的漫游车正变得越来越复杂，并能够进行自主导航。
 - en: Now let us examine another RViz feature by changing some of the elements of
     the various RViz displays to visualize different aspects of the Gazebo simulation.
     We can modify the angle of the LaserScan, number of scans, etc. All of these changes
@@ -1137,46 +1622,68 @@
     of the camera, LaserScan, and IMU topic displays as an exercise. We have a fully
     working `slam_gmapping` ROS node displaying mapping data in RViz. We must now
     save our RViz configuration for future experiments.
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们通过更改各种 RViz 显示的一些元素来检查 RViz 的另一个功能，以可视化 Gazebo 模拟的不同方面。我们可以修改激光扫描的角度、扫描次数等。所有这些更改都可能影响生成的映射。请尝试修改摄像头、激光扫描和
+    IMU 主题显示的属性值作为练习。我们在 RViz 中有一个完全工作的 `slam_gmapping` ROS 节点，显示映射数据。我们现在必须保存我们的
+    RViz 配置以供未来的实验使用。
 - en: Saving RViz Configurations
+  id: totrans-219
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 保存 RViz 配置
 - en: 'RViz also can save concurrent robot description and sensor topic configurations
     very quickly. This capability of RViz allows us to quickly recover our configurations
     at a later time. The following are the steps that enable us to save our RViz configurations:'
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: RViz 还可以非常快速地保存并发机器人描述和传感器主题配置。RViz 的这一功能使我们能够快速在以后的时间恢复我们的配置。以下是我们保存 RViz 配置的步骤：
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig13_HTML.jpg)'
+  id: totrans-221
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig13_HTML.jpg)'
 - en: Screenshots of two displays. The left display contains a file tab with the selected
     option save config as, and below the file tab is displays section in which I m
     u is selected. The right display contains the desktop tab with the default cam
     lidar I M U r viz file selected on it.
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 两个显示的截图。左侧显示包含一个文件标签页，其中选择了“保存配置为”选项，文件标签页下方是显示部分，其中选中了 i m u。右侧显示包含桌面标签页，其中选中了默认
+    cam lidar I M U r viz 文件。
 - en: Figure 7-13
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-13
 - en: The left display has the “Save Config As” option highlighted. The right display
     has the default_cam_lidar_IMU.rviz saved on the desktop
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 左侧显示中突出显示了“保存配置为”选项。右侧显示在桌面上保存了 default_cam_lidar_IMU.rviz。
 - en: First, go to the top-left corner of the RViz environment screen and select the
     File menu.
+  id: totrans-225
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 首先，转到 RViz 环境屏幕的左上角并选择文件菜单。
 - en: Second, select “Save Config As” with the left mouse button. You will also need
     to save the configuration file as `default_cam_lidar_IUM.rviz` on the desktop.
     Once you save this file to the desktop, you can then move this file to the `/rviz`
     folder under the `ai_rover_remastered` ROS package. See steps one and two in Figure
     [7-13](#Fig13).
+  id: totrans-226
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二步，使用鼠标左键选择“保存配置为”。您还需要将配置文件保存为 `default_cam_lidar_IUM.rviz` 在桌面上。一旦将此文件保存到桌面上，您就可以将其移动到
+    `ai_rover_remastered` ROS 软件包下的 `/rviz` 文件夹中。参见图 [7-13](#Fig13) 中的步骤一和二。
 - en: 'We now have the `default_cam_lidar_IMU.rviz` file saved and moved to the correct
     `/rviz` folder directory under the leading `ai_rover_remastered` ROS package directory.
     We should test to see if we can start RViz with the correct configurations already
@@ -1184,30 +1691,45 @@
     exit out of all currently running terminals by typing CTRL+C for each terminal.
     Once the terminals have stopped, we can proceed and re-enter the following terminal
     commands:'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在已将 `default_cam_lidar_IMU.rviz` 文件保存并移动到 `ai_rover_remastered` ROS 软件包目录下的正确
+    `/rviz` 文件夹中。我们应该测试是否可以以正确的配置启动 RViz。为了测试 RViz 配置是否确实已正确保存，请通过在每个终端中输入 CTRL+C
+    来退出所有当前运行的终端。一旦终端停止，我们可以继续并重新输入以下终端命令：
 - en: '[PRE21]'
+  id: totrans-228
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'Once we have RViz running, we can then go to it and reopen our saved RViz configuration
     file. We can do this with the following steps:'
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦 RViz 运行，我们就可以打开它并重新打开我们保存的 RViz 配置文件。我们可以按照以下步骤进行：
 - en: First, go to the top-left corner of the RViz environment screen and select the
     File menu.
+  id: totrans-230
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 首先，转到 RViz 环境屏幕的左上角并选择文件菜单。
 - en: Second, select and click “**Open Config**” with the left mouse button. Then,
     open `default_cam_lidar_IUM.rviz` on the desktop. You will then have your configuration
     file opened with all sensors, topics, and the mapping generation included with
     RViz.
+  id: totrans-231
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二步，使用鼠标左键选择并点击“**打开配置**”。然后，在桌面上打开 `default_cam_lidar_IUM.rviz`。然后，你的配置文件将打开，包括
+    RViz 中的所有传感器、主题和映射生成。
 - en: Note
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If you again have problems with the `rosrun rviz rviz` command, you once again
     need to import our intrepid rover's required robot description model using the
     RViz launch file `ai_rover_remastered_rviz.launch` from Chapter [5](494112_1_En_5_Chapter.xhtml).
@@ -1215,30 +1737,48 @@
     with `roslaunch ai_rover_remastered ai_rover_remastered_rviz.launch`. We will
     also need to reset our map by adding it as a topic and selecting the topic’s name
     to `/map`. This action is documented in Figure [7-14](#Fig14).
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你再次遇到 `rosrun rviz rviz` 命令的问题，你再次需要使用 RViz 启动文件 `ai_rover_remastered_rviz.launch`
+    从第 [5](494112_1_En_5_Chapter.xhtml) 章节导入我们勇敢的漫游车所需的机器人描述模型。在那里，你导入漫游车的正确机器人描述模型。使用
+    `roslaunch ai_rover_remastered ai_rover_remastered_rviz.launch` 启动 RViz。我们还需要通过将其添加为主题并选择主题名称为
+    `/map` 来重置我们的地图。这一操作在图 [7-14](#Fig14) 中有说明。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig14_HTML.jpg)'
+  id: totrans-234
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig14_HTML.jpg)'
 - en: A screenshot of the display tab with the topic option selected. Under the topic,
     the navigation messages read occupancy grid topic to subscribe to. A button to
     add is at the bottom.
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
+  zh: 屏幕截图显示，在主题选项下选择了主题。在主题下，导航消息读取为订阅的占用网格主题。底部有一个添加按钮。
 - en: Figure 7-14
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-14
 - en: We are resetting our Map display (if required) with the topic /map
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们正在使用主题 /map 重置我们的地图显示（如果需要的话）
 - en: 'Ok. Now that we have our RViz correctly configured, we need to execute our
     `teleops_twist_keyboard` command by opening another shell in the Terminator shell
     program and once again entering the following command:'
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
+  zh: 好的。现在我们已经正确配置了 RViz，我们需要通过在 Terminator shell 程序中打开另一个 shell 并再次输入以下命令来执行我们的
+    `teleops_twist_keyboard` 命令：
 - en: '[PRE22]'
+  id: totrans-239
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Once you start this program, you should be able to manually control the rover
     to explore the environment with your keyboard. There may be some areas you are
     not able to explore. Do not worry about this issue. Explore the places you can
@@ -1246,12 +1786,17 @@
     in the map and the Gazebo environment. You want to ensure no “ghosts,” anomalies,
     or missing regions on the map. Missing areas on the map could prevent the rover
     from exploring the entire environment.
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦启动此程序，你应该能够通过键盘手动控制漫游车来探索环境。可能会有一些你无法探索的区域。不要担心这个问题。探索你可以测绘的区域。同时，请注意通过比较地图中开发的功能和
+    Gazebo 环境生成的地图。你想要确保地图上没有“幽灵”、异常或缺失的区域。地图上的缺失区域可能会阻止漫游车探索整个环境。
 - en: Additional Noetic SLAM Information
+  id: totrans-241
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 额外的 Noetic SLAM 信息
 - en: 'Before we review additional mapping features with Noetic ROS, we should remember
     two essential items, SLAM and `slam_gmapping` ROS node. SLAM is the algorithm
     responsible for building a map of an environment while also keeping track of where
@@ -1270,48 +1815,64 @@
     These are the items created when we launched the `gmapping_demo.launch` file.
     However, some potential mapping issues and failures with `gmapping_demo.launch`
     will occur if any of the five following conditions occurs:'
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们使用Noetic ROS审查额外的映射功能之前，我们应该记住两个基本事项，SLAM和`slam_gmapping` ROS节点。SLAM是负责在同时跟踪探测车在相同环境中位置的同时构建环境地图的算法。SLAM算法解决了探测车的映射和定位的“先有鸡还是先有蛋”的问题。ROS
+    Noetic使用gMapping算法作为`slam_gmapping` ROS节点，以避免机器人开发者再次开发相同的算法。将`slam_gmapping`封装为我们SLAM中的对象，使我们能够使用探测车在环境中移动提供的激光雷达和里程计姿态数据。`slam_gmapping`
+    ROS节点订阅`LaserScan`和里程计主题，转换探测车的尺寸，并创建占用栅格地图（OGM）。占用栅格地图是一个二维或三维的单元格数组，每个单元格存储一个数字。在我们的勇敢探测车的情况下，我们只会使用数字单元格的二维数组。每个单元格中的数字表示单元格包含障碍物的概率可能性。数字范围从0（空闲空间）到100（100%占用）。激光雷达未扫描的区域标记为-1。这些是我们启动`gmapping_demo.launch`文件时创建的项目。然而，如果以下五个条件中的任何一个发生，`gmapping_demo.launch`可能会出现潜在的映射问题和失败：
 - en: A mapping error will occur if the physical rover’s LiDAR system falls off the
     rover or is no longer at the rover’s center during operation. If this happens,
     please place the LiDAR back in its original place specified in the rover’s URDF
     or Xacro specification description files.
+  id: totrans-243
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果在操作过程中，物理探测车的激光雷达系统从探测车上脱落或不再位于探测车的中心，将会发生映射错误。如果发生这种情况，请将激光雷达放回探测车URDF或Xacro规范描述文件中指定的原始位置。
 - en: A mapping error will occur if the rover model in Gazebo and RViz is not the
     same as the physical rover (GoPiGo3). Be sure that the simulated rover’s dimensions
     and moment of inertia closely approximate the actual physical rover. Failure to
     do so will cause the rover’s tf, LiDAR, and odometry information to not be reproducible
     in the real-world rover.
+  id: totrans-244
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果在Gazebo和RViz中的探测车模型与物理探测车（GoPiGo3）不同，将会发生映射错误。务必确保模拟探测车的尺寸和惯性矩与实际物理探测车非常接近。未能做到这一点将导致探测车的tf、激光雷达和里程计信息在现实世界探测车中无法重现。
 - en: We will need to make multiple changes to the rover’s URDF or Xacro files and
     plug-ins **reflecting any changes** to the rover’s features or sensors, such as
     LiDAR. We will need to update any changed or affected sensors or topics used in
     RViz, for example.
+  id: totrans-245
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们需要对探测车的URDF或Xacro文件和插件进行多项更改，以反映探测车特征或传感器（如激光雷达）的任何变化。我们需要更新任何更改或受影响的传感器或主题，例如在RViz中使用。
 - en: A mapping error will occur if we suddenly replace the primary LiDAR sensor with
     a different sensor, such as a radar or a binocular camera, and make no changes
     to the underlying URDF, Xacro, or plug-in files.
+  id: totrans-246
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果我们突然将主激光雷达传感器替换为不同的传感器，例如雷达或双目摄像头，并且不对底层的URDF、Xacro或插件文件进行任何更改，将会发生映射错误。
 - en: A mapping error could happen if we use another physical LiDAR sensor system
     with different characteristics than the Hokuyo LiDAR used in our Gazebo simulation.
     Differences between the physical and simulated LiDAR could be scan rate, angle
     sweep, frequency parameters, etc. All of these subtle differences between LiDARs
     could lead to mapping anomalies.
+  id: totrans-247
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果我们使用与我们在Gazebo模拟中使用的Hokuyo激光雷达具有不同特性的其他物理激光雷达传感器系统，可能会发生映射错误。物理和模拟激光雷达之间的差异可能包括扫描速率、角度扫描、频率参数等。所有这些细微的激光雷达差异都可能导致映射异常。
 - en: The map_server ROS Node
+  id: totrans-248
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 地图服务器ROS节点
 - en: 'Another critical component contained inside of ROS is the `map_server` node.
     This ROS node offers the map data as an ROS service. This node also allows the
     saving of generated maps to a file. This ROS node also provides the map data to
@@ -1320,27 +1881,39 @@
     request to get the most recent map data for pathfinding or localizing our rover
     in an environment. The following is an ROS service that provides the map occupancy
     grid data for our generated map: `static_map (nav_msgs/GetMap)`.'
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
+  zh: ROS 内部还包含另一个关键组件，即 `map_server` 节点。该 ROS 节点以 ROS 服务的形式提供地图数据。此节点还允许将生成的地图保存到文件中。此
+    ROS 节点还向任何请求的 ROS 节点提供地图数据。例如，一个处理导航的 ROS 节点可以请求最新的可用地图。`move_base` ROS 节点最终确定获取最新地图数据以进行路径规划或定位我们的漫游车在环境中的请求。以下是一个提供我们生成的地图占用网格数据的
+    ROS 服务：`static_map (nav_msgs/GetMap)`。
 - en: 'Apart from requesting the map through the preceding service, there are two
     latched, or the last saved, topics that you can connect to get an ROS message
     with the map. These saved topics can provide the previously saved message, even
     if there is no more map data. The topics with which this node writes the map data
     are as follows:'
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了通过前面的服务请求地图外，还有两个可以连接以获取带有地图的 ROS 消息的已锁定（或最后保存的）主题。这些保存的主题可以提供之前保存的消息，即使没有更多的地图数据。此节点写入地图数据的主题如下：
 - en: '`map (nav_msgs/OccupancyGrid)`: This topic provides the map occupancy data.'
+  id: totrans-251
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`map (nav_msgs/OccupancyGrid)`: 该主题提供地图占用数据。'
 - en: '`map_metadata (nav_msgs/MapMetaData)`: Provides the map metadata'
+  id: totrans-252
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`map_metadata (nav_msgs/MapMetaData)`: 提供地图元数据'
 - en: Map Image Savings or Modifications
+  id: totrans-253
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 地图图像保存或修改
 - en: We will review how to save and modify the maps that ROS Noetic SLAM generates.
     We will use the `map_server` package to save, process, and modify maps generated
     by the `slam_gmapping` ROS node. The `map_server` ROS package also includes the
@@ -1352,174 +1925,267 @@
     the occupancy grid and the image name of the map. We have already gone through
     the process of saving a map. However, we will now detail these two essential files
     generated by the `map_server` ROS package.
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将回顾如何保存和修改 ROS Noetic SLAM 生成的地图。我们将使用 `map_server` 软件包来保存、处理和修改由 `slam_gmapping`
+    ROS 节点生成的地图。`map_server` ROS 软件包还包括 `map_saver` ROS 节点，允许我们使用 ROS 服务来保存和修改地图数据。`map_saver`
+    ROS 软件包保存当前地图和占用网格，并创建两个文件。第一个创建的文件是 `map.pgm` 文件，其中包含地图数据，包括占用网格数据（空闲空间、障碍物[s]和未知）。第二个创建的文件是
+    `map.yaml` 文件，其中包含占用网格的元数据和地图的图像名称。我们已经介绍了保存地图的过程。然而，现在我们将详细说明由 `map_server` ROS
+    软件包生成的这两个基本文件。
 - en: Again, we should `source devel/setup.bash, catkin_make` `compile`, and launch
     the `ai_rover_remastered_gazebo.launch, gmapping_demo.launch`, `ai_rover_remastered_rviz.launch`,
     and the `teleops_keyboard_twist` script files, each in its very own terminal shell,
     as before, in Terminator. These individual commands and printout listings can
     be seen in Figure [7-15](#Fig15).
+  id: totrans-255
   prefs: []
   type: TYPE_NORMAL
+  zh: 再次，我们应该 `source devel/setup.bash, catkin_make` `编译`，并在 Terminator 中像之前一样，在每个独立的终端
+    shell 中启动 `ai_rover_remastered_gazebo.launch, gmapping_demo.launch`, `ai_rover_remastered_rviz.launch`，以及
+    `teleops_keyboard_twist` 脚本文件。这些单独的命令和打印列表可以在图 [7-15](#Fig15) 中看到。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig15_HTML.jpg)'
+  id: totrans-256
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig15_HTML.jpg)'
 - en: Screenshot of four terminals separated by different color frames. Orange, A
     I rover remastered gazebo launch; blue, g mapping demo launch; red, A I rover
     remastered r viz launch; and green, tele ops keyboard twist.
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: 四个终端的截图，分别由不同颜色的框架分隔。橙色，AI 漫游车重制 gazebo 启动；蓝色，g mapping 示例启动；红色，AI 漫游车重制 rviz
+    启动；绿色，遥控键盘扭曲。
 - en: Figure 7-15
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-15
 - en: The terminal runs ai_rover_remastered_gazebo.launch (orange), gmapping_demo.launch
     (blue), ai_rover_remastered_rviz.launch (red), and teleops_keyboard_twist (green)
+  id: totrans-259
   prefs: []
   type: TYPE_NORMAL
+  zh: 终端运行 ai_rover_remastered_gazebo.launch（橙色），gmapping_demo.launch（蓝色），ai_rover_remastered_rviz.launch（红色），以及
+    teleops_keyboard_twist（绿色）
 - en: 'By doing this, we can save the map by using an additional separate terminal
     under the `/src` root directory and entering the following shell command:'
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过这种方式，我们可以在 `/src` 根目录下使用一个额外的独立终端来保存地图，并输入以下 shell 命令：
 - en: '[PRE23]'
+  id: totrans-261
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: This command will create `rover_map.pgm` and `rover_map.yaml` files under the
     main `/src` root directory.
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 此命令将在主 `/src` 根目录下创建 `rover_map.pgm` 和 `rover_map.yaml` 文件。
 - en: rover_map.pgm Map Image File Data
+  id: totrans-263
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: rover_map.pgm 地图图像文件数据
 - en: 'We need to inspect the `rover_map.pgm` file generated in the previous section.
     We must do the following steps:'
+  id: totrans-264
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要检查上一节生成的 `rover_map.pgm` 文件。我们必须执行以下步骤：
 - en: Save the `rover_map.pgm` file under the main `/src` directory.
+  id: totrans-265
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在主 `/src` 目录下保存 `rover_map.pgm` 文件。
 - en: 'If you do not have a gimp image editor, please install it. Use the gimp image
     editor to open the image stored in the main `/src` directory. The terminal command
     needed to open the file is the following:'
+  id: totrans-266
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果您没有 Gimp 图像编辑器，请安装它。使用 Gimp 图像编辑器打开主 `/src` 目录中存储的图像。打开文件的终端命令如下：
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig16_HTML.jpg)'
+  id: totrans-267
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig16_HTML.jpg)'
 - en: A screenshot of the G I M P image editor with the rover map P G M file.
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: G I M P 图像编辑器中带有 rover 地图 P G M 文件的截图。
 - en: Figure 7-16
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-16
 - en: The Gimp image editor with the rover_map.pgm file
+  id: totrans-270
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用带有 rover_map.pgm 文件的 Gimp 图像编辑器
 - en: Now you can visualize, modify, and save the image if required. The `rover_map.pgm`
     can be seen in Figure [7-16](#Fig16).
+  id: totrans-271
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 现在，您可以可视化、修改并保存图像（如果需要的话）。`rover_map.pgm` 可以在图 [7-16](#Fig16) 中看到。
 - en: '[PRE24]'
+  id: totrans-272
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: The `rover_map` image describes the occupancy grid of the entire world in the
     (white, black, or dark gray) color of the corresponding pixels. Color and grayscale
     images are compatible, but most maps are white, black, and dark gray (even though
     these PGM images may be stored in color). White pixels are free-space, black pixels
     are obstacles, and any dark-grey pixels in between are unscanned areas.
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: '`rover_map` 图像描述了整个世界的占用网格，以对应像素的（白色、黑色或深灰色）颜色。彩色和灰度图像是兼容的，但大多数地图是白色、黑色和深灰色（即使这些
+    PGM 图像可能以彩色存储）。白色像素是空闲空间，黑色像素是障碍物，任何介于两者之间的深灰色像素都是未扫描区域。'
 - en: When communicated via ROS topic messages, each occupancy grid element is represented
     as a range of numbers from 0 to 255 (8-bit), where 0, being free-space, to 255
     is wholly occupied.
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 当通过 ROS 主题消息通信时，每个占用网格元素表示为从 0 到 255（8 位）的数字范围，其中 0 表示空闲空间，255 表示完全占用。
 - en: rover_map.yaml Map File Metadata
+  id: totrans-275
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: rover_map.yaml 地图文件元数据
 - en: 'To view the generated `rover_map.yaml` file from an earlier section, go to
     the main `workspace /src` folder and see whether the `rover_map.yaml` file is
     present. You will need to use a simple text editor to view this file. You can
     view the information inside of the `rover_map.yaml` file by typing the following
     command: `$vi rover_map.yaml`. The data contents of the `rover_map.yaml` file
     can be seen in Figure [7-17](#Fig17).'
+  id: totrans-276
   prefs: []
   type: TYPE_NORMAL
+  zh: 要查看上一节生成的 `rover_map.yaml` 文件，请转到主 `workspace /src` 文件夹，查看是否存在 `rover_map.yaml`
+    文件。您需要使用简单的文本编辑器来查看此文件。您可以通过输入以下命令查看 `rover_map.yaml` 文件中的信息：`$vi rover_map.yaml`。`rover_map.yaml`
+    文件的数据内容可以在图 [7-17](#Fig17) 中看到。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig17_HTML.jpg)'
+  id: totrans-277
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig17_HTML.jpg)'
 - en: A screenshot of the generated rover map Y A M L file. The details are listed
     as follows. Image colon rover underscore map dot p g m; resolution colon 0.010000;
     origin colon minus 20, minus 20, 0; negate colon 0; occupied underscore thresh
     colon 0.65; and free underscore thresh colon 0.196.
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的 rover 地图 Y A M L 文件的截图。详细信息如下。图像：rover_map.pgm；分辨率：0.010000；原点：-20, -20,
+    0；取反：0；占用阈值：0.65；空闲阈值：0.196。
 - en: Figure 7-17
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-17
 - en: The generated rover_map.yaml file
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的 rover_map.yaml 文件
 - en: Also, when you start the following terminal command—`$ rosrun map_server map_server
     rover_map.yaml`—you will process and receive the map metadata and be able to examine
     ROS topics, as in Figure [7-18](#Fig18).
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，当您启动以下终端命令——`$ rosrun map_server map_server rover_map.yaml`——您将处理并接收地图元数据，并能够检查
+    ROS 主题，如图 [7-18](#Fig18) 所示。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig18_HTML.jpg)'
+  id: totrans-282
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig18_HTML.jpg)'
 - en: A screenshot of the metadata of the rover map Y A M L file. The text on the
     file reads as follows. Dollar rosrun map underscore server map underscore server
     rover underscore.y a m l, and so on.
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: rover 地图 Y A M L 文件元数据的截图。文件上的文本如下。$rosrun map_server map_server rover.yaml，等等。
 - en: Figure 7-18
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-18
 - en: Metadata of ROS topics of rover_map.yaml
+  id: totrans-285
   prefs: []
   type: TYPE_NORMAL
+  zh: rover_map.yaml 的 ROS 主题元数据
 - en: We then have the following contained inside of `rover_map.yaml:`
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们然后在 `rover_map.yaml` 中有以下内容：
 - en: '**Image:** Name of the file (`rover_map.pgm`) containing the image of the generated
     map.'
+  id: totrans-287
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**图像**：包含生成地图图像的文件名（`rover_map.pgm`）。'
 - en: '**Resolution:** Resolution of the map (in meters/pixel).'
+  id: totrans-288
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Resolution:** 地图的分辨率（以米/像素为单位）。'
 - en: '**Origin:** Coordinates of the lower-left pixel in the map. These coordinates
     are given in 2D (x,y). So our coordinates are set to ˗20.0 for x and ˗20.0 for
     y. The third value indicates rotation. The value zero means no rotation.'
+  id: totrans-289
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Origin:** 地图左下角像素的坐标。这些坐标以2D（x,y）形式给出。因此，我们的坐标设置为x为-20.0，y为-20.0。第三个值表示旋转。值为零表示没有旋转。'
 - en: '**Occupied_Thresh:** Pixels with a value greater than this (0.65 or 65% probability
     of an object’s being present) will be considered obstacles.'
+  id: totrans-290
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Occupied_Thresh:** 值大于此（0.65或物体存在的概率为65%）的像素将被视为障碍物。'
 - en: '**Free_Thresh:** Pixels with a value smaller than this (0.196 or 19.6% probability
     of an object’s being present) will be considered free space.'
+  id: totrans-291
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Free_Thresh:** 值小于此（0.196或物体存在的概率为19.6%）的像素将被视为空闲空间。'
 - en: '**Negate:** Inverts the colors of the map. By default, white means completely
     free and black means dangerous or obstacle present.'
+  id: totrans-292
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Negate:** 反转地图的颜色。默认情况下，白色表示完全空闲，黑色表示危险或存在障碍物。'
 - en: ROS Bags
+  id: totrans-293
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: ROS数据包
 - en: 'We now can see that Noetic ROS also allows us to create a map in real-time
     as the rover explores the environment. This process is why we move the rover (slowly
     and avoiding quick turns) as data processing occurs while mapping the domain.
@@ -1529,104 +2195,153 @@
     for storing ROS message data during a rover mission. For more information regarding
     ROS bags, please refer to the following link: [`http://wiki.ros.org/Bags`](http://wiki.ros.org/Bags).
     There are two steps for generating maps of bag-file data.'
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以看到Noetic ROS还允许我们在机器人探索环境时实时创建地图。这个过程就是为什么我们在进行区域映射时移动机器人（缓慢且避免急转弯），因为数据处理发生在映射过程中。制作地图基于发布的激光雷达和转换（里程计）主题。如果我们需要提取这些主题的发布数据，我们需要使用数据包文件将提取的数据发布到地图中。数据包是ROS在机器人任务期间存储ROS消息数据的一种文件格式。有关ROS数据包的更多信息，请参阅以下链接：[`http://wiki.ros.org/Bags`](http://wiki.ros.org/Bags)。生成数据包文件数据的地图有两个步骤。
 - en: 'We first take action to create the actual bag file for the published topic
     data. Before continuing, close all terminal processes in ALL terminals with the
     CTRL+C command. We then need to launch the `ai_rover_remastered` Gazebo simulation
     and the `teleops_keyboard_twist` program in separate terminals. So in terminal
     one, we have the following commands:'
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先采取行动创建实际的主题数据包文件。在继续之前，请使用CTRL+C命令关闭所有终端中的所有终端进程。然后我们需要在单独的终端中启动`ai_rover_remastered`
+    Gazebo模拟和`teleops_keyboard_twist`程序。因此，在终端一中，我们有以下命令：
 - en: '[PRE25]'
+  id: totrans-296
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: 'We then launch terminal two, where we have the following commands:'
+  id: totrans-297
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们启动终端二，其中包含以下命令：
 - en: '[PRE26]'
+  id: totrans-298
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: 'We then launch terminal three, where we have the following commands:'
+  id: totrans-299
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们启动终端三，其中包含以下命令：
 - en: '[PRE27]'
+  id: totrans-300
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'We should now be controlling the rover in the environment, and we should be
     careful not to make quick turns so as to allow the published data to be collected
     correctly in the bag file. Please ensure the rover overlaps its start and end
     points during the entire mapping process. We should get the following list of
     topics by entering the previous `rostopic` command (not a complete `rostopic`
     list):'
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们应该在环境中控制机器人，我们应该小心不要快速转弯，以便正确收集数据包文件中的发布数据。请确保在整个映射过程中机器人重叠其起点和终点。通过输入之前的`rostopic`命令（不是完整的`rostopic`列表），我们应该得到以下主题列表：
 - en: '[PRE28]'
+  id: totrans-302
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: We need to ensure that our intrepid rover still publishes valid data for bold-faced
     `LaserScan` and `tf` topics. Now that we are controlling our rover with the Teleops
     program, we need to start recording the `LaserScan` and `tf/transforms` data into
     the bag file we created earlier.
+  id: totrans-303
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要确保我们勇敢的机器人仍然为粗体字`LaserScan`和`tf`主题发布有效数据。现在，我们使用Teleops程序控制我们的机器人，我们需要开始将`LaserScan`和`tf/transforms`数据记录到我们之前创建的数据包文件中。
 - en: 'Once we have the bag file, we can build our map. We need to start the `slam_gmapping`
     node, which will process laser scans for the topic `/ai_rover_remastered/laser_scan/scan`.
     We do this with the command:'
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦我们有了数据包文件，我们就可以构建我们的地图。我们需要启动`slam_gmapping`节点，该节点将处理主题`/ai_rover_remastered/laser_scan/scan`的激光扫描。我们使用以下命令来完成此操作：
 - en: '[PRE29]'
+  id: totrans-305
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: 'In a separate terminal, we run the following command:'
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 在另一个终端中，我们运行以下命令：
 - en: '[PRE30]'
+  id: totrans-307
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: 'We then open another terminal and enter the following:'
+  id: totrans-308
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们打开另一个终端并输入以下内容：
 - en: '[PRE31]'
+  id: totrans-309
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: 'We will need to use the `map_server` to create the necessary map files (`.pgm`
     and `.yaml`) to generate the map. Now we will enter the following command to create
     the map:'
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要使用`map_server`来创建必要的地图文件（`.pgm`和`.yaml`），以生成地图。现在我们将输入以下命令来创建地图：
 - en: '[PRE32]'
+  id: totrans-311
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Importance of ROS Bags
+  id: totrans-312
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: ROS Bag的重要性
 - en: 'The ROS “rosbag” toolset has the purpose of recording, storing, and replaying
     data that our rover sends and receives. The data may include LiDAR, radar, camera
     images, and `teleop_twist_keyboard` commands. The following are examples of multiple
     applications that use this archived sensor data:'
+  id: totrans-313
   prefs: []
   type: TYPE_NORMAL
+  zh: ROS的“rosbag”工具集的目的是记录、存储和回放我们的探测车发送和接收的数据。这些数据可能包括激光雷达、雷达、摄像头图像和`teleop_twist_keyboard`命令。以下是一些使用这些存档传感器数据的多个应用示例：
 - en: Archived sensor data can recreate the environment in the simulation. The data
     would help for debugging purposes.
+  id: totrans-314
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 存档的传感器数据可以在模拟中重建环境。这些数据有助于调试目的。
 - en: Archived sensor data aids machine learning, such as training neural networks
     for perception and cognition.
+  id: totrans-315
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 存档的传感器数据有助于机器学习，例如训练用于感知和认知的神经网络。
 - en: Archived data can be used to determine the causality of disastrous events for
     the autonomous rover.
+  id: totrans-316
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 存档数据可用于确定自主探测车灾难性事件的因果关系。
 - en: Localization (Finding Lost Rovers)
+  id: totrans-317
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 定位（寻找失踪的探测车）
 - en: Let us now find the location of our intrepid rover. To perform correct and safe
     navigation with our rover, we need to know the rover’s location and orientation.
     Its orientation would be the direction that it is facing. We need our map to navigate
@@ -1636,12 +2351,16 @@
     is the Adaptive Monte Carlo Localization (AMCL) algorithm. Eventually, we will
     need to build script programs based on AMCL to allow the rover to locate itself
     on a map.
+  id: totrans-318
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们现在找到我们勇敢的探测车的位置。为了正确且安全地使用探测车进行导航，我们需要知道探测车的位置和朝向。它的朝向就是它面对的方向。我们需要地图来让探测车自主导航，但如果没有知道探测车在SLAM生成的地图中的位置和方向，那么地图就毫无价值。让我们看看一个快速定位的演示。最广泛使用的定位算法是自适应蒙特卡洛定位（AMCL）算法。最终，我们将需要基于AMCL构建脚本程序，以便让探测车在地图上定位自己。
 - en: Adaptive Monte Carlo Localization (AMCL)
+  id: totrans-319
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 自适应蒙特卡洛定位（AMCL）
 - en: 'The Adaptive Monte Carlo Localization (AMCL) algorithm, which serves as the
     foundation for SLAM, is based on the particle filter. We will keep our description
     brief, but essentially a particle filter sends out many particles or samples spanning
@@ -1650,14 +2369,20 @@
     it is trying to map and explore. For more information regarding the particle filter
     or the Adaptive Monte Carlo Localization algorithm, please refer to the following
     references:'
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为SLAM基础的自适应蒙特卡洛定位（AMCL）算法基于粒子滤波。我们将简要描述，但本质上粒子滤波会发送出许多粒子或样本，覆盖整个搜索空间。粒子的数量有助于减少由SLAM产生的布局和边界的不确定性。搜索空间是我们探测车试图绘制和探索的环境。有关粒子滤波或自适应蒙特卡洛定位算法的更多信息，请参阅以下参考资料：
 - en: '[`https://en.wikipedia.org/wiki/Particle_filter`](https://en.wikipedia.org/wiki/Particle_filter)'
+  id: totrans-321
   prefs: []
   type: TYPE_NORMAL
+  zh: '[粒子滤波](https://en.wikipedia.org/wiki/Particle_filter)'
 - en: '[`https://roboticsknowledgebase.com/wiki/state-estimation/adaptive-monte-carlo-localization/`](https://roboticsknowledgebase.com/wiki/state-estimation/adaptive-monte-carlo-localization/)'
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
+  zh: '[自适应蒙特卡洛定位](https://roboticsknowledgebase.com/wiki/state-estimation/adaptive-monte-carlo-localization/)'
 - en: Now, how does the AMCL algorithm work for the localization of our rover? To
     use AMCL for localization, we start with a map of our environment. This map is
     the same map generated in Figure [7-22](#Fig22). We can either set the rover to
@@ -1673,22 +2398,34 @@
     recover. It takes the filter multiple sensor readings to converge because, within
     a map, we might have dis-ambiguities due to symmetry in the map, which gives us
     a multi-modal posterior belief (Figure [7-19](#Fig19)).
+  id: totrans-323
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，AMCL 算法是如何为我们漫游车的定位工作的呢？要使用 AMCL 进行定位，我们首先需要我们环境的地图。这个地图与图 [7-22](#Fig22)
+    中生成的地图相同。我们可以将漫游车设置到某个已知位置，在这种情况下，我们手动定位它，或者让机器人从没有初始位置估计开始。通过手动定位漫游车，我们将漫游车放置在一个精确的位置，激光扫描与地图边界轮廓重叠。随着机器人向前移动，我们生成额外的读数，这些读数估计了运动命令后的机器人姿态。通过重新加权这些样本并归一化权重来整合传感器读数。通常，添加一些随机均匀分布的样本是有益的，因为它有助于机器人在失去位置跟踪时恢复。在这些情况下，如果没有这些随机样本，机器人将无法从错误的分布中重新采样，并且永远不会恢复。由于在地图中可能存在由于地图对称性导致的歧义，因此滤波器需要多次传感器读数才能收敛。它给出了多模态后验信念（图
+    [7-19](#Fig19)）。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig19_HTML.jpg)'
+  id: totrans-324
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig19_HTML.jpg)'
 - en: Three g-maps labeled figures 2, 3, and 4\. represent the distribution of random
     samples. Figure 2, global localization, initialization; figure 3, ambiguity due
     to symmetry; and figure 4, successful localization.
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 标有 2、3 和 4 的三个 g-maps 图形表示随机样本的分布。图 2，全局定位，初始化；图 3，由于对称性导致的歧义；图 4，成功定位。
 - en: Figure 7-19
+  id: totrans-326
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-19
 - en: Distribution of random samples
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机样本的分布
 - en: 'Localizing the rover is essential for navigating from one pose (position and
     orientation) to another on the map. Now that we can localize our rover in the
     map, we can configure the localization system for our intrepid rover and determine
@@ -1698,120 +2435,172 @@
     easily define each parameter with different values. Also, in addition to setting
     these parameters in the `amcl_demo.launch` file, we can set these parameters in
     a separate YAML file referenced by the `amcl_demo.launch` file.'
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: 在地图上从一种姿态（位置和方向）导航到另一种姿态对于定位漫游车是至关重要的。现在我们可以在地图上定位我们的漫游车，我们可以为我们的勇敢漫游车配置定位系统并确定其当前姿态。我们现在将检查用于
+    `amcl_demo.launch` 的所有可能的参数：所有 SLAM gMapping 启动、YAML 和脚本文件都可以在本次发表的 GitHub 账户中找到。AMCL
+    节点也非常可配置，我们可以轻松地用不同的值定义每个参数。此外，除了在 `amcl_demo.launch` 文件中设置这些参数外，我们还可以在由 `amcl_demo.launch`
+    文件引用的单独的 YAML 文件中设置这些参数。
 - en: 'We will now define the general, filter, and laser parameters for the `amcl_demo.launch`
     file:'
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在将为 `amcl_demo.launch` 文件定义一般、滤波器和激光参数：
 - en: '**odom_model_type** (default: "diff"): Uses the odometry model of the rover.
     It can be "diff," "omni," "diff-corrected," or "omni-corrected” as possible options.'
+  id: totrans-330
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**odom_model_type** (默认: "diff"): 使用漫游车的里程计模型。可能的选项有 "diff"、"omni"、"diff-corrected"
+    或 "omni-corrected”。'
 - en: '**odom_frame_id** (default: "odom"): The odometry frame.'
+  id: totrans-331
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**odom_frame_id** (默认: "odom"): 里程计坐标系。'
 - en: '**base_frame_id** (default: "base_link"): The rover base frame.'
+  id: totrans-332
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**base_frame_id** (默认: "base_link"): 漫游车的基础坐标系。'
 - en: '**global_frame_id** (default: "map"): Indicates the name of the coordinate
     frame published by the localization system.'
+  id: totrans-333
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**global_frame_id** (默认: "map"): 指示定位系统发布的坐标系名称。'
 - en: '**use_map_topic** (default: false): Indicates whether the node gets the map
     data from the topic or a service call.'
+  id: totrans-334
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**use_map_topic** (默认: false): 指示节点是否从主题或服务调用中获取地图数据。'
 - en: '**min_particles** (default: 100): Sets the filter''s minimum allowed number
     of particles.'
+  id: totrans-335
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**min_particles** (默认: 100): 设置滤波器允许的最小粒子数。'
 - en: '**max_particles** (default: 5000): Sets the maximum allowed number of particles
     for the filter.'
+  id: totrans-336
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**max_particles** (默认: 5000): 设置滤波器允许的最大粒子数。'
 - en: '**kld_err** (default: 0.01): Set the maximum error between the true and estimated
     distribution.'
+  id: totrans-337
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kld_err** (默认: 0.01): 设置真实分布和估计分布之间的最大误差。'
 - en: '**update_min_d** (default: 0.2): Sets the linear distance (in meters) that
     the robot has to move to perform a filter update.'
+  id: totrans-338
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**update_min_d** (默认: 0.2): 设置机器人执行滤波器更新所需的线性距离（以米为单位）。'
 - en: '**update_min_a** (default: π/6.0): Sets the angular distance (in radians) that
     the robot has to move to perform a filter update.'
+  id: totrans-339
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**update_min_a** (默认: π/6.0): 设置机器人执行滤波器更新所需的角距离（以弧度为单位）。'
 - en: '**resample_interval** (default: 2): Sets the number of filter updates required
     before resampling.'
+  id: totrans-340
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**resample_interval** (默认: 2): 设置在重新采样之前所需的滤波器更新次数。'
 - en: '**transform_tolerance** (default: 0.1): Time (in seconds) to postdate the published
     transform to indicate that this transform is valid into the future.'
+  id: totrans-341
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**transform_tolerance** (默认: 0.1): 将发布的变换向后推迟的时间（以秒为单位），以指示此变换对未来有效。'
 - en: '**gui_publish_rate** (default: ˗1.0): Maximum rate (in Hz) at which scans and
     paths are published for visualization. If this value is ˗1.0, this function is
     disabled.'
+  id: totrans-342
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**gui_publish_rate** (默认: ˗1.0): 用于可视化的扫描和路径发布的最大速率（以赫兹为单位）。如果此值为 ˗1.0，则此功能被禁用。'
 - en: '**laser_min_range** (default: ˗1.0): Minimum scan range to be considered; ˗1.0
     will cause the laser''s reported minimum range to be used.'
+  id: totrans-343
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**laser_min_range** (默认: ˗1.0): 考虑的最小扫描范围；˗1.0将导致使用激光器报告的最小范围。'
 - en: '**laser_max_range** (default: ˗1.0): Maximum scan range to be considered; ˗1.0
     will cause the laser''s reported maximum range to be used.'
+  id: totrans-344
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**laser_max_range** (默认: ˗1.0): 考虑的最大扫描范围；˗1.0将导致使用激光器报告的最大范围。'
 - en: '**laser_max_beams** (default: 30): How many evenly spaced beams in each scan
     are used when updating the filter.'
+  id: totrans-345
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**laser_max_beams** (默认: 30): 更新滤波器时，每个扫描中使用的均匀分布的光束数量。'
 - en: '**laser_z_hit** (default: 0.95): Mixture weight for the `z_hit` part of the
     model.'
+  id: totrans-346
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**laser_z_hit** (默认: 0.95): 模型中`z_hit`部分的混合权重。'
 - en: '**laser_z_short** (default: 0.1): Mixture weight for the `z_short` part of
     the model.'
+  id: totrans-347
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**laser_z_short** (默认: 0.1): 模型中`z_short`部分的混合权重。'
 - en: '**laser_z_max** (default: 0.05): Mixture weight for the `z_max` part of the
     model.'
+  id: totrans-348
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**laser_z_max** (默认: 0.05): 模型中`z_max`部分的混合权重。'
 - en: '**laser_z_rand** (default: 0.05): Mixture weight for the `z_rand` part of the
     model.'
+  id: totrans-349
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**laser_z_rand** (默认: 0.05): 模型中`z_rand`部分的混合权重。'
 - en: Configuring the AMCL ROS Node
+  id: totrans-350
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 配置 AMCL ROS 节点
 - en: At the conceptual level, the AMCL package maintains a probability distribution
     over the set of all possible robot poses, and updates this distribution using
     data from odometry and laser range finders.
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
+  zh: 在概念层面，AMCL 软件包维护所有可能机器人姿态的集合上的概率分布，并使用里程计和激光测距仪的数据更新此分布。
 - en: 'The AMCL package represents the probability distribution using a particle filter
     at the implementation level. The filter is “adaptive” because it dynamically adjusts
     the number of particles in the filter: when the rover’s pose is highly uncertain,
@@ -1827,26 +2616,38 @@
     a predefined map of the environment against which to compare observed sensor values.
     This comparison enables the robot to make a trade-off between processing speed
     and localization accuracy.'
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: AMCL 软件包在实现层面使用粒子滤波来表示概率分布。该滤波器是“自适应”的，因为它会动态调整滤波器中的粒子数量：当探测器的姿态非常不确定时，它会增加粒子数量；当探测器的姿态确定良好时，它会减少总粒子数。这个“绿色箭头云”可以通过
+    RViz 中探测器周围绿色箭头的大小变化来观察，随着探测器不确定性的增加或减少，绿色箭头会变大或变小。在图 [7-20](#Fig20) 中，将有两个 RViz
+    窗口，环境地图、该地图上的探测器以及许多绿色箭头。这些绿色箭头代表了对地图上探测器的估计。绿色箭头是定位算法为了确定地图上探测器的位置所做的估计。当移动机器人时，绿色箭头会集中在最可能的探测器位置。该软件包还需要一个预定义的环境地图，以便与观察到的传感器值进行比较。这种比较使机器人能够在处理速度和定位精度之间进行权衡。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig20_HTML.jpg)'
+  id: totrans-353
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig20_HTML.jpg)'
 - en: Two screenshots of g-maps. On the left, the map contains a green cloud with
     a black dot at the center. A red line from below and a black line from above pass
     near the cloud. On the right, the map contains a black dot at the center with
     patches of green. A red and a black line from above pass near the cloud.
+  id: totrans-354
   prefs: []
   type: TYPE_NORMAL
+  zh: g-maps的两组截图。在左侧，地图中有一个绿色的云，中心有一个黑色的小点。从下方有一条红色线条，从上方有一条黑色线条穿过云。在右侧，地图中心有一个黑色的小点，周围有绿色的块状区域。从上方有一条红色和一条黑色线条穿过云。
 - en: Figure 7-20
+  id: totrans-355
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-20
 - en: On the left, we can see the laser scan of rover (red), the large “cloud” of
     green arrows, and the outline of a map boundary (black). On the right, we can
     see that once we have a correct pose for the rover, with our laser scan overlapping
     a map boundary, our uncertainty “cloud” of green arrows is minimized
+  id: totrans-356
   prefs: []
   type: TYPE_NORMAL
+  zh: 在左侧，我们可以看到探测车的激光扫描（红色），大量绿色的箭头“云”，以及地图边界的轮廓（黑色）。在右侧，我们可以看到一旦我们为探测车确定了正确的姿态，并且激光扫描与地图边界重叠，我们绿色的箭头“云”的不确定性就会最小化。
 - en: You can assist the rover in being located on the map more efficiently by providing
     it its location on the map. To do that, go to the RViz map window. Then, press
     the 2D Pose Estimate button, go to the map, and point at the rover’s approximate
@@ -1854,28 +2655,38 @@
     manual rover placement, but manually placing the rover with its approximate pose
     (position and orientation) is a more efficient use of time and allows the AMCL
     package to converge quicker.
+  id: totrans-357
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过提供探测车在地图上的位置来更有效地帮助探测车定位。为此，请转到RViz地图窗口。然后，按下2D姿态估计按钮，进入地图，并指向探测车的大致位置。AMCL包可以自主确定探测车的位置，无需手动放置探测车，但手动放置探测车并指定其大致姿态（位置和方向）是一种更有效的时间利用方式，并允许AMCL包更快地收敛。
 - en: Even though the AMCL package works fine out of the box, there are various parameters
     that one can optimize based on one’s knowledge of the platform and sensors. Configuring
     these parameters can increase the performance and accuracy of the AMCL package
     and decrease the recovery rotations that the rover carries out while navigating.
+  id: totrans-358
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管AMCL包开箱即用效果良好，但根据对平台和传感器的了解，可以优化各种参数。配置这些参数可以提高AMCL包的性能和精度，并减少探测车在导航过程中进行的恢复旋转。
 - en: 'Three ROS parameters can configure the AMCL node: overall filter, laser model,
     and odometry model. These three parameters are edited and located in our demo
     `amcl.launch` file.'
+  id: totrans-359
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以配置AMCL节点的三个ROS参数：整体滤波器、激光模型和里程计模型。这三个参数在我们的演示`amcl.launch`文件中进行编辑和定位。
 - en: Here is a sample **nonworking** launch file. We will be developing the `amcl_demo.launch`
     file (Listing [7-5](#PC35)) in the next source code listing. The following launch
     file is merely an example of the parameters used by the AMCL algorithm. Generally,
     you can leave many parameters at their default values.
+  id: totrans-360
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是一个示例**非工作**启动文件。我们将在下一个源代码列表中开发`amcl_demo.launch`文件（列表[7-5](#PC35)）。以下启动文件仅是AMCL算法使用的参数的示例。通常，您可以将许多参数保留在默认值。
 - en: '[PRE33]'
+  id: totrans-361
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: The purpose of this `AMCL_demo.launch` is to show a nonworking launch file for
     the AMCL node with all of the possible parameters listed. We will now develop
     an actual **working** `amcl_demo.launch` file (Listing [7-6](#PC36)) that uses
@@ -1887,15 +2698,21 @@
     the abilities of the navigation stack, `move_base`, and cost maps for navigation
     in the **“Programming Goal Locations for Rover”** section. The **working** `amcl_demo.launch`
     file for localizing the rover uses the following script.
+  id: totrans-362
   prefs: []
   type: TYPE_NORMAL
+  zh: '`AMCL_demo.launch`文件的目的在于展示一个包含所有可能参数的非工作启动文件。我们现在将开发一个实际的**工作**`amcl_demo.launch`文件（列表[7-6](#PC36)），它使用之前`amcl_demo.launch`文件中列出的某些参数。请注意，此操作版本的`amcl_demo.launch`还启动了第二个节点。这个第二个ROS节点是`move_base`节点。该节点负责探测车的局部和全局成本图。这些成本图将使我们具备导航和避障能力。我们将在**“为探测车编程目标位置”**部分中回顾和应用导航堆栈`move_base`和成本图的能力。用于定位探测车的**工作**`amcl_demo.launch`文件使用以下脚本。'
 - en: '[PRE34]'
+  id: totrans-363
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: Importance of Localization and AMCL
+  id: totrans-364
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 定位和AMCL的重要性
 - en: The rover’s localization in an environment is of utmost importance. However,
     we need to know what localization and navigation mean in ROS. For example, we
     need to know the internal mechanisms that allow our ROS to localize our rover
@@ -1907,40 +2724,62 @@
     readings allow us to continually reduce the uncertainty of the rover’s pose (position
     and orientation) as the rover moves with time. We will see how RViz and the AMCL
     node reduce the rover’s pose uncertainty.
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
+  zh: 在环境中，漫游者的定位至关重要。然而，我们需要知道在 ROS 中定位和导航的含义。例如，我们需要了解允许我们的 ROS 在环境中定位漫游者的内部机制，这也为
+    ROS 导航奠定了基础。漫游者的定位问题特别关键，因为漫游者在环境地图中移动。ROS 需要知道漫游者的位置和方向，因为没有这些属性，导航是不可能的。ROS
+    对漫游者的定位也依赖于漫游者连续的传感器读数流。这些读数允许我们随着时间推移不断减少漫游者姿态（位置和方向）的不确定性。我们将看到 RViz 和 AMCL
+    节点如何减少漫游者姿态的不确定性。
 - en: Visualizing the AMCL in RViz
+  id: totrans-366
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 在 RViz 中可视化 AMCL
 - en: 'The first action item in ROS is to make certain that all processes in all terminals
     have been shut down or killed with the CTRL+C command before starting another
     simulation. This action is critical to prevent anomalies from occurring with ROS.
     Once we have halted any running terminals, we can begin the rover Gazebo simulation
     with the following commands on the first opened terminal in Terminator:'
+  id: totrans-367
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 ROS 中，第一个行动项目是在开始另一个模拟之前，使用 CTRL+C 命令关闭或终止所有终端中的所有进程。这一行动对于防止 ROS 发生异常至关重要。一旦我们停止了任何运行的终端，我们就可以在
+    Terminator 中第一个打开的终端上使用以下命令开始漫游者 Gazebo 模拟：
 - en: '[PRE35]'
+  id: totrans-368
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: 'We need to execute the actual AMCL launch file in a separate running terminal
     to launch the **AMCL** node. We need to have this node running to visualize the
     pose arrays. We start the AMCL ROS node with the following terminal command:'
+  id: totrans-369
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要在单独运行的终端中执行实际的 AMCL 启动文件来启动 **AMCL** 节点。我们需要这个节点运行以可视化姿态数组。我们使用以下终端命令启动
+    AMCL ROS 节点：
 - en: '[PRE36]'
+  id: totrans-370
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: 'Now that we have launched the `amcl_demo.launch` script file, we can develop
     the RViz launch file that will launch the RViz environment with all of the correct
     connections necessary for displaying results from the `amcl_demo.launch` program.
     We develop this launch file with the following commands in a third terminal in
     Terminator:'
+  id: totrans-371
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经启动了 `amcl_demo.launch` 脚本文件，我们可以开发一个 RViz 启动文件，该文件将启动 RViz 环境，并具有显示 `amcl_demo.launch`
+    程序结果的正确连接。我们在 Terminator 的第三个终端中使用以下命令开发此启动文件：
 - en: '[PRE37]'
+  id: totrans-372
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: We have now developed the `ai_rover_remastered_amcl_rviz.launch` file. This
     file is similar to the RViz launch file from Chapter [5](494112_1_En_5_Chapter.xhtml).
     It allows us to set waypoints in RViz for the rover to follow autonomously. Also,
@@ -1952,59 +2791,91 @@
     for you to comprehend. The `amcl.rviz` file will once again be available on the
     supporting website for this book. We can now enter the following source code for
     the `ai_rover_remastered_amcl_rviz.launch` file (Listing [7-7](#PC40)).
+  id: totrans-373
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在已经开发了 `ai_rover_remastered_amcl_rviz.launch` 文件。这个文件与第 [5](494112_1_En_5_Chapter.xhtml)
+    章中的 RViz 启动文件类似。它允许我们在 RViz 中设置航点，以便漫游者能够自主跟随。此外，我们还将看到 RViz 节点有一个名为 `$(find ai_rover_remastered)/rviz/amcl.rviz.`
+    的配置文件。`amcl.rviz` 文件设置了 RViz 处理来自 `amcl_demo.launch` 文件信息的所有必要配置。然而，这个配置文件相当大，不会列出以节省章节空间。但是，我们将回顾
+    `amcl.rviz` 文件中对你理解重要的特定有限部分。`amcl.rviz` 文件将再次在本书的支持网站上提供。我们现在可以输入以下 `ai_rover_remastered_amcl_rviz.launch`
+    文件的源代码（列表 [7-7](#PC40)）：
 - en: '[PRE38]'
+  id: totrans-374
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: 'We now need to launch the RViz environment in a separate fourth terminal. We
     will need to modify and add the following necessary displays to the RViz environment:'
+  id: totrans-375
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在需要在单独的第四个终端中启动 RViz 环境。我们需要修改并添加以下必要的显示到 RViz 环境：
 - en: '**Map Display**, as shown in the previous sections'
+  id: totrans-376
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**地图显示**，如前几节所示'
 - en: '**LaserScan Display** from the LiDAR sensor'
+  id: totrans-377
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**激光扫描显示**来自激光雷达传感器'
 - en: '**PoseArray Display** for the AMCL analysis of the map'
+  id: totrans-378
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**PoseArray显示**用于地图的AMCL分析'
 - en: 'We can now start the RViz environment with the `ai_rover_remastered_amcl_rviz.launch`
     file. Please activate RViz with the following terminal commands in a separate
     fifth running terminal:'
+  id: totrans-379
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在可以使用`ai_rover_remastered_amcl_rviz.launch`文件启动RViz环境。请在单独的第五个运行终端中通过以下终端命令激活RViz：
 - en: '[PRE39]'
+  id: totrans-380
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: 'Once the RViz environment activates, we must add the **PoseArray** display
     with the following actions in RViz:'
+  id: totrans-381
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦RViz环境激活，我们必须在RViz中执行以下操作来添加**PoseArray**显示：
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig21_HTML.jpg)'
+  id: totrans-382
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig21_HTML.jpg)'
 - en: Two screenshots of the displays tab on the left and create visualization tab
     on the right. The displays tab has various options and buttons in which add, duplicate,
     and remove buttons are selected. The create visualization tab has highlighted
     by display type section and it lists various options in which pose array is selected.
+  id: totrans-383
   prefs: []
   type: TYPE_NORMAL
+  zh: 左侧显示标签页和右侧创建可视化标签页的两个截图。显示标签页有各种选项和按钮，其中选择了添加、复制和删除按钮。创建可视化标签页通过显示类型部分突出显示，并列出各种选项，其中选择了姿态数组。
 - en: Figure 7-21
+  id: totrans-384
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-21
 - en: The PoseArray display for RViz
+  id: totrans-385
   prefs: []
   type: TYPE_NORMAL
+  zh: RViz的PoseArray显示
 - en: Click the Add button (blue box) under Displays and select the PoseArray display
     under the Topics tab (orange box). This action is shown in Figure [7-21](#Fig21).
+  id: totrans-386
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在显示下点击添加按钮（蓝色方框），然后在主题标签页（橙色方框）下选择PoseArray显示。此操作如图[7-21](#Fig21)所示。
 - en: Now that we have the RViz GUI interface open, we should have the rover Gazebo
     simulation and the `amcl_demo.launch` program running, and this RViz GUI available
     to you. If all three of these programs are running, we should see the display
@@ -2017,57 +2888,86 @@
     orange box in Figure [7-22](#Fig22) is where our previously generated map’s features
     overlap the laser scan of the rover. The green box is where our PoseArray display
     type is visible (Figure [7-22](#Fig22)).
+  id: totrans-387
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经打开了RViz GUI界面，我们应该有漫游器Gazebo模拟和`amcl_demo.launch`程序运行，以及这个RViz GUI可供使用。如果这三个程序都在运行，我们应该看到图[7-22](#Fig22)中显示的显示。我们需要为PoseArray显示类型添加`/particlecloud`主题。一旦我们将此主题添加到PoseArray显示类型，我们应该在图[7-22](#Fig22)中找到的蓝色方框周围看到“云”状的红色箭头。我们应该看到这个红色箭头云随着我们的不确定性减小而变小。漫游器移动得越多，漫游器姿态的不确定性就越小。我们的漫游器位置就在这个蓝色方框的中心。图[7-22](#Fig22)中的橙色方框是我们之前生成的地图特征与漫游器激光扫描重叠的地方。绿色方框是我们可见的PoseArray显示类型（图[7-22](#Fig22)）。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig22_HTML.jpg)'
+  id: totrans-388
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig22_HTML.jpg)'
 - en: A screenshot of the mapping tab with interact options and a map. The interact
     tab has the pose array option which is highlighted. A map on the right contains
     a cloud of red arrows which depicts the rover scans and a blue box, which depicts
     the particle cloud.
+  id: totrans-389
   prefs: []
   type: TYPE_NORMAL
+  zh: 一张包含交互选项和地图的映射标签页截图。交互标签页中突出显示了姿态数组选项。右侧的地图包含一个红色箭头的云，表示漫游器的扫描，以及一个蓝色方框，表示粒子云。
 - en: Figure 7-22
+  id: totrans-390
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-22
 - en: The rover’s red arrow/particlecloud overlaps the blue box
+  id: totrans-391
   prefs: []
   type: TYPE_NORMAL
+  zh: 漫游器的红色箭头/粒子云与蓝色方框重叠
 - en: 'Now we need to test that our rover''s pose is correct. We will need to create
     an ROS service server that will determine the rover’s current pose (position and
     orientation) at that exact moment. We will need to create a ROS package `currentPose`
     that will include `rospy, roscpp,` and `std_msgs` as a package dependency. The
     following will create our ROS package by opening another terminal in Terminator:'
+  id: totrans-392
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们需要测试我们的漫游器姿态是否正确。我们需要创建一个ROS服务服务器，该服务器将确定漫游器在那个确切时刻的当前姿态（位置和方向）。我们需要创建一个名为`currentPose`的ROS包，该包将包括`rospy,
+    roscpp,`和`std_msgs`作为包依赖项。以下操作将通过在Terminator中打开另一个终端来创建我们的ROS包：
 - en: '[PRE40]'
+  id: totrans-393
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: 'Now enter the source code for `findPose.py` (Listing [7-8](#PC43)):'
+  id: totrans-394
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在输入`findPose.py`（列表[7-8](#PC43)）的源代码：
 - en: '[PRE41]'
+  id: totrans-395
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: 'We will then need to start the launch file for determining the current pose
     of the rover. The following is the list of terminal commands for a new terminal
     window in Terminator:'
+  id: totrans-396
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们需要启动确定漫游器当前姿态的启动文件。以下是在Terminator的新终端窗口中的终端命令列表：
 - en: '[PRE42]'
+  id: totrans-397
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: Then we enter the source code launch file (Listing [7-9](#PC45)).
+  id: totrans-398
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们进入源代码启动文件（列表[7-9](#PC45)）。
 - en: '[PRE43]'
+  id: totrans-399
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: Moving the Rover’s Pose with RViz
+  id: totrans-400
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用RViz移动漫游车的位姿
 - en: We have the rover in our Gazebo environment, and we have the PoseArray fully
     activated. We can move the rover from one pose (position and orientation) to another.
     But first, we need to make certain the rover is in the correct initial pose. We
@@ -2082,25 +2982,38 @@
     pose and the final goal pose. The line is the shortest path possible between these
     two points. Once the rover begins to travel to the goal pose, we will see a green
     line trail behind the rover, the local path. We can see this in Figure [7-23](#Fig23).
+  id: totrans-401
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在我们的Gazebo环境中有了漫游车，并且PoseArray已经完全激活。我们可以将漫游车从一个位姿（位置和方向）移动到另一个位姿。但首先，我们需要确保漫游车处于正确的初始位姿。我们查看Gazebo环境中漫游车的实际位姿，并尝试与RViz中相同漫游车的相同位姿尽可能接近。我们通过使用位于RViz
+    GUI窗口顶部的**2D位姿估计**按钮来对漫游车进行校正。一旦进行校正，我们可以选择**2D导航目标**选项并点击一个合理接近漫游车的位置。同时，确保你选择的位姿是空闲空间（没有任何障碍物）。一旦这样做，你应该看到从初始位姿到目标位姿的虚线蓝色线。这条蓝色线是全局路径，是初始漫游车位姿和最终目标位姿之间的最佳距离。这条线是这两个点之间可能的最短路径。一旦漫游车开始向目标位姿移动，我们将在漫游车后面看到一条绿色线，这是局部路径。我们可以在图[7-23](#Fig23)中看到这一点。
 - en: '![](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig23_HTML.jpg)'
+  id: totrans-402
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_7_Chapter/494112_1_En_7_Fig23_HTML.jpg)'
 - en: A screenshot of a map with a blue dotted line with a green dotted line with
     a red box passing near it.
+  id: totrans-403
   prefs: []
   type: TYPE_NORMAL
+  zh: 一张带有蓝色虚线和绿色虚线以及一个红色方框经过其附近的地图截图。
 - en: Figure 7-23
+  id: totrans-404
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-23
 - en: Blue line is global path, and faint green line is local path
+  id: totrans-405
   prefs: []
   type: TYPE_NORMAL
+  zh: 蓝线是全局路径，微弱的绿色线是局部路径
 - en: Programming Goal Poses for Rover
+  id: totrans-406
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 编程目标位姿为漫游车
 - en: We are far from finished allowing our rover to perform ROS navigation. For now,
     we need to start navigating autonomously in ROS. The first step toward ROS navigation
     was to create a map. The second step allowed the rover to accurately localize
@@ -2109,8 +3022,10 @@
     to go on the map is developing the rover’s correct path planning. Path planning
     takes the current pose of the rover and the goal pose where the rover needs to
     go and attempts the shortest pathway to reach that goal pose as an output.
+  id: totrans-407
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还没有完成让我们的漫游车执行ROS导航的任务。目前，我们需要开始在ROS中自主导航。ROS导航的第一步是创建地图。第二步允许漫游车在环境中精确定位并确定其位姿（位置和方向）。现在我们需要命令漫游车去哪里以及如何去。告诉漫游车在地图上去哪的一部分是开发漫游车的正确路径规划。路径规划将漫游车的当前位姿和漫游车需要到达的目标位姿作为输入，并尝试找到到达该目标位姿的最短路径作为输出。
 - en: Now we have a localized rover in the simulated Gazebo environment. We have directly
     sent it goal poses (positions and orientations) through RViz. We have happily
     seen the rover traverse with these goal poses across the environment. Ultimately,
@@ -2120,19 +3035,25 @@
     Now we will quickly review the functions and characteristics of the navigation
     stack and what makes it operate. These functionalities will allow us to use Python
     scripts to control the rover without direct human interaction in RViz.
+  id: totrans-408
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经在模拟的Gazebo环境中定位了漫游车。我们通过RViz直接发送了目标位姿（位置和方向）。我们很高兴看到漫游车带着这些目标位姿穿越环境。最终，通过与ROS导航系统交互，这种基于目标位姿的导航成为可能。这个导航系统也被称为导航堆栈。有关导航堆栈的更多信息，请参阅[http://wiki.ros.org/navigation/Tutorials](http://wiki.ros.org/navigation/Tutorials)。现在我们将快速回顾导航堆栈的功能和特性以及它是如何运行的。这些功能将使我们能够使用Python脚本来控制漫游车，而无需在RViz中进行直接的人机交互。
 - en: Noetic ROS Navigation Stack
+  id: totrans-409
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Noetic ROS导航堆栈
 - en: We are far from finished allowing our rover to perform ROS navigation. For now,
     we need to start navigating autonomously in ROS. The first step toward ROS navigation
     was to create a map. The second step allowed the rover to determine its current
     pose in the environment accurately. The third step was to send goal-pose waypoints
     to the rover in RViz. Now we will discuss the purpose of the navigation stack.
+  id: totrans-410
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们距离让我们的漫游车执行ROS导航还远得很。目前，我们需要开始在ROS中实现自主导航。ROS导航的第一步是创建地图。第二步允许漫游车在环境中准确确定其当前姿态。第三步是在RViz中将目标姿态航点发送给漫游车。现在我们将讨论导航堆栈的目的。
 - en: The navigation stack is the most heavily used component of ROS. It is a central
     component to our rover that allows the rover to move about the world to different
     waypoints without colliding with objects. The navigation stack integrates the
@@ -2140,61 +3061,85 @@
     pose to the final pose. Also, the navigation stack can allow the rover to recover
     from issues of becoming trapped in the environment by rotating around the rover’s
     Z-axis until it recovers.
+  id: totrans-411
   prefs: []
   type: TYPE_NORMAL
+  zh: 导航堆栈是ROS中使用最频繁的组件。它是我们漫游车的核心组件，允许漫游车在世界中移动到不同的航点而不会与物体碰撞。导航堆栈集成了地图、定位系统、传感器（激光雷达）和里程计，以从初始姿态规划到最终姿态。此外，导航堆栈还可以允许漫游车通过围绕漫游车的Z轴旋转来恢复，从而从陷入环境的问题中恢复过来。
 - en: 'A high-level description of the navigation stack is as follows:'
+  id: totrans-412
   prefs: []
   type: TYPE_NORMAL
+  zh: 导航堆栈的高级描述如下：
 - en: First, send a navigational goal to the navigation stack. Then, make an ROS action
     call with a goal type `MoveBaseGoal`, which specifies the final goal pose, usually
     in the map coordinate frame.
+  id: totrans-413
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 首先，向导航堆栈发送一个导航目标。然后，使用目标类型`MoveBaseGoal`进行ROS动作调用，该类型指定了最终目标姿态，通常在地图坐标系中。
 - en: Second, the navigation stack calculates the shortest possible pathway from the
     initial pose to the goal pose using the map's pathfinding algorithm in the global
     planner.
+  id: totrans-414
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二，导航堆栈使用全局规划器中的地图路径查找算法，从初始姿态计算到目标姿态的最短可能路径。
 - en: Third, the navigation stack then passes the global pathway solution to the local
     planner. The local planner then attempts this pathway solution, using the rover’s
     sensors to avoid obstacles that might not be present on the map. If the local
     planner fails, the global planner can issue a new pathway solution.
+  id: totrans-415
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第三，导航堆栈然后将全局路径解决方案传递给局部规划器。局部规划器随后尝试此路径解决方案，使用漫游车的传感器来避开地图上可能不存在障碍物。如果局部规划器失败，全局规划器可以发出新的路径解决方案。
 - en: Fourth, as the rover approaches the goal pose within a given distance, the rover
     arrives at its destination and the action terminates.
+  id: totrans-416
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第四，随着漫游车接近给定距离内的目标姿态，漫游车到达目的地，动作终止。
 - en: Configuring the Navigation Stack
+  id: totrans-417
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 配置导航堆栈
 - en: 'To develop a Python script that controls the rover’s navigation with a known
     map we need to launch three important ROS nodes:'
+  id: totrans-418
   prefs: []
   type: TYPE_NORMAL
+  zh: 要开发一个Python脚本，使用已知地图控制漫游车的导航，我们需要启动三个重要的ROS节点：
 - en: '**The move_base node** handles the global pathfinding and local control of
     the rover.'
+  id: totrans-419
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**move_base节点**处理漫游车的全局路径规划和局部控制。'
 - en: '**The amcl node** localizes the rover concerning the referenced map.'
+  id: totrans-420
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**amcl节点**根据参考地图定位漫游车。'
 - en: '**The map_server node** provides the static map for the rover to localize and
     plan.'
+  id: totrans-421
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**map_server节点**为漫游车提供静态地图，以便定位和规划。'
 - en: Summary
+  id: totrans-422
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: 'The objective of this chapter was to develop the necessary skills to create
     ROS navigational capabilities for our intrepid rover. These skills include generating
     and storing maps of the environment (catacombs), localizing the rover in our simulated
@@ -2204,31 +3149,45 @@
     of ROS navigation. It has also used multiple ROS navigation packages. ROS navigation
     concepts were used to allow us to develop our rover’s capabilities further with
     the following features:'
+  id: totrans-423
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章的目标是培养创建我们勇敢的漫游车ROS导航能力所需的基本技能。这些技能包括生成和存储环境（地下墓穴）的地图、在模拟环境中定位漫游车、允许漫游车的Python程序执行路径规划、可视化数据并纠正RViz中的任何模拟错误。本章还引用了众多参考文献，可以增强对ROS导航的理解。它还使用了多个ROS导航包。使用ROS导航概念，我们可以通过以下功能进一步开发我们的漫游车能力：
 - en: Utilize a basic navigation structure by using the already available and standard
     ROS navigation stack.
+  id: totrans-424
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通过使用现成的和标准的ROS导航堆栈，利用基本的导航结构。
 - en: Create and store a map of the environment generated by the `slam_gmapping` ROS
     node.
+  id: totrans-425
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 创建并存储由 `slam_gmapping` ROS 节点生成的环境地图。
 - en: Utilize the `move_base` ROS node to set waypoints.
+  id: totrans-426
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用 `move_base` ROS 节点设置航点。
 - en: Localize our rover in the environment.
+  id: totrans-427
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在环境中定位我们的漫游车。
 - en: Develop a pathfinding solution in the environment.
+  id: totrans-428
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在环境中开发路径查找解决方案。
 - en: Travel the path solution and avoid obstacles along the way.
+  id: totrans-429
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 沿着路径解决方案前进并避开沿途的障碍物。
