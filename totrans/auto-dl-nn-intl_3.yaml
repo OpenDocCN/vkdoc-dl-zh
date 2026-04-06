@@ -1,7 +1,9 @@
 - en: 3. Hyperparameter Optimization Under Shell
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 3. 在Shell下进行超参数优化
 - en: In the previous chapter, we saw that simple HPO techniques could produce very
     impressive results. Hyperparameter Optimization not only optimizes a specific
     model for a dataset but can even construct new architectures. But the fact is
@@ -15,19 +17,27 @@
     algorithms. Early Stopping algorithms analyze the model training process based
     on intermediate results and decide whether to continue training or stop it to
     save time.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上一章中，我们看到了简单的 HPO 技术可以产生非常令人印象深刻的结果。超参数优化不仅优化了数据集的特定模型，甚至可以构建新的架构。但事实是，到目前为止，我们一直使用的是一组基本的工具进行
+    HPO 任务。确实，到目前为止，我们只使用了原始的随机搜索调谐器和网格搜索调谐器。我们从上一章了解到，搜索空间可能包含数百万甚至数十亿个参数。如果我们有无限的时间，我们总是可以使用网格搜索调谐器。但不幸的是，这种方法在现实中并不适用。我们需要在寻找最佳超参数的速度和质量之间取得良好平衡的调谐器。另一种有用的技术是早期停止算法。早期停止算法基于中间结果分析模型训练过程，并决定是否继续训练或停止以节省时间。
 - en: This chapter will study various HPO Tuners and tell about their basic features.
     We will explore the use of Early Stopping algorithms that speed up the experiment
     stopping trials with an unpromising training process. And also, consider creating
     a custom HPO Tuner for a particular task. This chapter will greatly enhance the
     practical application of the Hyperparameter Optimization approach.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章将研究各种 HPO 调谐器，并介绍它们的基本特性。我们将探讨使用早期停止算法来加速具有无望训练过程的实验停止试验。此外，考虑为特定任务创建自定义 HPO
+    调谐器。本章将极大地增强超参数优化方法的实际应用。
 - en: Tuners
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 调谐器
 - en: We begin this chapter by examining the various HPO Tuners. As you remember,
     Tuner receives metrics from Trial after evaluating a particular search space parameter.
     Based on the existing result history of all completed Trials, Tuner decides which
@@ -35,584 +45,904 @@
     the best hyperparameters as quickly as possible. The choice of a suitable tuner
     can significantly improve the result of an experiment. Let’s take a closer look
     at how Random Search Tuner and Grid Search Tuner act.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们从考察各种超参数优化（HPO）调谐器开始本章。正如你记得的那样，调谐器在评估特定搜索空间参数后从试验中接收指标。基于所有已完成试验的现有结果历史，调谐器决定下一个要测试的超参数配置。调谐器的主要任务是尽可能快地找到最佳超参数。选择合适的调谐器可以显著提高实验结果。让我们更详细地看看随机搜索调谐器和网格搜索调谐器是如何工作的。
 - en: Consider a two-variable black-box function which is expressed in Listing [3-1](#PC1).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑一个用列表 [3-1](#PC1) 表达的两个变量黑盒函数。
 - en: '[PRE0]'
+  id: totrans-6
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'I deliberately do not give an analytical formula for this function. `black_box_f1`
     is just a black-box function, and we know nothing about its internal logic. In
     real life, black-box functions have the following properties:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 我故意没有给出这个函数的解析公式。`black_box_f1` 只是一个黑盒函数，我们对它的内部逻辑一无所知。在现实生活中，黑盒函数具有以下特性：
 - en: They are not continuous
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它们不是连续的
 - en: They have random noise
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它们有随机噪声
 - en: 'All black-box functions that we will examine in this chapter will satisfy these
     properties. But anyway, we can cheat a little and plot this function:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章我们将考察的所有黑盒函数都将满足这些特性。但无论如何，我们可以稍微作弊一下，绘制这个函数：
 - en: '[PRE1]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Figure [3-1](#Fig1) shows that the red area is where the black-box function
     `black_box_f1` reaches its maximum values.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-1](#Fig1) 显示了红色区域是黑盒函数 `black_box_f1` 达到最大值的地方。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig1_HTML.jpg)'
+  id: totrans-13
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig1_HTML.jpg)'
 - en: Figure 3-1
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-1
 - en: Black-box function plot
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑盒函数绘图
 - en: Note
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: In this chapter, we will examine only problems of finding the maxima of the
     black-box function ***f***. The problem of finding the maxima of the function
     f is equivalent to the problem of finding the minima of the function -***f***.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，我们将仅考察寻找黑盒函数 ***f*** 的最大值的问题。寻找函数 f 的最大值问题等价于寻找函数 -***f*** 的最小值问题。
 - en: 'Of course, it would be great to be able to visualize a black-box function before
     research, but there are two main problems here:'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，在研究之前能够可视化黑盒函数将是非常好的，但这里有两个主要问题：
 - en: Most of the black-box functions have a large number of variables.
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 大多数黑盒函数都有大量的变量。
 - en: Calculating one function value with specific parameters can take minutes and
     even hours.
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用特定参数计算一个函数值可能需要几分钟甚至几小时。
 - en: Therefore, of course, the choice of a Tuner has great importance. Let’s take
     a look at how Random Search Tuner explores the `black_box_f1` function. We are
     implementing an embedded experiment to visualize the trial parameters that the
     tuner has selected during the experiment in Listing [3-2](#PC3).
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，当然，选择调优器非常重要。让我们看看随机搜索调优器是如何探索`black_box_f1`函数的。我们正在实施一个嵌入式实验，以可视化在列表[3-2](#PC3)中实验期间调优器选择的试验参数。
 - en: 'We import necessary modules:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们导入必要的模块：
 - en: '[PRE2]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: The search space for `black_box_f1` contains all integer pairs in [-10, 10]
     × [-10, 10]. There are 441 elements in the search space.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '`black_box_f1`的搜索空间包含[-10, 10] × [-10, 10]中的所有整数对。搜索空间中有441个元素。'
 - en: '[PRE3]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'The experiment will have 100 trials:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验将有100次试验：
 - en: '[PRE4]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: We pick Random Search Tuner
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们选择随机搜索调优器
 - en: '[PRE5]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'and start the experiment:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 并开始实验：
 - en: '[PRE6]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Next, we define the main event loop:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们定义主要事件循环：
 - en: '[PRE7]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'When the experiment is finished, we display all the trials that were created
     during the experiment:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 当实验完成后，我们显示实验期间创建的所有试验：
 - en: '[PRE8]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Let’s examine all the trials that Random Search Tuner generated during the experiment
     in Listing [3-2](#PC3).
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们检查在列表[3-2](#PC3)中实验期间随机搜索调优器生成的所有试验。
 - en: Figure [3-2](#Fig2) shows that the trials generated by Random Search Tuner are
     simple random dots scattering. In some cases, the dot (trial) may successfully
     fall into the area of maximum values, but in many cases, the area of maximum values
     ​​remains unexplored properly.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[3-2](#Fig2)显示了随机搜索调优器生成的试验是简单的随机点散布。在某些情况下，点（试验）可能成功地落入最大值区域，但在许多情况下，最大值区域仍未得到适当的探索。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig2_HTML.jpg)'
+  id: totrans-38
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig2_HTML.jpg)'
 - en: Figure 3-2
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-2
 - en: Random Search Tuner Trials
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机搜索调优器试验
 - en: Let’s now look at the trials that the Grid Search Tuner generates by exploring
     the `black_box_f1` function in Listing [3-3](#PC10).
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来看看网格搜索调优器通过探索列表[3-3](#PC10)中的`black_box_f1`函数生成的试验。
 - en: '[PRE9]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'The Grid Search experiment looks much like the Random Search experiment in
     Listing [3-2](#PC3). We only use Grid Search Tuner here:'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 网格搜索实验在列表[3-2](#PC3)中看起来与随机搜索实验非常相似。这里我们只使用网格搜索调优器：
 - en: Figure [3-3](#Fig3) demonstrates the trials generated by the Grid Search Tuner.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[3-3](#Fig3)展示了网格搜索调优器生成的试验。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig3_HTML.jpg)'
+  id: totrans-45
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig3_HTML.jpg)'
 - en: Figure 3-3
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-3
 - en: Grid Search Tuner Trials
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 网格搜索调优器试验
 - en: We see that the Grid Search Tuner simply iterates through all the values ​​in
     the search space in a particular order. This approach can be helpful when dealing
     with a small search space when it is possible to iterate over all the values ​​in
     the search space. Otherwise, the trials generated by Grid Search Tuner may not
     even get close to the area of maximum values ​​of the black-box function.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们看到网格搜索调优器只是以特定顺序遍历搜索空间中的所有值。当可能遍历搜索空间中的所有值时，这种方法对于处理小搜索空间是有帮助的。否则，网格搜索调优器生成的试验可能甚至无法接近黑盒函数的最大值区域。
 - en: The main problem with Random and Grid tuners is that they don’t interact with
     their trial results in any way. They do not have any “memory” that would allow
     them to highlight promising areas in the search space and concentrate their search
     on them. We will now begin to study tuners that have “memory” and which can explore
     the search space more efficiently.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机和网格调优器的主要问题在于它们以任何方式都不与它们的试验结果交互。它们没有任何“记忆”，这会允许它们突出搜索空间中的有希望的区域，并将搜索集中在这些区域上。我们现在将开始研究具有“记忆”并能更有效地探索搜索空间的调优器。
 - en: Evolution Tuner
+  id: totrans-50
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 进化调优器
 - en: 'Evolution Tuner search is based on the principles of natural evolution. It
     implements two fundamental principles of evolution: selection and mutation. Evolution
     Tuner initializes a population of a specific size. Each population individual
     represents a particular set of parameters in the search space. Each individual
     has a fitness property that indicates the Trial result. We say that individual
     `A` is better than individual `B`:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器的搜索基于自然进化的原理。它实现了进化的两个基本原理：选择和变异。进化调谐器初始化一个特定大小的种群。每个种群个体代表搜索空间中特定的一组参数。每个个体都有一个表示试验结果的适应度属性。我们说个体
+    `A` 比个体 `B` 更好：
 - en: If `A.fitness` > `B.fitness` when the Tuner runs in maximization mode
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 当调谐器在最大化模式下运行时，如果 `A.fitness` > `B.fitness`
 - en: If `A.fitness` < `B.fitness` when the Tuner runs in minimization mode
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 当调谐器在最小化模式下运行时，如果 `A.fitness` < `B.fitness`
 - en: Evolution Tuner takes the best individual from a random pair of individuals
     and mutates it randomly by replacing the value of its parameter with another value
     from the search space. After that, the mutated individual replaces the original
     one, and the process is repeated again. Figure [3-4](#Fig4) illustrates this search
     principle.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器从随机配对的个体中选取最佳个体，并通过随机替换其参数值来对其进行随机变异。之后，变异个体替换原始个体，然后重复此过程。图 [3-4](#Fig4)
+    展示了这一搜索原理。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig4_HTML.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig4_HTML.png)'
 - en: Figure 3-4
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-4
 - en: Evolution Tuner
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器
 - en: One of the big problems with Evolution Tuner is that mutation doesn’t always
     improve an individual’s fitness. Mutation operation only executes a random change
     in parameter values, and usually, mutation degrades an individual’s performance.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器的一个大问题在于变异并不总是能提高个体的适应度。变异操作仅执行参数值的随机变化，通常变异会降低个体的性能。
 - en: Note
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The experienced reader may notice that evolutionary algorithms based on the
     principles of natural selection have another key method – *crossover*. But many
     studies show that most evolutionary problems can be solved without the *crossover*
     operation. This implementation of Evolution Tuner does not contain *crossover*
     operation.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 经验丰富的读者可能会注意到，基于自然选择原理的进化算法还有一个关键方法——*交叉*。但许多研究表明，大多数进化问题可以在没有 *交叉* 操作的情况下解决。这个进化调谐器的实现不包含
+    *交叉* 操作。
 - en: 'Here is an example of Evolution Tuner configuration:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是进化调谐器配置的一个示例：
 - en: '[PRE10]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'Evolution Tuner supports all search space types: `choice`, `choice(nested)`,
     `randint`, `uniform`, `quniform`, `loguniform`, `qloguniform`, `normal`, `qnormal`,
     `lognormal`, and `qlognormal`.'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器支持所有搜索空间类型：`choice`、`choice(nested)`、`randint`、`uniform`、`quniform`、`loguniform`、`qloguniform`、`normal`、`qnormal`、`lognormal`
+    和 `qlognormal`。
 - en: Let’s take a look at Evolution Tuner in action optimizing `black_box_f1` function
     in Listing [3-4](#PC13).
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看进化调谐器在实际中优化列表 [3-4](#PC13) 中的 `black_box_f1` 函数的情况。
 - en: '(Full code is provided in the corresponding file: *ch3/tuners/evolution_tuner/run_experiment.py*.)'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整代码在相应的文件中提供：*ch3/tuners/evolution_tuner/run_experiment.py*。）
 - en: 'Setting population size:'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置种群大小：
 - en: '[PRE11]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Picking the Evolution Tuner for the Experiment:'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 选择实验中的进化调谐器：
 - en: '[PRE12]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'Unlike Grid Search Tuner and Random Search Tuner, an Evolution Tuner has “memory.”
     That is why it is more attractive to analyze the search process progress. We will
     show the history of the allocation of trial parameters in the search space by
     generations:'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 与网格搜索调谐器和随机搜索调谐器不同，进化调谐器有“记忆”。这就是为什么它更有吸引力，可以分析搜索过程进度。我们将通过代数展示搜索空间中试验参数分配的历史：
 - en: '**1st generation**: From 1st trial to 25th trial'
+  id: totrans-71
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**第 1 代**：从第 1 次试验到第 25 次试验'
 - en: '**2nd generation**: From 26th trial to 50th trial'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**第 2 代**：从第 26 次试验到第 50 次试验'
 - en: '**3rd generation**: From 51st trial to 75th trial'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**第 3 代**：从第 51 次试验到第 75 次试验'
 - en: '**4th generation**: From 76th trial to 100th trial'
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**第 4 代**：从第 76 次试验到第 100 次试验'
 - en: 'This approach will allow us to observe the search progress in action:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法将使我们能够观察搜索进度：
 - en: '[PRE13]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'The history of trials:'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 试验历史：
 - en: '[PRE14]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'Splitting trial history by generations:'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 按代数分割试验历史：
 - en: '[PRE15]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Visualizing each generation:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 可视化每一代：
 - en: '[PRE16]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Let’s analyze how the position of individuals changed during the evolutionary
     search.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们分析个体在进化搜索过程中的位置是如何变化的。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig5_HTML.jpg)'
+  id: totrans-84
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig5_HTML.jpg)'
 - en: Figure 3-5
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-5
 - en: 'Evolution Tuner. Generation: 1'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器。代数：1
 - en: Figure [3-5](#Fig5) shows that the allocation of trial parameters is close to
     random distribution.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-5](#Fig5) 显示试验参数的分配接近随机分布。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig6_HTML.jpg)'
+  id: totrans-88
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig6_HTML.jpg)'
 - en: Figure 3-6
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-6
 - en: 'Evolution Tuner. Generation: 2'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器。代数：2
 - en: In Figure [3-6](#Fig6), we see that most of the individuals are already in the
     red zone, which means that the population is moving smoothly toward the highest
     values ​​of the function. And the last generation shown in Figure [3-7](#Fig7)
     has at least one individual at the top of the red zone.
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [3-6](#Fig6) 中，我们看到大多数个体已经处于红色区域，这意味着种群正在平稳地向函数的最高值移动。图 [3-7](#Fig7) 中显示的最后一代至少有一个个体位于红色区域的顶部。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig7_HTML.jpg)'
+  id: totrans-92
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig7_HTML.jpg)'
 - en: Figure 3-7
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-7
 - en: 'Evolution Tuner. Generation: 4'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 进化调谐器。代数：4
 - en: Note
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Not all built-in NNI tuners support random seed setting. Hence, the experiments
     are not reproducible. Therefore, the results you get on your local machine may
     differ from those shown in this chapter. However, the general behavior of tuners
     remains the same on all machines, so the results of the same tuner on the same
     search space are similar.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 并非所有内置的 NNI 调谐器都支持随机种子设置。因此，实验不可重复。因此，您在本地机器上获得的结果可能与本章中显示的结果不同。然而，所有机器上调谐器的一般行为保持不变，因此相同调谐器在相同搜索空间中的结果相似。
 - en: We can consider the Evolution Tuner as a directed random search. It is slightly
     better than random search but still has many problems due to the too random nature
     of this algorithm. Evolution Tuner usually requires many trials but is usually
     selected due to its simplicity.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以将进化调谐器视为一个有向随机搜索。它比随机搜索略好，但由于该算法过于随机的本质，仍然存在许多问题。进化调谐器通常需要多次试验，但由于其简单性通常被选中。
 - en: Anneal Tuner
+  id: totrans-98
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 热处理调谐器
 - en: Anneal Tuner is based on the Simulated Annealing algorithm. Simulated Annealing
     is a method for solving optimization problems. The algorithm models the physical
     process of heating a material and slowly lowering the temperature to decrease
     defects, thus minimizing the system energy. Annealing Tuner uses randomness as
     part of the search process like Evolution Tuner.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 热处理调谐器基于模拟退火算法。模拟退火是一种解决优化问题的方法。该算法模拟了加热材料并缓慢降低温度以减少缺陷的物理过程，从而最小化系统能量。热处理调谐器像进化调谐器一样将随机性作为搜索过程的一部分。
 - en: 'The annealing algorithm consists of the following steps:'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 热处理算法包括以下步骤：
 - en: 1. The annealing algorithm selects a random element X in the search space, and
     the f(X) value is calculated.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 1. 热处理算法在搜索空间中随机选择一个元素 X，并计算 f(X) 的值。
 - en: 2. The algorithm performs a random mutation on element X producing X’ element
     from the search space.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 2. 算法对搜索空间中的元素 X 进行随机变异，产生 X’ 元素。
 - en: If X is a real value, then X’ can be calculated as X’ = X + ΔX, where ΔX is
     a random variable. Next, we compare f(X’) and f(X).
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果 X 是实数，则 X’ 可以计算为 X’ = X + ΔX，其中 ΔX 是一个随机变量。接下来，我们比较 f(X’）和 f(X)。
 - en: 3a. If f(X’) < f(X), then the mutation is considered as negative.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 3a. 如果 f(X’）< f(X)，则认为变异是负的。
 - en: 3b. If f(X’) ≥ f(X), then the mutation is considered as positive and X value
     is updated by X’.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 3b. 如果 f(X’）≥ f(X)，则认为变异是正的，并通过 X’ 更新 X 的值。
 - en: '4. If the mutation is negative, then the algorithm calculates the following
     values:'
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 4. 如果变异是负的，则算法计算以下值：
 - en: '*r*: Uniform random value on (0, 1).'
+  id: totrans-107
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*r*: 在 (0, 1) 上的均匀随机值。'
 - en: 'Δ: f(X) - f(X’).'
+  id: totrans-108
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'Δ: f(X) - f(X’）。'
 - en: '*σ* is standard deviation of all explored values during the search: f(X[1]),
     ..., f(X[n]) multiplied by degradation ratio *c*^(*i*), where *c* is the positive
     value lower than 1 and *i* is the number of iteration, σ = *c*^(*i*) *std*([f(X[1]),
     …, f(X[n])]).'
+  id: totrans-109
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*σ* 是搜索过程中所有探索值的标准差：f(X[1])，…，f(X[n]) 乘以退化率 *c*^(*i*)，其中 *c* 是小于 1 的正数，*i*
+    是迭代次数，σ = *c*^(*i*) *std*([f(X[1])，…，f(X[n])])。'
 - en: Next, we compare *r* and ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq1.png),
     where *e* is the exponential.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们比较 *r* 和 ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq1.png)，其中
+    *e* 是指数。
 - en: '5a. If *r* < ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq2.png),
     then the algorithm degrades from X to X’: X ← X’. This is done hoping that it
     will be possible to reach a new peak in the next iteration and the transition
     to X’ is only an intermediate step. We can consider this as an exploration step
     that explores an area near X in the search space.'
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 5a. 如果 *r* < ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq2.png)，则算法从
+    X 退化到 X’：X ← X’。这是希望在下一次迭代中能够达到一个新的峰值，而向 X’ 的转换只是一个中间步骤。我们可以将其视为一个探索步骤，该步骤在搜索空间中探索
+    X 附近的区域。
 - en: 5b. If *r* > ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq3.png),
     then the algorithm doesn’t update X.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 5b. 如果 *r* > ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq3.png)，则算法不更新
+    X。
 - en: The closer f(X) is to f(X’), the more likely an exploration step would be taken.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: f(X) 越接近 f(X’)，探索步骤被采取的可能性就越大。
 - en: Steps from 2 to 5 are repeated *n* times. Figure [3-8](#Fig8) demonstrates the
     annealing algorithm flow.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 从 2 到 5 的步骤重复 *n* 次。图 [3-8](#Fig8) 展示了退火算法流程。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig8_HTML.png)'
+  id: totrans-115
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig8_HTML.png)'
 - en: Figure 3-8
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-8
 - en: Annealing algorithm flow
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 退火算法流程
 - en: The essence of the annealing algorithm is to get to the “hills” of the surface
     of the black-box function *f* and study the area of this “hill.” In some cases,
     the algorithm may descend from “hills” hoping to climb to a higher one. The disadvantage
     of this algorithm is that it cannot cover large distances between different “hills”
     of the surface of the function f. Figure [3-9](#Fig9) demonstrates the annealing
     algorithm in action.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 退火算法的本质是到达黑盒函数 *f* 的表面“山丘”并研究这个“山丘”的区域。在某些情况下，算法可能会从“山丘”下降，希望爬到更高的一个。这个算法的缺点是它不能覆盖函数
+    f 表面不同“山丘”之间的大距离。图 [3-9](#Fig9) 展示了退火算法的实际操作。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig9_HTML.png)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig9_HTML.png)'
 - en: Figure 3-9
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-9
 - en: Annealing algorithm in action
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 退火算法实际操作
 - en: 'Here is an example of Anneal Tuner configuration:'
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是 Anneal Tuner 配置的一个示例：
 - en: '[PRE17]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'Anneal Tuner supports all search space types: `choice`, `choice(nested)`, `randint`,
     `uniform`, `quniform`, `loguniform`, `qloguniform`, `normal`, `qnormal`, `lognormal`,
     and `qlognormal`.'
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: Anneal Tuner 支持所有搜索空间类型：`choice`，`choice(nested)`，`randint`，`uniform`，`quniform`，`loguniform`，`qloguniform`，`normal`，`qnormal`，`lognormal`
+    和 `qlognormal`。
 - en: Listing [3-5](#PC20) illustrates another black-box function `holder_function`,
     based on Holder’s function. We will use it for testing Anneal Tuner performance.
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表 [3-5](#PC20) 展示了基于 Holder 函数的另一个黑盒函数 `holder_function`，我们将用它来测试 Anneal Tuner
+    的性能。
 - en: '[PRE18]'
+  id: totrans-126
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '`holder_function` can be plotted the following way:'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: '`holder_function` 可以以下方式绘制：'
 - en: '[PRE19]'
+  id: totrans-128
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Figure [3-10](#Fig10) shows the surface of `holder_function` function. This
     surface is much more challenging to explore. It has many hills that are evenly
     spaced on the surface. The highest peaks are in the left corners.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-10](#Fig10) 显示了 `holder_function` 函数的表面。这个表面更具挑战性，表面上有许多均匀分布的“山丘”。最高的峰值在左角。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig10_HTML.jpg)'
+  id: totrans-130
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig10_HTML.jpg)'
 - en: Figure 3-10
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-10
 - en: Holder’s function
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: Holder 函数
 - en: Let’s examine how Anneal Tuner performs optimizing `holder_function` in Listing
     [3-6](#PC22).
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们检查 Anneal Tuner 在列表 [3-6](#PC22) 中如何优化 `holder_function`。
 - en: '(Full code is provided in the corresponding file: *ch3/tuners/anneal_tuner/run_experiment.py*.)'
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整代码在相应的文件中提供：*ch3/tuners/anneal_tuner/run_experiment.py*。）
 - en: 'Picking the Anneal Tuner for the Experiment:'
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 选择实验的 Anneal Tuner：
 - en: '[PRE20]'
+  id: totrans-136
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: After the experiment is completed, we can analyze the progress of the search
     for Anneal Tuner.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验完成后，我们可以分析 Anneal Tuner 的搜索进度。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig11_HTML.jpg)'
+  id: totrans-138
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig11_HTML.jpg)'
 - en: Figure 3-11
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-11
 - en: 'Anneal Tuner. Generation: 1'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: Anneal Tuner. 生成：1
 - en: In Figure [3-11](#Fig11), we can see that Anneal Tuner is starting to study
     the “hills” in the lower-left corner.
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [3-11](#Fig11) 中，我们可以看到 Anneal Tuner 正在开始研究左下角的“山丘”。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig12_HTML.jpg)'
+  id: totrans-142
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig12_HTML.jpg)'
 - en: Figure 3-12
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-12
 - en: 'Anneal Tuner. Generation: 2'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: Anneal Tuner. 生成：2
 - en: Figure [3-12](#Fig12) demonstrates that the second generation of trials is completely
     focused on the two “hills” in the lower-left corner.
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-12](#Fig12) 展示了第二代试验完全集中在左下角的两个“山丘”上。
 - en: And as we can see in Figure [3-13](#Fig13), Anneal Tuner is completely concentrated
     on exploring only one “hill.” Anneal Tuner found a local maxima but could not
     find global maxima at the bottom of the left corner, close to the solution Anneal
     Tuner found.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 如我们在图 [3-13](#Fig13) 中所见，热处理调谐器完全专注于探索仅一个“山丘”。热处理调谐器找到了局部最大值，但无法在左下角底部找到全局最大值，接近热处理调谐器找到的解。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig13_HTML.jpg)'
+  id: totrans-147
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig13_HTML.jpg)'
 - en: Figure 3-13
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-13
 - en: 'Anneal Tuner. Generation: 4'
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 热处理调谐器。生成：4
 - en: Anneal Tuner and Evolution Tuner are variants of directed random search. They
     are intuitive and straightforward, but they may not always explore the search
     space effectively. Let’s study more advanced tuners based on the Bayesian optimization
     approach.
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 热处理调谐器和进化调谐器是定向随机搜索的变体。它们直观且简单，但它们可能并不总是有效地探索搜索空间。让我们研究更多基于贝叶斯优化方法的先进调谐器。
 - en: Sequential Model-Based Optimization Tuners
+  id: totrans-151
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 序列模型优化调谐器
 - en: 'In this section, we will examine tuners that are based on Sequential Model-Based
     Optimization (SMBO). SMBO is a formulation of the Bayesian Optimization approach.
     SMBO implements the following technique: building a probability model p(y|x) of
     the black-box function *f* and use it to pick the most promising elements in the
     search space to evaluate in the black-box function *f*.'
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将考察基于序列模型优化（SMBO）的调谐器。SMBO 是贝叶斯优化方法的一种表述。SMBO 实现了以下技术：构建黑盒函数 *f* 的概率模型
+    p(y|x)，并使用它来挑选搜索空间中最有希望的元素以评估黑盒函数 *f*。
 - en: 'Examine the SMBO method in action. Say we have some trial results we obtained:
     (x[1], f(x[1])), (x[2], f(x[2]), (x[3], f(x[3])), as is shown in Figure [3-14](#Fig14).'
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查 SMBO 方法在实际操作中的表现。假设我们有一些获得的试验结果：(x[1], f(x[1])), (x[2], f(x[2])), (x[3],
+    f(x[3])), 如图 [3-14](#Fig14) 所示。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig14_HTML.png)'
+  id: totrans-154
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig14_HTML.png)'
 - en: Figure 3-14
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-14
 - en: Trial results
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 试验结果
 - en: 'The next step is to create a probability function p(y|x) based on the data:
     (x[1], f(x[1])), (x[2], f(x[2]), (x[3], f(x[3])). p(y|x) is called a “surrogate”
     for the objective (or black-box) function. The surrogate function determines the
@@ -620,156 +950,237 @@
     x[i] in the search space. This means that for any x[*i*], we can say that with
     a *p* probability, the value f(x[*i*]) = y[*i*] lies in the (a, b) interval. This
     concept is demonstrated in Figure [3-15](#Fig15).'
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是根据数据创建一个概率函数 p(y|x)：(x[1], f(x[1])), (x[2], f(x[2])), (x[3], f(x[3])). p(y|x)
+    被称为目标（或黑盒）函数的“代理”。代理函数确定了目标（或黑盒）函数在搜索空间中任何元素 x[i] 的概率分布。这意味着对于任何 x[*i*]，我们可以说以
+    *p* 的概率，值 f(x[*i*]) = y[*i*] 落在 (a, b) 区间内。这一概念在图 [3-15](#Fig15) 中得到了演示。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig15_HTML.png)'
+  id: totrans-158
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig15_HTML.png)'
 - en: Figure 3-15
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-15
 - en: Probability distributions for x[i] and x[j]
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: x[i] 和 x[j] 的概率分布
 - en: 'Having surrogate function p(x|y), we can extrapolate it on the whole search
     space. Figure [3-16](#Fig16) gives a visual description of the surrogate model:'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 拥有代理函数 p(x|y)，我们可以在整个搜索空间上外推它。图 [3-16](#Fig16) 给出了代理模型的视觉描述：
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig16_HTML.png)'
+  id: totrans-162
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig16_HTML.png)'
 - en: Figure 3-16
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-16
 - en: 'Surrogate model for three trials: (x[1], f(x[1])), (x[2], f(x[2])), (x[3],
     f(x[3]))'
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 三次试验的代理模型：(x[1], f(x[1])), (x[2], f(x[2])), (x[3], f(x[3]))
 - en: Red dashed line shows the actual black-box function.
+  id: totrans-165
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 红色虚线表示实际的黑盒函数。
 - en: Black solid line shows the expected mean of the surrogate function p(y|x).
+  id: totrans-166
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 黑色实线表示代理函数 p(y|x) 的期望均值。
 - en: Purple dashed line shows the variance of the surrogate function p(y|x).
+  id: totrans-167
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 紫色虚线表示代理函数 p(y|x) 的方差。
 - en: 'Based on the constructed surrogate model, the SMBO algorithm makes its prediction
     regarding the potential maxima of the black-box function. The next goal of the
     algorithm is to find a higher value of the black-box function than the current
     maximum value f(x[2]). The following trial parameters are determined using the
     Expected Improvement function:'
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 基于构建的代理模型，SMBO 算法对其黑盒函数的潜在最大值做出预测。算法的下一个目标是找到比当前最大值 f(x[2]) 更高的黑盒函数值。以下试验参数是使用期望改进函数确定的：
 - en: EI[y*](x) = ![$$ {\int}_{-\infty}^{+\infty}\max \left({y}^{\ast }-y,0\right)p\left(y|x\right)\  dy
     $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq4.png)
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: EI[y*](x) = ![$$ {\int}_{-\infty}^{+\infty}\max \left({y}^{\ast }-y,0\right)p\left(y|x\right)\  dy
+    $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq4.png)
 - en: If we assume that f(x[*2*]) = y[2], then SMBO will choose x[4] as the next trial
     parameter if the EI[y2](x) will be maximum with x[4]. Figure [3-17](#Fig17) illustrates
     the next trial selection by SMBO algorithm.
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们假设 f(x[*2*]) = y[2]，那么 SMBO 将选择 x[4] 作为下一个试验参数，如果 EI[y2](x) 在 x[4] 时达到最大值。图
+    [3-17](#Fig17) 说明了 SMBO 算法选择的下一个试验。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig17_HTML.png)'
+  id: totrans-171
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig17_HTML.png)'
 - en: Figure 3-17
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-17
 - en: Expected Improvement
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 预期改进
 - en: 'After selecting the x[*4*] as the next trial value, we evaluate f(x[*4*]) and
     rebuild the surrogate model concerning the new data: *(x*[*1*]*, f(x*[*1*]*)),
     (x*[*2*]*, f(x*[*2*]*)), (x*[*3*]*, f(x*[*3*]*)), (x*[*4*]*, f(x*[*4*]*))* as
     shown in Figure [3-18](#Fig18).'
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 在选择 x[*4*] 作为下一个试验值后，我们评估 f(x[*4*]) 并根据新的数据重建代理模型：*(x*[*1*]*, f(x*[*1*]*)),
+    (x*[*2*]*, f(x*[*2*]*)), (x*[*3*]*, f(x*[*3*]*)), (x*[*4*]*, f(x*[*4*]*)))*，如图
+    [3-18](#Fig18) 所示。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig18_HTML.png)'
+  id: totrans-175
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig18_HTML.png)'
 - en: Figure 3-18
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-18
 - en: 'Surrogate model for four trials: (x[1], f(x[1])), (x[2], f(x[2])), (x[3], f(x[3])),
     (x[4], f(x[4]))'
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 四个试验的代理模型：(x[1], f(x[1])), (x[2], f(x[2])), (x[3], f(x[3])), (x[4], f(x[4]))
 - en: SMBO aims to converge the surrogate model to the objective function with more
     data, which these approaches do by continually updating the surrogate probability
     model after each objective function evaluation. SMBO Tuners are efficient because
     they choose the next parameters in an informed way.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: SMBO 旨在通过更多数据使代理模型收敛到目标函数，这些方法通过在每次目标函数评估后不断更新代理概率模型来实现。SMBO 调谐器效率高，因为它们以信息化的方式选择下一个参数。
 - en: 'SMBO Tuner performs the following steps in a cycle until the maximum number
     of trials is reached:'
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: SMBO 调谐器在一个周期内执行以下步骤，直到达到试验的最大数量：
 - en: Construct surrogate model based on surrogate probability p(y|x).
+  id: totrans-180
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 基于代理概率 p(y|x) 构建代理模型。
 - en: Determine next trial parameter x using the Estimated Improvement function.
+  id: totrans-181
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用估计改进函数确定下一个试验参数 x。
 - en: Evaluate black-box function f(x).
+  id: totrans-182
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 评估黑盒函数 f(x)。
 - en: Append *(x, f(x))* pair to historical dataset.
+  id: totrans-183
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将 *(x, f(x))* 对添加到历史数据集中。
 - en: 'This is the framework for all SMBO Tuners. The only difference between them
     is the p(y|x) function definition. Different SMBO Tuners have different approaches
     to estimating the probability function p(y|x) based on a historical dataset. This
     chapter will cover the following SMBO Tuners: Tree-Structured Parzen Estimator
     Tuner and Gaussian Process Tuner.'
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是所有 SMBO 调谐器的框架。它们之间的唯一区别是 p(y|x) 函数的定义。不同的 SMBO 调谐器根据历史数据集采用不同的方法来估计概率函数 p(y|x)。本章将介绍以下
+    SMBO 调谐器：树结构帕累托估计器调谐器和高斯过程调谐器。
 - en: Tree-Structured Parzen Estimator Tuner
+  id: totrans-185
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 树结构帕累托估计器调谐器
 - en: 'The Tree-Structured Parzen Estimator Tuner (TPE) description may take one or
     several separate chapters. In this section, we will describe the main idea behind
     the use of this Tuner:'
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 树结构帕累托估计器调谐器 (TPE) 的描述可能需要一或几个独立的章节。在本节中，我们将描述使用此调谐器背后的主要思想：
 - en: In the beginning, TPE Tuner performs *N* random trials while exploring the search
     space.
+  id: totrans-187
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在探索搜索空间的过程中，TPE 调谐器最初进行 *N* 次随机试验。
 - en: Next, the Tuner sorts the executed trials by their values ​​and divides them
     into “good” and “bad” groups based on some quantile - γ. The first group, “good”
     group, contains trials that gave the best results and the “bad” one, all other
     trials.
+  id: totrans-188
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 接下来，调谐器根据某些分位数 - γ 对执行试验进行排序，并将它们分为“良好”组和“不良”组。第一个组，“良好”组，包含给出最佳结果的试验，而“不良”组包含所有其他试验。
 - en: Figure [3-19](#Fig19) depicts the TPE model after the first two steps.
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-19](#Fig19) 描述了经过前两个步骤后的 TPE 模型。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig19_HTML.png)'
+  id: totrans-190
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig19_HTML.png)'
 - en: Figure 3-19
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-19
 - en: TPE Tuner. “Good” and “bad” separation
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE 调谐器。“良好”和“不良”分离
 - en: Densities *l*(x) and *g*(x) are calculated using Parzen Estimators (also known
     as kernel density estimators) for “bad” and “good” groups, respectively. Parzen
     Estimators are a simple average of kernels centered on existing data points.
+  id: totrans-193
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用帕累托估计器（也称为核密度估计器）分别计算“不良”和“良好”组的密度 *l*(x) 和 *g*(x)。帕累托估计器是现有数据点中心核的平均值。
 - en: After, the TPE tuner generates *n* random candidates according to the *g*(x)
     density function. Each of these candidates is sorted by *g*(x)/*l*(x) ratio, and
     the first one is picked as the next trial. This means that the TPE tuner allows
@@ -778,321 +1189,503 @@
     means that a candidate with a high density of good trials and a low density of
     bad trials will be selected. This approach strikes a good balance between exploration
     and exploitation.
+  id: totrans-194
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 之后，TPE调优器根据*g*(x)密度函数生成*n*个随机候选者。这些候选者根据*g*(x)/*l*(x)比率排序，第一个被选为下一个试验。这意味着TPE调优器允许在“好”试验更常见的区域选择随机候选者。同时，所有候选者都根据*g*(x)/*l*(x)排序，这意味着具有高密度“好”试验和低密度“坏”试验的候选者将被选中。这种方法在探索和利用之间取得了良好的平衡。
 - en: Figure [3-20](#Fig20) illustrates the algorithm of selecting the next trial
     parameter.
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[3-20](#Fig20)说明了选择下一个试验参数的算法。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig20_HTML.png)'
+  id: totrans-196
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig20_HTML.png)'
 - en: Figure 3-20
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-20
 - en: TPE Tuner. Next candidate selection
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE调优器。下一个候选选择
 - en: Repeat steps 2–5 until maximum number of trials is reached.
+  id: totrans-199
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 重复步骤2-5，直到达到最大试验次数。
 - en: 'Here is an example of TPE Tuner configuration:'
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是TPE调优器配置的一个示例：
 - en: '[PRE21]'
+  id: totrans-201
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'The following is the description of TPE Tuner parameters:'
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下为TPE调优器的参数描述：
 - en: '`tpe_args.constant_liar_type`:'
+  id: totrans-203
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tpe_args.constant_liar_type`:'
 - en: '**Type**: `''best'' | ''worst'' | ''mean'' | null`'
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`''best'' | ''worst'' | ''mean'' | null`'
 - en: '**Default**: `''best''`'
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`''best''`'
 - en: TPE algorithm itself does not support parallel tuning. This parameter specifies
     how to optimize for `trial_concurrency` > 1\. In general, `best` suit for small
     trial number and `worst` suit for large trial number.
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE算法本身不支持并行调优。此参数指定如何优化`trial_concurrency` > 1。一般来说，对于试验数量少的情况适用`best`，对于试验数量多的情况适用`worst`。
 - en: '`tpe_args.n_startup_jobs`:'
+  id: totrans-207
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tpe_args.n_startup_jobs`:'
 - en: '**Type**: `int`'
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`int`'
 - en: '**Default**`: 20`'
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`20`'
 - en: The first *N* random trials are generated for warming up in Step 1\. If the
     search space is large, this value should be increased.
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一步生成前*N*个随机试验用于预热。如果搜索空间很大，这个值应该增加。
 - en: '`tpe_args.n_ei_candidates`:'
+  id: totrans-211
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tpe_args.n_ei_candidates`:'
 - en: '**Type**: `int`'
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`int`'
 - en: '**Default**: `24`'
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`24`'
 - en: '*n* random candidates generated in Step 4.'
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 第4步生成的*n*个随机候选者。
 - en: '`tpe_args.linear_forgetting`:'
+  id: totrans-215
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tpe_args.linear_forgetting`:'
 - en: '**Type**: `int`'
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`int`'
 - en: '**Default**: `25`'
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`25`'
 - en: TPE lowers the weights of old trials. This parameter controls how many iterations
     it takes for a trial to start decay.
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE降低旧试验的权重。此参数控制试验开始衰减所需的迭代次数。
 - en: '`tpe_args.prior_weight`:'
+  id: totrans-219
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tpe_args.prior_weight`:'
 - en: '**Type**: `float`'
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`float`'
 - en: '**Default**: `1.0`'
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`1.0`'
 - en: Determines the weight of trial configuration in the history trial configurations.
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 确定历史试验配置中试验配置的权重。
 - en: '`tpe_args.gamma`:'
+  id: totrans-223
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tpe_args.gamma`:'
 - en: '**Type**: `float`'
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`float`'
 - en: '**Default**: `0.25`'
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`0.25`'
 - en: Controls how many trials are considered “good.” Represents γ parameter from
     Step 2.
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: 控制多少个试验被认为是“好”的。代表步骤2中的γ参数。
 - en: Note
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: TPE Tuner configuration parameters mentioned above are only valid from NNI version
     2.6\. They will not work on previous versions.
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述TPE调优器配置参数仅适用于NNI版本2.6。它们在之前的版本中不会工作。
 - en: 'TPE Tuner supports all search space types: `choice`, `choice(nested)`, `randint`,
     `uniform`, `quniform`, `loguniform`, `qloguniform`, `normal`, `qnormal`, `lognormal`,
     and `qlognormal`.'
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE调优器支持所有搜索空间类型：`choice`，`choice(nested)`，`randint`，`uniform`，`quniform`，`loguniform`，`qloguniform`，`normal`，`qnormal`，`lognormal`，和`qlognormal`。
 - en: We can see from Listing [3-7](#PC24) how TPE Tuner performs optimizing `holder_function`.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以从列表[3-7](#PC24)中看到TPE调优器是如何优化`holder_function`的。
 - en: '(Full code is provided in the corresponding file: *ch3/tuners/tpe_tuner/run_experiment.py*.)'
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整代码在相应的文件中提供：*ch3/tuners/tpe_tuner/run_experiment.py*。）
 - en: 'Setting the TPE Tuner for the Experiment:'
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 为实验设置TPE调优器：
 - en: '[PRE22]'
+  id: totrans-233
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: After the experiment is completed, we can analyze the progress of the search
     for TPE Tuner.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验完成后，我们可以分析TPE调优器的搜索进度。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig21_HTML.jpg)'
+  id: totrans-235
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig21_HTML.jpg)'
 - en: Figure 3-21
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-21
 - en: 'TPE Tuner. Generation: 1'
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE调优器。生成：1
 - en: 'Figure [3-21](#Fig21) shows that the distribution of points is more like a
     random scattering, which makes sense because, in the tuner setup, we specified
     `''n_startup_jobs'': 20`, which means that the first 20 trials will be completely
     random.'
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
+  zh: '图 [3-21](#Fig21) 显示，点的分布更像是随机散布，这在调谐器设置中是有意义的，因为我们指定了 `''n_startup_jobs'':
+    20`，这意味着前 20 次试验将是完全随机的。'
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig22_HTML.jpg)'
+  id: totrans-239
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig22_HTML.jpg)'
 - en: Figure 3-22
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-22
 - en: TPE Tuner. Last generation
+  id: totrans-241
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE Tuner. 上一个生成
 - en: But as we see in Figure [3-22](#Fig22), the TPE Tuner finds the global maxima
     of `holder_function`, thanks to a probabilistic exploration model.
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
+  zh: 但正如我们在图 [3-22](#Fig22) 中看到的那样，TPE Tuner 由于概率探索模型，找到了 `holder_function` 的全局最大值。
 - en: The TPE Tuner is intuitively clear, based on a solid probability ground, and
     has a good balance between exploration and exploitation policy. Another nice feature
     is that it supports `choice(nested)` search type, which can be critical in some
     research.
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE Tuner 直观易懂，基于坚实的概率基础，并且在探索和利用策略之间取得了良好的平衡。另一个优点是它支持 `choice(nested)` 搜索类型，这在某些研究中可能至关重要。
 - en: Gaussian Process Tuner
+  id: totrans-244
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 高斯过程 Tuner
 - en: 'Gaussian Process (GP) Tuner is another SMBO Tuner based on Multivariate Normal
     Distribution. This tuner is similar to the TPE Tuner but uses a Gaussian distribution
     to build the p(y|x) surrogate. A full description of this method lies outside
     of this book, but the reader can learn how this method works here:'
+  id: totrans-245
   prefs: []
   type: TYPE_NORMAL
+  zh: 高斯过程 (GP) Tuner 是基于多元正态分布的另一种 SMBO Tuner。此 Tuner 与 TPE Tuner 类似，但使用高斯分布来构建 p(y|x)
+    代理。此方法的完整描述超出了本书的范围，但读者可以在此处了解此方法的工作原理：
 - en: '“Using Gaussian Processes to Optimize Expensive Functions”: [`https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.139.9315&rep=rep1&type=pdf`](https://citeseerx.ist.psu.edu/viewdoc/download%253Fdoi%253D10.1.1.139.9315%2526rep%253Drep1%2526type%253Dpdf)'
+  id: totrans-246
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: “使用高斯过程优化昂贵函数”：[`https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.139.9315&rep=rep1&type=pdf`](https://citeseerx.ist.psu.edu/viewdoc/download%253Fdoi%253D10.1.1.139.9315%2526rep%253Drep1%2526type%253Dpdf)
 - en: '“Gaussian Processes and Bayesian Optimization”: [`www.cs.cornell.edu/courses/cs4787/2019sp/notes/lecture16.pdf`](http://www.cs.cornell.edu/courses/cs4787/2019sp/notes/lecture16.pdf)'
+  id: totrans-247
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: “高斯过程与贝叶斯优化”：[`www.cs.cornell.edu/courses/cs4787/2019sp/notes/lecture16.pdf`](http://www.cs.cornell.edu/courses/cs4787/2019sp/notes/lecture16.pdf)
 - en: 'Here is an example of GP Tuner configuration:'
+  id: totrans-248
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是 GP Tuner 配置的示例：
 - en: '[PRE23]'
+  id: totrans-249
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'The following is the description of GP Tuner parameters:'
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是对 GP Tuner 参数的描述：
 - en: '`utility`:'
+  id: totrans-251
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`utility`:'
 - en: '**Type**: `''ei'' | ''ucb'' | ''poi''`'
+  id: totrans-252
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `''ei'' | ''ucb'' | ''poi''`'
 - en: '**Default**: `''ei''`'
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `''ei''`'
 - en: The utility functions `ei`, `ucb`, and `poi` correspond to Expected Improvement,
     Upper Confidence Bound, and Probability of Improvement, respectively.
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: 效用函数 `ei`、`ucb` 和 `poi` 分别对应期望改进、上置信界和改进概率。
 - en: '`kappa`:'
+  id: totrans-255
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`kappa`:'
 - en: '**Type**: `float`'
+  id: totrans-256
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `float`'
 - en: '**Default**: `5`'
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `5`'
 - en: Used by the `ucb` utility function. The bigger the `kappa` is, the more exploratory
     the tuner will be.
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 由 `ucb` 效用函数使用。`kappa` 越大，Tuner 的探索性越强。
 - en: '`xi`:'
+  id: totrans-259
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`xi`:'
 - en: '**Type**: `float`'
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `float`'
 - en: '**Default**: `0`'
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `0`'
 - en: Used by the `ei` and `poi` utility functions. The bigger the `xi` is, the more
     exploratory the tuner will be.
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 由 `ei` 和 `poi` 效用函数使用。`xi` 越大，Tuner 的探索性越强。
 - en: '`nu`:'
+  id: totrans-263
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`nu`:'
 - en: '**Type**: `float`'
+  id: totrans-264
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `float`'
 - en: '**Default**: `2.5`'
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `2.5`'
 - en: Sets the Matern kernel. The smaller the nu is, the less smooth the approximated
     function will be.
+  id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置 Matern 内核。nu 越小，近似函数越不光滑。
 - en: '`alpha`:'
+  id: totrans-267
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`alpha`:'
 - en: '**Type**: `float`'
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `float`'
 - en: '**Default**: `1e-6`'
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `1e-6`'
 - en: Sets the Gaussian Process Regressor. Larger values correspond to an increased
     noise level in the observations.
+  id: totrans-270
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置高斯过程回归器。较大的值对应于观察中的增加噪声水平。
 - en: '`cold_start_num`:'
+  id: totrans-271
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`cold_start_num`:'
 - en: '**Type**: `int`'
+  id: totrans-272
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `int`'
 - en: '**Default**: `10`'
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `10`'
 - en: Number of random explorations to perform before the Gaussian Process.
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 在高斯过程之前执行的随机探索次数。
 - en: '`selection_num_warm_up`:'
+  id: totrans-275
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`selection_num_warm_up`:'
 - en: '**Type**: `int`'
+  id: totrans-276
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `int`'
 - en: '**Default**: `1e5`'
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `1e5`'
 - en: Number of random points to evaluate when getting the point which maximizes the
     acquisition function.
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取最大化获取函数的点时评估的随机点数。
 - en: '`selection_num_starting_points`:'
+  id: totrans-279
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`selection_num_starting_points`:'
 - en: '**Type**: `int`'
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `int`'
 - en: '**Default**: `250`'
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `250`'
 - en: Number of times to run L-BFGS-B from a random starting point after the warm-up.
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
+  zh: 在预热之后从随机起点运行 L-BFGS-B 的次数。
 - en: 'GP Tuner supports the following search space types: `choice`, `randint`, `uniform`,
     `quniform`, `loguniform`, and `qloguniform`.'
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: GP Tuner 支持以下搜索空间类型：`choice`、`randint`、`uniform`、`quniform`、`loguniform` 和 `qloguniform`。
 - en: GP Tuner suffers a lot from parallelization issues. If you run an experiment
     in concurrency mode (i.e., `trial_concurrency` > 1), multiple processes simultaneously
     decide on their next trial candidate based on the same historical data. Therefore,
@@ -1102,62 +1695,97 @@
     In Figure [3-23](#Fig23), we can see the Trial Metric panel for GP Tuner with
     `trial_concurrency = 8`. It shows that GP Tuner contains chunks of the same trials,
     which does not speed up the process of exploring the search space in any way.
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: GP Tuner在并行化问题上遭受了很多困扰。如果你以并发模式（即`trial_concurrency` > 1）运行实验，多个进程会同时根据相同的历史数据决定它们的下一个试验候选者。因此，不同的进程会在同一时间测试相同的参数。这是所有SMBO调谐器的一个大问题。但是，TPE
+    Tuner可以通过常数谎言技术绕过这个问题，而对于GP Tuner，这个问题仍然非常严重。在图[3-23](#Fig23)中，我们可以看到`trial_concurrency
+    = 8`时的GP Tuner的试验指标面板。它显示GP Tuner包含相同试验的块，这并不能以任何方式加快探索搜索空间的过程。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig23_HTML.jpg)'
+  id: totrans-285
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig23_HTML.jpg)'
 - en: Figure 3-23
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-23
 - en: GP Tuner. Concurrency issue
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
+  zh: GP Tuner. 并发问题
 - en: Listing [3-8](#PC26) implements GP Tuner for `holder_function` optimization
     task.
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表[3-8](#PC26)实现了`holder_function`优化任务的GP Tuner。
 - en: '(Full code is provided in the corresponding file: *ch3/tuners/gp_tuner/run_experiment.py*.)'
+  id: totrans-289
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整的代码在相应的文件中提供：*ch3/tuners/gp_tuner/run_experiment.py*。）
 - en: 'Disabling concurrency:'
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: 禁用并发：
 - en: '[PRE24]'
+  id: totrans-291
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: 'Setting the GP Tuner for the Experiment:'
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置实验的GP Tuner：
 - en: '[PRE25]'
+  id: totrans-293
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: GP Tuner shows excellent results. Figure [3-24](#Fig24) shows the coordinates
     of all trials during the experiment. GP Tuner found both global maxima and evenly
     explored the entire search space.
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: GP Tuner表现出色。图[3-24](#Fig24)显示了实验期间所有试验的坐标。GP Tuner找到了全局最大值，并且均匀地探索了整个搜索空间。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig24_HTML.jpg)'
+  id: totrans-295
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig24_HTML.jpg)'
 - en: Figure 3-24
+  id: totrans-296
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-24
 - en: GP Tuner. Holder’s black-box function optimization
+  id: totrans-297
   prefs: []
   type: TYPE_NORMAL
+  zh: GP Tuner. Holder的黑色盒函数优化
 - en: GP Tuner suggests taking search space elements to find a suitable solution in
     a small number of black-box function evaluations. GP Tuner carries about the surrogate
     model instead of the black-box function itself, using the conjugate gradient method
     to find the highest expected improvement candidates. GP Tuner shows good exploratory
     behavior in testing out areas that seem promising under the current surrogate
     model.
+  id: totrans-298
   prefs: []
   type: TYPE_NORMAL
+  zh: GP Tuner建议通过搜索空间元素在少量黑盒函数评估中找到合适的解决方案。GP Tuner关注的是代理模型而不是黑盒函数本身，使用共轭梯度法找到最高期望改进的候选者。GP
+    Tuner在测试当前代理模型下看似有希望的领域时表现出良好的探索行为。
 - en: Which Tuner to Choose?
+  id: totrans-299
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 选择哪个调谐器？
 - en: 'In this section, we’ve put a lot of effort into learning about the different
     tuners, and the fair question might be: *Hey, so which tuner should I choose?*
     And the answer to this question is disappointing: according to the **No Free Lunch
@@ -1167,68 +1795,101 @@
     the expectation of the TPE Tuner does not exceed the Random Tuner expectation.
     So why do we need any Tuners at all if all of them are equal to Random Tuner on
     an arbitrary search space?!'
+  id: totrans-300
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们投入了大量精力来了解不同的调谐器，一个公平的问题可能是：*嘿，所以我应该选择哪个调谐器呢？* 对于这个问题，答案是令人失望的：根据**无免费午餐定理**，我们在第[1](526245_1_En_1_Chapter.xhtml)章中已经考虑过，***没有搜索算法（调谐器）会在任意搜索空间上比其他调谐器有优势***。确实，对于任意搜索空间，TPE
+    Tuner的期望值并不超过随机调谐器的期望值。那么，如果所有调谐器在任意搜索空间上都与随机调谐器相等，我们为什么还需要任何调谐器呢？！
 - en: 'And the answer is as follows: search spaces have a specific structure and dependencies
     that allow certain Tuners to outperform others for many kinds of problems. Therefore,
     if we know that we are optimizing a model for an image classification problem,
     this can give us some insight into the search space structure. Consequently, we
     can choose a Tuner that is more likely to show good results than others.'
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 答案如下：搜索空间具有特定的结构和依赖关系，这使得某些调谐器在许多类型的问题上优于其他调谐器。因此，如果我们知道我们正在为图像分类问题优化模型，这可以让我们对搜索空间结构有所了解。因此，我们可以选择一个更有可能比其他调谐器显示出好结果的调谐器。
 - en: 'There is a separate area of ​​research in which scientists arrange battles
     of search algorithms to determine the best one for a particular class of problems.
     Scientists use benchmarks to estimate the characteristics of the search algorithm.
     The benchmark algorithm evaluates the search algorithm several times for different
     search spaces. For example, the benchmark pseudo-code might look like this:'
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 在一个独立的研究领域，科学家们通过安排搜索算法的较量来确定特定问题类别的最佳算法。科学家们使用基准来估计搜索算法的特性。基准算法会对不同搜索空间进行多次搜索算法评估。例如，基准伪代码可能看起来像这样：
 - en: '[PRE26]'
+  id: totrans-303
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: In Table [3-1](#Tab1), I provide a sample benchmark result obtained using NNI
     [`https://nni.readthedocs.io/en/v2.7/hpo/hpo_benchmark_stats.html`](https://nni.readthedocs.io/en/v2.7/hpo/hpo_benchmark_stats.html).
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: 在表 [3-1](#Tab1) 中，我提供了使用NNI获得的样本基准结果，请参阅[https://nni.readthedocs.io/en/v2.7/hpo/hpo_benchmark_stats.html](https://nni.readthedocs.io/en/v2.7/hpo/hpo_benchmark_stats.html)。
 - en: Table 3-1
+  id: totrans-305
   prefs: []
   type: TYPE_NORMAL
+  zh: 表 3-1
 - en: Average rankings for classification tasks
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 分类任务的平均排名
 - en: '| Tuner Name | Average Ranking |'
+  id: totrans-307
   prefs: []
   type: TYPE_TB
+  zh: '| Tuner 名称 | 平均排名 |'
 - en: '| --- | --- |'
+  id: totrans-308
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| GP Tuner | 4.00 |'
+  id: totrans-309
   prefs: []
   type: TYPE_TB
+  zh: '| GP Tuner | 4.00 |'
 - en: '| Evolution | 4.22 |'
+  id: totrans-310
   prefs: []
   type: TYPE_TB
+  zh: '| 进化 | 4.22 |'
 - en: '| Anneal | 4.39 |'
+  id: totrans-311
   prefs: []
   type: TYPE_TB
+  zh: '| 退火 | 4.39 |'
 - en: '| TPE | 4.67 |'
+  id: totrans-312
   prefs: []
   type: TYPE_TB
+  zh: '| TPE | 4.67 |'
 - en: '| Random | 5.33 |'
+  id: totrans-313
   prefs: []
   type: TYPE_TB
+  zh: '| 随机 | 5.33 |'
 - en: Some benchmarks can last several days or even weeks. Therefore, it is always
     more convenient to borrow the results obtained and published after research. In
     many cases, you can execute a mini-research yourself, which will help determine
     the characteristics of the search space structure. In any case, understanding
     the deep learning model optimization problem and principles of the Search Tuner
     is very helpful in choosing the right strategy for solving the HPO problem.
+  id: totrans-314
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些基准可能需要持续几天甚至几周。因此，总是更方便地借用研究后获得并发布的结果。在许多情况下，你可以执行一个迷你研究，这将有助于确定搜索空间结构的特点。在任何情况下，理解深度学习模型优化问题和搜索调优器的原理，对于选择解决HPO问题的正确策略非常有帮助。
 - en: Custom Tuner
+  id: totrans-315
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 自定义Tuner
 - en: Built-in tuners are suitable for most tasks. But there are situations when you
     need to add some custom logic to improve the quality of the HPO Experiment. Indeed,
     sometimes, we may know specific properties of the search space that the built-in
@@ -1236,326 +1897,508 @@
     idea and test it on real problems. For such cases, NNI allows you to implement
     a Custom Tuner. Custom Tuner can be used in an experiment and shared with other
     developers.
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
+  zh: 内置的tuner适用于大多数任务。但有时你需要添加一些自定义逻辑来提高HPO实验的质量。实际上，有时我们可能知道搜索空间的具体属性，而内置的tuner没有考虑到。此外，开发者可以实施他们自己的原始想法，并在实际问题上进行测试。对于这种情况，NNI允许你实现自定义Tuner。自定义Tuner可以在实验中使用，并与其他开发者共享。
 - en: Tuner Internals
+  id: totrans-317
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Tuner 内部
 - en: 'Each Tuner class should inherit `nni.tuner.Tuner` and implement the following
     methods: `__init__`, `update_search_space`, `generate_parameters`, `receive_trial_result`.
     Any Tuner can be implemented based on the self-describing sample presented in
     Listing [3-9](#PC29).'
+  id: totrans-318
   prefs: []
   type: TYPE_NORMAL
+  zh: '每个Tuner类都应该继承 `nni.tuner.Tuner` 并实现以下方法：`__init__`, `update_search_space`,
+    `generate_parameters`, `receive_trial_result`。任何Tuner都可以基于示例列表 [3-9](#PC29) 中的自描述样本实现。 '
 - en: '[PRE27]'
+  id: totrans-319
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'Tuner interacts with Experiment the following way:'
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
+  zh: Tuner与Experiment的交互方式如下：
 - en: Experiment calls `update_search_space` at the startup.
+  id: totrans-321
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 实验在启动时调用 `update_search_space`。
 - en: Experiment requests search space parameters for Trial calling `generate_parameters`.
+  id: totrans-322
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 实验请求通过调用 `generate_parameters` 来搜索空间参数。
 - en: Experiment returns Trial results to Tuner calling `recieve_trial_result.`
+  id: totrans-323
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 实验将Trial结果返回给调用 `recieve_trial_result` 的Tuner。
 - en: (Steps 2 and 3 are repeated until `max_trial_number` is reached or Experiment
     is stopped.)
+  id: totrans-324
   prefs: []
   type: TYPE_NORMAL
+  zh: （步骤2和3会重复进行，直到达到 `max_trial_number` 或实验停止。）
 - en: Figure [3-25](#Fig25) shows Tuner–Experiment interaction as a sequence diagram.
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-25](#Fig25) 展示了Tuner–Experiment交互作为序列图。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig25_HTML.jpg)'
+  id: totrans-326
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig25_HTML.jpg)'
 - en: Figure 3-25
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-25
 - en: Tuner–Experiment sequence diagram
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: Tuner–Experiment 序列图
 - en: 'Custom Tuner is integrated into the experiment using the following config:'
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
+  zh: 自定义Tuner通过以下配置集成到实验中：
 - en: '[PRE28]'
+  id: totrans-330
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: 'Or it can be integrated into Python embedded experiment as follows:'
+  id: totrans-331
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者它可以集成到Python嵌入式实验中，如下所示：
 - en: '[PRE29]'
+  id: totrans-332
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: New Evolution Custom Tuner
+  id: totrans-333
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 新的进化自定义Tuner
 - en: 'Let’s try to develop our Сustom Tuner. This Tuner will be based on the evolutionary
     concepts we examined exploring the Evolution Tuner. We’ll call it `NewEvolutionTuner`.
     `NewEvolutionTuner` will initialize the population and act according to the following
     algorithm:'
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们尝试开发我们的自定义调谐器。这个调谐器将基于我们在探索进化调谐器时考察的进化概念。我们将称之为 `NewEvolutionTuner`。`NewEvolutionTuner`
+    将初始化种群并按照以下算法操作：
 - en: 'Take the best individual: X[best]'
+  id: totrans-335
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 取出最佳个体：X[best]
 - en: 'Mutate the best individual in a random way: *mutate*(X[best]) → Y'
+  id: totrans-336
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 以随机方式突变最佳个体：*mutate*(X[best]) → Y
 - en: 'Replace the worst individual in the population X[worst] with a mutant of the
     best individual Y: X[worst] ← Y'
+  id: totrans-337
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将种群中最差的个体 X[worst] 替换为最佳个体的突变体 Y：X[worst] ← Y
 - en: 'Figure [3-26](#Fig26) demonstrates the search approach of `NewEvolutionTuner`:'
+  id: totrans-338
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-26](#Fig26) 展示了 `NewEvolutionTuner` 的搜索方法：
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig26_HTML.png)'
+  id: totrans-339
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig26_HTML.png)'
 - en: Figure 3-26
+  id: totrans-340
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-26
 - en: New Evolution Tuner
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
+  zh: 新进化调谐器
 - en: '`NewEvolutionTuner` implements a greedy “hill-climbing” approach. The Tuner
     takes the best individual (the highest one) and mutates it (hoping that the new
     individual will climb higher). Listing [3-10](#PC32) use `NewEvolutionTuner` to
     find the maxima of Ackley’s function.'
+  id: totrans-342
   prefs: []
   type: TYPE_NORMAL
+  zh: '`NewEvolutionTuner` 实现了一种贪婪的“爬山”方法。调谐器取最佳个体（最高的一个）并对其进行突变（希望新的个体会爬得更高）。列表 [3-10](#PC32)
+    使用 `NewEvolutionTuner` 寻找 Ackley 函数的最大值。'
 - en: '[PRE30]'
+  id: totrans-343
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: 'And here is Ackley’s function visualization:'
+  id: totrans-344
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是 Ackley 函数的可视化：
 - en: '[PRE31]'
+  id: totrans-345
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: We can see in Figure [3-27](#Fig27) the surface of Ackley’s function. It has
     one highest hill and several smaller hills nearby.
+  id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以在图 [3-27](#Fig27) 中看到 Ackley 函数的表面。它有一个最高的山丘和附近几个较小的山丘。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig27_HTML.jpg)'
+  id: totrans-347
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig27_HTML.jpg)'
 - en: Figure 3-27
+  id: totrans-348
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-27
 - en: Ackley’s function
+  id: totrans-349
   prefs: []
   type: TYPE_NORMAL
+  zh: Ackley 函数
 - en: Before we check how `NewEvolutionTuner` solves the problem of finding the maxima
     of Ackley’s function, we need to implement it in Listing [3-11](#PC34).
+  id: totrans-350
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们检查 `NewEvolutionTuner` 如何解决寻找 Ackley 函数最大值的问题之前，我们需要在列表 [3-11](#PC34) 中实现它。
 - en: 'Importing necessary modules:'
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入必要的模块：
 - en: '[PRE32]'
+  id: totrans-352
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: 'Population consists of individuals. Each individual has DNA that represents
     a search space parameter. Also, individual has a result field that contains Trial
     result. New Evolution individual has the following properties:'
+  id: totrans-353
   prefs: []
   type: TYPE_NORMAL
+  zh: 种群由个体组成。每个个体都有代表搜索空间参数的 DNA。此外，个体还有一个包含试验结果的字段。新进化个体具有以下属性：
 - en: '`x`: Search space *x* coordinate'
+  id: totrans-354
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`x`: 搜索空间 *x* 坐标'
 - en: '`y`: Search space *y* coordinate'
+  id: totrans-355
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`y`: 搜索空间 *y* 坐标'
 - en: '`param_id`: Trial number'
+  id: totrans-356
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`param_id`: 试验编号'
 - en: '`result`: Trial result'
+  id: totrans-357
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`result`: 试验结果'
 - en: '[PRE33]'
+  id: totrans-358
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: 'Population class is a wrapper that manipulates all individuals as a whole:'
+  id: totrans-359
   prefs: []
   type: TYPE_NORMAL
+  zh: 种群类是一个包装器，它将所有个体作为一个整体进行操作：
 - en: '[PRE34]'
+  id: totrans-360
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: 'All individuals are stored in `individuals` property:'
+  id: totrans-361
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有个体都存储在 `individuals` 属性中：
 - en: '[PRE35]'
+  id: totrans-362
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: 'Then, we need to add a method that will return an individual by its `param_id`:'
+  id: totrans-363
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们需要添加一个方法，通过 `param_id` 返回一个个体：
 - en: '[PRE36]'
+  id: totrans-364
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: 'At the start of the experiment, the Tuner will create *N* individuals who will
     not have a trial number. We will call these individuals virgins. `get_first_virgin`
     method returns the first virgin found in population:'
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实验开始时，Tuner 将创建 *N* 个个体，这些个体将没有试验编号。我们将这些个体称为处女。`get_first_virgin` 方法返回种群中找到的第一个处女：
 - en: '[PRE37]'
+  id: totrans-366
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: 'The following method – `get_population_with_result` – returns all individuals
     that already received a trial result:'
+  id: totrans-367
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下方法 `get_population_with_result` 返回所有已经收到试验结果的个体：
 - en: '[PRE38]'
+  id: totrans-368
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: 'The next method returns the best individual from the whole population, that
     is, an individual that has the highest `result`:'
+  id: totrans-369
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一个方法返回整个种群中最好的个体，即具有最高 `result` 的个体：
 - en: '[PRE39]'
+  id: totrans-370
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: 'And here, we come to our primary evolution method `replace_worst`, which will
     develop the population:'
+  id: totrans-371
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们来到我们的主要进化方法 `replace_worst`，它将发展种群：
 - en: We take the best individual from the population.
+  id: totrans-372
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们从种群中取出最好的个体。
 - en: Mutate the best individual.
+  id: totrans-373
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 突变最佳个体。
 - en: Add the mutant of the best individual to the population instead of the worst
     one.
+  id: totrans-374
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将最佳个体的突变体添加到种群中，而不是最差的个体。
 - en: '[PRE40]'
+  id: totrans-375
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: 'We can start implementing the tuner after defining the `Individual` and `Population`
     classes:'
+  id: totrans-376
   prefs: []
   type: TYPE_NORMAL
+  zh: 在定义了 `Individual` 和 `Population` 类之后，我们可以开始实现调谐器：
 - en: '[PRE41]'
+  id: totrans-377
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: 'The Tuner has two parameters, `optimize_mode` and `population size`:'
+  id: totrans-378
   prefs: []
   type: TYPE_NORMAL
+  zh: 调谐器有两个参数，`optimize_mode` 和 `population size`：
 - en: '[PRE42]'
+  id: totrans-379
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: 'Next, Tuner initializes properties related to the search space it is working
     with:'
+  id: totrans-380
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，Tuner 初始化与它正在处理的搜索空间相关的属性：
 - en: '[PRE43]'
+  id: totrans-381
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: 'When the Tuner starts, the `update_search_space` method is invoked. It generates
     the Population of Random Individuals:'
+  id: totrans-382
   prefs: []
   type: TYPE_NORMAL
+  zh: 当调谐器启动时，会调用 `update_search_space` 方法。它生成随机个体的种群：
 - en: '[PRE44]'
+  id: totrans-383
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: Experiment calls `generate_parameters` method to get new parameters for the
     subsequent Trial. Initially, we have a set of individuals generated at the startup
     and not passed to the Tuner (virgins). We take virgins and pass them to Tuner
     one by one. When no virgins are left, we are generating new individuals.
+  id: totrans-384
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验调用 `generate_parameters` 方法为后续的试验获取新的参数。最初，我们在启动时生成了一组个体，并且没有传递给调谐器（virgins）。我们逐个将
+    virgins 传递给调谐器。当没有 virgins 时，我们开始生成新的个体。
 - en: '[PRE45]'
+  id: totrans-385
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: 'When the Experiment returns the Trial’s result, we save it to an individual
     object:'
+  id: totrans-386
   prefs: []
   type: TYPE_NORMAL
+  zh: 当实验返回试验结果时，我们将其保存到单个对象中：
 - en: '[PRE46]'
+  id: totrans-387
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: Well, our `NewEvolutionTuner` is ready for action! We can launch the experiment
     using the following config file shown in Listing [3-12](#PC49).
+  id: totrans-388
   prefs: []
   type: TYPE_NORMAL
+  zh: 好吧，我们的 `NewEvolutionTuner` 已经准备就绪！我们可以使用以下配置文件启动实验，该文件在列表 [3-12](#PC49) 中显示。
 - en: '[PRE47]'
+  id: totrans-389
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: The experiment with custom `NewEvolutionTuner` can also be run in Python embedded
     mode as it is implemented in Listing [3-13](#PC50).
+  id: totrans-390
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用自定义 `NewEvolutionTuner` 的实验也可以在 Python 嵌入模式下运行，因为它在列表 [3-13](#PC50) 中实现。
 - en: '(Full code is provided in the corresponding file: *ch3/tuners/custom_tuner/run_experiment.py*.)'
+  id: totrans-391
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整代码在相应的文件中提供：*ch3/tuners/custom_tuner/run_experiment.py*。）
 - en: '[PRE48]'
+  id: totrans-392
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: 'Let’s launch the Experiment and analyze its results:'
+  id: totrans-393
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们启动实验并分析其结果：
 - en: '[PRE49]'
+  id: totrans-394
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: Figure [3-28](#Fig28) shows the locations visited by the `NewEvolutionTuner`
     population. We see that the population has found the global function’s maxima
     and began to explore it.
+  id: totrans-395
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-28](#Fig28) 展示了 `NewEvolutionTuner` 种群访问过的位置。我们看到种群已经找到了全局函数的最大值并开始探索它。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig28_HTML.jpg)'
+  id: totrans-396
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig28_HTML.jpg)'
 - en: Figure 3-28
+  id: totrans-397
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-28
 - en: Locations visited by population of NewEvolutionTuner
+  id: totrans-398
   prefs: []
   type: TYPE_NORMAL
+  zh: NewEvolutionTuner 种群访问过的位置
 - en: Trial Metric panel in Figure [3-29](#Fig29) demonstrates the “hill-climbing”
     approach in action. The main problem with this approach is that it quickly finds
     a local maxima and stops exploring other search space areas.
+  id: totrans-399
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-29](#Fig29) 中的“Trial Metric”面板展示了“爬山法”的实际应用。这种方法的主要问题是它很快就能找到一个局部最大值并停止探索其他搜索空间区域。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig29_HTML.jpg)'
+  id: totrans-400
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig29_HTML.jpg)'
 - en: Figure 3-29
+  id: totrans-401
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-29
 - en: Trial Metric panel
+  id: totrans-402
   prefs: []
   type: TYPE_NORMAL
+  zh: 试验指标面板
 - en: Of course, developing a custom Tuner is not always an easy task. Still, the
     ability to implement your search algorithm and integrate it into the HPO process
     can greatly increase the experiment results. In this section, we have provided
     an example of how you can do this. If necessary, you can implement your ideas
     based on the illustration given in this section.
+  id: totrans-403
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，开发自定义调谐器并不总是容易的任务。然而，能够实现你的搜索算法并将其集成到 HPO 过程中可以极大地提高实验结果。在本节中，我们提供了一个示例，说明你可以如何做到这一点。如果需要，你可以根据本节中给出的说明实现你的想法。
 - en: Early Stopping
+  id: totrans-404
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 提前终止
 - en: Some parameters in the search space produce very low Trial results. And this
     is normal because the Tuner may not always know in advance which areas of the
     search space to explore and which not to explore. Tuner often tries parameters
@@ -1567,22 +2410,33 @@
     trial results and compare them with the intermediate results of other trials.
     If the algorithm decides that the intermediate results of the current Trial are
     too low, then it stops the Trial so as not to waste time on it.
+  id: totrans-405
   prefs: []
   type: TYPE_NORMAL
+  zh: 搜索空间中的一些参数会产生非常低的试验结果。这是正常的，因为调谐器可能并不总是事先知道应该探索搜索空间的哪些区域以及哪些不应该探索。调谐器经常尝试那些给出非常低结果的参数。试验本身是昂贵的，因为它花费了大量的时间。例如，在大型数据集上用复杂架构训练神经网络可能需要数小时。因此，对于执行结果不佳的试验，不花费大量时间是很有帮助的。NNI
+    使用提前终止算法来解决这个问题。提前终止算法分析中间试验结果，并将它们与其他试验的中间结果进行比较。如果算法决定当前试验的中间结果太低，那么它将停止试验，以避免在该试验上浪费时间。
 - en: Figure [3-30](#Fig30) explains Early Stopping approach. Trial 3 early stopped
     at step N because intermediate results of this Trial were significantly worse
     than the other trials’ intermediate results at step N.
+  id: totrans-406
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-30](#Fig30) 解释了早停方法。试验 3 在步骤 N 时提前停止，因为该试验在步骤 N 的中间结果显著劣于其他试验在步骤 N 的中间结果。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig30_HTML.png)'
+  id: totrans-407
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig30_HTML.png)'
 - en: Figure 3-30
+  id: totrans-408
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-30
 - en: HPO Early Stopping
+  id: totrans-409
   prefs: []
   type: TYPE_NORMAL
+  zh: HPO 早停
 - en: The deep learning training algorithms also have Early Stop policies. Training
     Early Stopping policу stops model training when the model starts to degrade or
     there is no improvement for a long time. Do not confuse Training Early Stopping
@@ -1591,54 +2445,81 @@
     stop the training. But if we compare the training process with other trials, it
     is apparent that it is much worse, and the HPO Early Stopping algorithm can stop
     this Trial.
+  id: totrans-410
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度学习训练算法也有早停策略。训练早停策略在模型开始恶化或长时间没有改进时停止模型训练。不要将训练早停与 HPO 早停混淆。它们在本质上没有任何关联。实际上，看看图
+    [3-31](#Fig31)。训练进度良好，没有停止训练的理由。但如果我们将训练过程与其他试验进行比较，很明显它要差得多，HPO 早停算法可以停止这个试验。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig31_HTML.png)'
+  id: totrans-411
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig31_HTML.png)'
 - en: Figure 3-31
+  id: totrans-412
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-31
 - en: HPO Early Stopping vs. Training Early Stopping
+  id: totrans-413
   prefs: []
   type: TYPE_NORMAL
+  zh: HPO 早停与训练早停对比
 - en: And Figure [3-32](#Fig32) demonstrates the opposite situation. The training
     process begins to degrade, and the Training Early Stopping algorithm terminates
     the training process. In contrast, the HPO Early Stopping algorithm may consider
     the current Trail very promising because its intermediate results are significantly
     superior compared to other trials.
+  id: totrans-414
   prefs: []
   type: TYPE_NORMAL
+  zh: 而图 [3-32](#Fig32) 展示了相反的情况。训练过程开始恶化，训练早停算法终止了训练过程。相比之下，HPO 早停算法可能会认为当前的试验非常有希望，因为其中间结果与其他试验相比显著优越。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig32_HTML.png)'
+  id: totrans-415
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig32_HTML.png)'
 - en: Figure 3-32
+  id: totrans-416
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-32
 - en: HPO Early Stopping vs. Training Early Stopping
+  id: totrans-417
   prefs: []
   type: TYPE_NORMAL
+  zh: HPO 早停与训练早停对比
 - en: Please keep in mind designing a deep learning model and the HPO Experiment that
     Training Early Stopping and HPO Early Stopping are not correlated.
+  id: totrans-418
   prefs: []
   type: TYPE_NORMAL
+  zh: 请记住，在设计深度学习模型和 HPO 实验时，训练早停和 HPO 早停是不相关的。
 - en: Median Stop
+  id: totrans-419
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 中值停止
 - en: Median Stop is a straightforward, early stopping rule that stops a pending Trial
     after step N if the Trial’s best objective value by step N is strictly worse than
     the median value of the running averages of all completed trials’ objectives reported
     up to step N.
+  id: totrans-420
   prefs: []
   type: TYPE_NORMAL
+  zh: 中值停止是一种简单直接的早停规则，如果在步骤 N 时试验的最佳目标值严格劣于截至步骤 N 的所有已完成试验目标值的运行平均值的中位数，则停止步骤 N 后的待定试验。
 - en: 'Median Stop algorithm can be implemented in Experiment with the following experiment
     configuration:'
+  id: totrans-421
   prefs: []
   type: TYPE_NORMAL
+  zh: 中值停止算法可以通过以下实验配置在实验中实现：
 - en: '[PRE50]'
+  id: totrans-422
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: 'Let’s look at a synthetic problem to see the Median Stop algorithm in action.
     Say, we have the following identity function, f: x → x, with the training progress
     containing 100 epochs (steps) and expressed by the following rule: ![$$ \frac{x}{10}\
@@ -1646,77 +2527,124 @@
     + *r,* where *r* is a random variable on (-1, 1)*.* We can characterize the function
     f as an identity function with parabolic training progress. Listing [3-14](#PC53)
     contains the implementation of function f.'
+  id: totrans-423
   prefs: []
   type: TYPE_NORMAL
+  zh: '让我们通过一个合成问题来看一下中值停止算法的实际应用。比如说，我们有一个以下恒等函数，f: x → x，训练进度包含 100 个时期（步骤），以下规则表示：![$$
+    \frac{x}{10}\ \sqrt{epoch} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq5.png)
+    + *r*，其中 *r* 是 (-1, 1) 上的随机变量.* 我们可以将函数 f 描述为具有抛物线训练进度的恒等函数。列表 [3-14](#PC53) 包含了函数
+    f 的实现。'
 - en: '[PRE51]'
+  id: totrans-424
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE51]'
 - en: 'Let’s visualize the training process of the following set of functions: f(0),
     f(10), f(20), ..., f(100).'
+  id: totrans-425
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们可视化以下函数集的训练过程：f(0)，f(10)，f(20)，...，f(100)。
 - en: '[PRE52]'
+  id: totrans-426
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: Figure [3-33](#Fig33) shows various training curves. This plot illustrates that
     the lower training curves are unpromising. Unpromising training can be stopped
     in advance according to the Early Stopping algorithm.
+  id: totrans-427
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [3-33](#Fig33) 展示了各种训练曲线。此图说明，较低的训练曲线前景不佳。根据早停算法，可以提前停止前景不佳的训练。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig33_HTML.jpg)'
+  id: totrans-428
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig33_HTML.jpg)'
 - en: Figure 3-33
+  id: totrans-429
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-33
 - en: Parabolic training
+  id: totrans-430
   prefs: []
   type: TYPE_NORMAL
+  zh: 抛物线训练
 - en: Let’s launch an experiment that will use the Median Stop algorithm. The trial
     script is defined in Listing [3-15](#PC55).
+  id: totrans-431
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们启动一个将使用中值停止算法的实验。试验脚本定义在列表 [3-15](#PC55) 中。
 - en: 'Trial header with imported modules:'
+  id: totrans-432
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有导入模块的试验标题：
 - en: '[PRE53]'
+  id: totrans-433
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE53]'
 - en: 'Executing Trial:'
+  id: totrans-434
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行试验：
 - en: '[PRE54]'
+  id: totrans-435
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: Listing [3-16](#PC57) defines the Experiment with Median Stop algorithm.
+  id: totrans-436
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表 [3-16](#PC57) 定义了使用中值停止算法的实验。
 - en: '[PRE55]'
+  id: totrans-437
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE55]'
 - en: 'Now we are ready to run the Experiment:'
+  id: totrans-438
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们准备运行实验：
 - en: '[PRE56]'
+  id: totrans-439
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: After the experiment is completed, we can observe in Figure [3-34](#Fig34) that
     many trials have the `EARLY_STOPPED` status, as expected.
+  id: totrans-440
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验完成后，我们可以在图 [3-34](#Fig34) 中观察到许多试验具有 `EARLY_STOPPED` 状态，正如预期的那样。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig34_HTML.jpg)'
+  id: totrans-441
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig34_HTML.jpg)'
 - en: Figure 3-34
+  id: totrans-442
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-34
 - en: Trials detail panel
+  id: totrans-443
   prefs: []
   type: TYPE_NORMAL
+  zh: 试验详情面板
 - en: Curve Fitting
+  id: totrans-444
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 曲线拟合
 - en: Curve Fitting Assessor is an LPA (learning, predicting, assessing) algorithm
     that stops a pending Trial at step *N* if the prediction of the final epoch’s
     performance is worse than the best final performance in the trial history. Curve
@@ -1725,341 +2653,523 @@
     task as a time series forecasting problem. If the training prediction is pessimistic,
     then the algorithm stops the trial. Figure [3-35](#Fig35) explains the Curve Fitting
     Early Stopping approach.
+  id: totrans-445
   prefs: []
   type: TYPE_NORMAL
+  zh: 曲线拟合评估器是一个 LPA（学习、预测、评估）算法，如果最终epoch的性能预测比试验历史中最佳最终性能差，则会在步骤 *N* 停止挂起的试验。曲线拟合评估器对试验训练的最终结果进行预测，并将其与已完成的结果进行比较。此算法将早期停止任务视为时间序列预测问题。如果训练预测悲观，则算法停止试验。图
+    [3-35](#Fig35) 解释了曲线拟合早期停止方法。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig35_HTML.png)'
+  id: totrans-446
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig35_HTML.png)'
 - en: Figure 3-35
+  id: totrans-447
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-35
 - en: Curve Fitting prediction
+  id: totrans-448
   prefs: []
   type: TYPE_NORMAL
+  zh: 曲线拟合预测
 - en: 'Curve Fitting algorithm can be implemented in Experiment with the following
     experiment configuration:'
+  id: totrans-449
   prefs: []
   type: TYPE_NORMAL
+  zh: 曲线拟合算法可以通过以下实验配置在实验中实现：
 - en: '[PRE57]'
+  id: totrans-450
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: We will not study the principles of the Curve Fitting Early Stopping algorithm
     in this book. You can refer to the official documentation ([`https://nni.readthedocs.io/en/v2.7/reference/hpo.html#nni.algorithms.hpo.curvefitting_assessor.CurvefittingAssessor`](https://nni.readthedocs.io/en/v2.7/reference/hpo.html%2523nni.algorithms.hpo.curvefitting_assessor.CurvefittingAssessor))
     or review a paper dedicated to “Speeding up Automatic Hyperparameter Optimization
     of Deep Neural Networks by Extrapolation of Learning Curves” ([`https://ml.informatik.uni-freiburg.de/wp-content/uploads/papers/15-IJCAI-Extrapolation_of_Learning_Curves.pdf`](https://ml.informatik.uni-freiburg.de/wp-content/uploads/papers/15-IJCAI-Extrapolation_of_Learning_Curves.pdf)).
+  id: totrans-451
   prefs: []
   type: TYPE_NORMAL
+  zh: 本书不会研究曲线拟合早期停止算法的原理。您可以参考官方文档([`https://nni.readthedocs.io/en/v2.7/reference/hpo.html#nni.algorithms.hpo.curvefitting_assessor.CurvefittingAssessor`](https://nni.readthedocs.io/en/v2.7/reference/hpo.html%2523nni.algorithms.hpo.curvefitting_assessor.CurvefittingAssessor))或回顾一篇关于“通过学习曲线外推加速深度神经网络自动超参数优化”的论文([`https://ml.informatik.uni-freiburg.de/wp-content/uploads/papers/15-IJCAI-Extrapolation_of_Learning_Curves.pdf`](https://ml.informatik.uni-freiburg.de/wp-content/uploads/papers/15-IJCAI-Extrapolation_of_Learning_Curves.pdf))。
 - en: Risk to Stop a Good Trial
+  id: totrans-452
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 停止良好试验的风险
 - en: The Early Stopping algorithm can significantly speed up the completion of an
     experiment and save computational resources. But there is always a risk of stopping
     a good trial too early, which would probably mean rejecting very good parameters
     in the search space. Look at Figure [3-36](#Fig36), early stopped trial could
     show good performance.
+  id: totrans-453
   prefs: []
   type: TYPE_NORMAL
+  zh: 早期停止算法可以显著加快实验的完成速度并节省计算资源。但总是存在过早停止良好试验的风险，这可能会意味着在搜索空间中拒绝非常好的参数。看看图 [3-36](#Fig36)，早期停止的试验可能会表现出良好的性能。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig36_HTML.png)'
+  id: totrans-454
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig36_HTML.png)'
 - en: Figure 3-36
+  id: totrans-455
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-36
 - en: Good trial early stopped
+  id: totrans-456
   prefs: []
   type: TYPE_NORMAL
+  zh: 早期停止的良好试验
 - en: However, there is a very tiny chance of stopping a trial that can give good
     results too early. Usually, the training curves of deep learning models behave
     similarly, so if the trials’ intermediate results were significantly worse than
     those of other trials, you probably should not expect anything good, but complete
     the trial and move on to the next one.
+  id: totrans-457
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，有极小的机会在试验结果良好之前过早地停止试验。通常，深度学习模型的训练曲线表现相似，所以如果试验的中间结果明显比其他试验差，你可能不应该期望有任何好的结果，但应该完成试验并继续下一个试验。
 - en: Searching for Optimal Functional Pipeline and Classical AutoML
+  id: totrans-458
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 搜索最优功能管道和经典AutoML
 - en: 'Libraries: Scikit-learn'
+  id: totrans-459
   prefs: []
   type: TYPE_NORMAL
+  zh: 库：Scikit-learn
 - en: Let’s go back to the problem we studied in the “From LeNet to AlexNet” section
     of Chapter [2](526245_1_En_2_Chapter.xhtml). In this task, we built a functional
     pipeline that would optimally solve the image classification problem. Indeed,
     each layer of deep learning is a particular functional operator, and we tried
     to find the best pipeline of these operators using the HPO approach. Figure [3-37](#Fig37)
     presents neural network architecture as a functional pipeline.
+  id: totrans-460
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们回到第 [2](526245_1_En_2_Chapter.xhtml) 章的“从LeNet到AlexNet”部分中我们研究的问题。在这个任务中，我们构建了一个功能管道，以最优地解决图像分类问题。确实，深度学习的每一层都是一个特定的功能算子，我们试图使用HPO方法找到这些算子的最佳管道。图
+    [3-37](#Fig37) 展示了作为功能管道的神经网络架构。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig37_HTML.jpg)'
+  id: totrans-461
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig37_HTML.jpg)'
 - en: Figure 3-37
+  id: totrans-462
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-37
 - en: Neural network architecture as functional pipeline
+  id: totrans-463
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为功能管道的神经网络架构
 - en: Let’s convert the problem into a more strict mathematical language. We need
     to find a model *M* that consists of compositions of functions *F*[*i*] ∈ {*F*}
     and maximizes the value *L*(*M*, *D*), where *L* evaluates the performance of
     model *M* on dataset *D*. *Figure* [*3-38*](#Fig38) *formulates the optimal functional
     pipeline problem:*
+  id: totrans-464
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将问题转化为更严格的数学语言。我们需要找到一个模型 *M*，它由函数 *F*[*i*] ∈ {*F*} 的组合构成，并最大化值 *L*(*M*,
+    *D*)，其中 *L* 评估模型 *M* 在数据集 *D* 上的性能。*图* [*3-38*](#Fig38) *定义了最优功能管道问题：*
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig38_HTML.jpg)'
+  id: totrans-465
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig38_HTML.jpg)'
 - en: Figure 3-38
+  id: totrans-466
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 3-38
 - en: Optimal functional pipeline problem
+  id: totrans-467
   prefs: []
   type: TYPE_NORMAL
+  zh: 最优功能管道问题
 - en: Let’s study how this problem can be solved with NNI. As an example, I want to
     use the classic AutoML task, which searches for the optimal pipeline of classical
     shallow machine learning methods to solve a supervised learning problem. In this
     section, I would like to pay tribute to classical machine learning, which increasingly
     gives way to deep learning. This approach can be applied to any problem of searching
     the optimal functional pipeline.
+  id: totrans-468
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们研究如何使用 NNI 解决这个问题。作为一个例子，我想使用经典的 AutoML 任务，它搜索解决监督学习问题的经典浅层机器学习方法的最佳管道。在本节中，我想向经典机器学习致敬，它越来越多地让位于深度学习。这种方法可以应用于任何搜索最优功能管道的问题。
 - en: Problem
+  id: totrans-469
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 问题
 - en: 'Let’s examine binary classification problem with Gamma Telescope Dataset ([`https://archive.ics.uci.edu/ml/datasets/magic+gamma+telescope`](https://archive.ics.uci.edu/ml/datasets/magic%252Bgamma%252Btelescope)).
     This dataset contains data of signals received by the telescope. The task is to
     discriminate signals caused by primary **gammas** (signal) from the images of
     **hadronic** showers initiated by cosmic rays in the upper atmosphere (background).
     This dataset contains 19020 instances and the following columns:'
+  id: totrans-470
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们考察使用伽马望远镜数据集（[`https://archive.ics.uci.edu/ml/datasets/magic+gamma+telescope`](https://archive.ics.uci.edu/ml/datasets/magic%252Bgamma%252Btelescope)）的二元分类问题。此数据集包含望远镜接收到的信号数据。任务是区分由初级
+    **伽马**（信号）引起的信号与由宇宙射线在上层大气中引发的 **强子** 淋漓（背景）图像。此数据集包含 19020 个实例和以下列：
 - en: '`fLength`: Type: real. Major axis of ellipse (mm)'
+  id: totrans-471
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fLength`: 类型：实数。椭圆的主轴（毫米）'
 - en: '`fWidth`: Type: real. Minor axis of ellipse (mm])'
+  id: totrans-472
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fWidth`: 类型：实数。椭圆的副轴（毫米）'
 - en: '`fSize`: Type: real. 10-log of sum of content of all pixels (photons)'
+  id: totrans-473
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fSize`: 类型：实数。所有像素（光子）内容总和的10对数'
 - en: '`fConc`: Type: real. Ratio of sum of two highest pixels over `fSize` (ratio)'
+  id: totrans-474
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fConc`: 类型：实数。两个最高像素总和与`fSize`的比值（比率）'
 - en: '`fConc1`: Type: real. Ratio of highest pixel over `fSize` (ratio)'
+  id: totrans-475
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fConc1`: 类型：实数。最高像素与`fSize`的比值（比率）'
 - en: '`fAsym`: Type: real. Distance from highest pixel to center, projected onto
     major axis (mm)'
+  id: totrans-476
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fAsym`: 类型：实数。最高像素到中心的距离，投影到主轴上（毫米）'
 - en: '`fM3Long`: Type: real. Third root of third moment along major axis (mm)'
+  id: totrans-477
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fM3Long`: 类型：实数。沿主轴第三矩的立方根（毫米）'
 - en: '`fM3Trans`: Type: real. Third root of third moment along minor axis (mm)'
+  id: totrans-478
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fM3Trans`: 类型：实数。沿副轴第三矩的立方根（毫米）'
 - en: '`fAlpha`: Type: real. Angle of major axis with vector to origin (deg)'
+  id: totrans-479
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fAlpha`: 类型：实数。主轴与原点向量的角度（度）'
 - en: '`fDist`: Type: real. Distance from origin to center of ellipse (mm)'
+  id: totrans-480
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`fDist`: 类型：实数。原点到椭圆中心的距离（毫米）'
 - en: '`class`: Values: `''g''`, `''h''`. Gamma (signal), Hadron (background). g =
     gamma (signal): 12332\. h = hadron (background): 6688'
+  id: totrans-481
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`class`: 值：`''g''`，`''h''`。伽马（信号），强子（背景）。g = 伽马（信号）：12332。h = 强子（背景）：6688'
 - en: Perhaps the reader understands something in these physical data, but I do not
     understand anything about them. But that’s exactly what we need machine learning
     for – to find patterns and dependencies where we cannot see them ourselves.
+  id: totrans-482
   prefs: []
   type: TYPE_NORMAL
+  zh: 或许读者在这些物理数据中理解了某些东西，但我对它们一无所知。但这正是我们需要机器学习的原因——在 ourselves无法看到它们的地方找到模式和依赖关系。
 - en: The dataset is located in ch3/ml_pipeline/data/magic04.data and is converted
     to a supervised learning problem in Listing [3-17](#PC60).
+  id: totrans-483
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据集位于ch3/ml_pipeline/data/magic04.data，并在列表[3-17](#PC60)中将其转换为监督学习问题。
 - en: 'Importing modules:'
+  id: totrans-484
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入模块：
 - en: '[PRE58]'
+  id: totrans-485
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE58]'
 - en: 'Loading dataset from the file:'
+  id: totrans-486
   prefs: []
   type: TYPE_NORMAL
+  zh: 从文件中加载数据集：
 - en: '[PRE59]'
+  id: totrans-487
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE59]'
 - en: 'Dropping `na` values:'
+  id: totrans-488
   prefs: []
   type: TYPE_NORMAL
+  zh: 删除`na`值：
 - en: '[PRE60]'
+  id: totrans-489
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE60]'
 - en: 'Setting column names:'
+  id: totrans-490
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置列名：
 - en: '[PRE61]'
+  id: totrans-491
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE61]'
 - en: 'Shuffling dataset:'
+  id: totrans-492
   prefs: []
   type: TYPE_NORMAL
+  zh: 打乱数据集：
 - en: '[PRE62]'
+  id: totrans-493
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE62]'
 - en: 'Class labeling:'
+  id: totrans-494
   prefs: []
   type: TYPE_NORMAL
+  zh: 类标签：
 - en: '[PRE63]'
+  id: totrans-495
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE63]'
 - en: 'Splitting dataset on train and test datasets:'
+  id: totrans-496
   prefs: []
   type: TYPE_NORMAL
+  zh: 将数据集分割为训练集和测试集：
 - en: '[PRE64]'
+  id: totrans-497
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE64]'
 - en: Since we have identified the problem and prepared the dataset, we can begin
     to determine the machine learning methods that our model will consist of.
+  id: totrans-498
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们已经确定了问题和准备了数据集，我们可以开始确定我们的模型将包含的机器学习方法。
 - en: Operators
+  id: totrans-499
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 操作符
 - en: 'Now let’s define the functions that will make up the functional pipeline. We
     will call them Operators in the machine learning context. Machine learning operators
     for a classification problem can be separated into three types:'
+  id: totrans-500
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们定义将构成功能管道的函数。在机器学习环境中，我们将它们称为操作符。对于分类问题，机器学习操作符可以分为三种类型：
 - en: '**Selectors**: Choose the most significant features (columns) from the dataset,
     removing dependent features. Usually reduces the input size. The selected features
     remain unchanged.'
+  id: totrans-501
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**选择器**：从数据集中选择最显著的特征（列），移除相关特征。通常可以减少输入大小。选定的特征保持不变。'
 - en: '**Transformers**: Convert input according to some mathematical function without
     changing the input size.'
+  id: totrans-502
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**转换器**：根据某些数学函数转换输入，而不改变输入大小。'
 - en: '**Classifiers**: Solve the classification problem itself.'
+  id: totrans-503
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**分类器**：解决分类问题本身。'
 - en: 'Figure [3-39](#Fig39) shows a machine learning pipeline: selector, transformer,
     and classifier.'
+  id: totrans-504
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[3-39](#Fig39)显示了机器学习管道：选择器、转换器和分类器。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig39_HTML.jpg)'
+  id: totrans-505
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig39_HTML.jpg)'
 - en: Figure 3-39
+  id: totrans-506
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-39
 - en: 'Machine learning operators: selector, transformer, and classifier'
+  id: totrans-507
   prefs: []
   type: TYPE_NORMAL
+  zh: 机器学习操作符：选择器、转换器和分类器
 - en: Each operator has its own parameters, such as `max_depth` in the `DecisionTreeClassifier`.
     Listing [3-18](#PC67) creates an operator space that will be used for the AutoML
     pipeline.
+  id: totrans-508
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个操作符都有自己的参数，例如`DecisionTreeClassifier`中的`max_depth`。列表[3-18](#PC67)创建了一个操作符空间，该空间将被用于AutoML管道。
 - en: '(Full code is provided in the corresponding file: *ch3/ml_pipeline/operator.py*.)'
+  id: totrans-509
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整代码在相应的文件中提供：*ch3/ml_pipeline/operator.py*。）
 - en: 'Each operator is an object that has a name, implementation, and parameters:'
+  id: totrans-510
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个操作符都是一个具有名称、实现和参数的对象：
 - en: '[PRE65]'
+  id: totrans-511
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE65]'
 - en: 'Next, we define the operator space:'
+  id: totrans-512
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们定义操作符空间：
 - en: '[PRE66]'
+  id: totrans-513
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE66]'
 - en: 'Selector list:'
+  id: totrans-514
   prefs: []
   type: TYPE_NORMAL
+  zh: 选择器列表：
 - en: '[PRE67]'
+  id: totrans-515
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE67]'
 - en: (For full selector list, please refer to the source code.)
+  id: totrans-516
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整选择器列表，请参阅源代码。）
 - en: 'Transformer list:'
+  id: totrans-517
   prefs: []
   type: TYPE_NORMAL
+  zh: 转换器列表：
 - en: '[PRE68]'
+  id: totrans-518
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE68]'
 - en: (For full transformer list, please refer to the source code.)
+  id: totrans-519
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整转换器列表，请参阅源代码。）
 - en: 'Classifier list:'
+  id: totrans-520
   prefs: []
   type: TYPE_NORMAL
+  zh: 分类器列表：
 - en: '[PRE69]'
+  id: totrans-521
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE69]'
 - en: (For full classifier list, please refer to the source code.)
+  id: totrans-522
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整分类器列表，请参阅源代码。）
 - en: 'Finally, we add an additional auxiliary method `get_operator_by_name`, which
     returns the operator by its name:'
+  id: totrans-523
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们添加了一个额外的辅助方法`get_operator_by_name`，它通过名称返回操作符：
 - en: '[PRE70]'
+  id: totrans-524
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE70]'
 - en: Search Space
+  id: totrans-525
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 搜索空间
 - en: Let’s define search space for the classifier. We assume that the classifier’s
     operator pipeline will have
+  id: totrans-526
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们为分类器定义搜索空间。我们假设分类器的操作符管道将具有
 - en: '**Selectors**: From 0 to 1 (selector is advised but not required)'
+  id: totrans-527
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**选择器**：从0到1（建议使用选择器，但不是必需的）'
 - en: '**Transformers**: From 0 to 3 (selector is advised but not required)'
+  id: totrans-528
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**转换器**：从0到3（建议使用选择器，但不是必需的）'
 - en: '**Classifier**: 1 (is required)'
+  id: totrans-529
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**分类器**：1（必需）'
 - en: Therefore, a pipeline can have from one to five operators. Please take a look
     at Figure [3-40](#Fig40).
+  id: totrans-530
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，管道可以有一个到五个操作符。请参阅图[3-40](#Fig40)。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig40_HTML.png)'
+  id: totrans-531
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig40_HTML.png)'
 - en: Figure 3-40
+  id: totrans-532
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-40
 - en: Pipeline cells
+  id: totrans-533
   prefs: []
   type: TYPE_NORMAL
+  zh: 管道单元格
 - en: 'The pipeline has five cells. Each cell can be filled with some value from the
     corresponding operator space. The cell can be empty if `none` value is selected.
     For example, the following pipeline might be selected: `Selector3` → `none` →
@@ -2067,105 +3177,162 @@
     → `Classifier2`. This search space definition is huge and challenging to construct
     manually, so we will add a special class in Listing [3-19](#PC73) that will create
     an operator search space definition according to the NNI specification.'
+  id: totrans-534
   prefs: []
   type: TYPE_NORMAL
+  zh: 管道有五个单元格。每个单元格可以填充对应算子空间中的某个值。如果选择`none`值，单元格可以是空的。例如，以下管道可能被选中：`Selector3`
+    → `none` → `Transformer1` → `none` → `Classifier2`，这等于`Selector3` → `Transformer1`
+    → `Classifier2`。这个搜索空间定义非常庞大且难以手动构建，因此我们将在列表[3-19](#PC73)中添加一个特殊类，该类将根据NNI规范创建算子搜索空间定义。
 - en: '[PRE71]'
+  id: totrans-535
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE71]'
 - en: Each cell has an operator type that can be filled by `selector`, `transformer`,
     and `classifier`. The `operator_search_space` method creates a search space for
     each cell type.
+  id: totrans-536
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个单元格都有一个可以由`selector`、`transformer`和`classifier`填充的算子类型。`operator_search_space`方法为每个单元格类型创建一个搜索空间。
 - en: '[PRE72]'
+  id: totrans-537
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE72]'
 - en: 'Next, we define a method `build` that constructs a search space of all cells
     according to the NNI specification:'
+  id: totrans-538
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们定义一个`build`方法，该方法根据NNI规范构建所有单元格的搜索空间：
 - en: '[PRE73]'
+  id: totrans-539
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE73]'
 - en: 'Even though the search space definition is quite large, we can print it out:'
+  id: totrans-540
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管搜索空间定义相当大，但我们仍然可以将其打印出来：
 - en: '[PRE74]'
+  id: totrans-541
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE74]'
 - en: We will use dynamic search space construction to launch the experiment in embedded
     mode, although this technique can also be applied to build a static JSON file.
+  id: totrans-542
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用动态搜索空间构建来在嵌入式模式下启动实验，尽管这项技术也可以用于构建静态JSON文件。
 - en: Model
+  id: totrans-543
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 模型
 - en: So, what do we have by now? We have an operator space and a search space. Let’s
     now implement a model that converts the pipeline configuration into a real machine
     learning classifier. Listing [3-20](#PC77) introduces `MlPipelineClassifier`.
+  id: totrans-544
   prefs: []
   type: TYPE_NORMAL
+  zh: 那么，到目前为止我们有什么呢？我们有一个算子空间和一个搜索空间。现在让我们实现一个将管道配置转换为实际机器学习分类器的模型。列表[3-20](#PC77)介绍了`MlPipelineClassifier`。
 - en: 'Importing modules:'
+  id: totrans-545
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入模块：
 - en: '[PRE75]'
+  id: totrans-546
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE75]'
 - en: 'Model receives pipeline configuration and converts it to the actual Scikit-learn
     pipeline:'
+  id: totrans-547
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型接收管道配置并将其转换为实际的Scikit-learn管道：
 - en: '[PRE76]'
+  id: totrans-548
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE76]'
 - en: 'Model training method:'
+  id: totrans-549
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型训练方法：
 - en: '[PRE77]'
+  id: totrans-550
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE77]'
 - en: 'Computing the accuracy:'
+  id: totrans-551
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算准确率：
 - en: '[PRE78]'
+  id: totrans-552
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE78]'
 - en: 'Since the model is ready, let’s try to initialize it using the sample pipeline
     parameter and apply it to the classification problem:'
+  id: totrans-553
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于模型已经准备好了，让我们尝试使用样本管道参数来初始化它，并将其应用于分类问题：
 - en: '[PRE79]'
+  id: totrans-554
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE79]'
 - en: The model demonstrates **64%** accuracy. This is definitely not the result we
     expect, so let’s use the HPO techniques to construct a better-performance model.
+  id: totrans-555
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型展示了**64%**的准确率。这绝对不是我们预期的结果，因此让我们使用HPO技术构建一个性能更好的模型。
 - en: Tuner
+  id: totrans-556
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 调优器
 - en: 'Now everything is ready to start the experiment. But I would like to focus
     on the search space that we use. The trial parameter is a sequence of operators,
     which may contain empty operators, that is, `S3(p3)` → `none` → `T1(p1)` → `none`
     → `C2(p2)`. But at the same time, the following parameter exists too: `S3(p3)`
     → `none` → `none` → `T1(p1)` → `C2(p2)`. They are different parameters in the
     search space but generate the same classifier model:'
+  id: totrans-557
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在一切准备就绪，可以开始实验了。但我希望关注我们使用的搜索空间。试验参数是一系列算子，可能包含空算子，即`S3(p3)` → `none` → `T1(p1)`
+    → `none` → `C2(p2)`。但与此同时，还存在以下参数：`S3(p3)` → `none` → `none` → `T1(p1)` → `C2(p2)`。它们是搜索空间中的不同参数，但生成相同的分类器模型：
 - en: '`S3(p3)` → `none` → `T1(p1)` → `none` → `C2(p2)`'
+  id: totrans-558
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`S3(p3)` → `none` → `T1(p1)` → `none` → `C2(p2)`'
 - en: '`S3(p3)` → `none` → `none` → `T1(p1)` → `C2(p2)`'
+  id: totrans-559
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`S3(p3)` → `none` → `none` → `T1(p1)` → `C2(p2)`'
 - en: '`S3(p3)` → `T1(p1)` → `C2(p2).`'
+  id: totrans-560
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`S3(p3)` → `T1(p1)` → `C2(p2)`。'
 - en: Keep in mind that the same two identical operators with different parameters
     are not equal, that is, `SelectFwe(alpha=0)` is not equal to `SelectFwe(alpha=0.05)`.
     Let’s customize Tuner by forbidding it to create parameters that will generate
@@ -2178,118 +3345,189 @@
     inherits `EvolutionTuner` and tracks all executed pipelines forbidding passing
     the equal ones to the Experiment. We can see `EvolutionShrinkTuner` implementation
     in Listing [3-21](#PC82).
+  id: totrans-561
   prefs: []
   type: TYPE_NORMAL
+  zh: 请记住，具有不同参数的两个相同操作符并不相等，即`SelectFwe(alpha=0)`不等于`SelectFwe(alpha=0.05)`。让我们通过禁止它创建与已尝试的参数相关的等效模型来定制Tuner，即如果我们已经尝试了参数`P`[`1`]
+    = `SelectPercentile(percentile = 2)` → `none` → `Normalizer(norm='l1')` → `none`
+    → `DecisionTreeClassifier(max_depth=8)`，那么参数`P`[`2`] = `SelectPercentile(percentile
+    = 2)` → `none` → `none` → `Normalizer(norm='l1')` → `DecisionTreeClassifier(max_depth=8)`将不会被传递到实验中，因为`P`[`2`]生成的模型等于`P`[`1`]生成的模型。让我们创建`EvolutionShrinkTuner`，它继承自`EvolutionTuner`并跟踪所有已执行的管道，禁止传递相等的管道到实验中。我们可以在列表[3-21](#PC82)中看到`EvolutionShrinkTuner`的实现。
 - en: '[PRE80]'
+  id: totrans-562
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE80]'
 - en: 'We define registry property that will track all created pipelines:'
+  id: totrans-563
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们定义了一个注册属性，它将跟踪所有创建的管道：
 - en: '[PRE81]'
+  id: totrans-564
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE81]'
 - en: If the `super().generate_parameters` method of the parent `EvolutionTuner` object
     returns a parameter that has already been tried, then the `super().generate_parameters`
     method is called again until a unique parameter is generated. Because `EvolutionTuner`
     has random behavior, `super().generate_parameters` can be expected to return different
     parameters on subsequent calls.
+  id: totrans-565
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果父`EvolutionTuner`对象的`super().generate_parameters`方法返回一个已经尝试过的参数，那么将再次调用`super().generate_parameters`方法，直到生成一个唯一的参数。因为`EvolutionTuner`具有随机行为，所以`super().generate_parameters`在后续调用中可以期望返回不同的参数。
 - en: '[PRE82]'
+  id: totrans-566
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE82]'
 - en: 'The following `is_valid` method converts the parameter to the canonical form
     by removing `none` operators and checks if it has already been tried: if it has,
     then returns `False`; if not, then saves it and returns `True`.'
+  id: totrans-567
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下`is_valid`方法通过删除`none`操作符将参数转换为规范形式，并检查它是否已经被尝试：如果是，则返回`False`；如果不是，则保存它并返回`True`。
 - en: '[PRE83]'
+  id: totrans-568
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE83]'
 - en: This simple technique introduces the concept of equivalence between the elements
     of the search space and can significantly shrink the search space.
+  id: totrans-569
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种简单技术引入了搜索空间元素之间的等价概念，并且可以显著缩小搜索空间。
 - en: Experiment
+  id: totrans-570
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 实验
 - en: And now, we are finally ready to launch an experiment to find the optimal functional
     pipeline for solving the AutoML problem. The trial script in Listing [3-22](#PC86)
     initializes the model, prepares datasets, trains the model, tests it, and returns
     model accuracy to NNI Experiment.
+  id: totrans-571
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们终于准备好启动一个实验来寻找解决AutoML问题的最佳功能管道。列表[3-22](#PC86)中的试验脚本初始化模型，准备数据集，训练模型，测试它，并将模型准确率返回给NNI实验。
 - en: '(Full code is provided in the corresponding file: *ch3/ml_pipeline/trial.py*.)'
+  id: totrans-572
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整的代码在相应的文件中提供：*ch3/ml_pipeline/trial.py*。）
 - en: '[PRE84]'
+  id: totrans-573
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE84]'
 - en: Listing [3-23](#PC87) puts everything together and runs the experiment.
+  id: totrans-574
   prefs: []
   type: TYPE_NORMAL
+  zh: 列出[3-23](#PC87)将所有内容组合在一起并运行实验。
 - en: 'Import modules:'
+  id: totrans-575
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入模块：
 - en: '[PRE85]'
+  id: totrans-576
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE85]'
 - en: 'Common Experiment configuration:'
+  id: totrans-577
   prefs: []
   type: TYPE_NORMAL
+  zh: 公共实验配置：
 - en: '[PRE86]'
+  id: totrans-578
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE86]'
 - en: 'Generating search space:'
+  id: totrans-579
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成搜索空间：
 - en: '[PRE87]'
+  id: totrans-580
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE87]'
 - en: 'Trial configuration:'
+  id: totrans-581
   prefs: []
   type: TYPE_NORMAL
+  zh: 试验配置：
 - en: '[PRE88]'
+  id: totrans-582
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE88]'
 - en: 'Setting the custom `EvolutionShrinkTuner`:'
+  id: totrans-583
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置自定义的`EvolutionShrinkTuner`：
 - en: '[PRE89]'
+  id: totrans-584
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE89]'
 - en: 'Launching Experiment:'
+  id: totrans-585
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动实验：
 - en: '[PRE90]'
+  id: totrans-586
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE90]'
 - en: Figure [3-41](#Fig41) shows top trials of the AutoML Experiment.
+  id: totrans-587
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[3-41](#Fig41)显示了AutoML实验的前瞻试验。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig41_HTML.jpg)'
+  id: totrans-588
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig41_HTML.jpg)'
 - en: Figure 3-41
+  id: totrans-589
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-41
 - en: AutoML Experiment best Trials
+  id: totrans-590
   prefs: []
   type: TYPE_NORMAL
+  zh: AutoML实验最佳试验
 - en: 'The best Trial demonstrates **0.89143** accuracy and has the following parameters:'
+  id: totrans-591
   prefs: []
   type: TYPE_NORMAL
+  zh: 最佳试验展示了**0.89143**的准确率，并具有以下参数：
 - en: '[PRE91]'
+  id: totrans-592
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE91]'
 - en: 'The best Trial can be converted to the functional pipeline:'
+  id: totrans-593
   prefs: []
   type: TYPE_NORMAL
+  zh: 最佳试验可以转换为功能管道：
 - en: '[PRE92]'
+  id: totrans-594
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE92]'
 - en: 'In fact, the classifier we have built shows very good results, which are close
     to optimal. The best classifier for this model performs with the following accuracy:
     `0.898` (“Multi-Task Architecture with Attention for Imaging Atmospheric Cherenkov
@@ -2301,12 +3539,16 @@
     on the sequence of layers pipeline. Of course, we could dive deeper into applying
     this approach to Neural Architecture Search, but it has significant drawbacks,
     which we will discuss in the next section.'
+  id: totrans-595
   prefs: []
   type: TYPE_NORMAL
+  zh: 事实上，我们构建的分类器显示出非常好的结果，接近最优。对于这个模型的最佳分类器具有以下准确度：`0.898`（《用于成像大气切伦科夫望远镜数据分析的多任务架构与注意力机制》，[www.scitepress.org/Papers/2021/102974/102974.pdf](http://www.scitepress.org/Papers/2021/102974/102974.pdf))。我们刚刚基于NNI构建了定制的AutoML工具包。这种方法也可以应用于任何功能管道优化。同样，你可以自动设计具有顺序层布局的深度学习模型。确实，操作空间可以由深度学习层组成，模型可以是一个基于层序列管道的神经网络。当然，我们可以更深入地探讨将这种方法应用于神经网络架构搜索，但它有显著的缺点，我们将在下一节讨论。
 - en: Limits of HPO Applying to Neural Architecture Search
+  id: totrans-596
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 将HPO应用于神经网络架构搜索的局限性
 - en: The approach described in this section can be successfully applied to the search
     for neural network architectures but with a significant limitation. Using HPO
     techniques described in this section, we can only get an architecture with a sequential
@@ -2314,25 +3556,37 @@
     one sequentially. This is a significant limitation since many modern neural network
     architectures use multiple connections between their layers, as shown in Figure
     [3-42](#Fig42).
+  id: totrans-597
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节中描述的方法可以成功应用于神经网络架构的搜索，但有一个显著的局限性。使用本节中描述的HPO技术，我们只能得到一个具有顺序层堆叠的架构，即每个层按顺序连接到另一个层的架构。这是一个显著的局限性，因为许多现代神经网络架构在其层之间使用多个连接，如图[3-42](#Fig42)所示。
 - en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig42_HTML.png)'
+  id: totrans-598
   prefs: []
   type: TYPE_IMG
+  zh: '![图3-42](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig42_HTML.png)'
 - en: Figure 3-42
+  id: totrans-599
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3-42
 - en: Multi-connected neural network
+  id: totrans-600
   prefs: []
   type: TYPE_NORMAL
+  zh: 多连接神经网络
 - en: We need some different and special techniques to search for efficient neural
     network architectures. And we will begin to explore them in the next chapter.
+  id: totrans-601
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要一些不同且特殊的技巧来搜索高效的神经网络架构。我们将在下一章开始探索它们。
 - en: Hyperparameters for Hyperparameter Optimization
+  id: totrans-602
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 超参数优化中的超参数
 - en: When we talked about automated deep learning, we mentioned that AutoDL solves
     the problem of finding optimal architectures and hyperparameters. But each AutoDL
     technique has many parameters on its own! For example, we need to define the search
@@ -2345,17 +3599,23 @@
     be sure in advance what the best settings for an AutoDL method are. However, we
     can be confident that the AutoDL method will surely produce a model close to the
     optimal one and significantly better than the one we would build manually.
+  id: totrans-603
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们谈论自动深度学习时，我们提到AutoDL解决了寻找最佳架构和超参数的问题。但每个AutoDL技术本身都有许多参数！例如，我们需要定义搜索空间、最大尝试次数、找到一个合适的Tuner、定义Tuner参数等。结果发现，解决超参数选择问题的本身甚至有更多的超参数！那么使用HPO方法和其他AutoDL方法的意义在哪里呢？这是一个合理的问题。答案是，即使配置不佳的HPO实验也能产生比配置不佳的架构或超参数的模型显著更好的模型。我们永远无法提前确定AutoDL方法的最佳设置。然而，我们可以确信，AutoDL方法肯定会产生一个接近最优的模型，并且比我们手动构建的模型要好得多。
 - en: Summary
+  id: totrans-604
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 摘要
 - en: 'This chapter has taken a deep dive into Tuner internals and various black-box
     function optimization algorithms. Understanding the principles of Tuners’ behavior
     and their practical application can remarkably improve the design of NNI experiments
     and HPO results. In the next chapter, we’ll move on to the most exciting and interesting
     part of our book: Neural Architecture Search. We will study the latest techniques
     to find the optimal design of neural networks for a specific task.'
+  id: totrans-605
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章深入探讨了调谐器内部结构和各种黑盒函数优化算法。理解调谐器行为的原则及其实际应用可以显著提升 NNI 实验设计和 HPO 结果的设计。在下一章中，我们将继续探讨我们书籍中最激动人心和有趣的部分：神经架构搜索。我们将研究寻找特定任务中神经网络最优设计的最新技术。
