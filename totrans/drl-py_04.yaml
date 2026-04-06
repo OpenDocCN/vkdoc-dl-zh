@@ -1,7 +1,9 @@
 - en: 4. Model-Free Approaches
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 4. 无模型方法
 - en: The previous chapter looked at dynamic programming, used when you know the model
     dynamics *p*(*s*^′, *r*| *s*, *a*), and the knowledge is used to “plan” the optimal
     actions. This is also known as the *planning problem*. This chapter shifts focus
@@ -18,8 +20,10 @@
     environment. To summarize, you use model-free methods when either you do not know
     the model dynamics or you know the model, but it is much more practical to sample
     than to calculate the transition dynamics.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 上一章介绍了动态规划，当你知道模型动态 *p*(*s*^′, *r*| *s*, *a*) 时使用，知识被用来“计划”最优动作。这也被称为*规划问题*。本章将重点转向*学习问题*——即模型动态（也称为转移动态）未知的情况。你将学习通过*采样*来计算/学习状态值和状态-动作值——也就是说，通过在现实世界中遵循某种策略或通过模拟中的策略运行代理来收集经验。还存在另一类问题，其中无模型方法更为适用。在某些问题中，采样比计算转移动态更容易，例如寻找最佳策略来玩类似黑杰克的游戏。有许多组合可以达到分数，这取决于迄今为止看到的牌和牌堆中剩余的牌。几乎不可能计算从一个状态到另一个状态的精确转移概率，但很容易从环境中采样状态。总之，当你不知道模型动态或者知道模型，但采样比计算转移动态更实际时，你使用无模型方法。
 - en: 'This chapter looks at two broad classes of model-free learning: Monte Carlo
     (MC) methods and temporal difference (TD) methods. You will first learn how policy
     evaluation works in a model-free setup and then extend this understanding to look
@@ -29,12 +33,16 @@
     MC and TD methods individually. Subsequently, I cover additional concepts like
     *n*-step returns, importance sampling, and eligibility traces in a bid to combine
     the MC and TD methods into a common, more generic approach, called TD(*λ*).'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章探讨了两种广泛的无模型学习方法：蒙特卡洛（MC）方法和时序差分（TD）方法。你将首先学习在无模型设置中策略评估是如何工作的，然后扩展这种理解来查看控制——即找到最优策略。我还简要提到了自举和探索与利用困境以及离线学习与在线学习等重要概念。最初，重点是单独查看MC和TD方法。随后，我介绍了诸如*步长回报*、重要性采样和资格痕迹等额外概念，旨在将MC和TD方法结合成一个更通用、更通用的方法，称为TD(*λ*)。
 - en: Estimation/Prediction with Monte Carlo
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用蒙特卡洛进行估计/预测
 - en: When you do not know the model dynamics, what do you do? Think back to a situation
     when you did not know something about a problem. What did you do in that situation?
     You experiment. In the context of reinforcement learning, it could mean having
@@ -48,8 +56,10 @@
     of heads still hovering around 0.5, your confidence in the unbiasedness of the
     coin will be even higher. Why does taking the average of outcomes from samples
     and using it as an estimate work?
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 当你不知道模型动力学时，你该怎么办？回想一下你不知道某个问题时的情况。在那个情况下你做了什么？你进行了实验。在强化学习的背景下，这可能意味着让智能体随机采取行动，并观察系统的响应。例如，假设你想知道一个骰子或硬币是否偏斜。你多次掷硬币或掷骰子，观察结果，并据此形成你的观点。换句话说，你进行了采样。以硬币为例，假设你掷硬币10,000次，并计算出现正面的频率。如果这个频率接近0.5，你可以有很高的信心推断硬币是不偏斜的。如果实验进行100,000次，正面的频率仍然在0.5附近徘徊，你对硬币不偏斜的信心将会更高。为什么从样本结果中取平均值并用它作为估计是有效的？
 - en: '*The* *law of large numbers (LLN)* from statistics tells us that the average
     of samples is a good estimate for the actual unknown quantity and that this estimate
     becomes better and better as the number of trials of the experiment (samples)
@@ -62,16 +72,21 @@
     said that, do remember that there are some cases where such convergence does not
     happen. However, thankfully you will not be encountering such pathological cases
     in most real-world RL examples.'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 统计学中的*大数定律（LLN）*告诉我们，样本的平均值是对实际未知数量的良好估计，并且随着实验（样本）次数的增加，这个估计会越来越好。进一步来说，由样本的平均值形成的估计，随着样本数量的增加而变得更好——用数学语言来说，即样本平均值与实际未观察值之间的方差误差，随着试验次数n的增加而减小，当n趋向于无穷大时，试验的估计值就等于实际未观察值。这条定律是统计学领域非常重要的定律之一。话虽如此，请记住，在某些情况下，这种收敛并不会发生。然而，幸运的是，在大多数现实世界的强化学习例子中，你不会遇到这样的病态情况。
 - en: If you examine the Bellman equations in the previous chapter, you will notice
     that there is an expectation operator *E*[·] in those equations; for example,
     the value of a state being *v*(*s*) = *E*[*G*[*t*]| *S*[*t*] = *s*]. Further,
     to calculate *v*(*s*), you used dynamic programming requiring the transition dynamics
     *p*(*s*^′, *r* | *s*, *a*). In the absence of the model dynamics knowledge, what
     can you do?
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你回顾上一章中的贝尔曼方程，你会注意到这些方程中有一个期望算子 *E*[·]；例如，状态值 *v*(*s*) = *E*[*G*[*t*]| *S*[*t*] = *s*]。进一步来说，为了计算
+    *v*(*s*)，你使用了动态规划，需要过渡动力学 *p*(*s*^′, *r* | *s*, *a*)。在没有模型动力学知识的情况下，你能做什么？
 - en: 'Following the law of large numbers, you sample from the model. You fix a starting
     state *S*[*t*] = *s* and fix a policy π for which you want to calculate *v*[π](*s*).
     You let the agent start from this state *S*[*t*] = *s*, follow the policy π to
@@ -82,8 +97,13 @@
     returns from each such rollout and average these as an estimate of *v*[*π*](*s*)
     for the policy *π*. This, in a nutshell, is the approach of *Monte Carlo (MC)
     methods*: replace expected returns with the average of sample returns.'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据大数定律，你从模型中进行采样。你固定一个起始状态 *S*[*t*] = *s*，并固定一个你想要计算 *v*[π](*s*) 的策略 π。你让智能体从这个状态
+    *S*[*t*] = *s* 开始，遵循策略 π 进行行动，并持续这样做直到终止。你记录总的奖励总和——即智能体在当前单次序列/场景中获得的回报。这个从状态、行动、奖励直到终止的序列也被称为一个
+    *场景* 或策略的单个 *回放*。你重复这个实验，从每个这样的回放中收集单个回报，并将这些回报平均作为策略 *π* 对应于状态 *s* 的 *v*[*π*](*s*)
+    的估计。简而言之，这就是 *蒙特卡洛（MC）方法* 的方法：用样本回报的平均值代替期望回报。
 - en: There are a few points to note. The MC approach does not require knowledge of
     the model. The only thing required is that you should be able to sample from it.
     The ability to sample or play out the agent depends a lot on the problem. If it
@@ -101,8 +121,12 @@
     to know the return of starting from a state until termination, and hence you can
     use MC methods only on episodic MDPs in which every run finally terminates. It
     will not work on non-terminating environments.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 有几点需要注意。MC 方法不需要了解模型。唯一需要的是你应该能够从中采样。能否采样或模拟智能体在很大程度上取决于问题。如果是一个可以轻松在程序中建模的棋盘游戏，或者如果有一个真实世界系统的模拟器可用，你可以使用这样的程序或模拟器来快速且低成本地进行采样。然而，如果场景的回放将涉及与真实世界智能体的交互，并且如果真实世界的智能体类似于昂贵的机器人或自动驾驶汽车，这种交互可能不可行，尤其是在智能体训练不足且注定会犯错误的情况下。在某些情况下，错误可能非常昂贵，导致机器损坏或危害公共安全。因此，从完整的回放中采样回报的
+    MC 方法可能并不总是有效，尤其是如果它涉及真实世界的交互。还有另一种情况下 MC 可能不适用——在非终止环境中，没有终止状态。你需要知道从某个状态开始直到终止的回报，因此你只能在每个运行最终终止的情景式马尔可夫决策过程（MDP）中使用
+    MC 方法。它不适用于非终止环境。
 - en: The second point is that for a large MDP, you can keep the focus on sampling
     only that part of the MDP that is relevant and avoid exploring irrelevant parts
     of the MDP. Such an approach makes MC methods highly scalable for very large problems.
@@ -112,8 +136,12 @@
     not of interest in a specific context. A very good example was demonstrated by
     OpenAI, when they used a variant of the MC method called Monte Carlo tree search
     (MCTS) to train a Go game-playing agent.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 第二点是，对于大型 MDP，你可以只关注采样与 MDP 相关的部分，避免探索 MDP 中不相关的部分。这种方法使得 MC 方法对于非常大的问题具有高度的可扩展性。如前所述，MC
+    方法对于一类问题是有用的，其中列出所有状态和/或状态中的所有行动会使问题变得不可处理，并且可能存在大量在特定上下文中不感兴趣的状态和状态-行动组合。OpenAI
+    展示的一个很好的例子是，他们使用了一种名为蒙特卡洛树搜索（MCTS）的 MC 方法的变体来训练围棋游戏智能体。
 - en: The third point is about Markov assumption—that is, the past is fully encoded
     in the present state. In other words, knowing the present makes the future independent
     of the past. As more formally stated the transition to state *S*[*t* + 1] in time
@@ -128,6 +156,7 @@
     A lack of Markov assumption in MC methods make them much more feasible for the
     class of MDPs known as POMDPs (for “partially observable MDPs”). In a POMDP environment,
     you get only partial-state information, which is known as an observation.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
 - en: We have been talking about using MC methods to estimate the state and state-action
@@ -139,6 +168,7 @@
     system dynamics in a DP setup to find the optimal policies. I will talk about
     those in detail in a future chapter. For now, the chapter focuses on the model-free
     approach.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
 - en: Moving on, let’s look at a formal way to estimate the state values for a given
@@ -154,6 +184,7 @@
     only from the first visit in an episode until the end of the episode. There is
     another variant in which you take the average of returns from every visit to that
     state until the end of the episode. This is known as the *every-visit MC* method.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s see how the value of a state under a specific policy can be estimated
@@ -166,20 +197,25 @@
     current state *S* = *s* to the terminal state. However, It does not cover all
     the branching possibilities; rather, it covers only one single path that was sampled
     from the start state *S* = *s* to the terminal state.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig1_HTML.jpg)'
+  id: totrans-14
   prefs: []
   type: TYPE_IMG
 - en: A set of 2 diagrams represents the comparison of D P estimation and M C estimation
     methods. Nodes represent states S and actions A, with arrows indicating transitions
     and rewards R.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-1
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
 - en: Backup diagram of MC methods as compared to Bellman equation–based DP backup
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
 - en: 'Now look at the pseudocode for the first-visit version, which is shown in Figure
@@ -195,35 +231,44 @@
     numbers, the statistical law on which Monte Carlo simulations are based, *V*(*s*),
     will converge to true *v*[*π*](*s*) for all states under the condition that the
     number of visits to each state approaches infinity.'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig2_HTML.jpg)'
+  id: totrans-19
   prefs: []
   type: TYPE_IMG
 - en: A screenshot of the first visit M C prediction algorithm. The pi and the policy
     to be evaluated is the input. It initializes state values and visit counts to
     zero. Sample episodes and update state values based on first visits.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-2
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
 - en: First-visit MC prediction for estimating vπ(s). The pseudocode uses the online
     version to update the values as samples are received
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
 - en: 'You store the cumulative total and the count of first visits to a state. The
     average is calculated by dividing the total by the count. Every time a state is
     visited, the following update is carried out:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ N(s)=N(s)+1 $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equa.png)'
+  id: totrans-24
   prefs: []
   type: TYPE_IMG
 - en: '![$$ S(s)=S(s)+G $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equb.png)'
+  id: totrans-25
   prefs: []
   type: TYPE_IMG
 - en: '![$$ V(s)=\frac{S(s)}{N(s)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equc.png)'
+  id: totrans-26
   prefs: []
   type: TYPE_IMG
 - en: With a minor change, you could look at the update in another way, without needing
@@ -236,6 +281,7 @@
     arrives, you update the average of the two numbers with the third number so that
     the new average is now an average of the three numbers. The derivation of this
     updated rule is as follows.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
 - en: In the following derivation, *N*(*s*) is the visit count, which is also the
@@ -245,35 +291,44 @@
     agent is following, which is fixed and provided as input in the beginning, as
     shown in Figure [4-2](#Fig2). You also use subscript *n* or *n* + 1 to indicate
     the *n*^(*th*) or *n* + 1^(*th*) visit to the specific state *s*.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ N{(s)}_{n+1}=N{(S)}_n+1 $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equd.png)'
+  id: totrans-29
   prefs: []
   type: TYPE_IMG
 - en: '![$$ V{(s)}_{n+1}=\frac{S{(s)}_n+G}{N{(s)}_{n+1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Eque.png)'
+  id: totrans-30
   prefs: []
   type: TYPE_IMG
 - en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.N{(s)}_n+G}{N{(s)}_{n+1}}
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equf.png)'
+  id: totrans-31
   prefs: []
   type: TYPE_IMG
 - en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.\left[N{(s)}_{n+1}-1\right]+G}{N{(s)}_{n+1}}
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equg.png)'
+  id: totrans-32
   prefs: []
   type: TYPE_IMG
 - en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.N{(s)}_{n+1}+\left[G-V{(s)}_n\right]}{N{(s)}_{n+1}}
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equh.png)'
+  id: totrans-33
   prefs: []
   type: TYPE_IMG
 - en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--}
     V{(s)}_n\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equi.png)'
+  id: totrans-34
   prefs: []
   type: TYPE_IMG
 - en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--}
     V{(s)}_n\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ1.png)'
+  id: totrans-35
   prefs: []
   type: TYPE_IMG
 - en: (4-1)
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
 - en: The difference [*G* – *V*(*s*)[*n*]] can be viewed as an error between the latest
@@ -283,6 +338,7 @@
     current estimate. As the number of visits increases, the new sample has increasingly
     low influence in revising the estimate of *V*(*s*). This is because the multiplication
     factor 1/*N* reduces to zero as *N* becomes very large.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
 - en: Sometimes, instead of using a diminishing factor 1/*N*, you can use a constant
@@ -290,23 +346,28 @@
     approach for non-stationary environments specifically. As the environment could
     be changing, you want to always give enough importance to the latest error with
     the help of a contact, α.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {V}_{n+1}={V}_n+\upalpha \left(G\hbox{--} {V}_n\right)\  for\  all\  states\
     s\in S $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ2.png)'
+  id: totrans-39
   prefs: []
   type: TYPE_IMG
 - en: (4-2)
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
 - en: Note that in Equation [4-2](#Equ2), I have removed the function arguments *s*
     from *V*[*n* + 1] and *V*[*n*].
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
 - en: The constant multiplication factor approach is more appropriate for problems
     that are non-stationary or when you want to give a constant weight to all the
     errors. A situation like this can happen when the old estimate *V*[*n*] may not
     be very accurate.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
 - en: Having looked at the pseudocode, now it is time to look at the Python implementation
@@ -318,6 +379,7 @@
     sample the rollouts for multiple episodes and use the rewards collected in those
     rollouts to estimate the state values for all the states in the grid for the random
     walk policy agent is following.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
 - en: For this, you need to update the implementation of grid world from Chapter [3](502835_2_En_3_Chapter.xhtml).
@@ -326,6 +388,7 @@
     toward the end of this chapter devoted to the things you need to do to implement
     your own Gymnasium environment. For now, it suffices to know that you need to
     implement two new functions in your environment.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
 - en: The first function is `env.reset()`, which randomly initializes the environment
@@ -333,16 +396,20 @@
     The second function is `env.step(action)` and it takes an `action` as input, transitions
     the agent to the new state as per the internal dynamics of the system, and returns
     a tuple of five values `(new_state, reward, terminated, truncated, info)`.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s now look at the implementation of the MC value prediction. Listing [4-1](#PC1)
     shows the code, and the full code is available in the `4.a-mc_estimation.ipynb`
     file.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE0]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: The code in Listing [4-1](#PC1) is a straight implementation of the pseudocode
     in Figure [4-2](#Fig2). The code implements the online version of the update,
     as explained in Equation [4-1](#Equ1)—that is, `N[s]+=1; V[s]=V[s]+1/N[s]*(G-V[s])`.
@@ -350,6 +417,7 @@
     visit” with a very small tweak. You just need to drop the `if` check—that is,
     “`if s not in episode_states[:t]`” and move the code under this condition as an
     unconditional code to carry out the updates at every step.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
 - en: To obtain convergence to the true state values, you need to ensure each state
@@ -357,17 +425,21 @@
     state values do not converge very well for 100 episodes. However, with 10,000
     episodes, the values have converged well and match those produced with the DP
     method.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig3_HTML.jpg)'
+  id: totrans-50
   prefs: []
   type: TYPE_IMG
 - en: A set of two heatmaps representing policy evaluation in reinforcement learning
     depicts the change in state-value function estimates after 100 iterations and
     after 10,000 iterations.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-3
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
 - en: 'Policy evaluation: *v*[*π*](*s*) computed using the MC method for the grid
@@ -375,12 +447,14 @@
     `DOWN`, `LEFT`, and `RIGHT`) have an equal probability of `0.25`. The left figure
     shows the values after `100` iterations and the right figure shows the state values
     after `10,000` iterations'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
 - en: A key aspect of Monte Carlo techniques is that the predictions for each state
     stand alone. One state’s estimate doesn’t rely on the estimate of another, unlike
     in dynamic programming (DP). Put simply, Monte Carlo methods don’t use bootstrapping
     as described in the earlier chapter.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
 - en: Related to the same point is that of computational expense in estimating a specific
@@ -397,23 +471,31 @@
     many episodes to take the average value of each episode’s return as an estimate
     of specific starting state’s value. In the MC approach, you are not worried about
     all other states and actions that you do not see in the sample rollouts.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 与此相关的是，在估计特定状态值时的计算成本。计算单个状态值的计算成本与状态总数无关，也与该特定状态下可能采取的行动的分支因子无关。在DP的情况下，您需要考虑特定状态中的所有行动以及每个行动的所有可能的后续状态。这由方程[3-6](502835_2_En_3_Chapter.xhtml#Equ5)中的两个求和符号表示。然而，在MC方法中，您只需考虑没有担心可能采取的行动和后续状态的回滚。因此，如果目的是计算特定状态的价值，您只需让智能体从该状态开始，并遵循正在评估的策略直到终止。您这样做是为了许多剧集，以每个剧集的回报的平均值作为特定起始状态价值的估计。在MC方法中，您不必担心样本回滚中看不到的所有其他状态和行动。
 - en: 'The next subsection dives deeper into the two versions of MC methods: *first-visit*
     vs *every-visit.*'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一个子节深入探讨了MC方法的两种版本：*首次访问*与*每次访问*。
 - en: Bias and Variance of MC Predication Methods
+  id: totrans-57
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: MC预测方法的偏差和方差
 - en: Let’s now look at the pros and cons of “first visit” versus “every visit.” Do
     both converge to the true underlying *V*(*s*)? Do they fluctuate a lot while converging?
     Does one converge faster to the true value? Before I answer these questions, let’s
     first review the basic concept of bias-variance tradeoff that you see in all statistical
     model estimations, for example , in supervised learning.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来看看“首次访问”与“每次访问”的优缺点。它们是否都会收敛到真实的潜在值*V*(*s*)？在收敛过程中它们波动很大吗？哪一个更快地收敛到真实值？在我回答这些问题之前，让我们首先回顾一下你在所有统计模型估计中看到的基本概念——偏差-方差权衡，例如，在监督学习中。
 - en: '*Bias* refers to the property of the model to converge to the true underlying
     value that you are trying to estimate—in this case, *v*[*π*](*s*). Some estimators
     are biased, meaning they are not able to converge to the true value due to their
@@ -424,8 +506,10 @@
     consistently over- or under-predict the true values. For example, a model that
     is biased toward predicting higher values will consistently predict that new data
     points will have higher values than they do.'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '*偏差*指的是模型收敛到您试图估计的真实潜在值的性质——在这种情况下，*v*[*π*](*s*)。一些估计量是有偏差的，这意味着由于它们固有的缺乏灵活性——即，估计方法对于给定的真实值来说过于简单或受限——它们无法收敛到真实值。随着您在估计中增加样本数量或使估计过程更加复杂和灵活，模型的偏差会降低。有偏差的估计方法或模型将始终高估或低估真实值。例如，倾向于预测更高值的模型将始终预测新数据点将具有比实际更高的值。'
 - en: '*Variance* refers to the model estimate being sensitive to the specific sample
     data being used. This means the estimate value may fluctuate a lot. Mostly all
     estimation processes show lower variance as you increase the number of samples.
@@ -436,55 +520,72 @@
     each run will fit well to the data seen in that run. This in turn leads to higher
     variance of these estimated values across multiple runs. The model with higher
     complexity or flexibility will show lower bias but will show more variance.'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: '*方差*指的是模型估计对所使用的特定样本数据敏感。这意味着估计值可能会波动很大。大多数估计过程都会随着样本数量的增加而显示较低的方差。然而，对于给定的样本数量，某些方法可能具有较低的方差，而某些方法可能具有较高的方差。通常，更复杂的模型由于可以更好地适应给定的数据，因此会显示出较高的方差。因此，随着你通过多次实验运行收集不同的样本集，每次运行的估计值将很好地适应该运行中看到的数据。这反过来又导致这些估计值在多次运行中的方差更高。具有更高复杂度或灵活性的模型将显示出较低的偏差，但会显示出更多的方差。'
 - en: A model that is trained on a small dataset may have a high variance, because
     the predictions will be sensitive to the specific data points that are included
     in the training set.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 在小数据集上训练的模型可能具有高方差，因为预测将敏感于训练集中包含的具体数据点。
 - en: If you have unlimited data, you could always choose a very complex model and
     still drive down the variance by using an increasingly large volume of data to
     form the estimate. However, in all practical problems, you do not have unlimited
     data, or compute, or time to process unlimited data even if it was available.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你拥有无限的数据，你总是可以选择一个非常复杂的模型，并通过使用不断增加的数据量来形成估计，从而降低方差。然而，在所有实际问题上，你都没有无限的数据，或者计算资源，或者时间来处理无限的数据，即使数据是可用的。
 - en: This fundamental tradeoff between the bias and variance is a tradeoff between
     the accuracy and variability of an estimation approach, especially for a given
     and fixed volume of data.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 偏差和方差之间的这种基本权衡是估计方法准确性和可变性之间的权衡，尤其是在给定和固定数据量的情况下。
 - en: The bias-variance tradeoff can be illustrated by the following example. Suppose
     you are trying to estimate the average height of all adults in the world. You
     can collect samples of adults and measure their heights. Then, you can use the
     sample mean to estimate the population mean height. “Population mean” refers to
     the true average height of all the adults in the world, which is unknown, and
     which is what you are trying to estimate with the help of samples.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 偏差-方差权衡可以通过以下例子来说明。假设你试图估计世界上所有成年人的平均身高。你可以收集成年人的样本并测量他们的身高。然后，你可以使用样本均值来估计总体平均身高。“总体平均”指的是世界上所有成年人的真实平均身高，这是未知的，也是你试图通过样本的帮助来估计的。
 - en: The sample mean is an unbiased estimator of the population mean height. This
     means that the average of all possible sample means will be equal to the population
     mean height. However, the sample mean is also a variable estimator. This means
     that the value of the sample mean will vary from sample to sample.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 样本均值是总体平均身高的无偏估计量。这意味着所有可能的样本均值的平均值将等于总体平均身高。然而，样本均值也是一个变量估计量。这意味着样本均值的值会随着样本的不同而变化。
 - en: The variance of the sample mean is inversely proportional to the sample size.
     This means that the larger the sample size, the smaller the variance of the sample
     mean. In other words, the more data you have, the more accurate your estimate
     of the population mean height will be.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 样本均值的方差与样本大小成反比。这意味着样本大小越大，样本均值的方差就越小。换句话说，你拥有的数据越多，你对总体平均身高的估计就越准确。
 - en: However, there is a limit to how much you can reduce the variance of the sample
     mean by increasing the sample size. This is because the sample mean is still a
     biased estimator of the population mean height. The bias of the sample mean is
     due to the fact that you are only sampling a small fraction of the population.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，通过增加样本大小来降低样本均值方差的程度是有限的。这是因为样本均值仍然是总体平均身高的有偏估计量。样本均值的偏差是由于你只采样了人口的一小部分。
 - en: If you want to reduce the bias of the sample mean, you need to use a more complex
     model. For example, you could use a regression model to predict the height of
     an individual based on their age, gender, and other factors. A regression model
     will typically have a lower bias than the sample mean, but it will also have a
     higher variance.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
 - en: The bias-variance tradeoff is important because it is impossible to have a model
@@ -500,6 +601,7 @@
     high bias. Such models, due to the inherent simplicity and restrictions, may not
     be able to represent the true underlying model. But they will also have low variance
     as they do not overfit.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
 - en: Consider that you have some data points (say 100). You are trying to fit a regression
@@ -520,47 +622,62 @@
     increases. Based on the problem, there is a range in the middle that balances
     bias and variance. Readers may refer to any standard text on machine learning
     for an in-depth discussion.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
 - en: This tradeoff, known as *bias-variance tradeoff**,* is presented in the graph
     in Figure [4-4](#Fig4).
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig4_HTML.jpg)'
+  id: totrans-72
   prefs: []
   type: TYPE_IMG
 - en: A graph illustrates the bias-variance tradeoff in statistical learning. It depicts
     error versus model complexity. As model complexity increases, variance rises while
     bias decreases.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 一张图说明了统计学习中的偏差-方差权衡。它描绘了误差与模型复杂度之间的关系。随着模型复杂度的增加，方差上升而偏差下降。
 - en: Figure 4-4
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-4
 - en: Bias variance tradeof f. Model complexity is increasing toward the right on
     the x-axis. Bias starts off high when the model is restricted and drops off as
     the model becomes flexible. Variance shows a reverse trend with model complexity
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 偏差-方差权衡。模型复杂度在x轴的右侧增加。当模型受到限制时，偏差开始较高，随着模型变得灵活而降低。方差显示出与模型复杂度相反的趋势。
 - en: In the field of reinforcement learning, until a certain point, you can reduce
     variance without increasing the bias by making model simpler on time domain. This
     is because of causality. The action agent takes in current state—that is, the
     policy it follows in the current state does not impact the rewards seen in the
     past transition. Current action can only impact the future rewards. You will see
     variations of these when you study policy gradient methods in later chapters.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 在强化学习领域，直到某个点，你可以通过在时间域上简化模型来减少方差而不增加偏差。这是因为因果性。动作代理接受当前状态——即当前状态下遵循的策略不会影响过去过渡中看到的奖励。当前动作只能影响未来的奖励。当你学习后续章节中的策略梯度方法时，你会看到这些变化的变体。
 - en: With this background, now turn your attention back to comparing “first visit”
     to “every visit”. The *first visit* is unbiased but has high variance. *Every
     visit* has bias that goes down to zero as the number of trials increases. In addition,
     *every visit* has low variance and usually converges to the true value estimates
     faster than the *first visit*.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个背景下，现在让我们将注意力转回到比较“首次访问”和“每次访问”。*首次访问*是无偏的，但方差较高。*每次访问*有偏差，但随着试验次数的增加，偏差会下降到零。此外，*每次访问*方差较低，通常比*首次访问*更快地收敛到真实值估计。
 - en: Control with Monte Carlo
+  id: totrans-78
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基于蒙特卡洛的控制
 - en: Let’s now talk about control in a model-free setup. You need to find the optimal
     policy in this setup without knowing the model dynamics. As a refresher, let’s
     look at the generalized policy iteration (GPI) that was introduced in Chapter
@@ -569,8 +686,10 @@
     improve the policy using greedy optimization. You will follow the same GPI approach
     for control under MC. You will have some tweaks, though, to account for the fact
     that you are in a model-free world with no access/knowledge of transition dynamics.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来讨论在无模型设置中的控制问题。在这个设置中，你需要找到最优策略，而无需了解模型动态。作为一个复习，让我们回顾一下在第[3](502835_2_En_3_Chapter.xhtml)章中引入的广义策略迭代（GPI）。在GPI中，你会在两个步骤之间迭代。第一步是找到一个给定策略的状态值，第二步是使用贪婪优化来改进策略。你将遵循相同的GPI方法来处理MC下的控制。不过，你将有一些调整，以考虑到你处于一个无模型的世界，没有访问/了解过渡动态。
 - en: Chapter [3](502835_2_En_3_Chapter.xhtml) looked at state values, *v*(*s*). However,
     in the absence of transition dynamics, state values alone will not be sufficient.
     For the greedy improvement step, you need access to the action values, *q*(*s*,
@@ -578,8 +697,12 @@
     *a*) for all possible actions *a* in state *S* = *s*. Only with that information
     will you be able to apply a greedy maximization to pick the best action—that is,
     *argmax*[*a*]*q*(*s*, *a*)*.*
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 第[3](502835_2_En_3_Chapter.xhtml)章探讨了状态值，*v*(*s*)。然而，在没有过渡动态的情况下，仅状态值是不够的。对于贪婪改进步骤，你需要访问动作值，*q*(*s*,
+    *a*)。你需要知道所有可能动作的*q*值——即所有可能的动作*a*在状态*S* = *s*中的所有*q*(*S* = *s*, *a*)。只有有了这些信息，你才能应用贪婪最大化来选择最佳动作——即*argmax*[*a*]*q*(*s*,
+    *a*)*。
 - en: There is another complication when compared to DP. The agent follows a policy
     at the time of generating the samples. However, such a policy may result in many
     state-action pairs never being visited, and even more so if the policy is a deterministic
@@ -590,37 +713,52 @@
     a random state-action pair and over the course of many episodes covers each state-action
     pair enough times as a starting point*.* Ideally, an infinite number of times
     in the limit.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 与DP相比，还存在另一个复杂问题。在生成样本时，智能体遵循一个策略。然而，这样的策略可能导致许多状态-动作对从未被访问，如果策略是确定性的，则更是如此。如果智能体没有访问给定状态的状态-动作对，它就不知道该状态的所有*q*(*s*,
+    *a*)。因此，它无法找到产生最大*q*值的动作。解决这个问题的方法之一是通过*探索开始*确保足够的探索——也就是说，确保智能体从一个随机的状态-动作对开始一个剧集，并在许多剧集的过程中足够多次地将每个状态-动作对作为起点*。*理想情况下，在极限情况下无限次。
 - en: Figure [4-5](#Fig5) shows the GPI diagram with one change, *v*-values being
     replaced by *q*-values. The evaluation step now is the MC prediction step that
     I talked about in the previous section. Once the q-values stabilize, greedy maximization
     can be applied to obtain a new policy. The policy improvement theorem ensures
     that the new policy will be better or at least as good as the old policy.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[4-5](#Fig5)显示了GPI图的一个变化，*v*值被*q*值所取代。评估步骤现在是我之前章节中提到的MC预测步骤。一旦q值稳定，就可以应用贪婪最大化来获得新的策略。策略改进定理确保新策略将比旧策略更好或至少一样好。
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig5_HTML.jpg)'
+  id: totrans-83
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig5_HTML.jpg)'
 - en: A diagram illustrates an iterative process with two steps labeled evaluation
     and improvement. Arrows indicate a cycle between the two, with Q leading to pi
     in evaluation and pi leading back to Q in improvement, where pi is influenced
     by a function greedy Q.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个图示说明了包含两个步骤的迭代过程，这两个步骤分别标记为评估和改进。箭头表示这两个步骤之间的循环，其中Q在评估中导致π，而在改进中π返回到Q，其中π受到一个贪婪Q函数的影响。
 - en: Figure 4-5
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-5
 - en: Iteration between the two steps. The first step evaluates to get the state-action
     values in sync with the policy being followed. The second step performs policy
     improvement to do a greedy maximization for actions
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 两个步骤之间的迭代。第一步评估以获得与正在遵循的策略同步的状态-动作值。第二步执行策略改进，对动作进行贪婪最大化。
 - en: This approach of GPI will be a recurring theme. Based on the setup, the evaluation
     steps will change, and the improvement step invariably will continue to be greedy
     maximization.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种GPI方法将是一个反复出现的主题。根据设置，评估步骤将改变，而改进步骤无疑将继续是贪婪最大化。
 - en: The assumption of “exploring starts” is not very practical and efficient. It’s
     not practical, as in many scenarios, because the agent does not get to choose
     the starting condition, for example, while training a self-driving car. It may
@@ -628,8 +766,10 @@
     pair infinite times in limit. However, you still need continued exploration for
     the agent to visit all the actions in the states that are visited by the current
     policy. This is achieved by using an *ε-greedy policy.*
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: “探索开始”的假设并不非常实用和高效。它不实用，因为在许多场景中，因为智能体无法选择起始条件，例如，在训练自动驾驶汽车时。它可能不可行，并且智能体在极限情况下无限次访问每个状态-动作对可能也是浪费的。然而，为了使智能体访问当前策略访问过的状态中的所有动作，你仍然需要持续探索。这是通过使用*ε-贪婪策略*来实现的。
 - en: In an *ε*-greedy policy, the agent takes the action with the maximum q-value
     with the probability 1 − ϵ, and it takes any action randomly with probability
     ![$$ \frac{\upvarepsilon}{\left|A\right|} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq2.png).
@@ -638,19 +778,23 @@
     words, the agent *exploits* the knowledge with probability 1-ε, and it *explores*
     with probability ε. You will see this concept of exploration and exploitation
     being repeated in RL.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \uppi \left(\mathrm{a}|\mathrm{s}\right)=\left\{\begin{array}{c}1-\upvarepsilon
     +\frac{\upvarepsilon}{\left|\mathrm{A}\right|}\mathrm{fora}={\mathrm{a}\mathrm{rgmax}}_{\mathrm{a}}\mathrm{Q}\left(\mathrm{s},\mathrm{a}\right)\\
     {}\frac{\upvarepsilon}{\left|\mathrm{A}\right|}\kern3em \mathrm{otherwise}\kern5.5em
     \end{array}\right. $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ3.png)'
+  id: totrans-90
   prefs: []
   type: TYPE_IMG
 - en: (4-3)
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
 - en: The action with a maximum *q*-value gets picked with probability 1 − ϵ from
     greedy max. All actions are picked up with a probability ϵ/|*A*|.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
 - en: While ϵ-greedy solves the problem of exploring all possible pairs of *s*, *a*,
@@ -660,6 +804,7 @@
     some harm to objects/people around it. So how do you fix it? An easy fix is to
     reduce the value of ϵ as the episode count increases and in limit you let ϵ → 0\.
     This lets the agent learn the optimal greedy policy in the limit.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
 - en: 'Let’s make one more refinement to the estimation/prediction step of the iteration.
@@ -674,45 +819,62 @@
     the estimation/prediction step, thereby making the approach scalable for large
     MDPs. Similar to Figure [3-11](502835_2_En_3_Chapter.xhtml#Fig11), such an approach
     will produce convergence, as shown in Figure [4-6](#Fig6).'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig6_HTML.jpg)'
+  id: totrans-95
   prefs: []
   type: TYPE_IMG
 - en: A diagram illustrates the iterative process between two steps, such as pi equals
     epsilon minus greedy Q and Q equals q pi. Arrows indicate optimization steps.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-6
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
 - en: Iteration between the two steps. The first step is the MC prediction/evaluation
     for a single step to move the q-values in the direction of the current policy.
     The second step is that of policy improvement to do a ε-greedy maximization for
     actions
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这两个步骤之间进行迭代。第一步是对单步进行 MC 预测/评估，以使 q 值朝着当前策略的方向移动。第二步是策略改进，进行 ε-greedy 动作最大化。
 - en: Combining the two tweaks, you now have a practical algorithm for Monte Carlo–based
     control for optimal policy learning. This is called *greedy in the limit with
     infinite exploration* (GLIE). You will use the *every-visit* version in the *q*-value
     prediction step. To make it first-visit, you just need a minor tweak, like the
     one you saw in MC prediction in Figure [4-2](#Fig2). The GLIE pseudocode is given
     in Figure [4-7](#Fig7).
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 结合这两个调整，你现在有一个基于蒙特卡洛控制的实际算法，用于最优策略学习。这被称为“极限贪婪，无限探索”（GLIE）。你将在 *q*-值预测步骤中使用“每次访问”版本。要使其成为“首次访问”，你只需要进行一些小的调整，就像你在图
+    [4-2](#Fig2) 中的 MC 预测中看到的那样。GLIE 伪代码在图 [4-7](#Fig7) 中给出。
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig7_HTML.jpg)'
+  id: totrans-100
   prefs: []
   type: TYPE_IMG
+  zh: '![图 4-7](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig7_HTML.jpg)'
 - en: A screenshot of the policy optimization pseudocode with initialization, episode
     sampling, and policy updates using an epsilon-greedy strategy.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 政策优化的伪代码截图，包括初始化、剧集采样和使用 ε-greedy 策略进行策略更新。
 - en: Figure 4-7
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-7
 - en: Every-visit (GLIE) MC control for policy optimization
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 政策优化的每次访问（GLIE）MC控制
 - en: Start with *q*-values *Q*(*s*, *a*) = 0 and visit counts *N*(*s*, *a*) = 0 for
     all (*s*, *a*) pairs. Then you initialize a random policy like a policy with equal
     probability for all actions in a state. The main thing to note is that you can
@@ -721,8 +883,10 @@
     in each iteration of the loop use the rolled out state, action, reward tuples
     to first do one step of prediction followed by greedy maximization, as shown in
     the pseudocode.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 从 *q*-值 *Q*(*s*, *a*) = 0 和访问计数 *N*(*s*, *a*) = 0 开始，对所有 (*s*, *a*) 对进行初始化。然后你初始化一个随机策略，例如在状态中所有动作具有相同概率的策略。需要注意的是，只要特定状态中的每个动作都有非零概率，你就可以使用任何随机策略。主循环是多次执行策略的回滚，并在循环的每次迭代中使用回滚出的状态、动作、奖励三元组，首先进行一步预测，然后进行贪婪最大化，如伪代码所示。
 - en: Let’s now look at the actual implementation given in `4.b-mc-control.ipynb`.
     Listing [4-2](#PC2) shows the Python code implementation of the main loop in GLIE.
     The implementation follows the pseudocode. The `argmax_a()` function finds the
@@ -730,11 +894,17 @@
     returns an ϵ-greedy action for the current policy. As a coding exercise, you may
     want to make tweaks and convert it into the “first-visit” variant. You can also
     compare the result of the “first-visit” with the “every-visit” MC control.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们看看在 `4.b-mc-control.ipynb` 中给出的实际实现。列表 [4-2](#PC2) 展示了 GLIE 中主循环的 Python
+    代码实现。该实现遵循伪代码。`argmax_a()` 函数找到一个给定状态下的 `max Q(s,a)` 动作。另一个函数 `get_action(state)`
+    返回当前策略的 ϵ-greedy 动作。作为一个编码练习，你可能想要对其进行调整并将其转换为“首次访问”变体。你也可以比较“首次访问”与“每次访问”MC控制的输出结果。
 - en: '[PRE1]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: So far in this chapter, you have studied on-policy algorithms for prediction
     and control. In other words, the same policy is used to generate samples as well
     as do policy improvement. Policy improvement is done with respect to *q*-values
@@ -752,20 +922,27 @@
     updates) and MC (i.e., no need to know system dynamics). However, before I dive
     deep into TD methods, let’s go through a short section to introduce and then compare
     on-policy versus off-policy learning.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，在本章中，你已经研究了预测和控制方面的on-policy算法。换句话说，相同的策略既用于生成样本，也用于策略改进。策略改进是基于相同ε-greedy策略的*Q*值进行的。你需要探索以找到所有状态-动作对的*Q*(*s*,
+    *a*)，这通过使用ε-greedy策略来实现。然而，随着你不断进步，极限下的ε-greedy策略是次优的。随着你对环境的理解随着越来越多的剧集而增长，你需要更多地利用。你也看到，虽然从理论上讲，策略将收敛到最优策略，但有时需要仔细控制ε值。MC方法的另一个大缺点是，你需要每个剧集完成之后才能更新*Q*值并执行策略优化。因此，MC方法只能应用于周期性的环境，其中剧集会终止。从下一节开始，你将开始研究一类不同的算法，称为*时序差分*方法，它结合了DP（单步更新）和MC（即不需要知道系统动力学）的优点。然而，在我深入探讨TD方法之前，让我们通过一个简短的章节来介绍并比较on-policy与离政策学习。
 - en: Off-Policy MC Control
+  id: totrans-108
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 离政策MC控制
 - en: In GLIE, you saw that to explore enough, you needed to use ε-greedy policies
     so that all state actions are visited often enough in limit. The policy learned
     at the end of the loop is used to generate the episodes for the next iteration
     of the loop. You are using the same policy to explore as the one that is being
     maximized. Such an approach is called *on-policy,* where samples are generated
     from the same policy that is being optimized.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 在GLIE中，你看到为了充分探索，你需要使用ε-greedy策略，以确保所有状态动作在极限情况下被频繁访问。循环结束时学习的策略用于生成下一次循环迭代的剧集。你正在使用与正在最大化的策略相同的策略来探索。这种做法被称为*on-policy*，其中样本是从正在优化的相同策略中生成的。
 - en: In many cases this is not very efficient. The episodes you have collected in
     the past have to be thrown away and a new set of episodes must be generated. In
     the real world or where generating episodes is expensive, the throwing away of
@@ -774,15 +951,19 @@
     optimized. You have no separate ability to control exploration. Even the ϵ in
     the ϵ-greedy policy needs to be reduced to zero as training progresses, making
     exploration harder.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 在许多情况下，这并不非常高效。你过去收集的剧集必须被丢弃，并必须生成一套新的剧集。在现实世界或生成剧集成本高昂的情况下，丢弃旧剧集会导致效率低下或训练过程缓慢。另一个问题是，探索未探索部分的能力取决于正在优化的策略。你没有单独控制探索的能力。即使是ε-greedy策略中的ε也需要随着训练的进行而减少到零，这使得探索更加困难。
 - en: Stated differently, the optimal policy control method is seeking to learn action-values
     conditional on optimal behavior from the starting (state, action) pair but the
     agent also needs to behave sub-optimally in order to explore all actions in all
     states so that it can find the maximizing actions in all the states seen in the
     rollouts.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 换句话说，最优策略控制方法试图从起始（状态，动作）对学习条件于最优行为的动作值，但代理也需要表现出次优行为，以便探索所有状态中的所有动作，以便在所有看到的滚动状态中找到最大化动作。
 - en: There is another approach in which the samples are generated using a policy
     that is more exploratory with a higher ϵ, while the policy being optimized is
     the one that may have a lower ϵ or could even be a fully deterministic one. Such
@@ -794,31 +975,37 @@
     used to generate samples is the same as the one which is optimized. In the on-policy
     approach, the samples are discarded after each policy update as the samples become
     stale and are no more on-policy after the policy update.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: This approach makes the process more complex and needs careful mathematical
     handing in the form of *importance sampling**,* discussed next. You will first
     derive a concise expression for importance sampling and then see its use for off-policy
     approach.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
 - en: Importance Sampling
+  id: totrans-114
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Mathematically, if you want to estimate the expected value of a function *f*
     under a distribution *p*, but you have samples from distribution *q*, the importance
     sampling estimator is given by:'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {E}_p\left[f\right]\approx \frac{1}{N}{\sum}_{i=1}^N\frac{p\left({x}_i\right)}{q\left({x}_i\right)}f\left({x}_i\right)
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equj.png)'
+  id: totrans-116
   prefs: []
   type: TYPE_IMG
 - en: Where *E*[*p*][ *f* ] is the expected value of *f* under distribution *p*. *x*[*i*]
     are the samples drawn from distribution *q* and *N* is the number of samples.
     The term ![$$ \frac{p\left({x}_i\right)}{q\left({x}_i\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq3.png)
     is called the importance weight or importance ratio.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
 - en: Imagine you’re a teacher and you want to know the average grade of all the students
@@ -826,12 +1013,14 @@
     math club. The students in the math club might be better at math than the average
     student, so their grades might be higher. To get an estimate of the average grade
     of all students using only the math club’s grades, you can use importance sampling.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
 - en: Here, *p* is the distribution of grades for all students. *q* is the distribution
     of grades for the math club students. *f* is the grade itself. You would weigh
     each math club student’s grade by the ratio of the probability that a random student
     gets that grade to the probability that a math club student gets that grade.
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
 - en: 'Having seen this introduction, let’s now look at importance sampling in the
@@ -839,39 +1028,47 @@
     state *S*[*t*] and the trajectory of action and state sequences until the end
     of the episode, *A*[*t*], *S*[*t* + 1], *A*[*t* + 1], ⋯, *S*[*T*]. The probability
     of observing the sequence under a policy *π* is given by the following expression:'
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\Pr}_{\uppi}\left\{\mathrm{trajectory}\right\}=\uppi \left({A}_t|{S}_t\right)\cdotp
     p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp \uppi \left({A}_{t+1}|{S}_{t+1}\right)\cdots
     p\left({S}_T|{S}_{T-1},{A}_{T-1}\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equk.png)'
+  id: totrans-121
   prefs: []
   type: TYPE_IMG
 - en: 'Similarly, the probability of observing the sequence under a behavior policy
     *b* is given by the following expression:'
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\Pr}_b\left\{\mathrm{trajectory}\right\}=b\left({A}_t|{S}_t\right)\cdotp
     p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp b\left({A}_{t+1}|{S}_{t+1}\right)\cdots
     p\left({S}_T|{S}_{T-1},{A}_{T-1}\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equl.png)'
+  id: totrans-123
   prefs: []
   type: TYPE_IMG
 - en: The importance sampling ratio is the ratio of the probability of trajectory
     under the target policy *π* and the probability of trajectory under the behavior
     policy *b*.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\uprho}_{t:T-1}=\frac{\Pr_{\uppi}\left\{\mathrm{trajectory}\right\}}{\Pr_b\left\{\mathrm{trajectory}\right\}}
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equm.png)'
+  id: totrans-125
   prefs: []
   type: TYPE_IMG
 - en: 'Substituting the expressions for trajectory probabilities for target policy
     π and behavior policy *b*:'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\uprho}_{t:T-1}=\frac{\uppi \left({A}_t|{S}_t\right)\cdotp p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp
     \uppi \left({A}_{t+1}|{S}_{t+1}\right)\cdots p\left({S}_T|{S}_{T-1},{A}_{T-1}\right)}{b\left({A}_t|{S}_t\right)\cdotp
     p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp b\left({A}_{t+1}|{S}_{t+1}\right)\cdots
     p\left({S}_T|{S}_{T-1},{A}_{T-1}\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equn.png)'
+  id: totrans-127
   prefs: []
   type: TYPE_IMG
 - en: 'You see that the transition probabilities *p*(*S*[*t* + 1]| *S*[*t*], *A*[*t*])
@@ -879,23 +1076,28 @@
     environment and have nothing to do with the policy agent follows. You can cancel
     then from both numerator and denominator. This gives you the final form of the
     importance sampling ratio:'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\uprho}_{t:T-1}=\frac{\Pr_{\uppi}\left\{\mathrm{trajectory}\right\}}{\Pr_b\left\{\mathrm{trajectory}\right\}}={\prod}_{k=t}^{T-1}\frac{\uppi
     \left({A}_k|{S}_k\right)}{b\left({A}_k|{S}_k\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ4.png)'
+  id: totrans-129
   prefs: []
   type: TYPE_IMG
 - en: (4-4)
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
 - en: 'Having derived the expression for importance sampling in the context of a trajectory
     rollout, let’s look at why you need it. What is it that you are trying to estimate
     in MC methods? You are using average of sample rollouts from a starting state/action
     and these rollouts are observed under a target policy π:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_{\uppi}\left(s,a\right)={E}_{\uppi}\left[{G}_t|{S}_t=s,{A}_T=a\right]
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equo.png)'
+  id: totrans-132
   prefs: []
   type: TYPE_IMG
 - en: 'Remember that *G*[*t*] is the return of the episode starting from *S*[*t*],
@@ -904,10 +1106,12 @@
     do not see this specific trajectory with same frequency as you would under the
     target policy π. Taking a simple average of returns across all rollouts under
     behavior policy *b* will give you the following:'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_{\mathrm{b}}\left(s,a\right)={E}_{\mathrm{b}}\left[{G}_t|{S}_t=s,{A}_T=a\right]
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equp.png)'
+  id: totrans-134
   prefs: []
   type: TYPE_IMG
 - en: 'The *q*-value you get while following policy *b* is a *q*-value applicable
@@ -916,13 +1120,16 @@
     on the relative chance of observing a trajectory under the target policy versus
     the chance of observing the same trajectory under the behavior policy. One single
     rollout estimate of *Q*(*S*[*t*], *A*[*t*]) under π is given as:'
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_{\uppi}\left({S}_t,{A}_t\right)={\uprho}_{t:T-1}\cdotp {G}_t $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equq.png)'
+  id: totrans-136
   prefs: []
   type: TYPE_IMG
 - en: Where *G*[*t*] is the return observed in a single episode when agent in state
     *S*[*t*] takes action *A*[*t*] and then follows behavior policy *b* until termination.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
 - en: You observe multiple rollouts under policy *b* from stating point (*S*[*t*],
@@ -930,23 +1137,28 @@
     ρ[*t* : *T* − 1] to map the returns back to the target policy, and then take the
     average of all the adjusted returns to form an estimate of state-action values
     under that policy.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
 - en: When taking the average, you have two options. The first option is to add all
     the returns and divide that by the number of rollouts. This approach is called
     *ordinary importance sampling*.
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_{\uppi}\left({S}_t,{A}_t\right)=\frac{\sum {\uprho}_{t:T-1}{G}_t}{N}
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equr.png)'
+  id: totrans-140
   prefs: []
   type: TYPE_IMG
 - en: 'The second option is to divide the sum of the importance sampling ratios across
     all the rollouts. This version is called *weighted importance sampling*:'
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_{\uppi}\left({S}_t,{A}_t\right)=\frac{\sum {\uprho}_{t:T-1}{G}_t}{\sum
     {\uprho}_{t:T-1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equs.png)'
+  id: totrans-142
   prefs: []
   type: TYPE_IMG
 - en: Both the versions have pros and cons. Nothing comes for free, which is the case
@@ -956,67 +1168,83 @@
     which look at the importance sampling and rewards in various different ways to
     reduce the variance and to make these algorithms efficient. For more details,
     you can refer to RL book by Sutton and Barto.^([1](#Fn1))
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
 - en: The key point to keep in mind is that the weighted-importance sampling method
     has a much lower error when the number of episodes is smaller and the weighted
     sampling approach has a bias that is higher initially but goes to zero as numbers
     of episodes increase.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
 - en: 'Similar to the *first-visit* MC prediction, you can use a formula to calculate
     running average. Suppose you have a sequence of returns *G*[1], *G*[2], ⋯, *G*[*n* − 1]
     all in the same starting state and action and each has a corresponding weight
     *W*[*i*] (*W*[*i*] = ρ[*t* : *T* − 1]). The weighted average is calculated as:'
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_n=\frac{\sum_{k=1}^{n-1}{W}_k{G}_k}{\sum_{k=1}^{n-1}{W}_k} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equt.png)'
+  id: totrans-146
   prefs: []
   type: TYPE_IMG
 - en: 'Now define ![$$ {C}_{n-1}={\sum}_{k=1}^{n-1}{W}_k $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq4.png).
     The revised formula for *Q*[*n*] will be:'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_n=\frac{\sum_{k=1}^{n-1}{W}_k{G}_k}{C_{n-1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equu.png)'
+  id: totrans-148
   prefs: []
   type: TYPE_IMG
 - en: 'A new return *G*[*n*] arrives. The updated estimate and running total of weights
     will be:'
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_{n+1}=\frac{\sum_{k=1}^n{W}_k{G}_k}{{\mathrm{C}}_{\mathrm{n}}}={q}_n+\frac{W_n}{C_n}\left[{G}_n-{Q}_n\right]
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equv.png)'
+  id: totrans-150
   prefs: []
   type: TYPE_IMG
 - en: '![$$ {C}_n={C}_{n-1}+{W}_n $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equw.png)'
+  id: totrans-151
   prefs: []
   type: TYPE_IMG
 - en: Figure [4-8](#Fig8) shows the pseudocode of the off-policy MC control employing
     the previous idea.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig8_HTML.jpg)'
+  id: totrans-153
   prefs: []
   type: TYPE_IMG
 - en: A screenshot of an algorithm for off-policy Monte Carlo control optimization.
     It includes steps for initializing variables, generating episodes following a
     behavior policy, and iteratively updating the state-action values using weighted
     importance sampling to optimize the control policy.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-8
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
 - en: Off-policy MC control for policy optimization
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
 - en: This completes the topic of the MC approach. The biggest issue with the MC approach
     is that you need to wait for an episode to terminate before you can update the
     q-values. The next sections looks at another approach that takes care of this
     issue.
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
 - en: Temporal Difference Learning Methods
+  id: totrans-158
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1026,10 +1254,12 @@
     over action probabilities based on the policy being followed and then from the
     (*s*, *a*) pair to all possible rewards and successor states. This is as expressed
     in the equation for state value calculation:'
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {v}_{\pi }(s)={\sum}_a\pi \left(a|s\right){\sum}_{s^{\prime },r}p\left({s}^{\prime
     },r\right|s,a\Big)\left[r+\gamma {v}_{\pi}\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equx.png)'
+  id: totrans-160
   prefs: []
   type: TYPE_IMG
 - en: 'The value of a state *v*[*π*](*s*) is estimated based on the current estimate
@@ -1046,18 +1276,22 @@
     for episodic environments, and the updates happen only at the end of the termination
     of an episode. DP had the advantage of using an estimate of the successor state
     to update the current state value without waiting for an episode to finish.'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
 - en: 'Temporal difference learning is an approach that combines the benefits of both
     DP and MC, using bootstrapping from DP and the sample-based approach from MC.
     The update equation for TD is as follows:'
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ V(s)=V(s)+\alpha \left[R+\gamma \ast V\left({s}^{\prime}\right)-V(s)\right]
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ5.png)'
+  id: totrans-163
   prefs: []
   type: TYPE_IMG
 - en: (4-5)
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
 - en: The current estimate of the total return for state *S* = *s*, that is, *G*[*t*],
@@ -1065,6 +1299,7 @@
     (*s*^′) shown in the sample run. In other words, *G*[*t*] in Equation [4-2](#Equ2)
     is replaced by *R* + γ · *V*(*s*^′), an estimate. Compared to this, in the MC
     method, *G*[*t*] was the discounted sum of rewards seen in the rollout of an episode.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
 - en: The TD approach described is known as *TD*(0), and it is a one-step estimate.
@@ -1072,21 +1307,26 @@
     when you learn about *TD*(*λ*) and see that this one-step approach corresponds
     to *λ* = 0\. For clarity’s sake, look at the pseudocode in Figure [4-9](#Fig9)
     for the value estimation approach under *TD*(0).
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig9_HTML.jpg)'
+  id: totrans-167
   prefs: []
   type: TYPE_IMG
 - en: A screenshot of a pseudocode outlines the policy optimization algorithm for
     estimating state values in a policy pi. It includes initialization of state values,
     a loop for episodes with action sampling, reward observation, and value updates
     using a clipped surrogate objective function.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-9
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
 - en: TD(0) policy estimation
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
 - en: Having seen all three approaches—DP, MC, and TD—consider the backup diagrams
@@ -1102,20 +1342,25 @@
     sample the episodes and use the observed rewards; MC is the sum total of rewards
     all the way to termination while TD(0) is the sum of immediate reward and estimate
     of value of the next state *s*^′.
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig10_HTML.jpg)'
+  id: totrans-172
   prefs: []
   type: TYPE_IMG
 - en: A set of three diagrams labeled as D P estimation, M C estimation, and T D respectively.
     Each diagram features a series of circles connected by arrows to represent states
     and transitions in a backup diagram.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-10
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
 - en: Backup diagram of DP, MC, and TD(0) compared
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
 - en: 'I now introduce another quantity that you are likely to see again and again
@@ -1126,13 +1371,16 @@
     With these insights, you can interpret Equation [4-5](#Equ5) as an update that
     is moving the estimate from *V*(*s*) to *V*(*s*) + α(Difference) where the difference
     δ[*t*] is given by the following expression:'
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\delta}_t={R}_{t+1}+\gamma \ast V\left({S}_{t+1}\right)-V\left({S}_t\right)
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ6.png)'
+  id: totrans-177
   prefs: []
   type: TYPE_IMG
 - en: (4-6)
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
 - en: The difference *δ*[*t*] is known as a *TD* *error*. It represents the error
@@ -1140,6 +1388,7 @@
     discounted next time-step state value *V*(*S*[*t* + 1]) and the current estimate
     *V*(*S*[*t*]). The value of the state is moved by a proportion (a.k.a. learning
     rate or step rate α) of this error δ[*t*].
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
 - en: TD has an advantage over DP as it does not require the model knowledge (transition
@@ -1147,12 +1396,16 @@
     the state value at every step—that is, they can be used in an online setup through
     which you learn as the situation unfolds without waiting for the end of episode
     or they can also be used for continuing tasks which has no termination.
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 与动态规划（DP）相比，时间差分（TD）方法的优势在于它不需要模型知识（转移函数）。此外，TD方法在蒙特卡洛（MC）方法上也有优势。TD方法可以在每一步更新状态值——也就是说，它们可以用于在线设置，通过这种方式，您可以在情况展开时学习，而无需等待剧集结束；它们也可以用于持续的任务，这些任务没有终止。
 - en: Temporal Difference Control
+  id: totrans-181
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 时间差分控制
 - en: This section starts your journey into the realm of the real algorithms used
     in reinforcement learning. In the remaining sections of the chapter, you will
     learn about various methods used under TD learning. I will start with a simple
@@ -1161,8 +1414,10 @@
     aspects of Q-learning in this chapter, and in the next chapter, you will integrate
     deep learning with Q-learning, giving you a powerful approach called Deep Q Networks
     (DQN). Using DQN, you will be able to train game-playing agents on an Atari simulator.
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节开始您进入强化学习中实际使用的算法领域的旅程。在本章的剩余部分，您将了解在TD学习下使用的各种方法。我将从一个简单的单步在线策略学习方法开始，称为*SARSA*。这将随后是一个强大的离线策略技术，称为*Q-learning*。在本章中，您将学习Q学习的一些基础方面，在下一章中，您将集成深度学习与Q学习，这将给您一个强大的方法，称为深度Q网络（DQN）。使用DQN，您将能够在Atari模拟器上训练游戏智能体。
 - en: In this chapter, you will also cover a variant of Q-learning called *expected
     SARSA*, another off-policy learning algorithm. I will then talk about the issue
     of maximization bias in Q-learning, taking you to *double Q-learning*. The advantages
@@ -1181,18 +1436,24 @@
     on deep learning and DQN, I will explain another approach, called *policy optimization,*
     that revolves around directly learning the policy without needing to find the
     optimal state/action values.
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，您还将涵盖Q学习的一个变体，称为*预期SARSA*，另一个离线学习算法。然后，我将讨论Q学习中的最大化偏差问题，带您进入*双重Q学习*。本章后续部分将讨论*双重Q学习*的优势。当与深度学习结合以表示状态空间时，所有Q学习的变体都变得非常强大，这将是下一章的主要内容。在本章的末尾，我将介绍一些额外的概念，如*经验回放*，这些概念使得离线学习算法在需要学习最优策略的样本数量方面效率更高。然后，我将讨论一个强大且稍微复杂的方法，称为*TD*(*λ*)，它将MC和TD方法结合在一个由*λ*控制的连续体上，*λ*的范围在0到1之间。最后，您将查看一个具有连续状态空间的环境，以及为TD方法离散化状态值的方法。练习将证明您将在下一章中采用的方法的需求，包括功能逼近和深度学习用于状态表示。在[5](502835_2_En_5_Chapter.xhtml)和[6](502835_2_En_6_Chapter.xhtml)章关于深度学习和DQN之后，我将解释另一种方法，称为*策略优化*，该方法围绕直接学习策略而无需找到最优状态/动作值展开。
 - en: You have been using the 4×4 grid world so far. You will now look at a few more
     environments that will be used in the rest of the chapter. You will write the
     agents in an encapsulated way so that the same agent/algorithm could be applied
     in various environments without any changes.
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，您一直在使用4x4网格世界。现在，您将查看本章剩余部分将使用的几个更多环境。您将以封装的方式编写智能体，以便相同的智能体/算法可以在各种环境中应用而无需任何更改。
 - en: Cliff Walking
+  id: totrans-185
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 断崖行走
 - en: The first environment you will use is a variant of the grid world; it is part
     of the Gymnasium library called the cliff-walking environment.^([2](#Fn2)) In
     this environment, you have a 4×12 grid world, with the bottom-left cell with coordinates
@@ -1200,12 +1461,14 @@
     being the goal state *G*. The rest of the bottom row ([3,1] .... [3,10]) forms
     a cliff; stepping on it earns a reward of -100, and the agent is put back to the
     start state again.
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
 - en: The observation space represents each time a step earns a reward of -1 until
     the agent reaches the goal state. Similar to the 4×4 grid world, the agent can
     take a step in any direction `[0:UP, 1:RIGHT, 2:DOWN, 3:LEFT]` which is represented
     by a tuple of shape (1,) in the range {0,3}.
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
 - en: 'There are 3 x 12 + 1 possible states. The player cannot be at the cliff, nor
@@ -1215,28 +1478,35 @@
     + current_col` (where both the `row` and `col` start at 0). For example, the stating
     position can be calculated as follows: 3 * 12 + 0 = 36\. The observation is returned
     as an `int()`. The episode terminates when the agent reaches the goal state.'
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
 - en: Figure [4-11](#Fig11) depicts the setup.
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig11_HTML.jpg)'
+  id: totrans-190
   prefs: []
   type: TYPE_IMG
 - en: A grid illustration represents a reinforcement learning environment with a start
     state S and a goal G, separated by a cliff section. The reward is minus 1 for
     all transitions, and stepping on the cliff incurs a reward of minus 100.
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-11
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
 - en: A 4×10 cliff world. There is a reward of -100 for stepping on the cliff and
     -1 for other transitions. The goal is to start from S and reach G with the best
     possible reward
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
 - en: Taxi
+  id: totrans-194
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -1245,11 +1515,13 @@
     in the 5x5 grid world. The taxi starts off at a random square and the passenger
     at one of the designated locations. One of the four squares is chosen randomly
     as the destination location.
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
 - en: The goal is to move the taxi to the passenger’s location, pick up the passenger,
     move to the passenger’s desired destination, and drop off the passenger. Once
     the passenger is dropped off, the episode ends.
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
 - en: The player receives positive rewards for successfully picking and dropping off
@@ -1257,15 +1529,18 @@
     exist for incorrect attempts to pick up/drop off the passenger and for each step
     where another reward is not received. Specifically, the rewards are -1 per time
     step, +20 for successful pick/drop, and -10 for pick/drop from the wrong locations.
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
 - en: There are 500 discrete states since there are 25 taxi positions in the 5x5 grid,
     five possible locations of the passenger (including the case when the passenger
     is in the taxi), and four destination locations.
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
 - en: An observation is returned as an `int()` that encodes the corresponding state,
     calculated by `((taxi_row * 5 + taxi_col) * 5 + passenger_location) * 4 + destination`.
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
 - en: Note that there are 400 states that can actually be reached during an episode.
@@ -1274,6 +1549,7 @@
     Four additional states can be observed right after a successful episode, when
     both the passenger and the taxi are at the destination. This gives a total of
     404 reachable discrete states.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
 - en: There are six actions that can be taken deterministically. The taxi can move
@@ -1282,35 +1558,43 @@
     of car moving in 4 directions, similar to the action values we saw in cliff walking
     environment. Value of 4 is the action of picking up the passenger and 5 represents
     the action of dropping the passenger.
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
 - en: 'The episode ends if the following happens: a) termination, whereby the taxi
     drops off the passenger, or b) truncation (when using the `time_limit` wrapper),
     which is when the length of the episode is 200.'
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
 - en: Figure [4-12](#Fig12) shows the schematic of the environment.
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig12_HTML.jpg)'
+  id: totrans-204
   prefs: []
   type: TYPE_IMG
 - en: An illustration depicts a simplified grid-based representation of a taxi problem
     set on a 5 cross 5 grid. The grid consists of vertical and horizontal dashed lines,
     creating distinct squares. On the right side, there is a street layout with spaces,
     and colored squares.
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-12
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
 - en: 5×5 taxi problem. There is a reward of -1 for all transitions. An episode ends
     when the passenger is dropped off at the destination. The left figure shows the
     schematic as used internally and the right figure shows the visual representation
     created using the PyGame library
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
 - en: Cart Pole
+  id: totrans-208
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -1319,11 +1603,13 @@
     is attached by an unactuated joint to a cart, which moves along a frictionless
     track. The pendulum is placed upright on the cart and the goal is to balance the
     pole by applying forces in the left and right directions on the cart.
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
 - en: '*Action space* is a ndarray with shape (1,) which can take values {0, 1} indicating
     the direction of the fixed force the cart is pushed with. 0 is the action to push
     the cart to the left and 1 is the action to push the cart to the right.'
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
 - en: '*Observation space* is an ndarray with shape (4,) with the values corresponding
@@ -1331,6 +1617,7 @@
     angle, pole angular velocity]`. You can refer to the accompanying documentation
     for the Gymnasium library to get more details on the specific ranges within which
     each of these values operates.'
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
 - en: The reward is +1 at every time step, and the agent wants to maximize the reward
@@ -1339,27 +1626,34 @@
     is beyond 2.4 from the center—that is, either < -2.4 or > 2.4 or if the agent
     is able to balance the pole for 200 time or 500 steps. Figure [4-13](#Fig13) shows
     a snapshot of the environment in action.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig13_HTML.jpg)'
+  id: totrans-213
   prefs: []
   type: TYPE_IMG
 - en: An illustration of the cart-pole problem features a vertical pole balanced on
     a movable cart on a track.
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-13
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
 - en: Cart pole problem. The objective is to balance the pole vertically for the maximum
     number of time steps with a reward of +1 for every time step
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
 - en: Having explained the various environments, let’s now jump into solving these
     with various TD algorithms, starting first with SARSA, an on-policy method.
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
 - en: On-Policy SARSA
+  id: totrans-218
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1370,6 +1664,7 @@
     an optimal policy. Therefore, similar to the MC method, you can use an ϵ-greedy
     policy and slowly reduce the ϵ value to zero—that is, in the limit as number of
     episodes increase, bring down the exploration to zero.
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
 - en: TD setup is model-free—that is, you have no prior comprehensive knowledge of
@@ -1382,24 +1677,30 @@
     *V*(*s*) with *Q*(*s*, *a*). Both the setups are Markov processes, with Equation
     [4-5](#Equ5) focusing on state-to-state transitions and Equation [4-7](#Equ7)
     shifting the focus to being state-action to state-action.
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha
     \cdotp \left[{R}_{t+1}+\upgamma \cdotp Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right]
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ7.png)'
+  id: totrans-221
   prefs: []
   type: TYPE_IMG
 - en: (4-7)
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
 - en: Similar to Equation [4-6](#Equ6), the TD error is now given in context of *q*-values.
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\delta}_t={R}_{t+1}+\gamma \cdotp Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ8.png)'
+  id: totrans-224
   prefs: []
   type: TYPE_IMG
 - en: (4-8)
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
 - en: To carry out an update as per Equation [4-7](#Equ7), you need all the five values
@@ -1411,6 +1712,7 @@
     The policy improvement theorem guarantees that the new policy will be better than
     the old policy unless the old policy was already optimal. Of course, for the guarantee
     to hold, you need to bring down the exploration probability ε to zero in the limit.
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
 - en: 'Note that for all episodic policies, the terminal states have *Q*(*S*, *A*)
@@ -1419,40 +1721,50 @@
     episode ends and *Q*(*S*, *A*) is zero for all terminal states. Therefore, when
     *S*[*t* + 1] is a terminal state, Equation [4-7](#Equ7) will have *Q*(*S*[*t* + 1],
     *A*[*t* + 1]) = 0, and the update equation will look like this:'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha
     \cdotp \left[{R}_{t+1}-Q\left({S}_t,{A}_t\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ9.png)'
+  id: totrans-228
   prefs: []
   type: TYPE_IMG
 - en: (4-9)
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s now look at the pseudocode of the SARSA algorithm; see Figure [4-14](#Fig14).
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig14_HTML.jpg)'
+  id: totrans-231
   prefs: []
   type: TYPE_IMG
 - en: A screenshot of a reinforcement learning pseudocode for the Sarsa, Q-learning,
     and expected Sarsa algorithms. It includes initialization, policy definition,
     and value update rules.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-14
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
 - en: SARSA, on-policy TD control
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
 - en: The pseudocode starts with initializing all *Q* values with zero and an *ϵ*-greedy
     policy *π*. You iterate over multiple episodes and for each step in an episode,
     you carry out updates to state-action q-values using Equations [4-7](#Equ7) or
     [4-9](#Equ9). You also optionally reduce the exploration by driving ϵ → 0.
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
 - en: After enough iterations or once the change in *q*-values reduces below a threshold,
     you can return the final policy by finding the maximizing action for each state.
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
 - en: 'Let’s now walk through the code in `4.c-sarsa-on-policy.ipynb`, which implements
@@ -1470,11 +1782,14 @@
     loop from Figure [4-14](#Fig14). The training code, which implements the training
     loop from Figure [4-14](#Fig14), is given in Listing [4-4](#PC4). For the rest
     of the code, refer to the notebook.'
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-238
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Listing [4-4](#PC4) contains the code for the training agent. It implements
     the complete SARSA algorithm. The outer loop goes over `range(episode_cnt)` and
     implements the outer loop from pseudocode to run agent over `episode_cnt` episodes.
@@ -1483,11 +1798,14 @@
     the `action=agent.get_action(state)` call. The `agent.update(...)` call carries
     out the SARSA update, as shown in Listing [4-3](#PC3). You also reduce the epsilon
     exploration toward the end of inner loop with the help of `agent.epsilon = agent.epsilon*0.99`
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE3]'
+  id: totrans-240
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Figure [4-15](#Fig15) shows the graph of per-episode-reward as learning proceeds.
     You can see that the reward soon gets close to the optimal value. Figure [4-15](#Fig15)
     also shows the optimal policy learned. In the `4.c-sarsa-on-policy.ipynb` notebook,
@@ -1495,30 +1813,38 @@
     [4-5](#PC5). It is implemented by wrapping the environment with `DummyVecEnv`
     and the `VecVideoRecorder` environment class provided under the `state-baseline-3`
     library.
+  id: totrans-241
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig15_HTML.jpg)'
+  id: totrans-242
   prefs: []
   type: TYPE_IMG
 - en: A line graph of return per episode versus episode number. The line Sarsa fluctuates
     and ascends. The mean reward stabilizes around minus 17.0 after initial learning.
     A set of policies learned by the agent is listed.
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-15
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
 - en: Reward graph during learning under SARSA and policy learned by the agent
+  id: totrans-245
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE4]'
+  id: totrans-246
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: The policy learned is to avoid the cliff by first going all the way up and then
     taking a right turn to walk toward the goal. This is surprising, as you would
     have expected the agent to learn the policy to skirt over the cliff and reach
     the goal, which would have been the shortest path by four steps as compared to
     the one learned by the agent.
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
 - en: This can be explained due to exploration in ϵ-greedy policy. As the policy continues
@@ -1533,6 +1859,7 @@
     in which off-policy learning is carried out using an exploratory behavior policy
     to generate training samples and a deterministic policy is learned as the optimal
     target policy.
+  id: totrans-248
   prefs: []
   type: TYPE_NORMAL
 - en: In the `4.c-sarsa-on-policy.ipynb` notebook`,` you also have code for running
@@ -1543,12 +1870,15 @@
     the trained agent to the HuggingFace hub. Refer to the `2.c-First-Agent.ipynb`
     notebook for the relevant upload code. And if you do, please, tag me. My HuggingFace
     ID is `nsanghi`.
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
 - en: The next section studies the first off-policy TD algorithm, called *Q-learning*.
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
 - en: 'Q-Learning: An Off-Policy TD Control'
+  id: totrans-251
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1559,6 +1889,7 @@
     what if you looked at all the *Q*(*S*^′, *A*^′) and chose the action *A*^′, which
     maximizes the value of *Q*(*S*^′, *A*^′) across actions *A*^′ available in state
     *S*^′?
+  id: totrans-252
   prefs: []
   type: TYPE_NORMAL
 - en: You could continue to generate the samples (*S*, *A*, *R*, *S*^′) (notice no
@@ -1570,6 +1901,7 @@
     control method where the samples (*S*, *A*, *R*, *S*^′) are being generated by
     an exploratory policy, while you maximize *Q*(*S*^′, *A*^′) to find a deterministic
     optimal target policy.
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
 - en: You are using exploration with the ϵ-greedy policy to generate the samples (*S*,
@@ -1580,17 +1912,21 @@
     the optimal policy value as Q values converges to its fixed point. Using greedy
     policy for exploration and then exploiting the knowledge to find the deterministic
     policy is optimal.
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
 - en: 'The update rule for q-values is now defined as follows:'
+  id: totrans-255
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha
     \cdotp \left[{R}_{t+1}+\upgamma \cdotp \underset{A_{t+1}}{\mathit{\max}}Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right]
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ10.png)'
+  id: totrans-256
   prefs: []
   type: TYPE_IMG
 - en: (4-10)
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
 - en: Comparing the previous equation with Equation [4-7](#Equ7), you will notice
@@ -1599,21 +1935,26 @@
     the approach sample efficient. I will touch upon this in a later section when
     I talk about *experience replay* or *replay buffer*. Figure [4-16](#Fig16) lists
     the pseudocode of Q-learning.
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig16_HTML.jpg)'
+  id: totrans-259
   prefs: []
   type: TYPE_IMG
 - en: A screenshot depicts steps for implementing Q-learning off-policy T D control
     algorithm. It includes initialization of variables, setting parameters like discount
     factor gamma, learning rate alpha, epsilon-greedy policy pi with epsilon iterating
     over episodes.
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-16
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
 - en: Q-learning, off-policy TD control
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
 - en: If you compare the pseudocode of SARSA from Figure [4-14](#Fig14) with the pseudocode
@@ -1622,12 +1963,14 @@
     worry that much about reducing ϵ, the exploration factor. Secondly, you do not
     choose the successor state action *A*^′, rather you take a max over all possible
     *A*^′ in the successor state *S*^′ to define the target in the update rule.
+  id: totrans-263
   prefs: []
   type: TYPE_NORMAL
 - en: Next, let’s look at the Python implementation of the Q-learning pseudocode and
     see how it performs on same environments as before—that is, Cliff world and Taxi.
     Head over to the code in `4.d-qlearning.ipynb`, which shows the implementation
     of Q-learning.
+  id: totrans-264
   prefs: []
   type: TYPE_NORMAL
 - en: Like SARSA, Q-learning agent code is very similar to SARSA agent code in Listings [4-3](#PC3)
@@ -1638,11 +1981,14 @@
     *A*). While in Q-learning the update gets a tuple of only (*S*, *A*, *R*, *S*^′)
     and the update is carried out by finding the best *A*^′ from the current values
     of *Q*(*S*, *A*^′) for *A*^′ applicable in state *S*^′.
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE5]'
+  id: totrans-266
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The training code implementation for the rest of the Q-learning pseudocode from
     Figure [4-16](#Fig16) is given in Listing [4-7](#PC7). Again, the training loop
     for Q-learning is very similar to the training loop for SARSA, as shown in Listing
@@ -1650,11 +1996,14 @@
     *A*^′ using the code `next_action = agent.get_action(next_state).` The update
     rule for Q-Learning just requires `state, action, reward, next_state,` and `terminated`,
     as discussed previously.
+  id: totrans-267
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-268
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Let’s look at Q-learning being applied to the cliff world environment. The reward
     per episode improves with training and reaches the optimal value of -13 as compared
     to that of -17 under SARSA. As shown in Figure [4-17](#Fig17), a better policy
@@ -1669,39 +2018,48 @@
     final policy learned by the agent is a deterministic policy with zero exploration.
     Therefore, the agent learns the most optimal policy of going toward the goal by
     just grazing over the cliff.
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig17_HTML.jpg)'
+  id: totrans-270
   prefs: []
   type: TYPE_IMG
 - en: A line graph of return per episode versus episode number. The line Q learning
     fluctuates and ascends. The mean reward stabilizes around minus 13.0 after initial
     learning. A set of policies learned by the agent is listed.
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-17
+  id: totrans-272
   prefs: []
   type: TYPE_NORMAL
 - en: Reward graph during learning under Q-learning and policy learned by agent
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
 - en: The `4.d-qlearning.ipynb` notebook also has code for running Q-learning on the
     Taxi environment. Like before, it also shows a video of trained agent. I again
     encourage you to apply Q-learning on some other environment form Gymnasium and
     upload your trained agent video to HuggingFace.
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
 - en: I will be revisiting Q-learning in the next chapter on the deep learning approach
     to the state value approximation. Under that setup, Q-learning is called DQN.
     DQN with its variants will be applied to train a game-playing agent on some Atari
     games.
+  id: totrans-275
   prefs: []
   type: TYPE_NORMAL
 - en: To conclude the discussion on Q-learning, let’s look at a particular issue that
     Q-learning may introduce, that of maximization bias.
+  id: totrans-276
   prefs: []
   type: TYPE_NORMAL
 - en: Maximization Bias and Double Learning
+  id: totrans-277
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -1712,6 +2070,7 @@
     themselves of the true state-action values. In summary, you are using a max over
     the q-estimate as an “estimate” of the maximum value. Such an approach of “max
     of estimate” as an “estimate of max” introduces a +ve bias.
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
 - en: 'To see this, consider a scenario where the reward in a transition takes three
@@ -1720,44 +2079,53 @@
     and then it never comes down. So, +5 becomes an estimate of the true reward that
     otherwise in expectation is 0\. This is a positive bias introduced due to maximization
     step.'
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
 - en: 'One of the ways to remove the +ve bias is to use a set of two *q*-values. One
     *q*-value is used to find the action that maximizes the q-value, and the other
     set of q-values is then used to find the q-value for that max action. Mathematically,
     it can be represented as follows:'
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
 - en: Replace ![$$ \underset{A}{\mathit{\max}}Q\left(S,A\right)\ \mathrm{with}\ {Q}_1\left(S,\arg
     \underset{A}{\max }{Q}_2\left(S,A\right)\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq7.png).
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
 - en: You are using *Q*[2] to find the maximizing action *A*, and then *Q*[1] is used
     to find the maximum q-value for that action A chosen earlier. It can be shown
     that such an approach removes the +ve or maximization bias. I will revisit this
     concept when I talk about DQN.
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
 - en: Expected SARSA Control
+  id: totrans-283
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: 'This section looks at another method that is kind of a hybrid between Q-learning
     and SARSA; it’s called *expected SARSA*. It is similar to Q-learning except that
     “max” in 4-10 is replaced with an expectation, as shown here:'
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\alpha \left[{R}_{t+1}+\gamma
     \cdotp {\sum}_{a\in {A}_{t+1}}\pi \left(a|{S}_{t+1}\right)\cdotp Q\left({S}_{t+1},a\right)\hbox{--}
     Q\left({S}_t,{A}_t\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ11.png)'
+  id: totrans-285
   prefs: []
   type: TYPE_IMG
 - en: (4-11)
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
 - en: Expected SARSA has a lower variance as compared to the variance seen in SARSA
     due to the random selection of *A*[*t* + 1]. In expected SARSA, instead of sampling,
     you take the expectation over all possible actions.
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
 - en: In the cliff world problem, you have deterministic actions, and hence you can
@@ -1766,20 +2134,25 @@
     the update logic of taking *expectation* instead of *maximization*. You can run
     expected SARSA as on-policy, which is what you will do while testing it against
     the cliff world and taxi environments. See Figure [4-18](#Fig18).
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig18_HTML.jpg)'
+  id: totrans-289
   prefs: []
   type: TYPE_IMG
 - en: A screenshot depicts the expected SARSA T D control algorithm. It initializes
     state-action values, policy, learning rate, and discount factor. It iterates over
     episodes, updating Q values based on rewards and expected future rewards.
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-18
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
 - en: Expected SARSA TD control
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
 - en: As you can see in Figure [4-18](#Fig18), the update rule uses the summation
@@ -1790,11 +2163,14 @@
     for the update rule implemented in the `update(...)` function inside the `ExpectedSARSAAgent`
     class. Refer to the notebook for the complete code, including a video of trained
     agents and the reward trajectories.
+  id: totrans-293
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE7]'
+  id: totrans-294
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Figure [4-19](#Fig19) shows the result of training the expected SARSA agent
     for the cliff world. The introduction of expectation—that is, summation over all
     actions in successor state—increases the computational complexity of the algorithm
@@ -1807,21 +2183,26 @@
     from 200 episodes, as visible in Figure [4-19](#Fig19). The convergence is clearly
     the fastest with expected SARSA. You can experiment and see that the changing
     learning rate α has no major impact on the convergence in the limit.
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig19_HTML.jpg)'
+  id: totrans-296
   prefs: []
   type: TYPE_IMG
 - en: A line graph of return per episode versus episode number. The line expected
     Sarsa fluctuates and ascends. The mean reward stabilizes around minus 15.0 after
     initial learning. A set of policies learned by the agent is listed.
+  id: totrans-297
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-19
+  id: totrans-298
   prefs: []
   type: TYPE_NORMAL
 - en: Reward graph with expected SARSA in the cliff world and policy learned by the
     agent
+  id: totrans-299
   prefs: []
   type: TYPE_NORMAL
 - en: It is also interesting to note that the policy learned by the expected SARSA
@@ -1831,20 +2212,26 @@
     But possibly due to the expectation, it learns to improve from regular SARSA and
     finds it safe enough to go through the middle row. In the same notebook (`4.e-expected_sarsa.ipynb)`,
     you can also see the result of running this algorithm for the taxi environment.
+  id: totrans-300
   prefs: []
   type: TYPE_NORMAL
+  zh: 还值得注意的是，由期望SARSA学习得到的策略介于Q-learning和SARSA之间。在此策略下，智能体通过迷宫的中间行达到目标。在这种情况下，你使用期望SARSA作为离策略，即使用相同的ε-greedy策略进行探索和改进。但由于期望的存在，它学会了从常规SARSA中改进，并认为通过中间行是足够安全的。在相同的笔记本（`4.e-expected_sarsa.ipynb`）中，你还可以看到在出租车环境中运行此算法的结果。
 - en: Replay Buffer and Off-Policy Learning
+  id: totrans-301
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 重放缓冲区和离策略学习
 - en: 'Off-policy learning involves two separate policies: behavior policy *b*(*a*| *s*)
     to explore and generate examples, and π(*a*| *s*), the target policy that the
     agent is trying to learn as the optimal policy. Accordingly, you could use the
     samples generated by the behavior policy again and again to train the agent. The
     approach makes the process sample efficient as a single transition observed by
     the agent can be used multiple times.'
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 离策略学习涉及两个分离的策略：用于探索和生成示例的行为策略 *b*(*a*| *s*）和智能体试图学习的目标策略 π(*a*| *s*）。因此，你可以反复使用由行为策略生成的样本来训练智能体。这种方法使过程样本效率更高，因为智能体观察到的单个转换可以被多次使用。
 - en: This is called *experience replay*. The agent collects experiences from the
     environment and replays those experiences multiple times as part of the learning
     process. In experience replay, you store the samples `(s, a, r, s’, done)` in
@@ -1855,8 +2242,11 @@
     samples as you collect new ones. The process makes learning sample efficient by
     reusing a sample multiple time. The rest of the approach remains the same as an
     off-policy agent.
+  id: totrans-303
   prefs: []
   type: TYPE_NORMAL
+  zh: 这被称为*经验重放*。智能体从环境中收集经验，并将这些经验作为学习过程的一部分多次重放。在经验重放中，你将样本 `(s, a, r, s’，done)`
+    存储在缓冲区中。这些样本使用探索行为策略生成，同时你使用 *q*-值改进确定性目标策略。因此，你可以反复使用来自行为策略的旧样本。将缓冲区大小固定为某个预定的值，并在收集新样本时删除旧样本。这个过程通过多次重用样本使学习样本效率更高。其余的方法与离策略智能体相同。
 - en: Let’s apply this approach to the Q-learning agent. The code for the Q-learning
     agent remains the same. The `4.f-qlearning-exp-replay.ipynb` notebook contains
     a complete walkthrough for Q-learning agents with experience replay. There is
@@ -1872,11 +2262,16 @@
     of stored transitions to be used for Q-learning update. This is implemented by
     the `sample(self, batch_size)` metho, where `batch_size` defines the number of
     transitions to sample.
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将这种方法应用于Q-learning智能体。Q-learning智能体的代码保持不变。`4.f-qlearning-exp-replay.ipynb`笔记本包含对具有经验重放的Q-learning智能体的完整说明。更新规则或Q-learning智能体的任何内部逻辑都没有变化。改变的是智能体训练代码。你有两个变化。首先，你实现经验重放，如列表[4-9](#PC9)所示，以存储智能体在行为策略下通过环境的所有转换。每个智能体转换生成一个状态、动作、奖励、下一个状态、完成的元组，该元组存储在由`add(self,...)`方法实现的固定长度列表中。一旦队列满，在列表末尾添加新项目会导致队列中最早的项目被移除。因此，队列保留最新的转换，直到一个固定的回溯期。在训练期间，你采样一批存储的转换用于Q-learning更新。这是通过`sample(self,
+    batch_size)`方法实现的，其中`batch_size`定义了要采样的转换数量。
 - en: '[PRE8]'
+  id: totrans-305
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: The other change from vanilla Q-learning is the training code. This is given
     in Listing [4-10](#PC10). In vanilla Q-learning, the update of q-values is carried
     out online as you step through each individual transition. However, with experience
@@ -1886,11 +2281,14 @@
     is stored in experience replay is likely to be picked up by the sample method
     multiple times until this transition reaches the beginning of the queue and gets
     pushed out of the buffer.
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE9]'
+  id: totrans-307
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: As discussed earlier, using experience replay leads to reuse of each transition
     tuple multiple times. Therefore, Q-learning with experience replay is sample-efficient.
     This is evident in the rewards trajectory—that is, the return per episode plotted
@@ -1899,21 +2297,26 @@
     the optimal value is reached almost by the time training code has seen 100 episodes.
     Compare this to Figure [4-17](#Fig17) for Q-learning, where the optimal value
     is reached around 200 episodes.
+  id: totrans-308
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig20_HTML.jpg)'
+  id: totrans-309
   prefs: []
   type: TYPE_IMG
 - en: A line graph of return per episode versus episode number. The line Q-learning
     fluctuates and ascends. The mean reward stabilizes around minus 13.0 after initial
     learning. A set of policies learned by the agent is listed.
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-20
+  id: totrans-311
   prefs: []
   type: TYPE_NORMAL
 - en: Reward graph during learning under Q-learning with experience replay and policy
     learned by agent
+  id: totrans-312
   prefs: []
   type: TYPE_NORMAL
 - en: From Figure [4-20](#Fig20), it is also evident that, though episode return reaches
@@ -1923,14 +2326,17 @@
     to zero. However, in experience replay, you land up using these exploratory actions
     multiple times depending on the sampling logic of the replay buffer and the buffer
     length. This could lead to updates causing delayed convergence.
+  id: totrans-313
   prefs: []
   type: TYPE_NORMAL
 - en: And just to point out the policy learned under experience replay is the same
     as the one learned in vanilla Q-learning.
+  id: totrans-314
   prefs: []
   type: TYPE_NORMAL
 - en: As before, the `4.f-qlearning-exp-replay.ipynb` notebook contains the video
     replay of the trained agent as well as running of the same on Taxi environment.
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
 - en: In summary, the Q-agent with the replay buffer is supposed to improve the initial
@@ -1940,9 +2346,11 @@
     replay buffer. It has another advantage of breaking the correlation between samples.
     This aspect will also become apparent when you look at deep learning with Q-learning—that
     is, DQN.
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
 - en: Q-Learning for Continuous State Spaces
+  id: totrans-317
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1950,6 +2358,7 @@
     the methods studied so far could be categorized as tabular methods. The state
     action space was represented as a matrix with states along one dimension and actions
     along the cross-axis.
+  id: totrans-318
   prefs: []
   type: TYPE_NORMAL
 - en: You will soon transition to continuous state spaces and make heavy use of deep
@@ -1960,6 +2369,7 @@
     floating-point numbers with some precision, for example, for a continuous state
     space value between -1 to 1 being converted into -1, -0.9, -0.8, ... 0, 0.1, 0.2,
     ... 1.0.
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
 - en: '`4.g-qlearning_continuous_env.ipynb` shows this approach in action. You will
@@ -1975,43 +2385,56 @@
     and implementing a function called `observation`, which takes in the continuous
     values from the `CartPole` environment and returns the discrete observation/state
     values.'
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE10]'
+  id: totrans-321
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Once the `Discretizer` class is defined to discretize the observations, you
     just need to wrap the Gymnasium environment while making the environment, as shown
     in Listing [4-12](#PC12). The rest of the code sees no change between the two
     Python notebooks—`4.f-qlearning_continuous_env.ipynb` and `4.f-qlearning-exp-replay.ipynb.`
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE11]'
+  id: totrans-323
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: The Q-agent with discrete discretization of states can get about 50 rewards
     compared to the maximum reward of 200\. This is shown in Figure [4-21](#Fig21).
+  id: totrans-324
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig21_HTML.jpg)'
+  id: totrans-325
   prefs: []
   type: TYPE_IMG
 - en: A line graph of return per episode versus episode in multiples of 100\. The
     line represents Q-learning. The line fluctuates between 20 and 140\. The data
     are estimated.
+  id: totrans-326
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-21
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
 - en: Reward graph with Q-learning on the CartPole continuous state space environment
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
 - en: In subsequent chapters, you will study other more powerful methods to obtain
     more rewards.
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
 - en: n-Step Returns
+  id: totrans-330
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -2020,6 +2443,7 @@
     MC methods cannot be applied for continuing tasks. TD, on the other hand, uses
     one-step return to estimate the value of the remaining rewards. TD methods take
     a short view of the trajectory and bootstrap right after one step.
+  id: totrans-331
   prefs: []
   type: TYPE_NORMAL
 - en: These methods are two extremes, and there are many situations when a middle-of-the-road
@@ -2030,22 +2454,27 @@
     that you just saw in the context of SARSA, Q-learning, and other related approaches.
     At the other extreme is the ∞-step TD, which is nothing but an MC method. The
     broad idea is to see that the TD and MC methods are two extremes of the same continuum.
+  id: totrans-332
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig22_HTML.jpg)'
+  id: totrans-333
   prefs: []
   type: TYPE_IMG
 - en: A diagram represents the comparison of backup methods in reinforcement learning
     such as 1-step T D 0, 2-step, n-step, and infinite Monte Carlo. Each column represents
     a sequence of nodes connected by arrows, with the number of steps increasing from
     left to right.
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 4-22
+  id: totrans-335
   prefs: []
   type: TYPE_NORMAL
 - en: Backup diagrams of n-step methods with TD(0) and MC at two extremes, *n* = 1
     and *n* = ∞ (end of episode)
+  id: totrans-336
   prefs: []
   type: TYPE_NORMAL
 - en: 'The approach of n-step can be used in an on-policy setting. You can have n-step
@@ -2058,16 +2487,19 @@
     the behavior policy with a ratio called *importance sampling ratio,* which was
     derived earlier in this chapter in Equation [4-4](#Equ4). The same is reproduced
     here:'
+  id: totrans-337
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\uprho}_{t:T-1}=\frac{\Pr_{\uppi}\left\{\mathrm{trajectory}\right\}}{\Pr_b\left\{\mathrm{trajectory}\right\}}={\prod}_{k=t}^{T-1}\frac{\uppi
     \left({A}_k|{S}_k\right)}{b\left({A}_k|{S}_k\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equy.png)'
+  id: totrans-338
   prefs: []
   type: TYPE_IMG
 - en: The importance sampling ratio ensures that the return of a trajectory observed
     under the behavior policy is adjusted up or down based on the relative chance
     of observing a trajectory under the target policy versus the chance of observing
     the same trajectory under the behavior policy.
+  id: totrans-339
   prefs: []
   type: TYPE_NORMAL
 - en: Nothing comes for free, which is the case with importance sampling. The importance
@@ -2076,14 +2508,17 @@
     *per-decision importance sampling* that I talked about in the earlier section
     on importance sampling. These approaches look at the importance sampling and rewards
     in various ways to reduce the variance and make these algorithms efficient.
+  id: totrans-340
   prefs: []
   type: TYPE_NORMAL
 - en: I will not be going into the details of implementing these algorithms in this
     book. The key focus was to introduce these at a conceptual level and make you
     aware of the advanced techniques.
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
 - en: Eligibility Traces and TD(λ)
+  id: totrans-342
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -2094,6 +2529,7 @@
     similar to the regular ∞-step TD or in other words an MC method. Eligibility trace
     makes it possible to apply MC methods to non-episodic tasks as well. I will cover
     only high-level concepts of eligibility trace and *TD*(*λ*).
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
 - en: In the previous section, you looked at n-step returns with *n* = 1 taking you
@@ -2108,49 +2544,61 @@
     the reward at time step *t* would have on the preceding *n* states in past. This
     is known as *backward view* and forms the core of *TD*(*λ*). The approach allows
     an efficient implementation of integrating n-step returns in TD learning.
+  id: totrans-344
   prefs: []
   type: TYPE_NORMAL
 - en: 'Look back at Figure [4-22](#Fig22). What if instead of choosing different values
     of *n*, you combined all the n-step returns with some weight? This is known as
     *λ*-return, and the equation is as follows:'
+  id: totrans-345
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {G}_t^{\lambda }=\left(1-\lambda \right){\sum}_{n=1}^{T-t-1}{\lambda}^{n-1}{G}_{t:t+n}+{\lambda}^{T-t-1}{G}_t
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ12.png)'
+  id: totrans-346
   prefs: []
   type: TYPE_IMG
 - en: (4-12)
+  id: totrans-347
   prefs: []
   type: TYPE_NORMAL
 - en: 'Here, *G*[*t* : *t* + *n*] is the n-step return, which uses the bootstrapped
     value of the remaining steps at the end of the *n*^(*th*) step. It is defined
     as follows:'
+  id: totrans-348
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {G}_{t:t+n}={R}_{t+1}+\gamma {R}_{t+2}+\dots +{\gamma}^{n-1}{R}_{t+n}+{\gamma}^nV\left({S}_{t+n}\right)
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ13.png)'
+  id: totrans-349
   prefs: []
   type: TYPE_IMG
 - en: (4-13)
+  id: totrans-350
   prefs: []
   type: TYPE_NORMAL
 - en: 'If you put λ = 0 in Equation [4-12](#Equ12), you get the following:'
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {G}_t^0={G}_{t:t+1}={R}_{t+1}+\gamma V\left({S}_{t+1}\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equz.png)'
+  id: totrans-352
   prefs: []
   type: TYPE_IMG
 - en: The previous expression is similar to the target value for state-action updates
     of TD(0) in Equation [4-6](#Equ6).
+  id: totrans-353
   prefs: []
   type: TYPE_NORMAL
 - en: 'On other hand, putting λ = 1 in Equation [4-12](#Equ12) makes ![$$ {G}_t^{\uplambda}={G}_t^0
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq8.png) mimic
     MC and return *G*[*t*] as follows:'
+  id: totrans-354
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {G}_t^1={G}_t={R}_{t+1}+\gamma {R}_{t+2}+\dots +{\gamma}^{T-t-1}{R}_T
     $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equaa.png)'
+  id: totrans-355
   prefs: []
   type: TYPE_IMG
 - en: The *TD*(*λ*) algorithm uses the previous λ-return with a trace vector, known
@@ -2158,15 +2606,18 @@
     view. Eligibility trace keeps a record of how far in the past a state was observed
     and by how much would that state’s estimate be impacted by the current return
     observed.
+  id: totrans-356
   prefs: []
   type: TYPE_NORMAL
 - en: 'I will stop here with the basic introduction of λ-returns, eligibility trace,
     and *TD*(*λ*). For a detailed review of the mathematical derivations as well as
     the various algorithms based on them, refer to the book *Reinforcement Learning:
     An Introduction* by Barto and Sutton, Second Edition.^([5](#Fn5))'
+  id: totrans-357
   prefs: []
   type: TYPE_NORMAL
 - en: Relationships Between DP, MC, and TD
+  id: totrans-358
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -2174,37 +2625,47 @@
     compare. I introduced the MC methods followed by the TD methods, and then I used
     n-step and TD(*λ*) to combine MC and TD as two extremes of the sample-based model-free
     learning.
+  id: totrans-359
   prefs: []
   type: TYPE_NORMAL
 - en: To conclude the chapter, Table [4-1](#Tab1) summarizes the comparison of the
     DP and TD methods.
+  id: totrans-360
   prefs: []
   type: TYPE_NORMAL
 - en: Table 4-1
+  id: totrans-361
   prefs: []
   type: TYPE_NORMAL
 - en: Comparison of DP and TD Methods in the Context of Bellman Equations
+  id: totrans-362
   prefs: []
   type: TYPE_NORMAL
 - en: '|   | Full Backup (DP) | Sample Backup (TD) |'
+  id: totrans-363
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- |'
+  id: totrans-364
   prefs: []
   type: TYPE_TB
 - en: '| Bellman expectation equation for *v*[*π*](*s*) | Iterative policy evaluation
     | TD prediction |'
+  id: totrans-365
   prefs: []
   type: TYPE_TB
 - en: '| Bellman expectation equation for *q*[*π*](*s*, *a*) | Q-policy iteration
     | SARSA |'
+  id: totrans-366
   prefs: []
   type: TYPE_TB
 - en: '| Bellman optimality equation for *q*[*π*](*s*, *a*) | Q-value iteration |
     Q-learning |'
+  id: totrans-367
   prefs: []
   type: TYPE_TB
 - en: Summary
+  id: totrans-368
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -2212,6 +2673,7 @@
     started by estimating the state value using the Monte Carlo approach. It explained
     the “first visit” and “every visit” approaches. It then looked at the bias and
     variance tradeoff in general and specifically in the context of the MC approaches.
+  id: totrans-369
   prefs: []
   type: TYPE_NORMAL
 - en: With the foundation of MC estimation in place, the chapter looked at MC control
@@ -2221,29 +2683,41 @@
     The chapter looked in detail at the exploration-exploitation dilemma that needs
     to be balanced, especially in the model-free world where the transition probabilities
     are not known.
+  id: totrans-370
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 MC 估计的基础上，本章探讨了 MC 控制方法，将其与第 [3](502835_2_En_3_Chapter.xhtml) 章中引入的 GPI 框架相结合，以改进策略。你看到了如何通过将方法中的估计步骤从基于
+    DP 的方法更改为基于 MC 的方法来应用 GPI。本章详细探讨了需要平衡的探索-利用困境，特别是在无模型世界中，过渡概率是未知的。
 - en: I then briefly talked about the off-policy approach in the context of the MC
     methods. And in this context, you learned about importance sampling where the
     policy to collect samples is called behavior policy and the policy being optimized
     is the target policy. Importance sampling allows the return from one only to be
     cast in the context of another policy.
+  id: totrans-371
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我简要介绍了 MC 方法中的离策略方法。在这种情况下，你学习了重要性采样，其中收集样本的策略被称为行为策略，而正在优化的策略是目标策略。重要性采样允许将一个策略的回报仅放在另一个策略的背景下进行评估。
 - en: TD was the next approach the chapter investigated with respect to model-free
     learning. It started off by establishing the basics of TD learning, starting with
     TD-based value estimation. This was followed by a deep dive into SARSA, an on-policy
     TD control method. The chapter then investigated Q-learning, a powerful off-policy
     TD learning approach, and some of its variants like expected SARSA.
+  id: totrans-372
   prefs: []
   type: TYPE_NORMAL
+  zh: TD 是本章在无模型学习方面探讨的下一个方法。它从建立 TD 学习的基础开始，首先是基于 TD 的价值估计。随后深入探讨了 SARSA，这是一种基于策略的
+    TD 控制方法。接着，本章研究了 Q-learning，这是一种强大的离策略 TD 学习方法，以及它的一些变体，如期望 SARSA。
 - en: In the context of TD learning, I also introduced the concept of state approximation
     to convert continuous state spaces into approximate discrete state values. The
     concept of state approximation will form the bulk of the next chapter and will
     allow you to combine deep learning with reinforcement learning.
+  id: totrans-373
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 TD 学习的背景下，我还介绍了状态近似的概念，将连续状态空间转换为近似的离散状态值。状态近似的概念将成为下一章的主要内容，并允许你将深度学习与强化学习相结合。
 - en: Before concluding the chapter, you finally looked at n-step returns, eligibility
     traces, and TD(*λ*) as ways to combine TD and MC into a single framework.
+  id: totrans-374
   prefs: []
   type: TYPE_NORMAL
+  zh: 在结束本章之前，你最终探讨了 n 步回报、资格痕迹和 TD(*λ*)作为将 TD 和 MC 结合到单一框架中的方法。
