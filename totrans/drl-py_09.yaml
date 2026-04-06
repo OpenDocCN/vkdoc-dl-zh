@@ -1,7 +1,9 @@
 - en: 9. Combining Policy Gradient and Q-Learning
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 9. 结合政策梯度与Q-Learning
 - en: So far in this book, in the context of deep learning combined with reinforcement
     learning, Chapters [6](502835_2_En_6_Chapter.xhtml) and [7](502835_2_En_7_Chapter.xhtml)
     explained deep Q-learning with its variants. You looked at policy gradients in
@@ -19,8 +21,10 @@
     making the previous sample rollouts useless. Therefore, you had to discard the
     old ones and collect new trajectory rollouts after each update, making the process
     an on-policy leaning.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，在这本书中，在深度学习与强化学习结合的背景下，第[6](502835_2_En_6_Chapter.xhtml)章和第[7](502835_2_En_7_Chapter.xhtml)章解释了深度Q学习及其变体。在第[8](502835_2_En_8_Chapter.xhtml)章中，你了解了策略梯度。神经网络训练需要多次迭代，而Q学习作为一种离策略方法，使你能够多次重用样本转换，从而提高样本效率。然而，Q学习有时可能不稳定。此外，它是一种间接的学习方式。不是直接学习最优策略，而是首先学习q值，然后使用这些动作值来学习最优行为。第[8](502835_2_En_8_Chapter.xhtml)章探讨了直接学习策略的方法，这为你提供了更好的改进保证。然而，第[7](502835_2_En_7_Chapter.xhtml)章中所有策略学习算法都是基于策略的。你使用策略与环境交互，并对策略权重进行更新，以增加良好轨迹/动作的概率，同时减少不良轨迹/动作的概率。每次更新后，策略都会改变，使得之前的样本回放变得无用。因此，你必须丢弃它们，并在每次更新后收集新的轨迹回放，使得整个过程成为基于策略的学习。
 - en: 'This chapter looks at combining the benefits of both approaches—that is, off-policy
     learning while learning the policy directly. I first talk about the tradeoffs
     of Q-learning versus policy gradient methods. After this, you will look at three
@@ -29,29 +33,40 @@
     I largely follow the notations, approach, and sample code documented in the OpenAI
     Spinning Up library.^([1](#Fn1)) CleanRL^([2](#Fn2)) is another good library to
     explore for code implementations of these.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章探讨了结合两种方法的好处——即在直接学习策略的同时进行离策略学习。我首先讨论了Q学习与政策梯度方法的权衡。之后，你将了解三种将Q学习与政策梯度结合的流行方法：深度确定性策略梯度（DDPG）、双延迟DDPG（TD3）和软演员-评论家（SAC）。我主要遵循了OpenAI
+    Spinning Up库中记录的符号、方法和示例代码。[1](#Fn1) CleanRL[2](#Fn2) 是另一个探索这些代码实现的优秀库。
 - en: Tradeoffs in Policy Gradient and Q-Learning
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 政策梯度与Q-Learning中的权衡
 - en: 'Chapter [6](502835_2_En_6_Chapter.xhtml) looked at DQN, the deep learning version
     of Q-learning. In Q-learning, an off-policy method, you collect transitions from
     an exploratory behavior policy and then use these transitions in a batch stochastic
     gradient update to learn the q-values. As you learn the q-values, you improve
     the policy by taking the max over the q-values of all possible actions in a state
     to choose the best action. This was the equation:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 第[6](502835_2_En_6_Chapter.xhtml)章探讨了深度Q网络（DQN），这是Q学习的深度学习版本。在Q学习中，作为一种离策略方法，你从探索性行为策略中收集转换，然后使用这些转换在批量随机梯度更新中学习q值。随着你学习q值，你通过在状态的所有可能动作的q值中取最大值来选择最佳动作，从而改进策略。这是方程：
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{r}_i+\gamma
     .{\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime
     };{w_t}^{-}\right)-\hat{q}\left({s}_i,{a}_i;{w}_t\right)\right].{\nabla}_{w_t}\
     \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ1.png)'
+  id: totrans-5
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ1.png)'
 - en: (9-1)
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-1)
 - en: Note the max. By taking max, that is, ![$$ {\mathit{\max}}_{a_i^{\prime }}\overset{\sim
     }{q}\left({s}_i^{\prime },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq1.png),
     you are defining the TD(0) target value as ![$$ {r}_i+\gamma .{\mathit{\max}}_{a_i^{\prime
@@ -66,8 +81,11 @@
     which policy these were generated from. You can reuse the transitions with the
     replay buffer, which makes this learning very sample-efficient. However, there
     are a few issues that Q-learning suffers from.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意最大值。通过取最大值，即![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq1.png)，你定义了TD(0)的目标值![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq2.png)，这是在最佳动作![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq3.png)下的最大值。这迫使当前状态动作q值![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq4.png)更新权重以达到更高的目标。换句话说，你正在引导网络更新遵循Bellman最优方程。学习是离策略的，因为Bellman最优方程无论遵循什么策略都成立。它需要满足所有(*s*,
+    *a*, *r*, *s*^’）转换，无论这些转换是从哪个策略生成的。你可以使用重放缓冲区重用这些转换，这使得这种学习非常高效。然而，Q学习存在一些问题。
 - en: The first one is about using Q-learning in its current form for continuous actions.
     Look at ![$$ {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime
     },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq5.png).
@@ -75,27 +93,40 @@
     had discrete actions. Do you know why? How do you think you will perform *max*
     when the action space is continuous and multidimensional, for example, moving
     multiple joints of a robot together?
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一个问题是在当前形式下使用Q学习进行连续动作。看看![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq5.png)。第6章和第7章的所有例子都有离散动作。你知道为什么吗？当动作空间是连续和多维的，例如移动机器人的多个关节时，你认为你会如何执行*max*？
 - en: When the actions are discrete, it is easy to take *max*. You input state *s*
     to the model, and you get *Q*(*s*, *a*) for all the possible actions, that is,
     *Q*(*s*, *a*[1]), ⋯*Q*(*s*, *a*[*m*]). With a limited number of discrete actions,
     choosing the *max* is easy. Figure [9-1](#Fig1) shows a sample model.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 当动作是离散时，取*max*很容易。你将状态*s*输入模型，然后得到所有可能动作的*Q*(*s*, *a*)，即*Q*(*s*, *a*[1])，⋯*Q*(*s*,
+    *a*[*m*])。对于有限数量的离散动作，选择*max*很容易。图[9-1](#Fig1)显示了一个示例模型。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig1_HTML.jpg)'
+  id: totrans-10
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig1_HTML.jpg)'
 - en: A block diagram for D Q N learning. S is sent to a W block which gives outputs
     q circumflex of s, a 1, w to q circumflex of s, a m, w.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: DQN学习的框图。S被发送到W块，该块输出q̄s、a1、w到q̄s、a m、w。
 - en: Figure 9-1
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 图9-1
 - en: Generic model for DQN learning with discrete actions
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: DQN学习的通用模型，具有离散动作
 - en: Now imagine the actions being continuous! How would you take the maximum? To
     find ![$$ {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime
     },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq6.png),
@@ -104,13 +135,17 @@
     And you will have to do for every value of the state *s* in the training samples.
     You can imagine how expensive this process would be—running maximizing action
     search for every transition in the batch as part of policy improvement.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在想象一下动作是连续的！你将如何取最大值？为了找到![公式6](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq6.png)，你将不得不运行另一个优化算法，该算法将找到最大化![公式7](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq7.png)的q值。你将不得不对训练样本中每个状态*s*的值都这样做。你可以想象这个过程将有多么昂贵——作为策略改进的一部分，对批处理中的每个转换运行最大化动作搜索。
 - en: The second issue is that of learning the wrong objective. You want an optimal
     policy, but you do not do this directly under DQN. You learn the action-value
     functions and then use *max* to find the optimal q-value/optimal action.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 第二个问题是学习错误的目标。你想要一个最优策略，但在DQN中你并不是直接这样做。你学习动作值函数，然后使用*max*来找到最优的q值/最优动作。
 - en: The third issue is that DQN is also not stable at times. There are no theoretical
     guarantees, and you are trying to update the weights using the semi-gradient update
     covered in Chapter [5](502835_2_En_5_Chapter.xhtml). You are essentially trying
@@ -120,8 +155,10 @@
     that you saw for DQN in previous chapters did not continually improve. They were
     choppy and required careful adjustment of hyperparameters to ensure that the algorithm
     settled toward a good policy.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 第三个问题是DQN有时也不稳定。没有理论保证，你试图使用第[5](502835_2_En_5_Chapter.xhtml)章中提到的半梯度更新来更新权重。你本质上是在尝试跟随带有变化目标的监督学习过程。你所学的可能会影响新的轨迹生成，反过来又会影响你的学习质量。你之前章节中看到的DQN的平均每集回报训练进度曲线并没有持续改善。它们是断断续续的，需要仔细调整超参数以确保算法趋向于一个好的策略。
 - en: Finally, the fourth issue is that DQN learns a deterministic policy. You use
     an exploratory behavior policy to generate samples and add exploration while the
     agent learns a deterministic policy. Experiments, especially in robotics, have
@@ -130,8 +167,10 @@
     to have some amount of randomness to adjust for imperfect modeling or conversion
     of action values to actual robot joint movements. Also, deterministic policies
     are a limiting case of stochastic policies.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，第四个问题是DQN学习了一个确定性策略。你使用探索行为策略来生成样本，并在代理学习确定性策略的同时添加探索。实验，特别是在机器人领域，已经表明，一定程度的随机策略更好，因为对世界建模以及通过关节进行的操作并不总是完美的。你需要有一定的随机性来调整不完美的建模或动作值到实际机器人关节运动之间的转换。此外，确定性策略是随机策略的极限情况。
 - en: Turn your attention now to policy gradient methods. In policy gradient methods,
     you input the state and the output you get is the policy, that is, the probability
     of actions for discrete actions or the parameters of a probability distribution
@@ -139,35 +178,49 @@
     policies for both discrete and continuous actions. However, learning continuous
     actions is not feasible in DQN. Figure [9-2](#Fig2) shows the model used in policy
     gradients.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在将注意力转向策略梯度方法。在策略梯度方法中，你输入状态，得到的输出是策略，即对于离散动作的动作概率，或者在连续动作的情况下，概率分布的参数。策略梯度允许你学习离散和连续动作的策略。然而，在DQN中学习连续动作是不可行的。图[9-2](#Fig2)展示了策略梯度中使用的模型。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig2_HTML.jpg)'
+  id: totrans-19
   prefs: []
   type: TYPE_IMG
+  zh: '![图9-2](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig2_HTML.jpg)'
 - en: 2 block diagrams for policy gradient methods. For discrete actions, s is sent
     to a theta block which gives categorical distribution outputs pi theta of a 1,
     s to pi theta of a m, s. For continuous actions, s is sent to a theta block which
     gives outputs mu theta of s and sigma square theta of s.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 两个策略梯度方法的框图。对于离散动作，s被发送到theta块，该块给出分类分布输出πθ(s)，即从πθ(s)到πθ(s)的m个s。对于连续动作，s被发送到theta块，该块给出输出μθ(s)和σθ²(s)。
 - en: Figure 9-2
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 图9-2
 - en: Policy networks for policy gradient methods
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 政策梯度方法的政策网络
 - en: Chapter [8](502835_2_En_8_Chapter.xhtml) showed discrete actions, but the process
     works out fine for continuous actions, as discussed in that chapter.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 第[8](502835_2_En_8_Chapter.xhtml)章展示了离散动作，但正如该章节所讨论的，这个过程对于连续动作同样适用。
 - en: Further, using the policy gradient approach, you directly learn to improve the
     policy instead of the roundabout way of first learning the value functions and
     then using them to find the optimal policy. The vanilla policy gradient did suffer
     from a collapse to a bad region, and you saw approaches like TRPO and PPO controlling
     the step size to improve the guarantee of policy gradients, leading to a better
     policy learning.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，使用策略梯度方法，你直接学习改进策略，而不是首先学习价值函数，然后使用它们来找到最佳策略的迂回方式。原始策略梯度确实存在坍塌到不良区域的问题，你看到了像TRPO和PPO这样的方法，通过控制步长来提高策略梯度的保证，从而改善策略学习。
 - en: Policy gradients, unlike DQN, learn a stochastic policy, and thereby exploration
     is built into the policy you are trying to learn. However, the biggest lacuna
     in the policy gradient method was that it is an on-policy approach. Once you use
@@ -176,8 +229,10 @@
     world. You need to discard the previous transitions after an update and generate
     new trajectory/transitions to train the model on. This makes the policy learning
     very sample inefficient.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 与DQN不同，政策梯度学习的是一个随机策略，因此探索性被内置到你试图学习的策略中。然而，政策梯度方法最大的缺陷是它是一个在线策略方法。一旦你使用转换来计算梯度更新，模型就移动到了一个新的策略。在这个更新的策略世界中，早期的转换不再相关。你需要在更新后丢弃之前的转换，并生成新的轨迹/转换来训练模型。这使得策略学习非常低效。
 - en: You did use value learning as part of policy gradients using the actor-critic
     methods in which the policy network was the actor trying to learn the best actions,
     and the value network was the critic informing the policy network of how good
@@ -186,67 +241,98 @@
     the current policy. Therefore, as the policy changes with updates, you need to
     keep discarding all the current sample transitions after each update to the policy
     (and/or value) networks.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 你确实使用了价值学习作为策略梯度的一部分，使用了actor-critic方法，其中策略网络是actor，试图学习最佳动作，而价值网络是critic，向策略网络告知动作的好坏。然而，即使使用了actor-critic方法，学习仍然是基于策略的。你使用了critic来指导actor。critic基于当前策略。因此，随着策略的更新，你需要保留丢弃所有当前样本转换，在每次更新策略（和/或价值）网络后。
 - en: Is there a way you could learn the policy directly but somehow leverage Q-learning
     to learn off-policy? And could you this so for the continuous action space? This
     is covered in this chapter. You will learn how to combine Q-learning with policy
     gradients to come up with algorithms that are off-policy and work well for continuous
     actions.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 有没有一种方法可以直接学习策略，同时利用Q学习来学习离线策略？你能否在连续动作空间中做到这一点？这在本章中有所介绍。你将学习如何将Q学习与策略梯度结合，以提出离线策略且适用于连续动作的算法。
 - en: General Framework to Combine Policy Gradient with Q-Learning
+  id: totrans-28
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将策略梯度与Q学习结合的通用框架
 - en: 'This section looks at continuous action policies. There are two networks—one
     for learning the optimal action for a given state, the actor network. Suppose
     the policy network is parameterized by *θ*, and the network learns a policy that
     produces the action *a* = *μ*[*θ*](*s*), which maximizes *Q*(*s*, *a*). In mathematical
     notation:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节探讨了连续动作策略。有两个网络——一个用于学习给定状态的最佳动作，即actor网络。假设策略网络由*θ*参数化，该网络学习一个策略，产生动作*a*
+    = *μ*[*θ*](*s*)，该动作最大化*Q*(*s*, *a*)。用数学符号表示：
 - en: '![$$ \underset{a^{\prime }}{\mathit{\max}}{Q}^{\ast}\left({s}^{\prime },{a}^{\prime}\right)\approx
     {Q}^{\ast}\left({s}^{\prime },{\upmu}_{\uptheta}(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ2.png)'
+  id: totrans-30
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \underset{a^{\prime }}{\mathit{\max}}{Q}^{\ast}\left({s}^{\prime },{a}^{\prime}\right)\approx
+    {Q}^{\ast}\left({s}^{\prime },{\upmu}_{\uptheta}(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ2.png)'
 - en: (9-2)
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-2)
 - en: The second network, the critic network, will also take state *s* as one input
     and the optimal action from the first network, *μ*[*θ*](*s*), as the other input
     to produce the q-value *Q*[ϕ](*s*, μ[θ](*s*)). Figure [9-3](#Fig3) shows the interaction
     of the two networks conceptually.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 第二个网络，即评论家网络，也将状态 *s* 作为输入之一，并将第一个网络的最优动作 *μ*[*θ*](*s*) 作为另一个输入来产生q值 *Q*[ϕ](*s*,
+    μ[θ](*s*))。图[9-3](#Fig3)展示了两个网络的概念性交互。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig3_HTML.jpg)'
+  id: totrans-33
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig3_HTML.jpg)'
 - en: A block diagram for interactions of two networks. S is sent to N N of theta
     and N N of phi. N N of theta sends a to N N of phi. N N of phi gives Q of s, a.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 两个网络交互的框图。S被发送到θ的N N和φ的N N。θ的N N发送a到φ的N N。φ的N N给出s, a的Q。
 - en: Figure 9-3
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 图9-3
 - en: Combining the policy and Q-learning. You learn the policy directly as well as
     Q using two networks in which the action output from the first network (actor)
     is fed into the second network (critic), which learns *Q*(*s*, *a*)
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 结合策略和Q学习。你通过两个网络直接学习策略以及Q，其中第一个网络（actor）的动作输出被输入到第二个网络（critic），该网络学习 *Q*(*s*,
+    *a*)。
 - en: To ensure exploration, take action *a*, which is exploratory. This is similar
     to the approach taken in Q-learning, where you learned a deterministic policy
     but generated transitions from an exploratory *ε*-greedy policy. Similarly, here,
     while you learn **a**, you add a bit of randomness *ϵ*~*N*(0, *σ*²) and use the
     **a** + **ε** action to explore the environment and generate trajectories.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了确保探索，采取探索性的动作 *a*。这与Q学习中的方法类似，在那里你学习了一个确定性策略，但生成了来自探索性 *ε*-贪婪策略的转换。同样，在这里，虽然你学习**a**，但你添加一点随机性
+    *ϵ*~*N*(0, *σ*²)，并使用**a** + **ε**动作来探索环境并生成轨迹。
 - en: As with Q-learning, you will use a replay buffer to store the transitions and
     reuse the these during learning. This is one of the big benefits common to all
     the approaches discussed in this chapter. It will make policy learning off-policy
     and hence sample efficient.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 与Q学习类似，你将使用重放缓冲区来存储转换并在学习期间重用这些转换。这是本章讨论的所有方法共有的一个重要好处。这将使策略学习离线，从而提高样本效率。
 - en: 'In Q-learning, you had to use a target network that was a copy of the Q-network.
     The reason was to provide some kind of stationery target while learning q-values.
     You can revisit the discussion of target networks in Chapters [5](502835_2_En_5_Chapter.xhtml)
@@ -255,40 +341,58 @@
     you will also use a target network. However, the approach for updating the target
     network weights for algorithms in this chapter is that of *polyak averaging* (*exponential
     averaging*), as given by the following equation:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Q学习中，你必须使用一个与Q网络相同的Q网络的目标网络。原因是提供某种类型的固定靶点，以便在学习q值时使用。你可以回顾第[5](502835_2_En_5_Chapter.xhtml)章和[6](502835_2_En_6_Chapter.xhtml)章中关于目标网络的讨论。在这些方法中，目标网络权重定期用在线/代理网络权重更新。这里，你也将使用一个目标网络。然而，本章中算法的目标网络权重更新方法为*Polyak平均*（*指数平均*），如下方程所示：
 - en: '![$$ {\upphi}_{target}\leftarrow \uprho .{\upphi}_{target}+\left(1-\uprho \right)\upphi
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ3.png)'
+  id: totrans-40
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\upphi}_{target}\leftarrow \uprho .{\upphi}_{target}+\left(1-\uprho \right)\upphi
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ3.png)'
 - en: (9-3)
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-3)
 - en: You will also be using a target network for the policy network. It is for the
     same reason as in q-value networks, that is, providing stable targets. With stable
     targets, you can carry out the supervised learning style of gradient descent and
     adjust the weights to the approximate *Q*(*s*, *a*).
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 你还将使用目标网络来处理策略网络。这与q值网络中的原因相同，即提供稳定的靶点。有了稳定的靶点，你可以执行监督学习风格的梯度下降，并调整权重以近似 *Q*(*s*,
+    *a*)。
 - en: With this background, you are ready to look at the first algorithm—deep deterministic
     policy gradient (DDPG).
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个背景下，你准备好查看第一个算法——深度确定性策略梯度（DDPG）。
 - en: Deep Deterministic Policy Gradient
+  id: totrans-44
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 深度确定性策略梯度
 - en: 'In 2016, in a paper titled “Continuous Control with Deep Reinforcement Learning,”^([3](#Fn3))
     authors from DeepMind introduced the DDPG algorithm. The authors had the following
     points to make about their approach:'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 在2016年，在一篇题为“使用深度强化学习的连续控制”的论文中，DeepMind的研究人员介绍了DDPG算法。作者们对其方法有以下几点要说明：
 - en: While DQN solves high-dimensional state space, it can only handle discrete and
     low-dimensional action space. DQN cannot be applied to continuous and high-dimensional
     action domains, such as physical control tasks like robots.
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 虽然 DQN 解决了高维状态空间，但它只能处理离散和低维动作空间。DQN 不能应用于连续和高维动作域，例如机器人等物理控制任务。
 - en: Discretizing action space is not an option due to the *curse of dimensionality*.
     Assume that you have a robot with seven joints and each joint can move in the
     range (−*k*, *k*). Do a coarse discretization of each joint having three possible
@@ -298,75 +402,102 @@
     in the range (−*k*, *k*), you get 10⁷ = 10 *million* options. This is the *curse
     of dimensionality,* where the set of possible action combinations grows exponentially
     with each new dimension/joint.
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 由于**维度诅咒**，对动作空间进行离散化不是一个选择。假设你有一个拥有七个关节的机器人，每个关节可以在范围（−*k*，*k*）内移动。对每个关节进行粗略的离散化，使其有三个可能值{−*k*，0，*k*}。即使在这种粗略的离散化下，所有七个维度中离散动作的总组合数为3⁷
+    = 2187。相反，如果你决定将每个关节的离散范围分成十个可能值（在范围（−*k*，*k*）内），你将得到10⁷ = 10 *百万*种选择。这就是**维度诅咒**，其中可能动作组合的集合随着每个新维度/关节的加入而呈指数增长。
 - en: 'The DDPG algorithm is as follows:'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: DDPG算法如下：
 - en: '*Model free*: You do not know the model. You learn it from the interaction
     of the agent with the environment.'
+  id: totrans-49
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**无模型**：你不知道模型。你从代理与环境交互中学习它。'
 - en: '*Off-policy*: DDPG, like DQN, uses an exploratory policy to generate transitions
     and learns a deterministic policy.'
+  id: totrans-50
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**离线策略**：DDPG，与DQN类似，使用探索策略生成转换，并学习确定性策略。'
 - en: '*Continuous and high-dimensional action space*: DDPG works only for a continuous
     action domain and works well with high-dimensional action spaces.'
+  id: totrans-51
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**连续和高维动作空间**：DDPG仅适用于连续动作域，并且在高维动作空间中表现良好。'
 - en: '*Actor-critic*: This means you have an actor (policy network) and critic, the
     action-value (q-value) network.'
+  id: totrans-52
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**演员-评论家**：这意味着你有一个演员（策略网络）和评论家，即动作值（q值）网络。'
 - en: '*Replay buffer*: Like DQN, DDPG uses a replay buffer to store transitions and
     uses them to learn. This breaks the temporal dependence/correlation of training
     examples, which could otherwise mess up the learning.'
+  id: totrans-53
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**重放缓冲区**：与DQN类似，DDPG使用重放缓冲区来存储转换并使用它们进行学习。这打破了训练样本的时间依赖性/相关性，否则可能会搞乱学习。'
 - en: '*Target network*: Like DQN, DDPG uses a target network to provide stable targets
     for the q-value to learn. However, unlike DQN, it does not update the target network
     by copying over the weights of the online/agent/main network periodically. Rather,
     it uses the polyak/exponential average to keep moving the target network a little
     bit after every update to the main network.'
+  id: totrans-54
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**目标网络**：与DQN类似，DDPG使用目标网络为q值学习提供稳定的目标。然而，与DQN不同，它不是通过定期复制在线/代理/主网络的权重来更新目标网络。相反，它使用polyak/指数平均，在每次更新主网络后稍微移动目标网络。'
 - en: Now turn your attention to the network architecture and losses you calculate.
     First you’ll look at the Q-learning part, and then you will look at the policy
     learning network.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在将你的注意力转向网络架构和计算的损失。首先，你会查看Q学习部分，然后你会查看策略学习网络。
 - en: Q-Learning in DDPG (Critic)
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: DDPG中的Q-Learning（评论家）
 - en: 'In DQN, you calculated a loss that was minimized by gradient descent. The loss
     is given by Equation [6-3](502835_2_En_6_Chapter.xhtml#PC4), reproduced here:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 在DQN中，你通过梯度下降计算了一个损失，该损失由方程[6-3](502835_2_En_6_Chapter.xhtml#PC4)给出，此处重述如下：
 - en: '![$$ \mathrm{L}=\frac{1}{\mathrm{N}}{\sum}_{i=1}^N{\left[{r}_i+\left(\left(1-
     don{e}_i\right).\gamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime
     },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ4.png)'
+  id: totrans-58
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ4.png)'
 - en: (9-4)
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-4)
 - en: 'Let’s rewrite the equation. Drop subindex **i** and **t** to reduce the clutter
     of notation. Change the summation to expectation to emphasize that what you usually
     want is an expectation, but it is estimated by average over samples under Monte
@@ -376,16 +507,25 @@
     *w*[*t*] with ϕ. Further, move the weights from inside the function parameter
     to the sub-indices on the function, that is, *Q*[ϕ](...) ← *Q*(...; ϕ). With all
     these symbol changes, Equation [9-4](#Fig4) now looks like this:'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们重新写这个方程。去掉下标 **i** 和 **t** 以减少符号的混乱。将求和改为期望，以强调你通常想要的只是一个期望，但它是通过蒙特卡洛方法下的样本平均来估计的。最终在代码中你会得到求和，但它们是某些期望的蒙特卡洛估计。同时，将![目标网络权重
+    $w_t^{-}$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq8.png)替换为
+    ϕ[*targ*]。类似地，将主要权重 *w*[*t*] 替换为 ϕ。进一步，将权重从函数参数内部移动到函数的子索引上，即 *Q*[ϕ](...) ← *Q*(...;
+    ϕ)。经过这些符号变化后，方程 [9-4](#Fig4) 现在看起来是这样的：
 - en: '![$$ L\left(\upphi, D\right)=\underset{\left(s,a,r,{s}^{''},d\right)\sim D}{E}\left[{\left({Q}_{\upphi}\left(s,a\right)-\left(r+\upgamma
     \left(1-d\right)\underset{a^{\prime }}{\mathit{\max}}{Q}_{\upphi_{targ}}\left({s}^{\prime
     },{a}^{\prime}\right)\right)\right)}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ5.png)'
+  id: totrans-61
   prefs: []
   type: TYPE_IMG
+  zh: '![损失函数公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ5.png)'
 - en: (9-5)
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-5)
 - en: 'This is still the DQN formulation where you take a max of discrete actions
     in state *s*^’ to get ![$$ \underset{a^{\prime }}{\mathit{\max}}{Q}_{\upphi_{targ}}\left({s}^{\prime
     },{a}^{\prime}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq9.png).
@@ -398,185 +538,285 @@
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq12.png) where
     ![$$ {a}^{\prime }={\mu}_{\theta_{targ}}\left({s}^{''}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq13.png)
     is the target policy. The updated loss expression is as follows:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 这仍然是 DQN 公式，你在状态 *s*^’ 中取离散动作的最大值以得到 ![目标网络的最大值 $Q_{\upphi_{targ}}(s', a')$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq9.png)。在连续空间中，你不能取最大值，因此你需要另一个网络（actor）来接收输入状态
+    *s* 并产生动作，该动作最大化 ![目标网络的最大值 $Q_{\upphi_{targ}}(s', a')$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq10.png)。也就是说，你将
+    ![目标网络的最大值 $Q_{\upphi_{targ}}(s', a')$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq11.png)
+    替换为 ![目标网络的最大值 $Q_{\upphi_{targ et}}(s', \upmu_{\uptheta_{targ}}(s'))$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq12.png)，其中
+    ![动作 $a' = \upmu_{\uptheta_{targ}}(s')$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq13.png)
+    是目标策略。更新的损失表达式如下：
 - en: '![$$ L\left(\phi, D\right)=\underset{\left(s,a,r,{s}^{''},d\right)\sim D}{E}\left[{\left({Q}_{\phi}\left(s,a\right)-\left(r+\gamma
     \left(1-d\right){Q}_{\phi_{targ et}}\left({s}^{''},{\mu}_{\theta_{targ}}\left({s}^{''}\right)\right)\right)\right)}^2\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ6.png)'
+  id: totrans-64
   prefs: []
   type: TYPE_IMG
+  zh: '![损失函数公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ6.png)'
 - en: (9-6)
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-6)
 - en: This is the updated mean squared Bellman error (MSBE) that you will implement
     in code and then do back propagation to minimize the loss function. Note that
     this is only a function of ϕ and so the gradient of *L*(*ϕ*, *D*) is with respect
     to *ϕ*. As discussed earlier, in the code you will replace the expectation with
     the sample average being the MC estimate of the expectation. Next let’s look at
     the policy learning part.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是在代码中实现并用于反向传播以最小化损失函数的更新均方误差（MSBE）。请注意，这仅是 ϕ 的函数，因此 *L*(*ϕ*, *D*) 的梯度是相对于
+    *ϕ* 的。如前所述，在代码中，你将期望替换为样本平均，作为期望的蒙特卡洛估计。接下来，让我们看看策略学习部分。
 - en: Policy Learning in DDPG (Actor)
+  id: totrans-67
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: DDPG（Actor）中的策略学习
 - en: In the policy learning part, you are trying to learn *a* = *μ*[*θ*](*s*), a
     deterministic policy that gives the action that maximizes *Q*[*ϕ*](*s*, *a*).
     As the action space is continuous and you assume that the *Q* function is differentiable
     with respect to the action, you can just perform gradient ascent with respect
     to the policy parameters to solve.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 在策略学习部分，你试图学习 *a* = *μ*[*θ*](*s*)，这是一个确定性策略，它给出最大化 *Q*[*ϕ*](*s*, *a*) 的动作。由于动作空间是连续的，并且你假设
+    *Q* 函数相对于动作是可微的，因此你可以仅对策略参数进行梯度上升来解决。
 - en: '![$$ \underset{\theta }{\mathit{\max}}\ J\left(\theta, D\right)=\underset{\theta
     }{\mathit{\max}}\underset{s\sim D}{E}\left[{Q}_{\upphi}\left(s,{\upmu}_{\uptheta}(s)\right)\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ7.png)'
+  id: totrans-69
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \underset{\theta }{\mathit{\max}}\ J\left(\theta, D\right)=\underset{\theta
+    }{\mathit{\max}}\underset{s\sim D}{E}\left[{Q}_{\upphi}\left(s,{\upmu}_{\uptheta}(s)\right)\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ7.png)'
 - en: (9-7)
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-7)
 - en: As the policy is deterministic, the expectation in Equation [9-7](#Equ7) does
     not depend on the policy, which is different than what you saw in stochastic gradients
     in the previous chapter. The expectation operator there depended on policy parameters
     because the policy was stochastic, which in turn impacted the expected q-value.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于策略是确定性的，方程 [9-7](#Equ7) 中的期望值不依赖于策略，这与你在上一章中看到的随机梯度不同。那里的期望操作符依赖于策略参数，因为策略是随机的，这反过来又影响了预期的
+    q 值。
 - en: 'You can take the gradient of *J* about *θ* to get the following:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以对 *J* 关于 *θ* 求梯度，得到以下结果：
 - en: '![$$ {\nabla}_{\theta}\;J\left(\theta, D\right)=\underset{s\sim D}{E}\left[{\nabla}_a{Q}_{\phi}\left(s,a\right){\left.\kern0em
     \right|}_{a={\mu}_{\theta }(s)}{\nabla}_{\theta }{\mu}_{\theta }(s)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ8.png)'
+  id: totrans-73
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\theta}\;J\left(\theta, D\right)=\underset{s\sim D}{E}\left[{\nabla}_a{Q}_{\phi}\left(s,a\right){\left.\kern0em
+    \right|}_{a={\mu}_{\theta }(s)}{\nabla}_{\theta }{\mu}_{\theta }(s)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ8.png)'
 - en: (9-8)
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-8)
 - en: This is straight application of chain rule. Also note that you do not get any
     ∇ *log* (...) terms inside the expectation, as the state *s* over which the expectation
     is being taken is coming from the replay buffer, and it has no dependence on the
     parameter *θ* with respect to which gradient is being taken.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就是链式法则的直接应用。此外，请注意，在期望内部没有任何 ∇ *log* (...) 项，因为期望所取的状态 *s* 来自回放缓冲区，并且它对梯度求取的参数
+    *θ* 没有依赖性。
 - en: Further, in a 2014 paper titled “Deterministic Policy Gradient Algorithms,”^([4](#Fn4))
     the authors showed that Equation [9-8](#Equ8) is the policy gradient; that is,
     the gradient of the policy’s performance. You are advised to read through both
     papers to get a deeper theoretical understanding of the math behind DDPG.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，在 2014 年一篇题为“确定性策略梯度算法”的论文中，作者们表明方程 [9-8](#Equ8) 是策略梯度；即策略性能的梯度。建议你阅读这两篇论文，以获得
+    DDPG 数学背后的更深入的理论理解。
 - en: As discussed earlier, to aid in exploration, while you learn a deterministic
     policy, you will use a noisy exploratory version of the learned policy to explore
     and generate transitions. You do this by adding a mean zero Gaussian noise to
     the learning policy. Adding noise is a standard process in ML and it acts as a
     regularizer, making sure that the learned policy has good generalization capabilities.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，为了帮助探索，当你学习确定性策略时，你将使用学习策略的噪声探索版本来探索和生成转换。你这样做是通过向学习策略添加均值为零的高斯噪声来实现的。在机器学习中添加噪声是一个标准过程，它充当正则化器，确保学习到的策略具有良好的泛化能力。
 - en: Pseudocode and Implementation
+  id: totrans-78
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 伪代码和实现
 - en: At this point, you are ready to see the complete pseudocode. Refer to Figure
     [9-4](#Fig4) for this.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 到这一点，你就可以看到完整的伪代码了。请参阅图 [9-4](#Fig4)。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig4_HTML.jpg)'
+  id: totrans-80
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig4_HTML.jpg)'
 - en: A 14-step pseudocode for deep deterministic policy gradient. Input initial policy
     parameters theta, Q-function parameter phi, and empty relay buffer D is followed
     by set target parameters equal to online parameters, update Q-function and policy,
     and update target networks using poly a k averaging.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度确定性策略梯度算法的 14 步伪代码。输入初始策略参数 theta，Q 函数参数 phi，以及空的回放缓冲区 D，然后设置目标参数等于在线参数，更新
+    Q 函数和策略，并使用 poly a k 平均法更新目标网络。
 - en: Figure 9-4
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 9-4
 - en: Deep deterministic policy gradient algorithm
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度确定性策略梯度算法
 - en: Gymnasium Environments Used in Code
+  id: totrans-84
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 代码中使用的 Gymnasium 环境
 - en: 'Turning to the implementation, you will be using two environments in this chapter
     to run the code. The first one is a pendulum swing environment called `Pendulum-v1`.
     Here, the state is a three-dimensional vector giving the angle of the pendulum
     (i.e., its *cos* and *sin* components), with the third dimension being the angular
     velocity (theta-dot): ![$$ \left[\mathit{\cos}\left(\uptheta \right),\mathit{\sin}\left(\uptheta
     \right),\kern0.5em \dot{\theta}\right]. $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq14.png)'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实现方面，您将在本章中使用两个环境来运行代码。第一个是一个称为 `Pendulum-v1` 的摆动环境。在这里，状态是一个三维向量，给出摆的角度（即其
+    *cos* 和 *sin* 分量），第三维是角速度（theta-dot）：`$$ \left[\mathit{\cos}\left(\uptheta \right),\mathit{\sin}\left(\uptheta
+    \right),\kern0.5em \dot{\theta}\right]. $$` ![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq14.png)
 - en: The action is a single continuous value in the range of [-2.0, 2.0]—the torque
     being applied to the pendulum. The idea is to balance the pendulum in an upright
     position for as long as possible. See Figure [9-5](#Fig5). You may also refer
     to the documentation inside the Gymnasium library.^([5](#Fn5))
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 动作是一个范围在 [-2.0, 2.0] 的单一连续值——施加到摆上的扭矩。目标是尽可能长时间地将摆平衡在直立位置。见图 [9-5](#Fig5)。您也可以参考
+    Gymnasium 库内的文档.^([5](#Fn5))
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig5_HTML.jpg)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig5_HTML.jpg)'
 - en: A graphical representation of a pendulum that swings clockwise. The state shape
     is (3, ) and action shape is (1, ).
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个顺时针摆动的摆的图形表示。状态形状是 (3, )，动作形状是 (1, )。
 - en: Figure 9-5
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 9-5
 - en: Pendulum environment from the Gymnasium library
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 来自 Gymnasium 库的摆环境
 - en: 'You will train the algorithm on another environment—the continuous version
     of Lunar-Lander called `LunarLanderContinuous-v2`. In this environment, you try
     to land the lunar module on the moon between the flags. The state vector is eight-dimensional:
     `[x_pos, y_pos, x_vel, y_vel, lander_angle, lander_angular_vel, left_leg_ground_contact_flag,
     right_leg_ground_contact_flag]`.'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 您将在另一个环境中训练算法——称为 `LunarLanderContinuous-v2` 的月球着陆器的连续版本。在这个环境中，您尝试将月球模块降落在旗帜之间的月球上。状态向量是八维的：`[x_pos,
+    y_pos, x_vel, y_vel, lander_angle, lander_angular_vel, left_leg_ground_contact_flag,
+    right_leg_ground_contact_flag]`。
 - en: 'The action is two-dimensional floats: `[main engine, left-right engines]`.'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 动作是两个二维浮点数：`[主引擎，左右引擎]`。
 - en: 'Main engine: Range (-1..0) is for engine off, and range (0,1) is the engine
     throttle from 50% to 100% power. The engine can’t work with less than 50 percent
     power.'
+  id: totrans-93
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 主引擎：范围 (-1..0) 是引擎关闭，范围 (0,1) 是从 50% 到 100% 功率的引擎油门。引擎的功率不能低于 50%。
 - en: 'Left/Right – lateral boosters: Range (-1.0, -0.5) fires the left booster, range
     (+0.5, +1.0) fires the right booster, and range (-0.5, 0.5) is for both boosters
     off.'
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 左/右——侧向助推器：范围 (-1.0, -0.5) 触发左侧助推器，范围 (+0.5, +1.0) 触发右侧助推器，范围 (-0.5, 0.5) 是两个助推器都关闭。
 - en: Figure [9-6](#Fig6) shows a snapshot of the environment.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [9-6](#Fig6) 显示了环境的快照。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig6_HTML.jpg)'
+  id: totrans-96
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig6_HTML.jpg)'
 - en: A screenshot of the lunar lander environment video. A lunar lander hovers in
     between 2 flags, above an irregular surface.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 月球着陆器环境视频的截图。月球着陆器在两个旗帜之间悬停，在不规则的地面上方。
 - en: Figure 9-6
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 9-6
 - en: Lunar-lander continuous from the Gymnasium library
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 来自 Gymnasium 库的月球着陆器连续模式
 - en: Code Listing
+  id: totrans-100
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 代码列表
 - en: Now turn your attention to the actual code for implementing the DDPG pseudocode
     in Figure [9-4](#Fig4). The code is from the `9.a-ddpg.ipynb` file. This section
     first explains the Q and policy networks, followed by loss calculation and then
     the training loop. Finally, you will learn about the code and test the performance
     of the trained agent.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在将注意力转向实现图 [9-4](#Fig4) 中 DDPG 模拟代码的实际代码。代码来自 `9.a-ddpg.ipynb` 文件。本节首先解释 Q
+    和策略网络，然后是损失计算，接着是训练循环。最后，您将了解代码并测试训练代理的性能。
 - en: Policy Network Actor
+  id: totrans-102
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 策略网络演员
 - en: First let’s look at the *actor/policy* network. Listing [9-1](#PC1) shows the
     policy network code in PyTorch. You define a simple neural network with two hidden
     layers of size 256, each with ReLU activation. If you look at the `forward` function`,`
@@ -588,35 +828,54 @@
     class by extending the PyTorch `nn.Module` class, which requires you to define
     a `forward` function with input state *s* as input, thus producing the action
     value *a* as the network output.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们看看 *actor/policy* 网络列表 [9-1](#PC1) 展示了 PyTorch 中的策略网络代码。您定义了一个简单的神经网络，包含两个大小为
+    256 的隐藏层，每个层都使用 ReLU 激活。如果您查看 `forward` 函数，您会注意到最终层（`self.actor`）通过 `tanh` 激活传递。`Tanh`
+    是一个挤压函数；它将（-∞, ∞）中的值重新映射到挤压范围（-1, 1）。然后您将这个挤压值乘以动作限制（`self.act_limit`），这样 `MLPActor`
+    的连续输出就位于环境接受的有效动作值范围内。您通过扩展 PyTorch 的 `nn.Module` 类来创建一个网络类，这要求您定义一个 `forward`
+    函数，该函数以输入状态 *s* 作为输入，从而产生网络输出动作值 *a*。
 - en: '[PRE0]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Q-Network Critic Implementation
+  id: totrans-105
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Q-网络批评实现
 - en: Next, you look at the Q-network (*critic*). This is also a simple two-layer
     hidden network with ReLU activation and then a final layer with output dimension
     equal to one, the dimensionality of action space for the environment. The final
     layer does not have any activation, enabling the network to produce any value
     as output of the network. This network is outputting the q-value, and that is
     why you need to have a possible range of (−∞, ∞).
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，您查看 Q-网络（*批评者*）。这也是一个简单的两层隐藏网络，使用 ReLU 激活，然后是一个输出维度等于环境的动作空间维度的最终层。最终层没有任何激活，使网络能够产生任何值作为网络的输出。这个网络正在输出
+    q 值，这就是为什么需要可能的范围（-∞, ∞）。
 - en: Listing [9-2](#PC2) shows the code for the critic network in PyTorch. This is
     pretty similar to the implementation of the actor/policy network, except for the
     minor differences discussed earlier.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表 [9-2](#PC2) 展示了 PyTorch 中批评网络代码。这与 actor/policy 网络的实现非常相似，除了前面讨论的细微差异。
 - en: '[PRE1]'
+  id: totrans-108
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Combined Model-Actor-Critic Implementation
+  id: totrans-109
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 结合模型-演员-批评实现
 - en: 'Once both the networks are defined, you combine them into a single class that
     allows you to manage the online and target networks in a more modular way. This
     is just for better code organization and nothing more. The class combining the
@@ -625,55 +884,83 @@
     state through the policy network to get *μ*[*θ*](*s*), and then it adds a noise
     (zero mean Gaussian noise) to give a noisy action for exploration. This function
     implements Step 4 of the algorithm:'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦定义了这两个网络，您将它们组合成一个类，允许您以更模块化的方式管理在线和目标网络。这只是为了更好的代码组织，没有其他原因。结合两个网络的类实现为 `MLPActorCritic`。在这个类中，您还定义了一个
+    `get_action` 函数，它接受状态和噪声尺度。它将状态通过策略网络传递以获取 *μ*[*θ*](*s*)，然后添加噪声（零均值高斯噪声）以给出用于探索的噪声动作。此函数实现了算法的第
+    4 步：
 - en: '![$$ a= clip\left({\upmu}_{\uptheta}(s)+\upalpha \cdotp \upvarepsilon, {a}_{Low},{a}_{High}\right)\mathrm{where}\
     \upvarepsilon \sim N,\mathrm{and}\ \upalpha \kern0.5em \mathrm{is}\ \mathrm{the}\
     \mathrm{scale}\ \mathrm{of}\ \mathrm{noise} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equa.png)'
+  id: totrans-111
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equa.png)'
 - en: '`The get_action` method is the one you will be using to get the action from
     a policy instead of directly calling `MLPActor` from Listing [9-1](#PC1). Listing
     [9-3](#PC3) shows the implementation of `MLPActorCritic` in PyTorch.'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: '`The get_action` 方法是您将用于从策略中获取动作而不是直接从列表 [9-1](#PC1) 中的 `MLPActor` 调用获取动作的方法。列表
+    [9-3](#PC3) 展示了 `MLPActorCritic` 在 PyTorch 中的实现。'
 - en: '[PRE2]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Experience Replay
+  id: totrans-114
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 经验回放
 - en: As with DQN, you will again use experience replay in DDPG to store the prior
     transition. The implementation of experience replay stays the same as that for
     DQN. I am not listing the code for it. Interested readers can review the code
     from the Jupyter notebook called `9.a-ddpg.ipynb`.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 与 DQN 一样，您在 DDPG 中再次使用经验回放来存储先前的转换。经验回放的实施与 DQN 相同。我没有列出代码。感兴趣的读者可以查看名为 `9.a-ddpg.ipynb`
+    的 Jupyter 笔记本中的代码。
 - en: Q-Loss Implementation
+  id: totrans-116
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Q-Loss实现
 - en: This section investigates the Q-loss calculation. You are essentially implementing
     the equations from Steps 11 and 12 of the pseudocode.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节探讨了Q损失的计算。你实际上是在实现伪代码的第11步和第12步的方程。
 - en: '![$$ y\left(r,{s}^{\prime },d\right)=r+\upgamma \left(1-d\right){Q}_{\upphi_{\mathrm{targ}}}\left({s}^{\prime
     },{\upmu}_{\uptheta_{\mathrm{targ}}}\left({s}^{\prime}\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equb.png)'
+  id: totrans-118
   prefs: []
   type: TYPE_IMG
+  zh: '![目标公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equb.png)'
 - en: '![$$ {Q}_{\mathrm{loss}}=\frac{1}{\left|B\right|}{\sum}_{\left(s,a,r,{s}^{\prime
     },d\right)\in B}{\left({Q}_{\upphi}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equc.png)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![Q损失公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equc.png)'
 - en: Listing [9-4](#PC4) gives the PyTorch implementation. You first convert the
     batch of (*s*, *a*, *r*, *s*^’, *d*) into PyTorch tensors. Next, you calculate
     *Q*[*ϕ*](*s*, *a*) using the batch of (*s*, *a*) and pass it through the *policy*
     network. The code that implements this is `predicted_qvalues = agent.q(states,
     actions).`
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表[9-4](#PC4)给出了PyTorch的实现。你首先将(*s*, *a*, *r*, *s*^’， *d*)批处理转换为PyTorch张量。接下来，你使用(*s*,
+    *a*)批处理通过策略网络计算*Q*[*ϕ*](*s*, *a*)。实现这一点的代码是`predicted_qvalues = agent.q(states,
+    actions)`。
 - en: Following this, you calculate the target *y*(*r*, *s*^′, *d*) as per the previous
     expression. You use `torch.no_grad()` for efficiency purposes to disable the gradient
     calculation while computing the target, as you do not want to adjust the target
@@ -682,49 +969,69 @@
     gradients can speed up the training, and it ensures that you do not have any unintended
     side-effects of a gradient step impacting the weights that you want to keep frozen
     or adjust manually. Finally, you calculate the *Q*[Loss] as per the previous expression.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 接着，你根据前面的表达式计算目标*y*(*r*, *s*^′, *d*)。出于效率考虑，你使用`torch.no_grad()`来禁用计算目标时的梯度计算，因为你不想使用PyTorch的自动微分来调整目标网络权重。相反，你手动使用Polyak平均调整目标网络权重。停止计算不想要的梯度可以加快训练速度，并确保你没有任何意外的副作用影响你想要冻结或手动调整的权重。最后，你根据前面的表达式计算*Q*[损失]。
 - en: PyTorch carries out the back propagation to calculate the gradient. You do not
     need to calculate the gradient explicitly in the code.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch执行反向传播来计算梯度。你不需要在代码中显式地计算梯度。
 - en: '[PRE3]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Policy Loss Implementation
+  id: totrans-124
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 策略损失实现
 - en: Next, you need to calculate the policy loss as per Step 13 of the pseudocode.
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，你需要根据伪代码的第13步计算策略损失。
 - en: '![$$ {\mathrm{Policy}}_{\mathrm{Loss}}=-\frac{1}{\left|B\right|}{\sum}_{s\in
     B}{Q}_{\phi}\left(s,{\mu}_{\theta }(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equd.png)'
+  id: totrans-126
   prefs: []
   type: TYPE_IMG
+  zh: '![策略损失公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equd.png)'
 - en: This is a straightforward computation. It is just a three-line code implementation
     in PyTorch. Listing [9-5](#PC5) contains the code in PyTorch. Note the -ve sign
     in the loss. The algorithm needs to do gradient ascent on the policy objective,
     but auto-differentiation libraries like PyTorch and TensorFlow implement gradient
     descent. Multiplying the policy objective by -1.0 makes it a loss, and gradient
     descent on a loss is the same as gradient ascent on a policy objective.
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个简单的计算。它只是在PyTorch中实现的三个代码行。列表[9-5](#PC5)包含了PyTorch中的代码。注意损失中的负号。算法需要对策略目标进行梯度上升，但像PyTorch和TensorFlow这样的自动微分库实现的是梯度下降。将策略目标乘以-1.0使其成为损失，对损失进行梯度下降与对策略目标进行梯度上升是相同的。
 - en: '[PRE4]'
+  id: totrans-128
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: One-Step Update Implementation
+  id: totrans-129
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 单步更新实现
 - en: Next you define a function called `one_step_update` that gets a batch of (*s*,
     *a*, *r*, *s*^’, *d*) and computes the Q-loss followed by back propagation, and
     then a similar step of policy-loss computation followed by the gradient step.
     It finally carries out an update to the target network weights using polyak averaging.
     Essentially, this step with the previous two functions `compute_q_loss` and `compute_policy_loss,`
     implements Steps 11 to 14 of the pseudocode.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，你定义一个名为`one_step_update`的函数，该函数获取一个包含(*s*, *a*, *r*, *s*^’， *d*)的批次，并计算Q损失，然后进行反向传播，接着是类似的策略损失计算步骤，然后进行梯度步骤。最后，使用Polyak平均法对目标网络权重进行更新。本质上，这一步与之前的两个函数`compute_q_loss`和`compute_policy_loss`一起实现了伪代码的第11步到第14步。
 - en: Listing [9-6](#PC6) shows the PyTorch code for `one_step_update`. The first
     step is to calculate the Q-loss and carry out gradient descent on the critic/Q
     network weights. This is followed by computing the policy loss and gradient descent
@@ -734,23 +1041,31 @@
     “k” is by using the function input parameter called `update_every``.` This implementation
     uses a value of 1 so that every update of Q is followed by an update of the policy
     as well. Lastly, you update the target network weights using polyak averaging.
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表[9-6](#PC6)展示了`one_step_update`的PyTorch代码。第一步是计算Q损失，并在评论家/Q网络权重上进行梯度下降。接着计算策略损失，并在演员/策略网络权重上进行梯度下降。在DDPG的某些版本中，策略的更新相对于Q网络的更新是延迟的，也就是说，每进行“k”次Q网络的更新，才进行一次策略的更新。控制“k”的逻辑是通过使用名为`update_every`的函数输入参数来实现的。这种实现使用的是1的值，以确保每次Q的更新之后，策略也会进行更新。最后，使用Polyak平均法更新目标网络权重。
 - en: '[PRE5]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'DDPG: Main Loop'
+  id: totrans-133
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: DDPG：主循环
 - en: The final step is the implementation of the DDPG algorithm, which uses the earlier
     `one_step_update` function. It creates the optimizers and initializes the environment.
     It keeps stepping through the environment using the current online policy. It
     also maintains a history of `q_loss`, `policy_loss`, and average return per episode
     so that you can plot the trends of these three key metrics during the progress
     of training.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后一步是实现DDPG算法，该算法使用之前的`one_step_update`函数。它创建优化器并初始化环境。它使用当前的在线策略在环境中进行步进。它还维护`q_loss`、`policy_loss`和每集平均回报的历史记录，以便您可以在训练过程中绘制这三个关键指标的趋势。
 - en: Initially, for the first `start_steps=10000`, it takes a random action to explore
     the environment, and once enough transitions are collected, it uses the current
     policy with scaled Gaussian noise to selection actions. The transitions are added
@@ -760,17 +1075,23 @@
     function defined in Listing [9-6](#PC6). You then run the training loop for a
     total of 20,000 steps, the first 10,000 to collect transitions to fill the replay
     buffer, followed by the next 10,000 steps of gradient updates.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始时，对于前`start_steps=10000`步，它采取随机动作来探索环境，一旦收集到足够的转换，它就使用当前策略和缩放高斯噪声来选择动作。转换被添加到`ReplayBuffer`中，如果缓冲区已满，则丢弃最早的转换。一旦`start_steps`计数达到，它开始在主训练循环中进行梯度更新。这是通过在列表[9-6](#PC6)中定义的`one_step_update`函数来实现的。然后你运行训练循环总共20,000步，前10,000步用于收集转换以填充重放缓冲区，接着是接下来的10,000步的梯度更新。
 - en: The loop also has code to update the plots of training progress for Q-loss,
     policy-loss, and average return per episode. The update frequency of graphs is
     controlled with the `eval_freq` parameter. The training loop code is shown in
     Listing [9-7](#PC7).
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 循环中还包括用于更新Q损失、策略损失和每集平均回报的进度图的代码。图的更新频率由`eval_freq`参数控制。训练循环的代码在列表[9-7](#PC7)中展示。
 - en: '[PRE6]'
+  id: totrans-137
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: There are additional utility codes used to record the trained agent videos.
     The rest of the code trains the agent and then records the performance of the
     trained agent. You run the algorithm first for the Pendulum environment. These
@@ -781,36 +1102,53 @@
     If you watch the video of the trained agent in the `9.a-ddpg.ipynb` notebook,
     you will see that the agent quickly learns to balance the pole in an upright position,
     within 10,000 steps of gradient updates.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 有额外的实用代码用于记录训练智能体的视频。其余的代码训练智能体，然后记录训练智能体的性能。你首先为Pendulum环境运行算法。这些代码版本很有趣，但它们与学习DDPG的目标无关，因此我不深入探讨这些代码实现的细节。然而，感兴趣的读者可以查看相关库的文档并逐步查看代码。图[9-7](#Fig7)显示了随着训练进展的图表。如果你观看`9.a-ddpg.ipynb`笔记本中训练智能体的视频，你会看到智能体在10,000次梯度更新内快速学会将杆保持垂直位置。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig7_HTML.jpg)'
+  id: totrans-139
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig7_HTML.jpg)'
 - en: 3 line graphs for pendulum using D D P G. Left. Mean return per episode has
     a fluctuating line. Center. A fluctuating line for loss of Q decreases logarithmically
     from (0, 95) to (8000, 15). Right. A noisy line for loss of actor decreases from
     (0, 2.5) to (8000, negative 24). Values are estimated.
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用DDPG的Pendulum的3条线图。左。每集的平均回报线波动。中。Q值损失的波动线以对数方式从(0, 95)减少到(8000, 15)。右。演员损失的波动线从(0,
+    2.5)减少到(8000, 负24)。值是估计的。
 - en: Figure 9-7
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 图9-7
 - en: Training progress for Pendulum using DDPG
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用DDPG的Pendulum的训练进度
 - en: You can also run the same code train an agent for Lunar-Lander Continuous environment.
     You can refer to the notebook for observing the training graphs and videos.
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 你也可以运行相同的代码来训练一个针对Lunar-Lander连续环境的智能体。你可以参考笔记本来观察训练图和视频。
 - en: Next, you look at twin delayed DDPG, also known as TD3\. It has some other enhancements
     and tricks to address some of the stability and convergence speed issues seen
     in DDPG.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，你将了解双延迟DDPG，也称为TD3。它有一些其他增强和技巧来解决DDPG中看到的一些稳定性和收敛速度问题。
 - en: Twin Delayed DDPG
+  id: totrans-145
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 双延迟DDPG
 - en: 'Twin delayed DDPG (TD3) was proposed in 2018 in a paper titled “Addressing
     Function Approximation Error in Actor-Critic Methods.”^([6](#Fn6)) DDPG suffers
     from the overestimation bias that you saw in Q-learning in Chapter [4](502835_2_En_4_Chapter.xhtml)
@@ -820,34 +1158,46 @@
     paper, the authors show that DDPG also suffers from the same overestimation bias.
     They propose a variant of double Q-learning, which addresses this overestimation
     bias in DDPG. The approach uses the following modifications:'
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 双延迟DDPG（TD3）于2018年在一篇题为“Addressing Function Approximation Error in Actor-Critic
+    Methods.”的论文中提出。^([6](#Fn6)) DDPG存在你在第四章中看到的Q-learning中的过估计偏差。你看到了在第七章中通过解耦最大化动作和最大q值来处理偏差的双DQN方法。在之前提到的论文中，作者们表明DDPG也存在着相同的过估计偏差。他们提出了一种双Q学习的变体，用以解决DDPG中的过估计偏差。该方法采用了以下修改：
 - en: '*Clipped double Q-learning*: TD3 uses two independent Q-functions and takes
     the minimum of the two while forming targets under Bellman equations, that is,
     the targets in Step 11 of the DDPG pseudocode in Figure [9-4](#Fig4). This modification
     is the reason the algorithm is called *twin*.'
+  id: totrans-147
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*裁剪双Q学习*：TD3使用两个独立的Q函数，并在形成贝尔曼方程的目标时取两个中的最小值，即图[9-4](#Fig4)中DDPG伪代码的第11步中的目标。这种修改是算法被称为*twin*的原因。'
 - en: '*Delayed policy updates*: TD3 updates the policy and target networks less frequently
     as compared to the Q-function updates. The paper recommends one update to the
     policy and target networks for every two updates of the Q function. It means carrying
     out updates in Steps 13 and 14 of the DDPG pseudocode in Figure [9-4](#Fig4) once
     for every two updates of the Q-function in Steps 11 and 12\. This modification
     is the reason to call this algorithm *delayed*.'
+  id: totrans-148
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*延迟策略更新*：TD3 相比于 Q 函数更新，更新策略和目标网络的频率较低。论文建议每更新两次 Q 函数，就对策略和目标网络进行一次更新。这意味着在图
+    [9-4](#Fig4) 中的 DDPG 伪代码的第 13 和 14 步中，每更新两次 Q 函数就执行一次更新。这种修改是将其称为 *延迟* 算法的原因。'
 - en: '*Target policy smoothing*: TD3 adds noise to the target action, making it harder
     for the policy to exploit Q-function estimation errors and control the overestimation
     bias.'
+  id: totrans-149
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*目标策略平滑*：TD3 向目标动作添加噪声，这使得策略更难利用 Q 函数估计误差并控制过估计偏差。'
 - en: Target-Policy Smoothing
+  id: totrans-150
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Target-Policy Smoothing
 - en: The action used to calculate the target *y*(*r*, *s*^’, *d*) is based on the
     target networks. In DDPG, you calculated ![$$ {a}^{\prime}\left({s}^{\prime}\right)={\mu}_{\theta_{\mathrm{targ}}}\left({s}^{\prime}\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq15.png) in step
@@ -857,161 +1207,250 @@
     add a mean zero Gaussian noise with some clip ranges. The action is then further
     clipped using *tanh* and multiplied with `max_action_range` to make sure that
     action values fit within the range of accepted action values.
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于计算目标 *y*(*r*, *s*′，*d*) 的动作基于目标网络。在 DDPG 中，你在图 [9-4](#Fig4) 的第 11 步计算了 ![a'^(s')=μ_θ^(targ)(s')](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq15.png)。然而，在
+    TD3 中，你通过向动作添加噪声来执行目标策略平滑。对于确定性的动作 ![μ_θ^(targ)(s')](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq16.png)，你添加一个均值为零的高斯噪声，并设置一些剪辑范围。然后，使用
+    *tanh* 进一步剪辑动作，并乘以 `max_action_range`，以确保动作值在可接受的动作值范围内。
 - en: '![$$ a= clip\left({\mu}_{\theta }(s)+\alpha \cdotp \epsilon, {a}_{Low},{a}_{High}\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ9.png)'
+  id: totrans-152
   prefs: []
   type: TYPE_IMG
+  zh: '![a=clip(μ_θ(s)+α·ε,a_Low,a_High)](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ9.png)'
 - en: (9-9)
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-9)
 - en: where *ϵ* ∼ *N*, and *α* is the scale of noise equal to range of action values.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 *ϵ* ∼ *N*，且 *α* 是噪声的尺度，等于动作值的范围。
 - en: Q-Loss (Critic)
+  id: totrans-155
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Q-Loss (Critic)
 - en: 'You’ll use two independent Q-functions. The minimum of the two Q functions
     is used in the TD(0) target and this target is then used for the combined Q-loss,
     which is minimized to update the parameters of the two agent Q networks. Expressing
     the target mathematically looks like this:'
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 你将使用两个独立的 Q 函数。两个 Q 函数中的最小值用于 TD(0) 目标，然后这个目标用于组合 Q 损失，该损失被最小化以更新两个智能体 Q 网络的参数。用数学表达式表示目标如下：
 - en: '![$$ y\left(r,{s}^{\prime },d\right)=r+\gamma \left(1-d\right)\underset{i=1,2}{\min
     }{Q}_{\phi_{\mathrm{targ},i}}\left({s}^{\prime },{a}^{\prime}\left({s}^{\prime}\right)\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ10.png)'
+  id: totrans-157
   prefs: []
   type: TYPE_IMG
+  zh: '![y(r,s'',d)=r+γ(1-d)min_{i=1,2}Q_{φ_{targ,i}}(s'',a''(s''))](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ10.png)'
 - en: (9-10)
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-10)
 - en: 'This first uses Equation [9-9](#Equ9) to find the noisy target action *a*^′(*s*^′).
     This in turn is used to calculate the target q-values: the q-value of the first
     and second Q target networks ![$$ {Q}_{\phi_{\mathrm{targ},1}}\left({s}^{\prime
     },{a}^{\prime}\left({s}^{\prime}\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq17.png)
     and ![$$ {Q}_{\phi_{\mathrm{targ},2}}\left({s}^{\prime },{a}^{\prime}\left({s}^{\prime}\right)\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq18.png)'
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 这首先使用方程 [9-9](#Equ9) 来找到噪声目标动作 *a*′(*s*′)。这反过来又用于计算目标 q 值：第一个和第二个 Q 目标网络的 q
+    值 ![Q_{φ_{targ,1}}(s',a'(s'))](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq17.png)
+    和 ![Q_{φ_{targ,2}}(s',a'(s'))](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq18.png)
 - en: 'The common target in Equation [9-10](#Equ10) is used next to find the losses
     for both Q-networks, as shown here:'
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 方程 [9-10](#Equ10) 中的公共目标随后用于找到两个 Q 网络的损失，如下所示：
 - en: '![$$ {Q}_{Loss,1}=\frac{1}{B}{\sum}_{\left(s,a,r,{s}^{\prime },d\right)\in
     B}{\left({Q}_{\upphi_1}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ11.png)'
+  id: totrans-161
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {Q}_{Loss,1}=\frac{1}{B}{\sum}_{\left(s,a,r,{s}^{\prime },d\right)\in
+    B}{\left({Q}_{\upphi_1}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ11.png)'
 - en: (9-11a)
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-11a)
 - en: And,
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 以及，
 - en: '![$$ {Q}_{Loss,2}=\frac{1}{B}{\sum}_{\left(s,a,r,{s}^{\prime },d\right)\in
     B}{\left({Q}_{\upphi_2}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ12.png)'
+  id: totrans-164
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {Q}_{Loss,2}=\frac{1}{B}{\sum}_{\left(s,a,r,{s}^{\prime },d\right)\in
+    B}{\left({Q}_{\upphi_2}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ12.png)'
 - en: (9-11b)
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-11b)
 - en: The losses are added and then minimized independently to train the ![$$ {Q}_{\phi_1}
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq19.png) and ![$$
     {Q}_{\phi_2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq20.png)
     networks (i.e., two online Critic networks).
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 损失被添加后，独立最小化以训练![$$ {Q}_{\phi_1} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq19.png)
+    和 ![$$ {Q}_{\phi_2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq20.png)
+    网络（即两个在线Critic网络）。
 - en: '![$$ {Q}_{Loss}={\sum}_{i=1,2}{Q}_{Loss,i} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ13.png)'
+  id: totrans-167
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {Q}_{Loss}={\sum}_{i=1,2}{Q}_{Loss,i} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ13.png)'
 - en: (9-12)
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-12)
 - en: Policy Loss (Actor)
+  id: totrans-169
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 政策损失（Actor）
 - en: The policy loss calculation remains unchanged, the same as what was used in
     DDPG.
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 策略损失的计算保持不变，与DDPG中使用的相同。
 - en: '![$$ \mathrm{Polic}{\mathrm{y}}_{\mathrm{Loss}}=-\frac{1}{\mathrm{B}}{\sum}_{\mathrm{s}\in
     B}{\mathrm{Q}}_{\upphi_1}\left(s,{\mu}_{\theta }(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ14.png)'
+  id: totrans-171
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \mathrm{Polic}{\mathrm{y}}_{\mathrm{Loss}}=-\frac{1}{\mathrm{B}}{\sum}_{\mathrm{s}\in
+    B}{\mathrm{Q}}_{\upphi_1}\left(s,{\mu}_{\theta }(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ14.png)'
 - en: (9-13)
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-13)
 - en: Note that you use only ![$$ {\mathrm{Q}}_{\upphi_1} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq21.png)
     in the equation. As with DDPG, also note the -ve sign. You need to do gradient
     ascent, but PyTorch does gradient descent. You can convert the ascent to descent
     using a -ve sign.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，您在方程中只使用![$$ {\mathrm{Q}}_{\upphi_1} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq21.png)。与DDPG类似，也请注意负号。您需要进行梯度上升，但PyTorch执行梯度下降。您可以使用负号将上升转换为下降。
 - en: Delayed Update
+  id: totrans-174
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 延迟更新
 - en: Update the online policy and the agent network weights in a delayed manner—one
     update for every two updates of the online Q networks ![$$ {Q}_{\phi_1} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq22.png)
     and ![$$ {Q}_{\phi_2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq23.png).
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 延迟更新在线策略和代理网络权重——每两次在线Q网络更新进行一次更新！[$$ {Q}_{\phi_1} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq22.png)
+    和 ![$$ {Q}_{\phi_2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq23.png)。
 - en: Pseudocode and Implementation
+  id: totrans-176
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 模拟伪代码和实现
 - en: At this point, you are ready to see the complete pseudocode. Refer to Figure
     [9-8](#Fig8).
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，您已经准备好查看完整的伪代码。请参阅图[9-8](#Fig8)。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig8_HTML.jpg)'
+  id: totrans-178
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig8_HTML.jpg)'
 - en: A pseudocode for twin delayed D D P G. Input initial policy parameters theta,
     Q-function parameters phi 1 and 2, and empty relay buffer D is followed by set
     target parameters, compute target actions and action targets, update Q-function
     and policy, and update target networks using poly a k averaging.
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 双延迟DDPG的伪代码。输入初始策略参数theta，Q函数参数phi 1和2，以及空的中继缓冲区D，然后设置目标参数，计算目标动作和动作目标，更新Q函数和策略，并使用poly
+    a k平均更新目标网络。
 - en: Figure 9-8
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 图9-8
 - en: Twin delayed DDPG algorithm
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: 双延迟DDPG算法
 - en: Code Implementation
+  id: totrans-182
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 代码实现
 - en: Now you walk through the code implementation. As with DDPG, you will run the
     algorithm on Pendulum and Lunar-Lander. Most of the code is similar to that of
     DDPG except for the three modifications covered earlier. Accordingly, I will only
     walk through just the highlights. You can find the complete code for the PyTorch
     version in the `9.b-td3.ipynb` file.
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在您将遍历代码实现。与DDPG类似，您将在Pendulum和Lunar-Lander上运行该算法。大部分代码与DDPG类似，除了前面提到的三个修改。因此，我只会介绍一些重点。您可以在`9.b-td3.ipynb`文件中找到PyTorch版本的完整代码。
 - en: Combined Model-Actor-Critic Implementation
+  id: totrans-184
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 模型-Actor-Critic联合实现
 - en: You’ll first look at the agent networks. The individual Q-network (critic) `MLPQFunction`
     and policy-network (actor) `MLPActor` are the same as before. However, the agent
     where you combine the actor and critic, that is, `MLPActorCritic`, sees a minor
     change. You now have two Q-networks in line with the “twin” part of TD3\. Listing
     [9-8](#PC8) contains the code for `MLPActorCritic`.
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 你首先将查看代理网络。单个 Q 网络（评论家）`MLPQFunction` 和策略网络（演员）`MLPActor` 与之前相同。然而，将演员和评论家结合在一起的网络，即
+    `MLPActorCritic`，有一些小的变化。现在你有两个 Q 网络与 TD3 的“双胞胎”部分一致。列表 [9-8](#PC8) 包含了 `MLPActorCritic`
+    的代码。
 - en: '[PRE7]'
+  id: totrans-186
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Q-Loss Implementation
+  id: totrans-187
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Q 损失实现
 - en: The replay buffer remains the same. The next change is in the way Q-loss is
     calculated. You implement target policy smoothing and clipped double Q-learning
     as per Equations [9-9](#Equ9) to [9-12](#Equ13). Listing [9-9](#PC9) contains
@@ -1030,23 +1469,41 @@
     involving the online q-network are carried out under `torch.no_grad()` to stop
     gradient accumulation, speed up the calculation, and save memory. This is because
     `q_loss` is used to adjust only the weights of online q-networks.
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 重放缓冲区保持不变。下一个变化在于 Q 损失的计算方式。你根据方程 [9-9](#Equ9) 到 [9-12](#Equ13) 实现目标策略平滑和裁剪的双
+    Q 学习。列表 [9-9](#PC9) 包含了 PyTorch 中 `compute_q_loss` 的代码。与 DDPG 类似，你首先将所有输入从 NumPy
+    数组转换为 PyTorch 张量，如果需要则移动到 GPU 上。`q1 = agent.q1(states, actions)` 和 `q2 = agent.q2(states,
+    actions)` 将 `(state,action)` 元组的批次通过两个在线代理的 Q 网络传递，获得两个 q 值——TD3 的双胞胎部分。接下来，你将目标策略调整为
+    `action_target`，这是与方程 [9-9](#Equ9) 一致的带有平滑的噪声动作，用于下一个状态。然后，`action_target` 通过目标
+    Q 网络传递以获得 `q1_target` 和 `q2_target`，然后取两个值的最小值得到 `q_target`。一旦获得 `q_target`，你将形成
+    *TD*(0) 目标，如方程 [9-10](#Equ10) 所示。接下来，你根据方程 [9-11](#Equ11) 和 [9-12](#Equ13) 形成联合
+    MSE 损失，在 `q1` 和 `target` 之间以及 `q2` 和 `target` 之间。不涉及在线 q 网络的计算在 `torch.no_grad()`
+    下执行，以停止梯度累积，加快计算速度并节省内存。这是因为 `q_loss` 仅用于调整在线 q 网络的权重。
 - en: '[PRE8]'
+  id: totrans-189
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Policy-Loss Implementation
+  id: totrans-190
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 策略损失实现
 - en: Policy loss calculation remains the same except that you use only one of the
     Q-networks, which is the first one with weights *ϕ*[1].
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 策略损失计算保持不变，只是你只使用一个 Q 网络即可，即权重为 *ϕ*[1] 的第一个网络。
 - en: One-Step Update Implementation
+  id: totrans-192
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 单步更新实现
 - en: The implementation of the `one_step_update` function is also pretty similar,
     except for the fact that you need to carry out the gradient of q-loss with respect
     to the combined network weights of the Q1 and Q2 networks passed into the function
@@ -1054,20 +1511,31 @@
     Q-networks and the target policy network once every two updates of the online
     Q-network update. Listing [9-10](#PC10) contains the implementation of `one_step_update`
     in PyTorch.
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: '`one_step_update` 函数的实现也非常相似，只是你需要执行 q 损失相对于 Q1 和 Q2 网络组合网络权重的梯度，这些权重作为 `q_params`
+    传递给函数。此外，你每更新两次在线 Q 网络更新，就执行一次在线策略更新和目标 Q 网络以及目标策略网络的更新。列表 [9-10](#PC10) 包含了 PyTorch
+    中 `one_step_update` 的实现。'
 - en: '[PRE9]'
+  id: totrans-194
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: TD3 Main Loop
+  id: totrans-195
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: TD3 主循环
 - en: The next change is to the frequency of updates. Unlike DDPG, in TD3 you update
     the online policy and target weights once for every two updates of Q-networks,
     which is controlled inside the `one_step_update` function shown in Listing [9-10](#PC10).
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一个变化是更新频率。与 DDPG 不同，在 TD3 中，你每更新两次 Q 网络就更新一次在线策略和目标权重，这由 `one_step_update`
+    函数控制，如列表 [9-10](#PC10) 所示。
 - en: Now run TD3 first for the Pendulum environment and then for the Lunar-Lander
     Gymnasium environment. Figure [9-9](#Fig9) shows the graph as training progresses.
     If you watch the video of the trained agent in the `9.b-td3.ipynb` notebook, you
@@ -1081,187 +1549,282 @@
     in TD3 over the DDPG versions. Interested readers can refer to the original paper
     of TD3 to check out the benchmark studies that the authors of TD3 did with respect
     to other algorithms.
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在首先为摆锤环境运行TD3，然后为月球着陆场环境运行。图[9-9](#Fig9)显示了随着训练的进行而变化的图表。如果你查看`9.b-td3.ipynb`笔记本中训练代理的视频，你会看到代理学会在10,000次梯度更新内相当快地平衡杆。此外，如果你比较DDPG的平均回报，如图[9-7](#Fig7)所示，与TD3在图[9-9](#Fig9)中显示的回报，你将看到在TD3下，回报随着训练的进行几乎单调递增，而在DDPG中，回报开始上升之前有一个初始下降。这表明TD3由于在DDPG版本上实施的多个增强而显示出的学习过程的稳定性。感兴趣的读者可以参考TD3的原始论文，以检查TD3的作者与其他算法进行的基准研究。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig9_HTML.jpg)'
+  id: totrans-198
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig9_HTML.jpg)'
 - en: 3 line graphs for pendulum using T D 3\. Left. The mean return per episode increases
     from (0, negative 1550) to (19, negative 150). Center. The line for loss of Q
     decreases logarithmically from (0, 11.5) to (9500, 1). Right. The loss of actor
     increases from (0, 5) to (4800, 70). Values are estimated.
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用TD3的摆锤的3条线图。左图。每期的平均回报从(0, -1550)增加到(19, -150)。中图。Q损失的线对数下降从(0, 11.5)到(9500,
+    1)。右图。演员的损失从(0, 5)增加到(4800, 70)。值是估计的。
 - en: Figure 9-9
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 图9-9
 - en: Training progress for Pendulum using TD3
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用TD3训练摆锤的训练进度
 - en: Soon you will look at the last algorithm in this chapter, an algorithm called
     *soft actor-critic (SAC)*. However, before you do that, the chapter takes a short
     detour to explain something called the *reparameterization trick* that SAC uses.
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 很快你将看到本章的最后一个算法，一个称为*软演员-评论家（SAC）*的算法。然而，在你这样做之前，本章将简要地偏离主题，解释SAC使用的*重参数化技巧*。
 - en: Reparameterization Trick
+  id: totrans-203
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 重参数化技巧
 - en: The reparameterization trick is a “change in the variable” approach that is
     used in variational auto-encoders (VAEs). There, it is needed to propagate gradients
     through nodes, which are stochastic. Reparameterization is also used to bring
     down the variance of gradient estimates. The second reason is explored here. This
     deep dive follows a blog post by Goker Erdogan^([7](#Fn7)) with additional analytical
     derivations and explanations.
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 重参数化技巧是一种“变量改变”的方法，它在变分自编码器（VAEs）中得到了应用。在那里，它需要通过随机节点传播梯度。重参数化还用于降低梯度估计的方差。第二个原因在这里进行了探讨。这次深入探讨遵循了Goker
+    Erdogan的博客文章^([7](#Fn7))，并增加了额外的分析和解释。
 - en: 'Suppose you have a random variable *x*, which follows a normal distribution
     with mean θ and unit variance. Let the distribution be parameterized by mean *θ*
     as follows:'
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设你有一个随机变量*x*，它遵循以θ为均值、单位方差的正态分布。让分布由均值*θ*如下参数化：
 - en: '![$$ x\sim {p}_{\uptheta}(x)=N\left(\uptheta, 1\right)=\frac{1}{\sqrt{2\uppi}}{e}^{-\frac{1}{2}{\left(x-\uptheta
     \right)}^2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ15.png)'
+  id: totrans-206
   prefs: []
   type: TYPE_IMG
+  zh: '![x服从p_θ(x)=N(θ, 1)=1/(√2π)e^(-1/2(x-θ)^2)](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ15.png)'
 - en: (9-14)
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-14)
 - en: First, you draw samples from it. Next, you assume that you do not know θ and
     use these samples from the true distribution to find the estimated value of θ,
     using mean square error (MSE) *J*(θ) with the help of gradient descent.
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，你从它中抽取样本。接下来，你假设你不知道θ，并使用这些来自真实分布的样本，通过梯度下降法，使用均方误差（MSE）*J*(θ)来找到θ的估计值。
 - en: '![$$ J\left(\uptheta \right)={E}_{x\sim {p}_{\uptheta}(x)}\left[{x}^2\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Eque.png)'
+  id: totrans-209
   prefs: []
   type: TYPE_IMG
+  zh: '![J(θ)=E_x~p_θ(x)[x^2]](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Eque.png)'
 - en: The focus is on finding two different approaches for determining the estimate
     of the derivate/gradient ∇[θ]*J*(θ).
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 重点在于找到两种不同的方法来确定导数/梯度的估计值∇[θ]*J*(θ)。
 - en: Score/Reinforce Way
+  id: totrans-211
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 分数/强化方式
 - en: Since the parameter `\theta` over which you want to find the gradient also impacts
     the distribution over which expectation is carried out in the expression for *J*(θ),
     you can follow the log trick, which is what you did with REINFORCE and policy
     gradient in Chapter [8](502835_2_En_8_Chapter.xhtml). You saw that it has high
     variance, and that’s what I want to demonstrate for a simple example distribution
     shown earlier. Take the derivative of *J*(θ) with respect to *θ*.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于你想要找到梯度的参数 `\theta` 也会影响 *J*(θ) 表达式中期望值所涉及的分布，你可以遵循对数技巧，这与你在第 [8](502835_2_En_8_Chapter.xhtml)
+    章节中使用的 REINFORCE 和策略梯度相同。你看到它具有高方差，这正是我想通过前面展示的简单示例分布来证明的。对 *J*(θ) 关于 *θ* 求导。
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equf.png)'
+  id: totrans-213
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equf.png)'
 - en: '![$$ ={\nabla}_{\uptheta}{E}_{x\sim {p}_{\uptheta}(x)}\left[{x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equg.png)'
+  id: totrans-214
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equg.png)'
 - en: '![$$ ={\nabla}_{\uptheta}\int {p}_{\uptheta}(x){x}^2 dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equh.png)'
+  id: totrans-215
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equh.png)'
 - en: '![$$ =\int {\nabla}_{\uptheta}{p}_{\uptheta}(x){x}^2 dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equi.png)'
+  id: totrans-216
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equi.png)'
 - en: '![$$ =\int \frac{p_{\uptheta}(x)}{p_{\uptheta}(x)}{\nabla}_{\uptheta}{p}_{\uptheta}(x){x}^2
     dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equj.png)'
+  id: totrans-217
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equj.png)'
 - en: '![$$ =\int {p}_{\uptheta}(x)\frac{\nabla_{\uptheta}{p}_{\uptheta}(x)}{p_{\uptheta}(x)}{x}^2
     dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equk.png)'
+  id: totrans-218
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equk.png)'
 - en: '![$$ =\int {p}_{\uptheta}(x){\nabla}_{\uptheta}\mathit{\log}\ {p}_{\uptheta}(x){x}^2
     dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equl.png)'
+  id: totrans-219
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equl.png)'
 - en: '![$$ ={E}_{x\sim {p}_{\uptheta}(x)}\left[{\nabla}_{\uptheta}\mathit{\log}\
     {p}_{\uptheta}(x){x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equm.png)'
+  id: totrans-220
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equm.png)'
 - en: Next, use Monte Carlo to form an estimate of ∇[θ]*J*(θ) using samples.
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，使用蒙特卡洛方法通过样本形成 ∇[θ]*J*(θ) 的估计。
 - en: '![$$ {\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\nabla}_{\uptheta}\mathit{\log}\;{p}_{\uptheta}\left({x}_i\right){x}_i^2
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equn.png)'
+  id: totrans-222
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equn.png)'
 - en: 'Substituting the expression for *p*[*θ*](*x*) from Equation [9-14](#Equ15)
     and taking a log followed by gradient w.r.t. *θ*, you get the following:'
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 将方程 [9-14](#Equ15) 中的 *p*[*θ*](*x*) 的表达式代入，并对 *θ* 求对数后求梯度，你得到以下结果：
 - en: '![$$ {\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N\left({x}_i-\uptheta
     \right){x}_i^2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ16.png)'
+  id: totrans-224
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ16.png)'
 - en: (9-15)
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-15)
 - en: Reparameterization Trick and Pathwise Derivatives
+  id: totrans-226
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 重新参数化技巧和路径导数
 - en: 'The second approach is that of the reparameterization trick. You will redefine
     random variable *x* as a composition of a constant and a normal distribution that
     has no parameter *θ*. Let *x* be defined as follows:'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 第二种方法是重新参数化技巧。你将重新定义随机变量 *x* 为一个常数和一个没有参数 *θ* 的正态分布的组合。定义 *x* 如下：
 - en: '![$$ x=\uptheta +\upvarepsilon \kern1em \mathrm{where}\kern0.75em \upvarepsilon
     \sim N\left(0,1\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equo.png)'
+  id: totrans-228
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equo.png)'
 - en: Note that the previous reparameterization leaves the distribution for *x* unchanged.
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，之前的重新参数化没有改变 *x* 的分布。
 - en: '![$$ {p}_{\uptheta}(x)=N\left(\uptheta, 1\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equp.png)'
+  id: totrans-230
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equp.png)'
 - en: 'Now calculate: ![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={\nabla}_{\uptheta}{E}_{x\sim
     {p}_{\uptheta}(x)}\left[{x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq24.png)'
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在计算：![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq24.png)
 - en: '![$$ ={\nabla}_{\uptheta}{E}_{x\sim {p}_{\uptheta}(x)}\left[{x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equq.png)'
+  id: totrans-232
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equq.png)'
 - en: '![$$ ={\nabla}_{\uptheta}{E}_{\upvarepsilon \sim N\left(0,1\right)}\left[{\left(\uptheta
     +\upvarepsilon \right)}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equr.png)'
+  id: totrans-233
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equr.png)'
 - en: As the expectation does not depend on *θ*, you can move the gradient inside
     without running into the *log* issue (i.e., finding log inside the derivate) shown
     in the previous method.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于期望值不依赖于*θ*，因此可以将梯度移到内部，而不会遇到之前方法中出现的*对数*问题（即在导数中找到对数）。
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equs.png)'
+  id: totrans-235
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equs.png)'
 - en: '![$$ ={\nabla}_{\uptheta}\int p\left(\upvarepsilon \right){\left(\uptheta +\upvarepsilon
     \right)}^2d\upvarepsilon $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equt.png)'
+  id: totrans-236
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equt.png)'
 - en: '![$$ =\int p\left(\upvarepsilon \right){\nabla}_{\uptheta}{\left(\uptheta +\upvarepsilon
     \right)}^2d\upvarepsilon $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equu.png)'
+  id: totrans-237
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equu.png)'
 - en: '![$$ =\int p\left(\upvarepsilon \right)2\left(\uptheta +\upvarepsilon \right)d\upvarepsilon
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equv.png)'
+  id: totrans-238
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equv.png)'
 - en: '![$$ ={E}_{\upvarepsilon \sim N\left(0,1\right)}\left[2\left(\uptheta +\upvarepsilon
     \right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equw.png)'
+  id: totrans-239
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equw.png)'
 - en: 'Next, convert the expectation to the Monte Carlo (MC) estimate to get the following:'
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，将期望值转换为蒙特卡洛（MC）估计，得到以下结果：
 - en: '![$$ {\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N2\left(\uptheta
     +{\upvarepsilon}_i\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ17.png)'
+  id: totrans-241
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ17.png)'
 - en: (9-16)
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-16)
 - en: Take a moment to compare the two estimates of ∇[θ]*J*(θ) given in Equations
     [9-15](#Equ16) and [9-16](#Equ17). Remember these two are the estimates of the
     true gradient ∇[θ]*J*(θ) and therefore may show different convergence properties
@@ -1271,12 +1834,17 @@
     to the true value a lot faster and in a more stable way, while the other one will
     take a large number of training samples. Can you guess which one is better? Ponder
     this for a few minutes before proceeding.
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
+  zh: 抽空比较方程 [9-15](#Equ16) 和 [9-16](#Equ17) 中给出的 ∇[θ]*J*(θ) 的两个估计。记住这两个是真实梯度 ∇[θ]*J*(θ)
+    的估计，因此可能显示出不同的收敛性质。这种收敛将取决于你拥有的真实分布的样本数量。随着训练样本数量 N 的增加，两者都将收敛到真实分布。然而，其中一个将更快、更稳定地收敛到真实值，而另一个将需要大量的训练样本。你能猜到哪一个更好吗？在继续之前，花几分钟时间思考这个问题。
 - en: Experiment
+  id: totrans-244
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 实验
 - en: Equations [9-15](#Equ16) and [9-16](#Equ17) are used to calculate the mean and
     variance of the estimates using two approaches. They do so using different values
     of *N* to calculate the estimate as per Equations [9-15](#Equ16) and [9-16](#Equ17),
@@ -1286,186 +1854,268 @@
     the same value, but the variance of the estimate in Equation [9-15](#Equ16) is
     higher than the variance of the estimate in Equation [9-16](#Equ17) by almost
     one order of magnitude. It’s higher by a factor of 21.75 in this case.
+  id: totrans-245
   prefs: []
   type: TYPE_NORMAL
+  zh: 方程 [9-15](#Equ16) 和 [9-16](#Equ17) 用于通过两种方法计算估计的均值和方差。它们使用不同的 *N* 值来根据方程 [9-15](#Equ16)
+    和 [9-16](#Equ17) 计算估计，然后对每个 *N* 值重复实验 10,000 次，以计算两种方法下梯度估计的均值和方差。这个实验将表明两个方程的均值相同。换句话说，它们估计了相同的值，但方程
+    [9-15](#Equ16) 中的估计方差比方程 [9-16](#Equ17) 中的估计方差高近一个数量级。在这种情况下，高出一个因子 21.75。
 - en: 'To carry out this experiment, follow the steps listed here:'
+  id: totrans-246
   prefs: []
   type: TYPE_NORMAL
+  zh: 要进行这个实验，请遵循以下步骤：
 - en: 'Freeze: θ = 2'
+  id: totrans-247
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'Freeze: θ = 2'
 - en: Generate samples for *x* ∼ *N*(θ, 1) and use these samples in Equation [9-15](#Equ16)
     to calculate the REINFORCE estimate of ∇[θ]*J*(θ).
+  id: totrans-248
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 为 *x* ∼ *N*(θ, 1) 生成样本，并使用这些样本在方程 [9-15](#Equ16) 中计算 ∇[θ]*J*(θ) 的 REINFORCE
+    估计。
 - en: Generate samples for ϵ ∼ *N*(0, 1) and use these samples in Equation [9-16](#Equ17))
     to calculate the reparameterized estimate of ∇[θ]*J*(θ).
+  id: totrans-249
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 为 ϵ ∼ *N*(0, 1) 生成样本，并使用这些样本在方程 [9-16](#Equ17) 中计算 ∇[θ]*J*(θ) 的重新参数化估计。
 - en: You can see the details of the experiment and code in `9.c-reparam.ipynb`. When
     you run the code for different values of N, you’ll get the convergence graphs
     of mean and the variance of estimates for different values of N, as shown in Figure
     [9-10](#Fig10).
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在 `9.c-reparam.ipynb` 中看到实验和代码的详细情况。当你运行代码并输入不同的 N 值时，你会得到不同 N 值下估计的均值和方差的收敛图，如图
+    [9-10](#Fig10) 所示。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig10_HTML.jpg)'
+  id: totrans-251
   prefs: []
   type: TYPE_IMG
+  zh: '![此处为图片](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig10_HTML.jpg)'
 - en: 2 double line graphs. Left. Gradient estimate of mean versus sample size. Reinforce
     and re-param increase from (10, 3.96) and (10, 3.995) to (100000, 4). Right. Gradient
     estimate of variance versus N. Reinforce and re-param decrease from (10, 8,5)
     and (10, 0.5) to (100000, 0). Values are estimated.
+  id: totrans-252
   prefs: []
   type: TYPE_NORMAL
+  zh: 2 条双线图。左图：梯度估计的均值与样本大小的关系。强化和重新参数化从 (10, 3.96) 和 (10, 3.995) 增加到 (100000, 4)。右图：梯度估计的方差与
+    N 的关系。强化和重新参数化从 (10, 8,5) 和 (10, 0.5) 减少到 (100000, 0)。数值已估计。
 - en: Figure 9-10
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 9-10
 - en: Convergence of the reinforce(log trick) and reparameterization approaches to
     gradient estimates
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: 强化(log技巧)和重新参数化方法在梯度估计中的收敛性
 - en: Do these make sense? You can derive the mean and variance of two gradient estimates
     that are given in Equations [9-15](#Equ16) and [9-16](#Equ17) analytically. Start
     with Equation [9-15](#Equ16), which is an estimate of ∇[θ]*J*(θ) under the reinforce/log-trick
     approach, and find its expected value.
+  id: totrans-255
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些是否合理？你可以通过解析方法推导出方程 [9-15](#Equ16) 和 [9-16](#Equ17) 中给出的两个梯度估计的均值和方差。从方程 [9-15](#Equ16)
+    开始，这是在强化/log技巧方法下对 ∇[θ]*J*(θ) 的估计，并找到它的期望值。
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\mathrm{E}\left[\frac{1}{N}{\sum}_{i=1}^N\left({x}_i-\uptheta
     \right){x}_i^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equx.png)'
+  id: totrans-256
   prefs: []
   type: TYPE_IMG
+  zh: '![此处为公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equx.png)'
 - en: For now, assume that *x*[*i*] ∼ *N*(μ, σ²).
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，假设 *x*[*i*] ∼ *N*(μ, σ²)。
 - en: 'Taking expectation operation inside the summation, you get:'
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 在求和符号内进行期望运算，你得到：
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\frac{1}{N}{\sum}_{i=1}^NE\left[\left({x}_i-\uptheta
     \right){x}_i^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equy.png)'
+  id: totrans-259
   prefs: []
   type: TYPE_IMG
+  zh: '![此处为公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equy.png)'
 - en: '![$$ =\frac{1}{N}{\sum}_{i=1}^NE\left[{x}_i^3\right]-\uptheta E\left[{x}_i^2\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equz.png)'
+  id: totrans-260
   prefs: []
   type: TYPE_IMG
+  zh: '![此处为公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equz.png)'
 - en: '![$$ =\frac{1}{N}{\sum}_{i=1}^NE\left[{x}_i^3\right]-\uptheta E\left[{x}_i^2\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaa.png)'
+  id: totrans-261
   prefs: []
   type: TYPE_IMG
+  zh: '![此处为公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaa.png)'
 - en: 'Using the standard results for a normal distribution *x*[*i*] ∼ *N*(*μ*, *σ*²),
     you get:'
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用正态分布 *x*[*i*] ∼ *N*(*μ*, *σ*²) 的标准结果，你得到：
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\frac{1}{N}{\sum}_{i=1}^N\left({\upmu}^3+3\upmu
     {\upsigma}^2\right)-\uptheta \left({\upmu}^2+{\upsigma}^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equab.png)'
+  id: totrans-263
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equab.png)'
 - en: '![$$ =\left({\upmu}^3+3\upmu {\upsigma}^2\right)-\uptheta \left({\upmu}^2+{\upsigma}^2\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equac.png)'
+  id: totrans-264
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equac.png)'
 - en: 'In this case, under reinforce, the samples *x*[*i*] come from *N*(θ, 1). Accordingly,
     substituting, μ = θ and σ = 1, you get:'
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种情况下，在强化学习中，样本 *x*[*i*] 来自 *N*(θ, 1)。相应地，代入 μ = θ 和 σ = 1，你得到：
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\left({\uptheta}^3+3\uptheta
     .1\right)-\uptheta \left({\uptheta}^2+{1}^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equad.png)'
+  id: totrans-266
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equad.png)'
 - en: 'In the experiment, you took θ = 2\. Accordingly, making a further substitution
     of θ = 2, you get:'
+  id: totrans-267
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实验中，你取 θ = 2。相应地，进一步代入 θ = 2，你得到：
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\left({2}^3+\mathrm{3.2.1}\right)-2.\left({2}^2+1\right)=14-10=4
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equae.png)'
+  id: totrans-268
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equae.png)'
 - en: As you can see from Figure [9-10](#Fig10), the mean of the estimate of ∇[θ]*J*(θ)
     under reinforce converges to a value of 4 as derived analytically. But it does
     so only for larger Ns, the number of samples. At *N* = 100, the mean is incorrect
     and well above the value of 4\. This indicates that the variance of the reinforce
     estimate must be high. Now analytically derive the variance of the reinforce estimate
     to show that indeed is the case.
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 如从图 [9-10](#Fig10) 所见，在强化学习下，∇[θ]*J*(θ) 的估计值的均值收敛到解析得到的 4 的值。但这仅在较大的 Ns（样本数量）下成立。当
+    *N* = 100 时，均值是不正确的，并且远高于 4 的值。这表明强化估计的方差必须很高。现在解析地推导强化估计的方差以表明确实如此。
 - en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\operatorname{var}\left(\frac{1}{N}{\sum}_{i=1}^N\left({x}_i-\uptheta
     \right){x}_i^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaf.png)'
+  id: totrans-270
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaf.png)'
 - en: 'By using the property of variance of the sum of the random variables, you get:'
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过使用随机变量和的方差的性质，你得到：
 - en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{1}{N^2}{\sum}_{i=1}^N\mathit{\operatorname{var}}\left({x}_i^3-\uptheta
     .{x}_i^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equag.png)'
+  id: totrans-272
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equag.png)'
 - en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^NE\left[{\left({x}_i^3-\uptheta .{x}_i^2\right)}^2\right]-{\left(E\left[{x}_i^3-\uptheta
     .{x}_i^2\right]\right)}^2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equah.png)'
+  id: totrans-273
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equah.png)'
 - en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^NE\left[{x}_i^6+{\uptheta}^2{x}_i^4-2.\uptheta
     .{x}_i^3{x}_i^2\right]-{\left(E\left[{x}_i^3-\uptheta .{x}_i^2\right]\right)}^2
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equai.png)'
+  id: totrans-274
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equai.png)'
 - en: 'Using the standard results for the normal distribution, you get:'
+  id: totrans-275
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用正态分布的标准结果，你得到：
 - en: '![$$ Var\left({\nabla}_{\uptheta}\hat{\mathrm{J}}\left(\uptheta \right)\right)=\frac{1}{\mathrm{N}}\left[{\upmu}^6+15{\upmu}^4{\upsigma}^2+45{\upmu}^2{\upsigma}^4+15{\upsigma}^6+{\uptheta}^2\left({\upmu}^4+6{\upmu}^2{\upsigma}^2+3{\upsigma}^4\right)-2.\uptheta
     \left({\upmu}^5+10{\upmu}^3{\upsigma}^2+15\upmu {\upsigma}^4\right)-{\left({\upmu}^3+3\upmu
     {\upsigma}^2-\uptheta .\left({\upmu}^2+{\upsigma}^2\right)\right)}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaj.png)'
+  id: totrans-276
   prefs: []
   type: TYPE_IMG
 - en: 'Substituting, putting μ = θ = 2, and σ = 1, you get:'
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{1}{N}\left[{2}^6+{15.2}^4+{45.2}^2+15+4\left({2}^4+{6.2}^2+3\right)-4\left({2}^5+{10.2}^3+15.2\right)-{\left({2}^3+3.2-2\left({2}^2+1\right)\right)}^2\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equak.png)'
+  id: totrans-278
   prefs: []
   type: TYPE_IMG
 - en: '![$$ =\frac{1}{N}\left[64+240+180+15+4\left(16+6.4+3\right)-4\left(32+10.8+15.2\right)-{\left(8+3.2-2\left(4+1\right)\right)}^2\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equal.png)'
+  id: totrans-279
   prefs: []
   type: TYPE_IMG
 - en: '![$$ =\frac{1}{N}\left[64+240+180+15+4\left(16+6.4+3\right)-4\left(32+10.8+15.2\right)-{\left(8+3.2-2\left(4+1\right)\right)}^2\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equam.png)'
+  id: totrans-280
   prefs: []
   type: TYPE_IMG
 - en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{87}{N}
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equan.png)'
+  id: totrans-281
   prefs: []
   type: TYPE_IMG
 - en: Referring to right-side graph in Figure [9-10](#Fig10), you can see that N =
     100\. You get a variance of estimate around 0.9, which tallies with the analytically
     derived result of 87/100=0.87.
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
 - en: 'Having derived the mean and variance of the reinforce gradient estimate given
     in Equation [9-15](#Equ16) analytically, next turn your attention to a similar
     analytical derivation of the mean and variance for the reparametrized gradient
     estimate given in Equation [9-16](#Equ17). First calculate the mean of the estimate:'
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\mathrm{E}\left[\frac{1}{N}{\sum}_{i=1}^N2\left(\uptheta
     +{\upvarepsilon}_i\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equao.png)'
+  id: totrans-284
   prefs: []
   type: TYPE_IMG
 - en: Note that under reparameterization, you now have ϵ[*i*] ∼ *N*(0, 1) and θ is
     a constant equal to 2.
+  id: totrans-285
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\frac{1}{N}{\sum}_{i=1}^N2E\left[\left(\uptheta
     +{\upvarepsilon}_i\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equap.png)'
+  id: totrans-286
   prefs: []
   type: TYPE_IMG
 - en: '![$$ =\frac{1}{N}{\sum}_{i=1}^N2.\uptheta $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaq.png)'
+  id: totrans-287
   prefs: []
   type: TYPE_IMG
 - en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=2.\uptheta
     =4 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equar.png)'
+  id: totrans-288
   prefs: []
   type: TYPE_IMG
 - en: The estimate’s mean is 4 and this is what you see in left side graph in Figure
@@ -1473,167 +2123,255 @@
     smoother for estimates using the reparameterization approach given in Equation
     [9-16](#Equ17) versus the convergence of estimate’s mean under Equation [9-15](#Equ16)
     using the reinforce approach.
+  id: totrans-289
   prefs: []
   type: TYPE_NORMAL
+  zh: 估计值的均值为4，这在图[9-10](#Fig10)左侧的图中可以看到。你还可以观察到，使用方程[9-16](#Equ17)中给出的重新参数化方法进行估计时，均值在4附近的收敛性比使用方程[9-15](#Equ16)和强化方法进行估计的均值收敛性要平滑得多。
 - en: You can proceed with a similar analysis to calculate the variance of the reparametrized
     estimate of the gradient in Equation [9-16](#Equ17).
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以使用类似的分析来计算方程[9-16](#Equ17)中重新参数化梯度估计的方差。
 - en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)= Var\left(\frac{1}{N}{\sum}_{i=1}^N2\left(\uptheta
     +{\upvarepsilon}_i\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equas.png)'
+  id: totrans-291
   prefs: []
   type: TYPE_IMG
+  zh: '![Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)= Var\left(\frac{1}{N}{\sum}_{i=1}^N2\left(\uptheta
+    +{\upvarepsilon}_i\right)\right) ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equas.png)'
 - en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N Var\left(2\left(\uptheta +{\upvarepsilon}_i\right)\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equat.png)'
+  id: totrans-292
   prefs: []
   type: TYPE_IMG
+  zh: '![= \frac{1}{N^2}{\sum}_{i=1}^N Var\left(2\left(\uptheta +{\upvarepsilon}_i\right)\right)
+    ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equat.png)'
 - en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N Var\left(2{\upvarepsilon}_i\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equau.png)'
+  id: totrans-293
   prefs: []
   type: TYPE_IMG
+  zh: '![= \frac{1}{N^2}{\sum}_{i=1}^N Var\left(2{\upvarepsilon}_i\right) ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equau.png)'
 - en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N4\. Var\left({\upvarepsilon}_i\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equav.png)'
+  id: totrans-294
   prefs: []
   type: TYPE_IMG
+  zh: '![公式 =\frac{1}{N^2}{\sum}_{i=1}^N4\. Var\left({\upvarepsilon}_i\right) ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equav.png)'
 - en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N4.1 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaw.png)'
+  id: totrans-295
   prefs: []
   type: TYPE_IMG
+  zh: '![= \frac{1}{N^2}{\sum}_{i=1}^N4.1 ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaw.png)'
 - en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{4}{N}
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equax.png)'
+  id: totrans-296
   prefs: []
   type: TYPE_IMG
+  zh: '![Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{4}{N}
+    ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equax.png)'
 - en: Again, refer to the right-side graph in Figure [9-10](#Fig10). Notice that variance
     of the estimate under the reparameterization approach is smaller than the variance
     under the reinforce/log-trick approach. This is exactly what the analytical derivations
     also show. A variance of 4/N for the reparameterization approach versus a variance
     of 87/N for the reinforce approach.
+  id: totrans-297
   prefs: []
   type: TYPE_NORMAL
+  zh: 再次，参考图[9-10](#Fig10)右侧的图。注意，在重新参数化方法下，估计的方差小于在强化/对数技巧方法下的方差。这正是解析推导所显示的。重新参数化方法的方差为4/N，而强化方法的方差为87/N。
 - en: 'In summary, you have shown that for REINFORCE, the gradient estimate using
     Equation [9-15](#Equ16) has the following mean and variance:'
+  id: totrans-298
   prefs: []
   type: TYPE_NORMAL
+  zh: 总结来说，你已经表明对于REINFORCE，使用方程[9-15](#Equ16)的梯度估计具有以下均值和方差：
 - en: '![$$ mean=4 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equay.png)'
+  id: totrans-299
   prefs: []
   type: TYPE_IMG
+  zh: '![均值=4 ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equay.png)'
 - en: '![$$ \mathrm{variance}=\frac{87}{N} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaz.png)'
+  id: totrans-300
   prefs: []
   type: TYPE_IMG
+  zh: '![方差=\frac{87}{N} ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaz.png)'
 - en: 'And, under the REPARAMETERIZED gradient using Equation [9-16](#Equ17), the
     gradient estimate has the following mean and variance:'
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用方程[9-16](#Equ17)的REPARAMETERIZED梯度下，梯度估计的均值和方差如下：
 - en: '![$$ mean=4 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equba.png)'
+  id: totrans-302
   prefs: []
   type: TYPE_IMG
+  zh: '![均值=4 ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equba.png)'
 - en: '![$$ \mathrm{variance}=\frac{4}{N} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbb.png)'
+  id: totrans-303
   prefs: []
   type: TYPE_IMG
+  zh: '![方差=\frac{4}{N} ](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbb.png)'
 - en: You can see that the gradient estimate has the same mean under both approaches.
     However, the variance in the reparametrized approach is a lot smaller, by one
     order of magnitude.
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以看到，两种方法下梯度估计的均值相同。然而，在重新参数化方法中，方差小得多，大约小一个数量级。
 - en: Readers may wonder how this really helps you and how to use the lower variance
     approach. Suppose you have a policy network that takes state *s* as input, and
     the network is parameterized by *θ*. The policy network produces the mean and
     variance of the policy, that is, a stochastic policy with normal distribution
     whose mean and variance are the outputs of the network, as shown in Figure [9-11](#Fig11).
+  id: totrans-305
   prefs: []
   type: TYPE_NORMAL
+  zh: 读者可能会想知道这究竟如何帮助你，以及如何使用低方差方法。假设你有一个策略网络，它以状态 *s* 作为输入，并且该网络由 *θ* 参数化。策略网络产生策略的均值和方差，即一个具有正态分布的随机策略，其均值和方差是网络的输出，如图
+    [9-11](#Fig11) 所示。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig11_HTML.jpg)'
+  id: totrans-306
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig11_HTML.jpg)'
 - en: A block diagram for the stochastic policy network. Continuous actions s are
     given to a theta block which gives mu theta of s and sigma square theta of s.
     The outputs are parameters of a continuous distribution, that is, model outputs
     mean, and additionally, variance of the normal distribution.
+  id: totrans-307
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机策略网络的框图。连续动作 s 被输入到 theta 块中，该块给出 s 的 mu theta 和 sigma square theta。输出是连续分布的参数，即模型输出均值，以及正态分布的方差。
 - en: Figure 9-11
+  id: totrans-308
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 9-11
 - en: Stochastic policy network
+  id: totrans-309
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机策略网络
 - en: 'Define the action *a* as follows:'
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: 按如下方式定义动作 *a*：
 - en: '![$$ a\sim N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ18.png)'
+  id: totrans-311
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ a\sim N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ18.png)'
 - en: (9-17)
+  id: totrans-312
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-17)
 - en: Reparametrize action *a* to decompose the deterministic and stochastic part
     out so that the stochastic part does not depend on the network parameters *θ*.
+  id: totrans-313
   prefs: []
   type: TYPE_NORMAL
+  zh: 将动作 *a* 重新参数化以分解确定性和随机性部分，使得随机部分不依赖于网络参数 *θ*。
 - en: '![$$ a\sim N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right)\kern0.5em
     \mathrm{where}:\kern1em \upvarepsilon \sim N\left(0,1\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ19.png)'
+  id: totrans-314
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ a\sim N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right)\kern0.5em
+    \mathrm{where}:\kern1em \upvarepsilon \sim N\left(0,1\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ19.png)'
 - en: (9-18)
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-18)
 - en: Reparameterization allows you to calculate the policy gradients that have lower
     variance as compared to using a non-parametrized approach log-trick. In addition,
     reparameterization gives you an alternative way to flow the gradient back through
     the network by separating out the stochastic part into a nonparameterized part.
     You will use this approach in the soft actor-critic algorithm.
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
+  zh: 重新参数化允许你计算比使用非参数化方法的 log-trick 具有更低方差的策略梯度。此外，重新参数化通过将随机部分分离到非参数化部分，为你提供了一个通过网络反向传播梯度的替代方法。你将在软演员-评论家算法中使用这种方法。
 - en: It is a very common approach when you need to build neural networks using stochastic
     nodes and need to flow back the gradients. The foundational paper that formalized
     the concept is “Gradient Estimation Using Stochastic Computation Graphs” by Schulman
     et al., 2015.^([8](#Fn8)) There has been a lot more work after this paper was
     published. Interested readers may want to refer to this paper and then refer to
     the various subsequent works on the topic of stochastic computation graphs.
+  id: totrans-317
   prefs: []
   type: TYPE_NORMAL
+  zh: 当你需要使用随机节点构建神经网络并需要反向传播梯度时，这是一种非常常见的方法。将这一概念形式化的基础论文是 Schulman 等人于 2015 年发表的“使用随机计算图进行梯度估计”。在这篇论文发表之后，还有更多的工作。感兴趣的读者可以参考这篇论文，然后参考关于随机计算图主题的各种后续工作。
 - en: Entropy Explained
+  id: totrans-318
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 熵解释
 - en: 'Just one more thing before you start digging into the details of SAC: let’s
     revisit entropy. I talked about entropy as a regularizer as part of the REINFORCE
     code walk-through in the previous chapter. You will be doing something similar.
     Let’s look at what entropy is.'
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
+  zh: 在你开始深入研究 SAC 的细节之前，还有一件事需要回顾：熵。我在上一章的 REINFORCE 代码讲解中提到了熵作为正则化器。你将要做的事情与此类似。让我们看看熵是什么。
 - en: 'Suppose you have a random variable *x* following some distribution *P*(*x*).
     The entropy of *x* is defined as follows:'
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设你有一个随机变量 *x* 遵循某种分布 *P*(*x*)。*x* 的熵定义为以下：
 - en: '![$$ H(P)=\underset{x\sim P}{E}\left[- logP(x)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ20.png)'
+  id: totrans-321
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ H(P)=\underset{x\sim P}{E}\left[- logP(x)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ20.png)'
 - en: (9-19)
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-19)
 - en: Suppose you have a coin with *P*(*Head*) = *ρ* and *P*(*Tail*) = 1 − *ρ*. Calculate
     the entropy *H* for different values of *ρ ε* (0, 1).
+  id: totrans-323
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设你有一个硬币，其正面出现的概率为 *P*(*Head*) = *ρ*，反面出现的概率为 *P*(*Tail*) = 1 − *ρ*。计算不同 *ρ*
+    ∈ (0, 1) 值下的熵 *H*。
 - en: '![$$ H(x)=-\left[\rho\ log\rho +\left(1-\rho \right)\ \mathit{\log}\left(1-\rho
     \right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbc.png)'
+  id: totrans-324
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbc.png)'
 - en: You can plot the curve of *H*(*x*) versus *ρ*, as shown in Figure [9-12](#Fig12).
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以绘制 *H*(*x*) 与 *ρ* 的曲线，如图 [9-12](#Fig12) 所示。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig12_HTML.jpg)'
+  id: totrans-326
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig12_HTML.jpg)'
 - en: A line graph plots entropy H versus probability p. A down-ward open parabola
     for H of p is between (0.0, 0.0), (0.5, 0.68), and (1.0, 0.0), approximately.
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
+  zh: 线形图绘制熵 H 与概率 p 的关系。H 的 p 的向下开口抛物线大约在 (0.0, 0.0)，(0.5, 0.68)，和 (1.0, 0.0) 之间。
 - en: Figure 9-12
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 9-12
 - en: Entropy of a Bernoulli distribution as a function of p, which is the probability
     of getting 1 in a trial
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
+  zh: 二项分布的熵作为 p 的函数，其中 p 是在试验中得到 1 的概率
 - en: You can see that entropy *H* is the maximum for *ρ* = 0.5, that is, when you
     have maximum uncertainty between getting a 1 or a 0\. In other words, by maximizing
     the entropy, you are ensuring that the stochastic action policy has a broad distribution
@@ -1642,12 +2380,17 @@
     notebook for the code that generated Figure [9-12](#Fig12). You can modify the
     code to try various other probability distributions and vary the parameters to
     find the points that maximize the entropy.
+  id: totrans-330
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以看到，熵 *H* 在 *ρ* = 0.5 时达到最大值，即当你得到 1 或 0 的最大不确定性时。换句话说，通过最大化熵，你确保了随机动作策略具有广泛的分布，并且不会过早地坍缩成尖锐的峰值。尖锐的峰值会减少对状态动作空间的探索。读者可以参考
+    `9.d-entropy_bernoulli.ipynb` 笔记本中生成图 [9-12](#Fig12) 的代码。你可以修改代码来尝试其他不同的概率分布，并调整参数以找到最大化熵的点。
 - en: Soft Actor-Critic
+  id: totrans-331
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Soft Actor-Critic
 - en: 'The soft actor-critic came about around the same time as TD3\. Like DDPG and
     TD3, SAC also uses an actor-critic construct with off-policy learning for continuous
     controls. However, unlike DDPG and TD3, SAC learns a stochastic policy. Hence,
@@ -1655,415 +2398,618 @@
     with the stochastic policy optimization. The algorithm was introduced in a 2018
     paper titled “Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement
     Learning with a Stochastic Actor.”^([9](#Fn9))'
+  id: totrans-332
   prefs: []
   type: TYPE_NORMAL
+  zh: 'Soft Actor-Critic 与 TD3 大约在同一时间出现。像 DDPG 和 TD3 一样，SAC 也使用具有离策略学习的 actor-critic
+    构造来处理连续控制。然而，与 DDPG 和 TD3 不同，SAC 学习一个随机策略。因此，SAC 在确定性策略算法（如 DDPG 和 TD3）与随机策略优化之间架起了一座桥梁。该算法在
+    2018 年一篇题为“Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning
+    with a Stochastic Actor”的论文中提出。^([9](#Fn9))'
 - en: It uses the clipped double-Q trick like TD3, and due to its learning stochastic
     policy, it indirectly benefits from the target policy smoothing without an explicit
     need to add noise to the target policy.
+  id: totrans-333
   prefs: []
   type: TYPE_NORMAL
+  zh: 它使用类似于 TD3 的剪辑双 Q 技巧，由于其学习随机策略，它间接地从目标策略平滑中受益，而无需显式地向目标策略添加噪声。
 - en: 'A core feature of SAC is the use of entropy as part of the maximization. To
     quote the authors of the paper:'
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
+  zh: SAC 的一个核心特性是使用熵作为最大化的一部分。引用论文的作者的话：
 - en: “In this framework, the actor aims to simultaneously maximize expected return
     and entropy; that is, to succeed at the task while acting as randomly as possible.”
+  id: totrans-335
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: “在这个框架中，actor 旨在同时最大化预期回报和熵；也就是说，在尽可能随机行动的同时完成任务。”
 - en: SAC vs. TD3
+  id: totrans-336
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: SAC 与 TD3
 - en: 'Here are the similarities:'
+  id: totrans-337
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是相似之处：
 - en: Both approaches use mean squared Bellman error (MSBE) minimization toward a
     common target.
+  id: totrans-338
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 两种方法都使用均方贝尔曼误差（MSBE）最小化以实现共同目标。
 - en: A common target is calculated using target Q networks that are obtained using
     polyack averaging.
+  id: totrans-339
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用 polyack 平均法获得的目标 Q 网络计算共同目标。
 - en: Both approaches use clipped double Q, which consists of a minimum of two q-values
     to avoid overestimation.
+  id: totrans-340
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 两种方法都使用剪辑双 Q，它由至少两个 q 值的最小值组成，以避免高估。
 - en: 'Here are the differences:'
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是差异：
 - en: SAC uses entropy regularization, which is absent in TD3.
+  id: totrans-342
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: SAC 使用熵正则化，这在 TD3 中是不存在的。
 - en: The TD3 target policy is used to calculate the next-state actions, while in
     SAC, you use the current policy to get actions for the next states.
+  id: totrans-343
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: TD3 的目标策略用于计算下一状态的动作，而在 SAC 中，你使用当前策略来获取下一状态的动作。
 - en: In TD3, the target policy uses smoothing by adding random noise to actions.
     However, in SAC, the policy learned is a stochastic one that provides a smoothing
     effect without any explicit noise addition.
+  id: totrans-344
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在 TD3 中，目标策略通过向动作添加随机噪声来实现平滑。然而，在 SAC 中，学习到的策略是随机的，它提供了平滑效果，而无需显式地添加噪声到目标策略。
 - en: Q-Loss with Entropy-Regularization
+  id: totrans-345
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 带有熵正则化的Q-Loss
 - en: Entropy measures randomness in the distribution. The higher the entropy, the
     flatter the distribution. A sharp peaked policy has all its probability centered
     around that peak, and hence it will have low entropy. With entropy regularization,
     the policy is trained to maximize a tradeoff between the expected return and entropy
     with *α* controlling the tradeoff. The policy is trained to maximize a tradeoff
     between the expected return and entropy, a measure of randomness in the policy.
+  id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 熵衡量分布中的随机性。熵越高，分布越平坦。一个尖锐峰值的策略将所有概率集中在那个峰值周围，因此它将具有低熵。在熵正则化下，策略被训练以最大化预期回报和熵之间的权衡，其中
+    *α* 控制权衡。策略被训练以最大化预期回报和熵之间的权衡，熵是策略中随机性的度量。
 - en: '![$$ {\pi}^{\ast }=\arg \underset{\pi }{\max}\underset{\tau \sim \pi }{E}\left[{\sum}_{t=0}^{\infty
     }{\gamma}^t\left(R\left({s}_t,{a}_t,{s}_{t+1}\right)+\alpha\;H\left(\pi \left(\cdotp
     |\;{s}_t\right)\right)\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ21.png)'
+  id: totrans-347
   prefs: []
   type: TYPE_IMG
+  zh: '![π∗=argmaxπEτ~π[∑t=0∞γt(R(st,at,st+1)+αH(π(⋅|st)))]](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ21.png)'
 - en: (9-20)
+  id: totrans-348
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-20)
 - en: In this setting, *V*^(*π*) is changed to include the entropy from every timestep.
+  id: totrans-349
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种设置下，*V*^(*π*) 被修改为包含每个时间步的熵。
 - en: '![$$ {V}^{\pi }(s)=\underset{\tau \sim \pi }{E}\left[\left.{\sum}_{t=0}^{\infty
     }{\gamma}^t\left(R\left({s}_t,{a}_t,{s}_{t+1}\right)+\alpha H\left(\pi \left(\cdotp
     |{s}_t\right)\right)\right)\right|{s}_0=s\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ22.png)'
+  id: totrans-350
   prefs: []
   type: TYPE_IMG
+  zh: '![Vπ(s)=Eτ~π[∑t=0∞γt(R(st,at,st+1)+αH(π(⋅|st)))|s0=s]](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ22.png)'
 - en: (9-21)
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-21)
 - en: In addition, *Q*^(*π*) is changed to include the entropy bonuses from every
     timestep except the first.
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，*Q*^(*π*) 被修改为除了第一个时间步之外，包含每个时间步的熵奖励。
 - en: '![$$ {Q}^{\pi}\left(s,a\right)=\underset{\tau \sim \pi }{E}\left[\left.{\sum}_{t=0}^{\infty
     }{\gamma}^tR\left({s}_t,{a}_t,{s}_{t+1}\right)+\alpha {\sum}_{t=1}^{\infty }{\gamma}^tH\left(\pi
     \left(\cdotp |{s}_t\right)\right)\right|{s}_0=s,{a}_0=a\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ23.png)'
+  id: totrans-353
   prefs: []
   type: TYPE_IMG
+  zh: '![Qπ(s,a)=Eτ~π[∑t=0∞γtR(st,at,st+1)+α∑t=1∞γtH(π(⋅|st))]|s0=s,a0=a](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ23.png)'
 - en: (9-22)
+  id: totrans-354
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-22)
 - en: 'With these definitions, *V*^(*π*) and *Q*^(*π*) are connected by the following:'
+  id: totrans-355
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这些定义下，*V*^(*π*) 和 *Q*^(*π*) 通过以下关系相连：
 - en: '![$$ {V}^{\pi }(s)=\underset{a\sim \pi }{E}\left[{Q}^{\pi}\left(s,a\right)+\alpha
     H\left(\pi \left(\cdotp |s\right)\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ24.png)'
+  id: totrans-356
   prefs: []
   type: TYPE_IMG
+  zh: '![Vπ(s)=E[a~π[Qπ(s,a)+αH(π(⋅|s))]]](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ24.png)'
 - en: (9-23)
+  id: totrans-357
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-23)
 - en: 'The Bellman equation for *Q*^(*π*) is as follows:'
+  id: totrans-358
   prefs: []
   type: TYPE_NORMAL
+  zh: '*Q*^(*π*) 的Bellman方程如下：'
 - en: '![$$ {Q}^{\pi}\left(s,a\right)=\underset{s^{\prime}\sim P,a^{\prime}\sim \pi
     }{E}\left[R\left(s,a,{s}^{\prime}\right)+\gamma \left({Q}^{\pi}\left({s}^{\prime
     },{a}^{\prime}\right)+\alpha H\left(\pi \left(\cdotp |{s}^{\prime}\right)\right)\right)\right]=\underset{s^{\prime}\sim
     P}{E}\left[R\left(s,a,{s}^{\prime}\right)+\gamma {V}^{\pi}\left({s}^{\prime}\right)\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ25.png)'
+  id: totrans-359
   prefs: []
   type: TYPE_IMG
+  zh: '![Qπ(s,a)=E[s′~P,a′~π[R(s,a,s′)+γ(Qπ(s′,a′)+αH(π(⋅|s′)))]=E[s′~P[R(s,a,s′)+γVπ(s′)]]](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ25.png)'
 - en: (9-24)
+  id: totrans-360
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-24)
 - en: The right side is an expectation that you convert into a sample estimate.
+  id: totrans-361
   prefs: []
   type: TYPE_NORMAL
+  zh: 右侧是一个期望值，你需要将其转换为样本估计。
 - en: '![$$ {Q}^{\pi}\left(s,a\right)\approx r+\gamma \left({Q}^{\pi}\left({s}^{\prime
     },\overset{\sim }{a^{\prime }}\right)-\alpha \log \pi \left(\overset{\sim }{a^{\prime
     }}|{s}^{\prime}\right)\right),\kern1.25em \overset{\sim }{a^{\prime }}\sim \pi
     \left(\cdotp |{s}^{\prime}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ26.png)'
+  id: totrans-362
   prefs: []
   type: TYPE_IMG
+  zh: '![Qπ(s,a)≈r+γ(Qπ(s′,~a′)−αlogπ(~a′|s′)),~a′~π(⋅|s′)](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ26.png)'
 - en: (9-25)
+  id: totrans-363
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-25)
 - en: In this equation, (*s*, *a*, *r*, *s*^′) all come from the replay buffer, and
     ![$$ \overset{\sim }{a^{\prime }} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq25.png)
     comes from sampling the online/agent policy. *In SAC, you do not use the target
     network policy at all.*
+  id: totrans-364
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个方程中，(*s*, *a*, *r*, *s*^′) 都来自重放缓冲区，而 ![$$ \overset{\sim }{a^{\prime }} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq25.png)
+    来自在线/代理策略的采样。*在SAC中，你根本不使用目标网络策略。*
 - en: 'Like TD3, SAC uses clipped double Q and minimizes the mean squared Bellman
     error (MSBE). Putting it all together, the loss functions for the Q-networks in
     SAC are as follows:'
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
+  zh: 与TD3类似，SAC使用裁剪的双Q值并最小化均方贝尔曼误差（MSBE）。将所有这些放在一起，SAC中Q网络的损失函数如下：
 - en: '![$$ L\left({\upphi}_i,D\right)=\underset{\left(s,a,r,{s}^{\prime },d\right)\sim
     D}{E}\left[{\left({Q}_{\upphi_i}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2\right],\kern1.25em
     i=1,2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ27.png)'
+  id: totrans-366
   prefs: []
   type: TYPE_IMG
+  zh: '![损失函数L的表达式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ27.png)'
 - en: (9-26)
+  id: totrans-367
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-26)
 - en: 'where the target is given by the following:'
+  id: totrans-368
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中目标如下：
 - en: '![$$ y\left(r,{s}^{\prime },d\right)=r+\upgamma \left(1-d\right)\left(\underset{i=1,2}{\min
     }{Q}_{\upphi_{\mathrm{targ},i}}\left({s}^{\prime },\overset{\sim }{a^{\prime }}\right)-\upalpha
     \mathrm{log}{\uppi}_{\uptheta}\left(\overset{\sim }{a^{\prime }}|{s}^{\prime}\right)\right),\kern0.5em
     \overset{\sim }{a^{\prime }}\sim {\uppi}_{\uptheta}\left(\cdotp |{s}^{\prime}\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ28.png)'
+  id: totrans-369
   prefs: []
   type: TYPE_IMG
+  zh: '![奖励函数y的表达式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ28.png)'
 - en: (9-27)
+  id: totrans-370
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-27)
 - en: Convert the expectations to sample averages.
+  id: totrans-371
   prefs: []
   type: TYPE_NORMAL
+  zh: 将期望转换为样本平均值。
 - en: '![$$ L\left({\upphi}_i,\mathcal{D}\right)=\frac{1}{\left|B\right|}{\sum}_{\left(s,a,r,{s}^{\prime
     },d\right)\in B}{\left({Q}_{\upphi_i}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2,\kern1.25em
     \mathrm{for}\ i=1,2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ29.png)'
+  id: totrans-372
   prefs: []
   type: TYPE_IMG
+  zh: '![损失函数L的表达式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ29.png)'
 - en: (9-28)
+  id: totrans-373
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-28)
 - en: 'The final Q-loss you will minimize is as follows:'
+  id: totrans-374
   prefs: []
   type: TYPE_NORMAL
+  zh: 你最终要最小化的最终Q损失如下：
 - en: '![$$ {Q}_{Loss}=L\left({\upphi}_1,\mathcal{D}\right)+L\left({\upphi}_1,\mathcal{D}\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ30.png)'
+  id: totrans-375
   prefs: []
   type: TYPE_IMG
+  zh: '![损失函数Q的表达式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ30.png)'
 - en: (9-29)
+  id: totrans-376
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-29)
 - en: Policy Loss with the Reparameterization Trick
+  id: totrans-377
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 带有重新参数化技巧的策略损失
 - en: The policy should choose actions to maximize the expected future return and
     future entropy, that is, *V*^(*π*)(*s*).
+  id: totrans-378
   prefs: []
   type: TYPE_NORMAL
+  zh: 策略应该选择动作以最大化期望的未来回报和未来熵，即 *V*^(*π*)(*s*).
 - en: '![$$ {V}^{\pi }(s)=\underset{a\sim \pi }{E}\left[{Q}^{\pi}\left(s,a\right)+\alpha
     H\left(\pi \left(\cdotp |s\right)\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbd.png)'
+  id: totrans-379
   prefs: []
   type: TYPE_IMG
+  zh: '![值函数V的表达式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbd.png)'
 - en: 'Rewrite this as follows:'
+  id: totrans-380
   prefs: []
   type: TYPE_NORMAL
+  zh: 将其重写如下：
 - en: '![$$ {V}^{\pi }(s)=\underset{a\sim \pi }{E}\left[{Q}^{\pi}\left(s,a\right)-\alpha
     \log \pi \left(a|s\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ31.png)'
+  id: totrans-381
   prefs: []
   type: TYPE_IMG
+  zh: '![值函数V的表达式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ31.png)'
 - en: (9-30)
+  id: totrans-382
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-30)
 - en: The authors of the paper use reparameterization along with the squashed Gaussian
     policy.
+  id: totrans-383
   prefs: []
   type: TYPE_NORMAL
+  zh: 论文的作者使用了重新参数化和压缩高斯策略。
 - en: '![$$ \overset{\sim }{a_{\theta }}\left(s,\xi \right)=\tanh \left({\mu}_{\theta
     }(s)+{\sigma}_{\theta }(s)\odot \xi \right),\kern1.25em \xi \sim \mathcal{N}\left(0,I\right)
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ32.png)'
+  id: totrans-384
   prefs: []
   type: TYPE_IMG
+  zh: '![参数化函数的表达式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ32.png)'
 - en: (9-31)
+  id: totrans-385
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-31)
 - en: 'Combining the previous two Equations [9-30](#Equ31) and [9-31](#Equ32) and
     noting that the policy network is parameterized by *θ*, the policy network weights,
     you get the following:'
+  id: totrans-386
   prefs: []
   type: TYPE_NORMAL
+  zh: 将前两个方程 [9-30](#Equ31) 和 [9-31](#Equ32) 结合起来，并注意到策略网络由 *θ* 参数化，策略网络权重，你得到以下结果：
 - en: '![$$ \underset{a\sim {\pi}_{\theta }}{E}\left[{Q}^{\pi_{\theta }}\left(s,a\right)-\alpha
     \log {\pi}_{\theta}\left(a|s\right)\right]=\underset{\xi \sim \mathcal{N}}{E}\left[{Q}^{\pi_{\theta
     }}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right)-\alpha \log {\pi}_{\theta}\left(\overset{\sim
     }{a_{\theta }}\left(s,\xi \right)|s\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ33.png)'
+  id: totrans-387
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ33.png)'
 - en: (9-32)
+  id: totrans-388
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-32)
 - en: Next, substitute the function approximator for Q, taking the minimum of the
     two Q-functions.
+  id: totrans-389
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，用函数逼近器替换 Q，取两个 Q 函数的最小值。
 - en: '![$$ {Q}^{\pi_{\theta }}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right)=\underset{i=1,2}{\min
     }{Q}_{\phi_i}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ34.png)'
+  id: totrans-390
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ34.png)'
 - en: (9-33)
+  id: totrans-391
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-33)
 - en: 'The policy objective is accordingly transformed into the following:'
+  id: totrans-392
   prefs: []
   type: TYPE_NORMAL
+  zh: 政策目标相应地转换为以下形式：
 - en: '![$$ \underset{\theta }{\max}\underset{\underset{\xi \sim \mathcal{N}}{s\sim
     \mathcal{D}}}{E}\left[\underset{i=1,2}{\min }{Q}_{\phi_i}\left(s,\overset{\sim
     }{a_{\theta }}\left(s,\xi \right)\right)-\alpha \log {\pi}_{\theta}\left(\overset{\sim
     }{a_{\theta }}\left(s,\xi \right)|s\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ35.png)'
+  id: totrans-393
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ35.png)'
 - en: (9-34)
+  id: totrans-394
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-34)
 - en: Like before, you should use minimizers in PyTorch/TensorFlow. Accordingly, you’ll
     introduce a -ve sign to convert maximization to a loss minimization.
+  id: totrans-395
   prefs: []
   type: TYPE_NORMAL
+  zh: 和之前一样，你应该在 PyTorch/TensorFlow 中使用最小化器。相应地，你将引入一个负号将最大化转换为损失最小化。
 - en: '![$$ Polic{y}_{Loss}=-\underset{\underset{\xi \sim \mathcal{N}}{s\sim \mathcal{D}}}{E}\left[\underset{i=1,2}{\min
     }{Q}_{\phi_i}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right)-\alpha
     \log {\pi}_{\theta}\left(\overset{\sim }{a_{\theta }}\left(s,\xi \right)|s\right)\right]
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ36.png)'
+  id: totrans-396
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ36.png)'
 - en: (9-35)
+  id: totrans-397
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-35)
 - en: 'Also convert the expectation to an estimate using samples to get the following:'
+  id: totrans-398
   prefs: []
   type: TYPE_NORMAL
+  zh: 还可以将期望值转换为使用样本的估计，得到以下结果：
 - en: '![$$ Polic{y}_{Loss}=-\frac{1}{\left|B\right|}{\sum}_{s\in B}\left(\underset{i=1,2}{\min
     }{Q}_{\phi_i}\left(s,\overset{\sim }{a_{\theta }}(s)\right)-\alpha \log {\pi}_{\theta}\left(\left.\overset{\sim
     }{a_{\theta }}(s)\right|s\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ37.png)'
+  id: totrans-399
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ37.png)'
 - en: (9-36)
+  id: totrans-400
   prefs: []
   type: TYPE_NORMAL
+  zh: (9-36)
 - en: Pseudocode and Implementation
+  id: totrans-401
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 伪代码和实现
 - en: At this point, you are ready to see the complete pseudocode. Refer to Figure
     [9-13](#Fig13).
+  id: totrans-402
   prefs: []
   type: TYPE_NORMAL
+  zh: 到这一点，你就可以看到完整的伪代码了。参见图 [9-13](#Fig13)。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig13_HTML.jpg)'
+  id: totrans-403
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig13_HTML.jpg)'
 - en: A pseudocode for soft actor critic or S A C. Input initial policy parameters
     theta, Q-function parameters phi 1 and 2, and empty relay buffer D is followed
     by set target parameters, compute target for Q-function, update Q-function and
     policy, and update target networks using poly a k averaging.
+  id: totrans-404
   prefs: []
   type: TYPE_NORMAL
+  zh: 软演员评论家或 S A C 的伪代码。输入初始策略参数 theta，Q 函数参数 phi 1 和 2，以及空的回传缓冲区 D，然后设置目标参数，计算 Q
+    函数的目标，更新 Q 函数和政策，并使用多项式 a k 平均更新目标网络。
 - en: Figure 9-13
+  id: totrans-405
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 9-13
 - en: Soft actor-critic algorithm
+  id: totrans-406
   prefs: []
   type: TYPE_NORMAL
+  zh: 软演员评论家算法
 - en: With all the mathematical derivations and pseudocode, it is time to dive into
     the implementation in PyTorch. The implementation using PyTorch is in the `9.e-sac.ipynb`
     file. Like before, you’ll train the agent using SAC on the Pendulum and Lunar-Lander
     environments.
+  id: totrans-407
   prefs: []
   type: TYPE_NORMAL
+  zh: 在所有数学推导和伪代码之后，是时候深入到 PyTorch 中的实现了。使用 PyTorch 的实现位于 `9.e-sac.ipynb` 文件中。和之前一样，你将使用
+    SAC 在摆锤和月球着陆器环境中训练智能体。
 - en: Policy Network-Actor Implementation
+  id: totrans-408
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 政策网络-演员实现
 - en: 'Let’s first look at the actor network. The actor network implementation takes
     the state as input, which is the same as before. However, the output has two components:'
+  id: totrans-409
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们先看看演员网络。演员网络的实现以状态作为输入，与之前相同。然而，输出有两个组成部分：
 - en: Either squashed (i.e., passing the action value through tanh) deterministic
     action *a*, which is μ[θ](*s*), or a sample action *a* from the distribution ![$$
     N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq26.png).
     The sampling uses the reparameterization trick, and PyTorch implements this for
     you as `distribution.rsample()`. You can read about it at [`https://pytorch.org/docs/stable/distributions.html`](https://pytorch.org/docs/stable/distributions.html)
     under the topic, “Pathwise Derivative.”
+  id: totrans-410
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 要么是经过压缩的（即通过tanh函数传递动作值）的确定性动作 *a*，即 μ[θ](*s*)，要么是从分布 ![$$ N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq26.png) 中抽取的样本动作
+    *a*。采样使用重新参数化技巧，PyTorch为你实现了 `distribution.rsample()`。你可以在“路径导数”主题下阅读有关内容，请访问[`https://pytorch.org/docs/stable/distributions.html`](https://pytorch.org/docs/stable/distributions.html)。
 - en: 'The second output is the log probability that you will need for calculating
     entropy inside the Q-loss, as per Equation [9-27](#Equ28). Since you are using
     squashed/tanh transformation, the log probability needs to apply a change of variables
     for random distribution using the following:'
+  id: totrans-411
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二个输出是计算Q损失中熵所需的日志概率，如方程[9-27](#Equ28)所示。由于你使用了压缩的/tanh变换，日志概率需要对随机分布应用变量变换，如下所示：
 - en: '![$$ {f}_Y(y)={f}_X\left({g}^{-1}(y)\right)\left|\frac{d}{dy}\left({g}^{-1}(y)\right)\right|
     $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Eqube.png)'
+  id: totrans-412
   prefs:
   - PREF_IND
   type: TYPE_IMG
+  zh: '![$$ {f}_Y(y)={f}_X\left({g}^{-1}(y)\right)\left|\frac{d}{dy}\left({g}^{-1}(y)\right)\right|
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Eqube.png)'
 - en: The code uses some tricks to calculate a numerically stable version. You can
     find more details in the original paper.
+  id: totrans-413
   prefs: []
   type: TYPE_NORMAL
+  zh: 代码使用了一些技巧来计算数值稳定的版本。你可以在原始论文中找到更多细节。
 - en: 'Listing [9-11](#PC11) lists the code for `SquashedGaussianMLPActor`, as discussed
     earlier. The neural network continues to be the same as before: two hidden layers
     of size 256 units with ReLU activations.'
+  id: totrans-414
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表[9-11](#PC11)列出了之前讨论的 `SquashedGaussianMLPActor` 的代码。神经网络继续与之前相同：两个大小为256个单位的隐藏层，使用ReLU激活。
 - en: '[PRE10]'
+  id: totrans-415
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Q-Network, Combined Model, and Experience Replay
+  id: totrans-416
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Q-Network，组合模型和经验回放
 - en: The Q-function network `MLPQFunction`, which combines the actor and critic into
     an agent in the `MLPActorCritic` class, as well as the `ReplayBuffer` implementations,
     are mostly the same. Accordingly, I do not list these parts of the code here.
+  id: totrans-417
   prefs: []
   type: TYPE_NORMAL
+  zh: Q函数网络 `MLPQFunction`，它将演员和评论家结合到 `MLPActorCritic` 类中的智能体，以及 `ReplayBuffer` 的实现，大部分是相同的。因此，我这里没有列出这些代码部分。
 - en: Q-Loss and Policy-Loss Implementation
+  id: totrans-418
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Q损失和策略损失实现
 - en: Next, you’ll look at `compute_q_loss` and `compute_policy_loss`. This is a straight
     implementation of Steps 11 to 13 of the SAC pseudocode in Figure [9-13](#Fig13).
     If you compare these steps with Steps 11 to 14 of TD3 in Figure [9-8](#Fig8),
     you will see lots of similarities, except for the fact that the action is sampled
     from the online network and SAC has an additional term of entropy in both losses.
     These changes are minor, and hence I do not list the code explicitly here.
+  id: totrans-419
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，你将查看 `compute_q_loss` 和 `compute_policy_loss`。这是SAC伪代码图[9-13](#Fig13)中步骤11到13的直接实现。如果你将这些步骤与图[9-8](#Fig8)中TD3的步骤11到14进行比较，你会看到很多相似之处，除了动作是从在线网络中抽取的这一事实。SAC在两个损失中都额外包含了一个熵项。这些变化很小，因此我没有明确列出代码。
 - en: One-Step Update and SAC Main Loop
+  id: totrans-420
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 单步更新和SAC主循环
 - en: Again, the code for `one_step_update` and the overall training algorithm follows
     a similar pattern as before. For SAC, like TD3, the policy and target networks
     are updated once for every “x” update of the online Q-network. However, unlike
     TD3 where the update is only done once, SAC updates it “x” times in a loop.
+  id: totrans-421
   prefs: []
   type: TYPE_NORMAL
+  zh: 再次，`one_step_update` 和整体训练算法遵循与之前相似的模式。对于SAC，就像TD3一样，策略网络和目标网络在每次“x”更新在线Q网络时更新一次。然而，与TD3只更新一次不同，SAC在循环中更新“x”次。
 - en: Once you run and train the agent, you’ll see similar outcomes as DDPG and TD3\.
     Figure [9-14](#Fig14) shows the graphs as training progresses. You can see that
     performance characteristics match those of TD3 shown in Figure [9-9](#Fig9).
+  id: totrans-422
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦运行并训练了智能体，你将看到与DDPG和TD3类似的输出。图[9-14](#Fig14)显示了随着训练进展的图表。你可以看到性能特征与图[9-9](#Fig9)中显示的TD3的性能特征相匹配。
 - en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig14_HTML.jpg)'
+  id: totrans-423
   prefs: []
   type: TYPE_IMG
+  zh: '![图](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig14_HTML.jpg)'
 - en: 3 line graphs for pendulum using S A C. Left. The mean return per episode increases
     from (0, negative 1300) to (19, negative 150). Center. The loss of Q decreases
     logarithmically from (0, 11.5) to (9500, 3.5). Right. The loss of actor increases
     from (0, 5) to (9500, 68). Values are estimated.
+  id: totrans-424
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用SAC（Soft Actor-Critic）的摆锤3线图。左侧。每期的平均回报从(0, -1300)增加到(19, -150)。中间。Q值的损失对数减少从(0,
+    11.5)到(9500, 3.5)。右侧。actor的损失从(0, 5)增加到(9500, 68)。数值为估算值。
 - en: Figure 9-14
+  id: totrans-425
   prefs: []
   type: TYPE_NORMAL
+  zh: 图9-14
 - en: Training progress for Pendulum using SAC
+  id: totrans-426
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用SAC对摆锤的训练进度
 - en: This chapter uses simple environments, and hence all three continuous control
     algorithms (DDPG, TD3, and SAC) in this chapter behave well. Consult the various
     papers referenced in this chapter to do a deep dive into the official performance
     comparisons of various approaches.
+  id: totrans-427
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章使用简单环境，因此本章中的所有三个连续控制算法（DDPG、TD3和SAC）表现良好。请参考本章中引用的各种论文，以深入了解各种方法的官方性能比较。
 - en: 'This brings you to the end of this chapter of continuous control in actor-critic
     settings. By now, you have seen model-based policy iteration approaches, deep
     learning–based Q-learning (DPN) approaches, policy gradients for discrete actions,
@@ -2072,12 +3018,16 @@
     you finish your journey: that of using model learning in a model-free world and
     efficient model exploration for environments where you know the model, but it
     is too complex or vast to be explored exhaustively.'
+  id: totrans-428
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就带我们来到了本章关于actor-critic设置中连续控制的结束。到目前为止，你已经看到了基于模型的策略迭代方法、基于深度学习的Q学习（DPN）方法、离散动作的策略梯度以及连续控制策略梯度。这涵盖了强化学习的大部分流行方法。在你完成旅程之前，你还有另一个主要主题要学习：在无模型世界中使用模型学习和在已知模型但过于复杂或庞大而无法彻底探索的环境中进行的有效模型探索。
 - en: Summary
+  id: totrans-429
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: In this chapter, you learned about the actor-critic methods for continuous control
     where off-policy Q-learning types are combined with policy gradients to derive
     off-policy continuous control actor-critic methods. Q-learning has the benefits
@@ -2085,30 +3035,40 @@
     of being unstable and difficult to apply to continuous actions. Policy gradients
     have the benefits of being direct, stable, and suitable for continuous actions,
     but they also have the drawbacks of being on-policy and sample inefficient.
+  id: totrans-430
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，你学习了连续控制的actor-critic方法，其中离线Q学习类型与策略梯度相结合，以推导出离线连续控制actor-critic方法。Q学习具有样本效率高、离线、间接等优点，但它也存在不稳定和难以应用于连续动作的缺点。策略梯度具有直接、稳定和适用于连续动作的优点，但它们也存在在线和样本效率低的缺点。
 - en: 'The common framework for combining Q-learning and policy gradient consists
     of two networks: an actor network that learns a deterministic policy that maximizes
     the Q-value, and a critic network that learns the Q-value using the Bellman equation.
     The framework also employs a replay buffer, a target network, and an exploratory
     policy.'
+  id: totrans-431
   prefs: []
   type: TYPE_NORMAL
+  zh: 结合Q学习和策略梯度的通用框架包括两个网络：一个actor网络，它学习一个最大化Q值的确定性策略；一个critic网络，它使用Bellman方程学习Q值。该框架还采用了一个重放缓冲区、一个目标网络和一个探索策略。
 - en: You first looked at deep deterministic policy gradients, which was introduced
     in 2016\. It was the first continuous control algorithm. DDPG is an actor-critic
     method with deterministic continuous control policies.
+  id: totrans-432
   prefs: []
   type: TYPE_NORMAL
+  zh: 你首先了解了深度确定性策略梯度（Deep Deterministic Policy Gradients），它是在2016年提出的，是第一个连续控制算法。DDPG是一种具有确定性连续控制策略的actor-critic方法。
 - en: Next, you looked at TD3 (twin delayed DDPG), which came out in 2018 and addressed
     some of the stability and inefficiency challenges found in DDPG. Like DDPG, it
     also learned a deterministic policy in an off-policy setting with the actor-critic
     architecture. It used clipped double Q-learning, delayed policy updates, and target
     policy smoothing.
+  id: totrans-433
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，你了解了TD3（双延迟DDPG），它在2018年发布，解决了DDPG中发现的某些稳定性和效率问题。像DDPG一样，它也在离线策略设置中，使用actor-critic架构学习确定性策略。它使用了裁剪的双Q学习、延迟策略更新和目标策略平滑。
 - en: Lastly, you looked at Soft Actor-Critic (SAC), which bridged the DDPG style
     of learning with stochastic policy optimization using entropy. SAC is an off-policy
     stochastic policy optimization using the actor-critic setup. It uses entropy regularization,
     the reparameterization trick, and clipped double Q-learning.
+  id: totrans-434
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，你了解了软演员-评论家（Soft Actor-Critic，SAC）方法，它将DDPG风格的训练与使用熵的随机策略优化相结合。SAC是一种使用演员-评论家设置的离策略随机策略优化方法。它使用熵正则化、重新参数化技巧和裁剪的双Q学习。
