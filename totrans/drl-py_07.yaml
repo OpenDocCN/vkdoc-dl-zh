@@ -3,6 +3,7 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 7. DQN的改进**
 - en: This chapter looks at various enhancements and variations to DQN. Specifically,
     it looks at Prioritized Replay, DDQN (Double Q-Learning), Dueling DQN, NoisyNets
     DQN, C-51 (Categorical 51-Atom DQN), Quantile Regression DQN, and Hindsight Experience
@@ -13,15 +14,19 @@
   id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章探讨了DQN的各种增强和变体。具体来说，它探讨了优先回放、DDQN（双重Q学习）、Dueling DQN、NoisyNets DQN、C-51（分类51原子DQN）、分位数回归DQN和Hindsight
+    Experience Replay。本章中的所有示例都使用PyTorch编写。这是一个可选章节，每个DQN变体都是一个独立的话题。您可以在第一次阅读时跳过这一章，并在您想要探索DQN特定变体时再回来。
 - en: The first variant of DQN covered in this chapter is prioritized replay.
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章介绍的第一种DQN变体是优先回放。
 - en: Prioritized Replay
   id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 优先回放
 - en: 'In the previous chapter, you saw how to use a batch version of updates in DQN
     that addresses some key issues in the online version, such as updates being done
     with each transition and a transition being discarded right after that one step
@@ -29,6 +34,7 @@
   id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上一章中，您看到了如何使用DQN的批量更新版本来解决在线版本中的某些关键问题，例如每次转换后进行更新，以及在学习步骤之后立即丢弃转换。以下是在线版本中的关键问题：
 - en: The training samples (transitions) are correlated, breaking i.i.d. (independent
     identically distributed) assumptions. With online learning, you have correlated
     transitions in a sequence. Each transition is linked to the previous one. This
@@ -37,6 +43,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 训练样本（转换）是相关的，违反了i.i.d.（独立同分布）假设。在在线学习中，您有一个序列中的相关转换。每个转换都与前一个转换相关联。这违反了应用梯度下降所需的i.i.d.假设。
 - en: As the agent learns and discards, it might never get to visit the initial exploratory
     transitions. If the agent goes down a wrong path, it will keep seeing examples
     from that part of the state space. It may settle on a suboptimal solution.
@@ -44,6 +51,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 随着智能体学习和丢弃，它可能永远不会访问初始的探索性转换。如果智能体走错了路，它将不断看到来自该状态空间部分的示例。它可能会在一个次优解上定居。
 - en: With neural networks, learning on a single transition basis is hard and inefficient.
     There will be too much variance for the neural networks to learn anything effective.
     Neural networks work best when they learn in batches of training samples.
@@ -51,6 +59,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用神经网络，基于单个转换的学习既困难又低效。对于神经网络来说，学习太多的方差将导致无法学习到任何有效的东西。神经网络在以训练样本批次学习时表现最佳。
 - en: These were addressed in DQN by using an experience replay where all transitions
     are stored. Each transition is a tuple of `state, action, reward, next_state and
     done`. As the buffer gets full, you discard old samples to add new ones. You then
@@ -66,6 +75,7 @@
   id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在DQN中，这些问题通过使用经验回放来解决，其中存储了所有转换。每个转换是一个包含`状态、动作、奖励、下一个状态和完成`的元组。随着缓冲区变满，你会丢弃旧样本以添加新的样本。然后，你从当前缓冲区中采样一个批次，其中缓冲区中的每个转换在批次中被选中的概率相等。这允许从缓冲区中多次选择罕见和更具探索性的转换。然而，普通的*经验回放*没有选择重要转换的优先级的方法。是否通过将重要性分数分配给存储在回放缓冲区中的每个转换，并使用这些重要性分数作为选择的概率来采样批次，从而将重要转换的选择概率赋予更高的概率会有所帮助？
 - en: This is what the authors of the paper “Prioritized Experience Replay”^([1](#Fn1))
     from DeepMind explored in 2016\. This chapter follows the main concepts of that
     paper to create your own implementation of experience replay and apply it to the
@@ -74,6 +84,7 @@
   id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就是DeepMind论文“Prioritized Experience Replay”^([1](#Fn1))的作者在2016年所探索的内容。本章遵循该论文的主要概念，以创建自己的经验回放实现，并将其应用于`CartPole`环境的DQN代理。我首先简要谈谈这些重要性分数是如何分配的，以及损失*L*是如何修改的。
 - en: 'The key approach of this paper is to assign importance scores to training samples
     in the buffer using their TD errors. When a batch of samples is picked from the
     buffer, you calculate the TD error as part of the loss *L* calculation. The TD
@@ -81,16 +92,19 @@
   id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 这篇论文的关键方法是为缓冲区中的训练样本分配重要性分数，这些分数基于它们的TD误差。当从缓冲区中选取一批样本时，你将计算TD误差作为损失*L*计算的一部分。TD误差由以下方程给出：
 - en: '![$$ {\updelta}_i={r}_i+\left(\left(1- don{e}_i\right).\gamma .\underset{a^{\prime
     }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--}
     \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ1.png)'
   id: totrans-11
   prefs: []
   type: TYPE_IMG
+  zh: '![Δi=ri+(1- donei)γ.∀a′maxq(s′i,a′;wt−) - q(si,ai;wt)](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ1.png)'
 - en: (7-1)
   id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-1)
 - en: 'This appears inside Equation [6-3](502835_2_En_6_Chapter.xhtml#Equ3) where
     you calculate the loss. The error is squared and averaged over all samples to
     calculate the magnitude of updates to weight vectors, as shown in Equations [6-4](502835_2_En_6_Chapter.xhtml#Equ4)
@@ -101,15 +115,18 @@
   id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 这出现在方程[6-3](502835_2_En_6_Chapter.xhtml#Equ3)中，其中你计算损失。错误平方并平均所有样本以计算权重向量更新的幅度，如方程[6-4](502835_2_En_6_Chapter.xhtml#Equ4)和[6-5](502835_2_En_6_Chapter.xhtml#Equ5)所示。TD误差Δ[i]的幅度表示样本转换(i)对更新的贡献。作者使用这种推理为每个样本分配一个重要性分数p[i]，其中p[i]由以下方程给出：
 - en: '![$$ {\mathrm{p}}_{\mathrm{i}}=\left|{\updelta}_{\mathrm{i}}\right|+\varepsilon
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ2.png)'
   id: totrans-14
   prefs: []
   type: TYPE_IMG
+  zh: '![pi=|Δi|+ε](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ2.png)'
 - en: (7-2)
   id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-2)
 - en: A small constant ϵ is added to avoid the edge case of *p*[*i*] being 0 when
     TD error δ[*i*] is 0\. When a new transition is added to the buffer, you assign
     it the max of *p*[*i*] across all current transitions in the buffer. The reason
@@ -121,6 +138,7 @@
   id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了避免当TD误差Δ[i]为0时，p[i]也为0的边缘情况，添加了一个小的常数ε。当将新的转换添加到缓冲区时，你将其分配给缓冲区中所有当前转换的p[i]的最大值。这样做的原因是增加在采样一批转换进行TD学习时选择此转换的概率。当选择一批样本进行训练时，你将计算每个样本的TD误差Δ[i]作为损失/梯度计算的一部分。计算出的TD误差随后用于更新缓冲区中这些样本的重要性分数。
 - en: There is another approach of rank-based prioritization that the paper talks
     about. Using that approach, ![$$ {p}_i=\frac{1}{\mathit{\operatorname{rank}}(i)}
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq1.png), where
@@ -129,20 +147,24 @@
   id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 论文中还提到了另一种基于排名的优先级排序方法。使用这种方法，![pi=1/rank(i)](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq1.png)，其中rank(i)是当回放缓冲区的转换根据|Δ[i]|排序时的转换(i)的排名。
 - en: 'In the sample code, you will be using the first approach, which is called *proportional
     prioritization*. Next, at the time of sampling, you convert *p*[*i*] to probabilities
     by using the following equation:'
   id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 在示例代码中，你将使用第一种方法，称为*比例优先级*。接下来，在采样时，你使用以下方程将p[i]转换为概率：
 - en: '![$$ P(i)=\frac{p_i^{\upalpha}}{\sum_i{p}_i^{\upalpha}} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ3.png)'
   id: totrans-19
   prefs: []
   type: TYPE_IMG
+  zh: '![P(i)=pi^α/∑ip_i^α](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ3.png)'
 - en: (7-3)
   id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-3)
 - en: Here, *P*(*i*) denotes the probability of transition (i) in the buffer getting
     sampled while picking the training batch. This assigns a higher sampling probability
     to the transitions that have a higher TD error. Here, *α* is a hyperparameter,
@@ -151,6 +173,8 @@
   id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，*P*(*i*) 表示在挑选训练批次时，缓冲区中转换 (i) 被采样的概率。这为具有更高 TD 错误的转换分配了更高的采样概率。在这里，*α*
+    是一个超参数，它使用网格搜索进行了调整，作者发现 α = 0.6 对于您将要实施的成比例变体来说是最优的。
 - en: 'The previous approach of breaking the uniform sampling with some kind of sampling
     based on importance introduces bias. You need to correct the bias while calculating
     the loss *L*. In the paper, this was corrected using *importance sampling* by
@@ -159,14 +183,18 @@
   id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前通过某种基于重要性的采样来打破均匀采样的方法引入了偏差。您需要在计算损失 *L* 的同时纠正这个偏差。在论文中，这是通过使用 *重要性采样* 来纠正的，即通过用权重
+    *w*[*i*] 加权每个样本，然后将其加总以得到修正后的损失函数 *L*。计算权重的方程如下：
 - en: '![$$ {w}_i={\left(\frac{1}{N}.\frac{1}{P(i)}\right)}^{\upbeta} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ4.png)'
   id: totrans-23
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ4.png)'
 - en: (7-4)
   id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-4)
 - en: Here, *N* is the number of samples in the training batch, and *P*(*i*) is the
     probability of selecting a sample as calculated in the previous expression. *β*
     is another hyperparameter. *β* = 1 fully compensates for the non-uniform sampling
@@ -182,34 +210,45 @@
   id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，*N* 是训练批次的样本数量，而 *P*(*i*) 是根据前一个表达式计算出的选择样本的概率。*β* 是另一个超参数。*β* = 1 可以完全补偿前一步中由
+    *P*(*i*) 重要性采样引入的非均匀采样。您还可以通过定义一个在学习的最后才达到 1 的指数 *β* 的计划，来利用随时间调整重要性采样校正量的灵活性。在实践中，您可以线性地将
+    *β* 从其初始值 *β*[0] 线性衰减到 1。请注意，此超参数的选择与优先级指数 *α* 的选择相互作用；同时增加两者会同时更积极地优先采样，并更强烈地对其进行校正。在这个例子中，您使用了一个常数值
+    0.4，该值取自论文中的一些实验。
 - en: 'The weights are further normalized by ![$$ \frac{1}{ma{x}_i{w}_i} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq2.png)
     to ensure that the weights stay within bounds:'
   id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 权重进一步通过 ![公式](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq2.png)
+    进行归一化，以确保权重保持在界限内：
 - en: '![$$ {w}_i^{IS}=\frac{1}{ma{x}_i{w}_i}{w}_i $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ5.png)'
   id: totrans-27
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ5.png)'
 - en: (7-5)
   id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-5)
 - en: 'With these changes in place, the loss *L* equation is also updated to weigh
     each transition in the batch with *w*[*i*] as follows:'
   id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这些变化实施后，损失 *L* 方程也进行了更新，以便使用 *w*[*i*] 权重来衡量批处理中的每个转换，如下所示：
 - en: '![$$ L=\frac{1}{N}{\sum}_{i=1}^N{\left[{r}_i+\left(\left(1- don{e}_i\right).\upgamma
     .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--}
     \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2.{w}_i^{IS} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ6.png)'
   id: totrans-30
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ6.png)'
 - en: (7-6)
   id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-6)
 - en: Notice the ![$$ {w}_i^{IS} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq3.png)
     in the equation. After *L* is calculated, you follow the usual gradient step using
     back-propagation of the loss gradient with respect to the online neural network
@@ -218,12 +257,15 @@
   id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意方程中的 ![公式](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq3.png)。在计算
+    *L* 后，您将遵循常规的梯度步骤，使用损失梯度相对于在线神经网络权重 *w*（表示为 *w*[*t*]，下标 *t* 强调权重随着迭代批次进行训练而变化）的反向传播。
 - en: Remember, the TD error in the previous equation is used to update the importance
     score back in the replay buffer for these transitions in the current training
     batch. This completes the theoretical discussion on the prioritized replay.
   id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 记住，前一个方程中的TD误差用于更新回放缓冲区中当前训练批次中这些转换的重要性分数。这完成了对优先级回放的理论讨论。
 - en: You will now look at the implementation. The complete code of training a DQN
     agent with prioritized replay is given in `7.a-dqn_prioritized_replay.ipynb`.
     You are advised to study the code in detail along with the referenced paper after
@@ -236,6 +278,7 @@
   id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在您将查看实现过程。训练一个具有优先级回放的DQN代理的完整代码在`7.a-dqn_prioritized_replay.ipynb`中给出。建议您在阅读这里的解释后，详细研究代码以及参考的论文。能够跟随学术论文并匹配论文中的细节到实际代码中，是成为一名优秀实践者的重要部分。本节中的解释只是为了让您开始。为了牢固掌握材料，您应该详细跟随附带的代码。如果您在检查代码如何工作之后尝试自己编写代码，那就更好了。
 - en: 'Getting back to the explanation, you first look at the prioritized replay implementation,
     which is the major change in the code from the previous DQN training notebook.
     Listing [7-1](#PC1) shows the code for prioritized replay. Most of the code is
@@ -255,6 +298,8 @@
   id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 回到解释部分，您首先查看优先级回放的实现，这是与之前的DQN训练笔记本代码的主要变化。列表[7-1](#PC1)显示了优先级回放的代码。大部分代码与您之前看到的普通`ReplayBuffer`相似。现在您有一个额外的数组`self.priorities`，用于存储每个样本的重要性/优先级分数*p*[*i*]。`add`函数被修改为将*p*[*i*]分配给新添加的样本。它只是数组`self.priorities`中值的最大值。`sample`函数是经过最大变化的函数。首先使用方程[7-3](#Equ3)计算概率，然后使用方程[7-4](#Equ4)和[7-5](#Equ5)计算权重。该函数现在返回两个额外的数组：权重数组`np.array(weights)`和索引数组`np.array(idxs)`。索引数组包含在批次中采样的样本在缓冲区中的索引。这是必需的，以便在损失步骤中计算TD误差后，您可以在缓冲区中更新优先级/重要性。`update_priorities(idxs,
+    new_priorities)`函数正是为此目的。
 - en: '[PRE0]'
   id: totrans-36
   prefs: []
@@ -274,6 +319,8 @@
   id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们看看损失计算。代码几乎与您在列表[6-3](502835_2_En_6_Chapter.xhtml#PC4)中看到的TD损失计算相似。有两个变化。第一个是将TD误差与权重相乘，符合方程[7-6](#Equ6)。第二个变化是在函数内部调用`update_priorities`以更新缓冲区中的优先级。该函数现在接受两个新的参数。第一个是`weights`，在方程[7-6](#Equ6)中表示为![$$
+    {w}_i^{IS} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq4.png)。第二个参数是`buffer_idxs`，用于更新构成训练批次的转换的优先级。列表[7-2](#PC2)突出了修订的`compute_td_loss_priority_replay`函数的代码更改。
 - en: '[PRE1]'
   id: totrans-38
   prefs: []
@@ -286,10 +333,12 @@
   id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 训练代码与之前相同。您可以通过查看`7.a-dqn-prioritized-replay.ipynb`笔记本来了解详细信息。与之前一样，您训练代理，可以看到代理通过这种方法很好地学会了平衡杆。图[7-1](#Fig1)显示了训练曲线。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig1_HTML.jpg)'
   id: totrans-40
   prefs: []
   type: TYPE_IMG
+  zh: '![DQN代理的训练曲线图](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig1_HTML.jpg)'
 - en: 2 graphs. Left. Mean return per episode. A fluctuating curve that increases
     between (0, 0) and (47, 1000) with 3 lowest peaks at (22, 220), (25, 420), and
     (31, 220). Right. It is bell-shaped with fluctuation between (0, 0) and (2000,
@@ -297,14 +346,18 @@
   id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 2个图表。左图：每集的平均回报。曲线在(0, 0)和(47, 1000)之间波动，有三个最低点在(22, 220)、(25, 420)和(31, 220)。右图：呈钟形，波动在(0,
+    0)和(2000, 0)之间，峰值在(600, 17)。数值为近似值。
 - en: Figure 7-1
   id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-1
 - en: Training curve for DQN agent with prioritized experience replay on CartPole
   id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 在CartPole上使用优先经验重放的DQN代理的训练曲线
 - en: The paper has lot more to say about the theoretical background of prioritized
     replay and why it can help. Plus the paper also talks about the impact it has
     on Atari games as well as how such an approach could be used for supervised learning
@@ -313,11 +366,13 @@
   id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 论文还详细讨论了优先重放的理论背景以及为什么它有帮助。此外，论文还讨论了它对Atari游戏的影响，以及如何使用这种方法来解决带有类别不平衡的监督学习问题。这完成了优先重放的部分。建议您参考原始论文和代码笔记本以获取更多详细信息。
 - en: Double DQN (DDQN)
   id: totrans-45
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 双DQN (DDQN)
 - en: The authors of the paper “Deep Reinforcement Learning with Double Q-Learning”^([2](#Fn2))
     explore the possibility and show that DQN algorithm, which combines Q-learning
     with a deep neural network, suffers from substantial overestimations, especially
@@ -332,20 +387,24 @@
   id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 论文“使用双Q学习的深度强化学习”的作者([2](#Fn2))探讨了DQN算法的可能性，并表明结合Q学习和深度神经网络的DQN算法存在显著的过估计，尤其是在一些Atari游戏中。然后，作者提出了将双Q学习应用于DQN的想法，称之为*双DQN*。双Q学习的想法是通过将目标函数中的最大操作分解为两个独立的步骤来减少过估计：选择动作和评估所选动作。尽管没有完全解耦，但DQN架构中的目标网络为第二个价值函数提供了一个自然的候选者，无需引入额外的网络。因此，作者建议根据在线网络评估贪婪策略，但使用目标网络来估计其价值。
 - en: 'Let’s look at the max operation in the regular DQN. You calculate the TD target
     as follows:'
   id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们来看看常规DQN中的最大操作。你计算TD目标如下：
 - en: '![$$ {Y}^{DQN}=r+\upgamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}^{\prime
     },{a}^{\prime };{w}_t^{-}\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ7.png)'
   id: totrans-48
   prefs: []
   type: TYPE_IMG
+  zh: '![DQN中的目标函数公式](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ7.png)'
 - en: (7-7)
   id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-7)
 - en: 'I have simplified the equation a bit by dropping the subscript (*i*) as well
     as removing the `(1-done)` multiplier, which drops the second term for the terminal
     state. I have done so to keep the explanation uncluttered. Now, let’s unwrap this
@@ -354,12 +413,14 @@
   id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 我通过省略下标(*i*)以及移除`(1-done)`乘数来简化了方程，这消除了终端状态的第二个项。这样做是为了保持解释的清晰。现在，让我们通过将*max*移到方程内部来展开这个方程。之前的更新可以等价地写成以下形式：
 - en: '![$$ \mathrm{r}+\upgamma .\hat{q}\left({s}^{\prime },\mathit{\arg}\underset{a^{\prime
     }}{\mathit{\max}}\hat{q}\left({s}^{\prime },{a}^{\prime };{w}_t^{-}\right);{w}_t^{-}\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equa.png)'
   id: totrans-51
   prefs: []
   type: TYPE_IMG
+  zh: '![目标函数公式](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equa.png)'
 - en: 'I have moved the `max` inside by first taking the max action and then taking
     the q-value for that `max` action. This is similar to directly taking the max
     q-value. In the previous unwrapped equation, you can clearly see that you are
@@ -376,16 +437,26 @@
   id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 我首先采取最大动作，然后为该最大动作取q值，将`max`操作移到了内部。这与直接取最大q值类似。在之前的未展开方程中，你可以清楚地看到你使用相同的网络权重
+    ![$$ {w}_t^{-} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq5.png)，首先用于选择最佳动作，然后用于获取该动作的q值。这就是导致最大化偏差的原因。论文的作者提出了一种他们称之为双DQN（DDQN）的方法，其中选择最佳动作的权重
+    ![$$ \mathit{\arg}\underset{a^{\prime }}{\mathit{\max}}\hat{q}\left({s}^{\prime
+    },{a}^{\prime}\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq6.png)
+    来自在线网络权重 *w*[*t*]，然后使用权重 ![$$ {w}_t^{-} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq7.png)
+    的目标网络来选择该最佳动作的q值。这种变化导致更新的TD目标如下：
 - en: '![$$ \mathrm{r}+\upgamma .\hat{q}\left({s}^{\prime },\mathit{\arg}\underset{a^{\prime
     }}{\mathit{\max}}\hat{q}\left({s}^{\prime },{a}^{\prime };{w}_t\right);{w}_t^{-}\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ8.png)'
   id: totrans-53
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \mathrm{r}+\upgamma .\hat{q}\left({s}^{\prime },\mathit{\arg}\underset{a^{\prime
+    }}{\mathit{\max}}\hat{q}\left({s}_i^{\prime },{a}_i'';{w}_t\right);{w}_t^{-}\right)
+    $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ8.png)'
 - en: (7-8)
   id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-8)
 - en: 'Note that the inner network for selecting the best action is now using online
     network weights *w*[*t*]. Everything else remains the same. You calculate the
     loss as before and then use the gradient step to update the weights of the online
@@ -395,25 +466,33 @@
   id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，现在用于选择最佳动作的内部网络正在使用在线网络权重 *w*[*t*]。其他一切保持不变。你像以前一样计算损失，然后使用梯度步来更新在线网络的权重。你还会定期使用在线网络的权重更新目标网络权重。你使用的更新损失函数如下（恢复*done*标志和索引*i*）：
 - en: '![$$ {Y}_i^{DDQN}={r}_i+\left(\left(1- don{e}_i\right).\gamma .\hat{q}\left({s}_i^{\prime
     },\arg \underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t\right);{w}_t^{-}\right)\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ9.png)'
   id: totrans-56
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {Y}_i^{DDQN}={r}_i+\left(\left(1- don{e}_i\right).\gamma .\hat{q}\left({s}_i^{\prime
+    },\arg \underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t\right);{w}_t^{-}\right)\right)
+    $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ9.png)'
 - en: (7-9)
   id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-9)
 - en: '![$$ L=\frac{1}{N}{\sum}_{i=1}^N{\left[{Y}_i^{DDQN}\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ10.png)'
   id: totrans-58
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ L=\frac{1}{N}{\sum}_{i=1}^N{\left[{Y}_i^{DDQN}\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2
+    $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ10.png)'
 - en: (7-10)
   id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-10)
 - en: 'The authors show that the double DQN approach leads to significant reduction
     in overestimation bias, which in turn leads to better policies. Let’s now look
     at the implementation details. The only thing that will change as compared to
@@ -433,6 +512,10 @@
   id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者表明，双DQN方法导致过度估计偏差显著减少，这反过来又导致更好的策略。现在让我们看看实现细节。与DQN实现相比，唯一会改变的是损失计算的方式。您使用方程式[7-9](#Equ9)和[7-10](#Equ10)来计算损失。其他所有内容——包括DQN策略代理代码、重放缓冲区以及进行梯度反向传播的训练方式——保持不变。列表[7-3](#PC3)展示了修订后的损失函数计算。您使用`q_s
+    = agent(states)`计算当前的q值，然后，对于每一行，选择对应动作*a*[*i*]的q值。这些动作值存储在`q_s_a`中。然后，您使用权重*w*（迭代时间索引*w*[*t*]）的代理网络来计算下一个状态的q值：`q_s1
+    = agent(next_states)`。`q_s1`张量用于通过`a1_max = torch.max(q_s1, dim=1)`找到每一行的最佳动作，然后您使用具有最佳动作的目标网络来找到目标q值：`q_s1=agent(next_states)`然后`q_s1_a1max
+    = q_s1_target[range(len(a1max)), a1max]`。TD损失计算的其余代码保持不变。
 - en: '[PRE2]'
   id: totrans-61
   prefs: []
@@ -446,10 +529,12 @@
   id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`CartPole`上运行DDQN会产生图[7-2](#Fig2)所示的训练图。您可能不会注意到太大的差异，因为`CartPole`是一个过于简单的问题，无法展示其优势。此外，训练算法正在运行少量剧集以展示算法。要了解该方法的量化优势，您应查看引用的论文。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig2_HTML.jpg)'
   id: totrans-63
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig2_HTML.jpg)'
 - en: 2 graphs. Left. Mean return per episode. It has an increasing curve with more
     fluctuation between (0, 0) and (25, 300). Right. T D loss history. It has a fluctuating
     bell curve between (0, 8) and (400, 3) with its peak at (200, 47). The values
@@ -457,23 +542,29 @@
   id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 2个图表。左图：每集平均回报。曲线呈上升趋势，在(0, 0)和(25, 300)之间波动更大。右图：TD损失历史。在(0, 8)和(400, 3)之间有一个波动的钟形曲线，峰值在(200,
+    47)。数值为近似值。
 - en: Figure 7-2
   id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-2
 - en: Training curve for DDQN on CartPole from `7.b-ddqn.ipynb`
   id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: DDQN在CartPole上的训练曲线来自`7.b-ddqn.ipynb`
 - en: This completes the discussion on DDQN. The next section covers dueling DQN.
   id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 这完成了对DDQN的讨论。下一节将介绍对抗性DQN。
 - en: Dueling DQN
   id: totrans-68
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 对抗性DQN
 - en: Up until now, all of your networks took in state *S* and produced the q-values
     *Q*(*S*, *A*) for all actions *A* in the state *S*. Figure [6-1](502835_2_En_6_Chapter.xhtml#Fig1)
     shows a sample of such a network. However, many times in a particular state, there
@@ -489,6 +580,8 @@
   id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，你所有的网络都接受状态 *S* 并为状态 *S* 中的所有行动 *A* 生成 q-values *Q*(*S*, *A*)。图[6-1](502835_2_En_6_Chapter.xhtml#Fig1)显示了这样一个网络的示例。然而，在特定状态下，采取任何特定行动往往没有影响。考虑这种情况：一辆车在道路中间行驶，周围没有其他车辆。在这种情况下，稍微向左或向右行驶，或者稍微加速或减速，都没有影响；这些行动都产生相似的
+    q-values。有没有一种方法可以分离状态中的平均价值和采取特定行动相对于平均价值的优势？这就是2016年论文“用于深度强化学习的对抗网络架构”^([3](#Fn3))的作者所采取的方法。他们展示了这导致了显著的改进，并且随着状态中可能采取的行动数量的增加，改进程度更高。
 - en: 'Let’s derive the computation that the dueling DQN network performs. You saw
     the definition of state-value and action-value functions in Chapter [2](502835_2_En_2_Chapter.xhtml)
     in Equations [2-9](502835_2_En_2_Chapter.xhtml#Equ9) and [2-10](502835_2_En_2_Chapter.xhtml#Equ10),
@@ -496,37 +589,47 @@
   id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们推导出对抗DQN网络执行的计算。你在第二章[2](502835_2_En_2_Chapter.xhtml)中的方程[2-9](502835_2_En_2_Chapter.xhtml#Equ9)和[2-10](502835_2_En_2_Chapter.xhtml#Equ10)中看到了状态价值和行动价值的函数定义，这些方程在此处重现：
 - en: '![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{G}_t|{S}_t=s\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equb.png)'
   id: totrans-71
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{G}_t|{S}_t=s\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equb.png)'
 - en: '![$$ {q}_{\pi}\left(s,a\right)={E}_{\pi }\ \left[\ {G}_t\ \right|\ {S}_t=s,{A}_t=a\
     \Big] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ11.png)'
   id: totrans-72
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {q}_{\pi}\left(s,a\right)={E}_{\pi }\ \left[\ {G}_t\ \right|\ {S}_t=s,{A}_t=a\
+    \Big] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ11.png)'
 - en: (7-11)
   id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-11)
 - en: 'Then, in Chapter [5](502835_2_En_5_Chapter.xhtml) on function approximation,
     you saw these equations change a bit with the introduction of parameters *w* when
     you switched to representing the state/action values as parameterized functions:'
   id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，在关于函数逼近的第五章[5](502835_2_En_5_Chapter.xhtml)中，你看到当将状态/行动值表示为参数化函数时，随着参数 *w*
+    的引入，这些方程有所变化：
 - en: '![$$ \hat{v}\left(s;w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equc.png)'
   id: totrans-75
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{v}\left(s;w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equc.png)'
 - en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ12.png)'
   id: totrans-76
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ12.png)'
 - en: (7-12)
   id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-12)
 - en: Both sets of Equations [7-11](#Equ11) and [7-12](#Equ12) show that *v*[π] measures
     the value of being in a state in general, and *q*[π] shows the value of taking
     a specific action from the state *S*. If you subtract *Q* from *V*, you get something
@@ -536,11 +639,16 @@
   id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 两个方程组[7-11](#Equ11)和[7-12](#Equ12)表明 *v*[π]衡量的是处于一般状态的价值，而 *q*[π]显示了从状态 *S*
+    中采取特定行动的价值。如果你从 *V* 中减去 *Q*，你得到一个被称为 *advantage A* 的东西。请注意，这里有一些符号的重复使用。*A* 在
+    *Q*(*S*, *A*) 中代表行动，而方程左侧的 *A*[π]代表采取行动 *a* 的优势。
 - en: '![$$ {A}_{\uppi}\left(s,a\right)={Q}_{\uppi}\left(s,a\right)-{V}_{\uppi}(s)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equd.png)'
   id: totrans-79
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {A}_{\uppi}\left(s,a\right)={Q}_{\uppi}\left(s,a\right)-{V}_{\uppi}(s)
+    $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equd.png)'
 - en: 'The authors created a network that takes in a state *S* as input and, after
     a few layers of network, produces two streams—one giving state value *V* and another
     giving advantage *A* with part of the network being individual sets of layers,
@@ -549,23 +657,29 @@
   id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者创建了一个网络，该网络接受状态 *S* 作为输入，并在经过几层网络处理后，产生两个流——一个提供状态值 *V*，另一个提供优势 *A*，其中部分网络是单独的层集，一个用于
+    *V*，一个用于 *A*。最后，最后一层通过重新排列方程 [7-13](#Equ13) 来组合优势 *A* 和状态值 *V* 以恢复 *Q*：
 - en: '![$$ {Q}_{\uppi}\left(s,a\right)={V}_{\uppi}(s)+{A}_{\uppi}\left(s,a\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ13.png)'
   id: totrans-81
   prefs: []
   type: TYPE_IMG
+  zh: '![Q_π(s,a) = V_π(s) + A_π(s,a)](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ13.png)'
 - en: (7-13)
   id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-13)
 - en: Figure [7-3](#Fig3) shows a representative network architecture for the same.
   id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [7-3](#Fig3) 展示了相同问题的代表性网络架构。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig3_HTML.jpg)'
   id: totrans-84
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig3_HTML.jpg)'
 - en: A network model has 2 C N Ns connected to a flatten layer. It is distributed
     into 2 dense layers. They are connected to V of s and A of s, a, respectively,
     and converge into Q of s, a. The function reads, Q of s, a = V of s + A of s,
@@ -573,31 +687,39 @@
   id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个网络模型有 2 个 C N N 与一个展平层连接。它们被分配到 2 个密集层中。它们分别连接到 s 的 V 和 A，并收敛到 s, a 的 Q。函数读作，Q(s,a)
+    = V(s) + A(s,a) - 1/模 a, sigma a, A(s,a)。
 - en: Figure 7-3
   id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-3
 - en: Dueling network. The network has a common set of weights in the initial layers,
     denoted as *w*[1], and then it branches off to have one set of weights *w*[2,]
     producing value *V* and another set of weights *w*[3], producing advantage *A*
   id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 对抗网络。该网络在初始层具有一组共同的权重，记为 *w*[1]，然后分支出来，有一组权重 *w*[2]，产生值 *V*，另一组权重 *w*[3]，产生优势
+    *A*
 - en: 'Before you proceed, let’s rewrite Equation [7-13](#Equ13) with weights *w*[1],
     *w*[2], *w*[3] explicitly shown in expression. The revised equation looks like
     this:'
   id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 在你继续之前，让我们用权重 *w*[1]，*w*[2]，*w*[3] 明确地重写方程 [7-13](#Equ13)。修改后的方程看起来像这样：
 - en: '![$$ \hat{Q}\left(s,a;{w}_1,{w}_2,{w}_3\right)=\hat{V}\left(s;{w}_1,{w}_2\right)+\hat{A}\left(s,a;{w}_1,{w}_3\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ14.png)'
   id: totrans-89
   prefs: []
   type: TYPE_IMG
+  zh: '![^Q(s,a;w_1,w_2,w_3) = ^V(s;w_1,w_2) + ^A(s,a;w_1,w_3)](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ14.png)'
 - en: (7-14)
   id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-14)
 - en: Do you notice a problem in learning this kind of expression where you estimate
     *V* and *A* independently? There is no unique *V* and *A* that represent the *Q*.
     If you add a constant term to *V* and subtract the same term from *A*, the expression
@@ -609,35 +731,46 @@
   id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 你是否注意到在学习这种独立估计 *V* 和 *A* 的表达式时存在一个问题？没有唯一的 *V* 和 *A* 来代表 *Q*。如果你向 *V* 添加一个常数项，并从
+    *A* 中减去相同的项，*Q*[π] 的表达式保持不变。因此，这个网络将不会学习到唯一的 *V*，即状态值。联合网络可以学习到所有状态的正确 *Q*，但每个状态的状态值
+    *V* 可能会因随机量而单独偏移，这使得很难将 *V* 作为状态值的真正代表来使用。
 - en: One way to force this issue of identifiability/uniqueness the authors suggested
     to force the advantage to have zero value for the chosen action, that is,. an
     action with maximum advantage.
   id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者建议的一种强制性问题可识别性/唯一性的方法是将优势设置为所选动作的零值，即具有最大优势的动作。
 - en: '![$$ \hat{Q}\left(s,a;{w}_1,{w}_2,{w}_3\right)=\hat{V}\left(s;{w}_1,{w}_2\right)+\left(\hat{A}\left(s,a;{w}_1,{w}_3\right)-\underset{a''}{\max}\hat{A}\left(s,{a}^{''};{w}_1,{w}_3\right)\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ15.png)'
   id: totrans-93
   prefs: []
   type: TYPE_IMG
+  zh: '![^Q(s,a;w_1,w_2,w_3) = ^V(s;w_1,w_2) + (^A(s,a;w_1,w_3) - max_a'' ^A(s,a'';w_1,w_3))]
+    (../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ15.png)'
 - en: (7-15)
   id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-15)
 - en: The authors in the study found an alternative formulation to offer better stability
     where the `max` operation was replaced by an average.
   id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 研究中的作者发现了一种替代公式，通过将最大值操作替换为平均值来提供更好的稳定性。
 - en: '![$$ \hat{Q}\left(s,a;{w}_1,{w}_2,{w}_3\right)=\hat{V}\left(s;{w}_1,{w}_2\right)+\left(\hat{A}\left(s,a;{w}_1,{w}_3\right)-\frac{1}{\left|{a}^{\prime}\right|}{\sum}_{a^{\prime
     }}\hat{A}\left(s,{a}^{\prime };{w}_1,{w}_3\right)\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ16.png)'
   id: totrans-96
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{Q}\left(s,a;{w}_1,{w}_2,{w}_3\right)=\hat{V}\left(s;{w}_1,{w}_2\right)+\left(\hat{A}\left(s,a;{w}_1,{w}_3\right)-\frac{1}{\left|{a}^{\prime}\right|}{\sum}_{a^{\prime
+    }}\hat{A}\left(s,{a}^{\prime };{w}_1,{w}_3\right)\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ16.png)'
 - en: (7-16)
   id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-16)
 - en: On the one hand, this loses the original semantics of V and A because they are
     now off-target by a constant, but on the other hand it increases the stability
     of the optimization. With Equation [7-16](#Equ16) the advantages only needs to
@@ -646,6 +779,7 @@
   id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 一方面，这失去了V和A的原始语义，因为它们现在偏离目标一个常数，但另一方面，它增加了优化的稳定性。使用方程[7-16](#Equ16)，优势只需要像均值一样快速变化，而不是像7-15中那样需要补偿最优动作优势的任何变化。
 - en: In the previous equation, weight *w*[1] corresponds to the initial common part
     of the network, *w*[2] corresponds to the part of the network that predicts state
     value ![$$ \hat{V} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq8.png),
@@ -654,6 +788,8 @@
   id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前面的方程中，权重*w*[1]对应于网络的初始共同部分，*w*[2]对应于预测状态值![$$ \hat{V} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq8.png)的部分，最后*w*[3]对应于预测优势![$$
+    \hat{A} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq9.png)的部分。
 - en: The authors named this architecture *dueling networks* as it has two networks
     fused together with an initial common part. Since the dueling network is at the
     agent network level, it is independent of the other components like the type of
@@ -665,37 +801,44 @@
   id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者将这种架构命名为*对抗网络*，因为它由两个网络融合在一起，具有一个初始的共同部分。由于对抗网络处于代理网络级别，因此它独立于其他组件，如重放缓冲区类型或权重学习方式（即简单的DQN或双DQN）。因此，你可以独立于重放缓冲区类型或学习类型使用对抗网络。在本教程中，你将使用一个简单的重放缓冲区，其中每个缓冲区中的转换选择具有均匀的概率。此外，你将使用DQN代理。
 - en: The authors studied the improvement of this approach over a baseline single
     network, as shown Figure [7-4](#Fig4). It clearly shows the benefit of a dueling
     architecture.
   id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者研究了这种方法相对于基线单网络的改进，如图[7-4](#Fig4)所示。它清楚地显示了对抗架构的好处。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig4_HTML.jpg)'
   id: totrans-102
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig4_HTML.jpg)'
 - en: A horizontal bar graph with the names of games and their corresponding percentages.
     It has a decreasing trend from top to bottom. The highest is Atlantis with 296.67%
     and the lowest is Freeway with negative 100%.
   id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个水平条形图，显示了游戏名称及其相应的百分比。从上到下呈下降趋势。最高的是大西洋，为296.67%，最低的是高速公路，为负100%。
 - en: Figure 7-4
   id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-4
 - en: 'Improvements of a dueling architecture over a baseline single network Source:
     Fig 4 of the paper^([4](#Fn4))'
   id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 对抗架构相对于基线单网络的改进来源：论文图4^([4](#Fn4))
 - en: Compared to the notebook for vanilla DQN—`6.a-dqn_pytorch.ipynb`—the only change
     is the way the network is constructed. Listing [7-4](#PC4) shows the code for
     the dueling agent network.
   id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 与vanilla DQN的笔记本——`6.a-dqn_pytorch.ipynb`——相比，唯一的改变是网络构建的方式。列表[7-4](#PC4)显示了对抗代理网络的代码。
 - en: '[PRE3]'
   id: totrans-107
   prefs: []
@@ -712,10 +855,15 @@
   id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 在一个常见的网络中，你有两层（`self.fc1` 和 `self.fc2`）。对于 *V* 预测，你在 `fc1` 和 `fc2` 之上还有另外两层（`self.fc_value`
+    和 `self.value`）。同样，对于优势估计，你再次在 `fc1` 和 `fc2` 之上有一组单独的两层（`self.fc_adv` 和 `self.adv`）。这些输出根据方程
+    [7-16](#Equ16) 结合，以给出修改后的 q 值。其余的代码，即 TD 损失的计算和权重更新的梯度下降，与 DQN 相同。图 [7-5](#Fig5)
+    展示了在 `CartPole` 上训练前述网络的结果。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig5_HTML.jpg)'
   id: totrans-109
   prefs: []
   type: TYPE_IMG
+  zh: '![图 7-5](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig5_HTML.jpg)'
 - en: 2 graphs. Left. Mean reward per episode. It has a fluctuating curve that rises
     from (0, 0) to (4, 540), drops, and remains stable till (30,290). Right. T D loss
     history. It has a fluctuating bell curve between (0, 10) and (500, 1) with its
@@ -723,25 +871,32 @@
   id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 2 个图表。左图：每集平均奖励。它有一个从 (0, 0) 到 (4, 540) 上升然后下降，并在 (30,290) 处保持稳定的波动曲线。右图：TD
+    损失历史。它在 (0, 10) 和 (500, 1) 之间有一个波动的钟形曲线，峰值在 (220, 99)。数值是近似的。
 - en: Figure 7-5
   id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-5
 - en: Training curves for a dueling network from .c-dueling_dqn.ipynb
   id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 来自 .c-dueling_dqn.ipynb 的对抗网络的训练曲线
 - en: As stated, you can try to substitute `ReplayBuffer` with `PrioritizedReplayBuffer.`
     You could also use DDQN instead of DQN as a learning agent. This concludes the
     discussion on dueling DQN. The next section discusses a very different variant.
   id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 如所述，你可以尝试将 `ReplayBuffer` 替换为 `PrioritizedReplayBuffer`。你也可以使用 DDQN 而不是 DQN
+    作为学习代理。这结束了关于对抗 DQN 的讨论。下一节将讨论一个非常不同的变体。
 - en: NoisyNets DQN
   id: totrans-114
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: NoisyNets DQN
 - en: Recall that you need to explore parts of state space. You have been doing this
     using a ε-greedy policy. Under this exploration, you take the max q-value action
     with probability (1- ε), and a random action with probability ε. The authors of
@@ -751,28 +906,35 @@
   id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 记住，你需要探索状态空间的一部分。你一直使用 ε-greedy 策略来做这件事。在这种探索下，你以 (1- ε) 的概率采取最大 q 值动作，以 ε 的概率采取随机动作。最近一篇标题为“用于探索的噪声网络”的
+    2018 年论文的作者使用了一种不同的方法，即在线性层作为参数添加随机扰动，就像网络权重一样，这些也是学习到的。
 - en: 'The usual linear layers are affine transformations, as given by the following:'
   id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 常规线性层是仿射变换，如下所示：
 - en: '![$$ y= wx+b $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Eque.png)'
   id: totrans-117
   prefs: []
   type: TYPE_IMG
+  zh: '![线性方程 y= wx+b](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Eque.png)'
 - en: 'In noisy linear versions, you introduce random perturbations in the weights
     as given by the following equation:'
   id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 在噪声线性版本中，你根据以下方程在权重中引入随机扰动：
 - en: '![$$ y=\left({\upmu}^w+{\upsigma}^w\odot {\upvarepsilon}^w\right)x+\left({\upmu}^b+{\upsigma}^b\odot
     {\upvarepsilon}^b\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ17.png)'
   id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![线性方程 y= (μ^w + σ^w ⊙ ε^w)x + (μ^b + σ^b ⊙ ε^b)](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ17.png)'
 - en: (7-17)
   id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-17)
 - en: In the previous equation, μ^(*w*), σ^(*w*), μ^(*b*), and σ^(*b*) are the weights
     of the network that are learned. ϵ^(*w*) and ϵ^(*b*) are random noises that introduce
     randomness leading to exploration. Figure [7-6](#Fig6) shows a schematic diagram
@@ -780,10 +942,13 @@
   id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前一个方程中，μ^(*w*), σ^(*w*), μ^(*b*), 和 σ^(*b*) 是学习到的网络权重。ϵ^(*w*) 和 ϵ^(*b*) 是引入随机性的随机噪声，导致探索。图
+    [7-6](#Fig6) 展示了线性层的噪声版本示意图，它解释了方程 [7-17](#Equ17)。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig6_HTML.jpg)'
   id: totrans-122
   prefs: []
   type: TYPE_IMG
+  zh: '![图 7-6](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig6_HTML.jpg)'
 - en: A schematic of a system with inputs x and epsilon superscript w, epsilon superscript
     b. The function reads w = mu superscript w + sigma superscript w, circled dot,
     epsilon superscript w, and b = mu superscript b + sigma superscript b, circled
@@ -791,16 +956,20 @@
   id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个输入 x 和 epsilon 上标 w，epsilon 上标 b 的系统示意图。函数读作 w = mu 上标 w + sigma 上标 w, 圆点,
+    epsilon 上标 w，和 b = mu 上标 b + sigma 上标 b, 圆点, epsilon 上标 b p。输出是 y = w x + b。
 - en: Figure 7-6
   id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-6
 - en: The noisy linear layer. The weights and biases are a linear combination of the
     mean and standard deviation, which are learned just like the weights and biases
     in a regular linear layer (Figure 4 of the referenced paper [`https://arxiv.org/pdf/1706.10295.pdf`](https://arxiv.org/pdf/1706.10295.pdf))
   id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 噪声线性层。权重和偏置是均值和标准差的线性组合，就像常规线性层中的权重和偏置一样被学习（参考论文中的图4，见[`https://arxiv.org/pdf/1706.10295.pdf`](https://arxiv.org/pdf/1706.10295.pdf)）
 - en: 'In terms of specific noise distributions in linear layers of a noisy network,
     the authors sampled two types: Independent Gaussian noise, where each weight has
     its own Gaussian noise, and Factorized Gaussian noise, which introduces separate
@@ -813,6 +982,7 @@
   id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 在考虑噪声网络线性层中的特定噪声分布时，作者采样了两种类型：独立高斯噪声，其中每个权重都有自己的高斯噪声，以及分解高斯噪声，它为每个输出和输入引入了单独的噪声。分解高斯噪声的主要优势在于其降低各种算法中随机数生成所需时间的特性。这种减少对于像DQN和dueling这样的单线程代理来说尤其重要，因为计算开销可能很大。因此，分解噪声被用于DQN和dueling，而独立噪声被用于计算时间不是主要问题的分布式A3C。
 - en: 'In line with the authors’ recommendations, you will implement the factorized
     version discussed in the paper, where each element ![$$ {\upvarepsilon}_{I,j}^w
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq10.png) of the
@@ -824,28 +994,37 @@
   id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 按照作者的建议，你将实现论文中讨论的分解版本，其中矩阵ϵ^(*w*)的每个元素![$$ {\upvarepsilon}_{I,j}^w $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq10.png)被分解。假设你有*p*个输入单元和*q*个输出单元。相应地，你生成一个*p*-大小的高斯噪声向量ϵ[*i*]和一个*q*-大小的高斯噪声向量ϵ[*j*]。每个![$$
+    {\epsilon}_{I,j}^w $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq11.png)和![$$
+    {\upvarepsilon}_j^b $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq12.png)现在可以写成以下形式：
 - en: '![$$ {\upvarepsilon}_{i,j}^w=f\left({\upvarepsilon}_i\right).f\left({\upvarepsilon}_j\right),
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equf.png)'
   id: totrans-128
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\upvarepsilon}_{i,j}^w=f\left({\upvarepsilon}_i\right).f\left({\upvarepsilon}_j\right),
+    $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equf.png)'
 - en: '![$$ {\upvarepsilon}_j^b=f\left({\upvarepsilon}_j\right), $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equg.png)'
   id: totrans-129
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\upvarepsilon}_j^b=f\left({\upvarepsilon}_j\right), $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equg.png)'
 - en: '![$$ f(x)=\operatorname{sgn}(x).\sqrt{\left|x\right|} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ18.png)'
   id: totrans-130
   prefs: []
   type: TYPE_IMG
+  zh: '![函数 f(x) = sgn(x)√|x|](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ18.png)'
 - en: (7-18)
   id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: (7-18)
 - en: 'For factorized networks like the one used here, the authors suggest initializing
     the weights as follows:'
   id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于像这里使用的分解网络，作者建议如下初始化权重：
 - en: Each element μ[*i*, *j*] of μ^(*w*) and μ^(*b*) is sampled from a uniform distribution
     in the range of ![$$ U\left[-\frac{1}{\sqrt{p}},\frac{1}{\sqrt{p}}\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq13.png),
     where *p* is the number of input units.
@@ -853,6 +1032,8 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: μ^(*w*)和μ^(*b*)的每个元素μ[*i*, *j*]都是从范围在![$$ U\left[-\frac{1}{\sqrt{p}},\frac{1}{\sqrt{p}}\right]
+    $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq13.png)的均匀分布中采样的，其中*p*是输入单元的数量。
 - en: Similarly, each element σ[*i*, *j*] of σ^(*w*) and σ^(*b*) is initialized to
     a constant ![$$ \frac{\upsigma_0}{\sqrt{p}} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq14.png)
     with the hyperparameter σ[0] set to 0.5.
@@ -860,6 +1041,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 同样，σ^(*w*)和σ^(*b*)的每个元素σ[*i*, *j*]被初始化为常数![$$ \frac{\upsigma_0}{\sqrt{p}} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq14.png)，其中超参数σ[0]设置为0.5。
 - en: 'At a high level, the following modifications are applied to the previous DQN
     algorithm: a) you will not be using ϵ-greedy exploration. Instead the policy greedily
     optimizes the (randomized) action-value function; 2) the fully connected layers
@@ -871,11 +1053,13 @@
   id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 在高层次上，对之前的DQN算法进行了以下修改：a) 你将不会使用ε-greedy探索。相反，策略贪婪地优化（随机化）动作值函数；2）全连接层被参数化为一个有噪声的网络，其中参数在每次重放步骤后从有噪声网络参数分布中抽取，这意味着相同的噪声网络被固定用于一批转换，计算梯度，并调整权重。在下一步之前，网络权重再次从这个修改后的权重中采样。
 - en: Section C of the paper provides the pseudocode for NoisyNet-DQN and NoisyNet-Dueling,
     that is, the NoisyNet version of DQN and Dueling DQN.
   id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 论文的C节提供了NoisyNet-DQN和NoisyNet-Dueling的伪代码，即DQN和Dueling DQN的噪声网络版本。
 - en: Let’s now look at the code required to implement NoisyNet-DQN. You create a
     noisy layer along the lines of the linear layer provided by PyTorch. You do so
     by extending `nn.Module` from PyTorch. It is a simple and standard implementation
@@ -893,6 +1077,7 @@
   id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来看一下实现NoisyNet-DQN所需的代码。你创建一个与PyTorch提供的线性层类似的噪声层。你是通过扩展PyTorch的`nn.Module`来做到这一点的。这是一个简单且标准的实现，你在`init`函数中创建权重向量和噪声向量。你从方程[7-17](#Equ17)创建线性层参数μ^(*w*)、σ^(*w*)、μ^(*b*)和σ^(*b*)。这些是通过四次单独调用`nn.Parameter`来创建的。你还创建了一个缓冲区来存储噪声张量ϵ^(*w*)和ϵ^(*b*)。它们不是使用`nn.Parameter`创建的，因为它们不是模型的参数。它们是从标准高斯分布中采样的，并存储在`forward`函数中使用。因此，你使用PyTorch的`register_buffer`函数为这些张量创建内存空间。然后你编写一个`forward`函数，它接受一个输入并通过一系列噪声线性层和常规线性层进行转换，如方程[7-17](#Equ17)所示。在训练期间，你使用7-17的噪声版本，在推理期间，你使用没有添加任何噪声的常规线性层的通常版本。
 - en: You also need some additional functions. In this case, I wrote a function called
     `reset_noise` to generate the noise ϵ^(*w*) and ϵ^(*b*). This function internally
     uses a helper function called `_noise` to generate standard Gaussian noise. The
@@ -902,6 +1087,7 @@
   id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 你还需要一些额外的函数。在这种情况下，我编写了一个名为`reset_noise`的函数来生成噪声ϵ^(*w*)和ϵ^(*b*)。这个函数内部使用一个名为`_noise`的辅助函数来生成标准高斯噪声。`reset_parameters`函数根据方程[7-18](#Equ18)中概述的策略重置参数。列表[7-5](#PC5)显示了噪声线性层的代码。
 - en: '[PRE4]'
   id: totrans-139
   prefs: []
@@ -923,6 +1109,12 @@
   id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用带噪声的网与 DQN、DDQN、dueling DQN 和优先级重放以各种组合使用。然而，为了进行说明，我专注于使用常规的重放缓冲区与 DQN
+    一起使用。您也可以使用常规的 DQN 方法进行训练，而不使用 DDQN。NoisyDQN 的实现与上一章中的 DQN 相似。唯一的区别是您现在需要使用一个带噪声的线性层，如列表
+    [7-5](#PC5) 所示。您还将 `training` 作为附加参数传递给 NoisyDQN 的前向函数，在训练期间为 `true`，在推理期间为 `false`。列表
+    [7-6](#PC6) 显示了 NoisyDQN 的初始化和前向函数。在 DQN 代理的 `sample_actions` 函数中没有 ϵ-greedy 选择。`reset_noise`
+    函数也在每个批次之后重置噪声。这与论文中推荐的解相关联的建议一致。列表 [7-6](#PC6) 包含了这些修改的 NoisyDQN 版本。其余的实现与原始
+    DQN 代理类似。
 - en: '[PRE5]'
   id: totrans-141
   prefs: []
@@ -935,6 +1127,8 @@
   id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 训练代码也有一些小的修改。您在处理完每一批样本后通过调用 `reset_noise` 来重置噪声。列表 [7-7](#PC7) 显示了带有此更改的代码。请参阅
+    `7.d-noisynet_dqn.ipynb` 笔记本以获取完整的代码。
 - en: '[PRE6]'
   id: totrans-143
   prefs: []
@@ -949,10 +1143,12 @@
   id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 `CartPole` 环境中训练 NoisyDQN 产生如图 [7-7](#Fig7) 所示的训练曲线。您可能看不到这个变体与 DQN（或者更确切地说，所有变体）之间有任何显著的区别。原因是您使用了一个简单的问题，并且只训练了少量回合。您也没有优化参数。书中介绍的想法是向您展示特定变体的内部细节。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig7_HTML.jpg)'
   id: totrans-145
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig7_HTML.jpg)'
 - en: 2 graphs. Left. Mean return per episode. It has an increasing curve with fluctuation
     that remains constant from (0, 10) to (22, 10) and increases till (50, 275). Right.
     T D loss history exhibits an irregular left-skewed curve with fluctuation between
@@ -960,14 +1156,18 @@
   id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 2 张图表。左图。每回合的平均回报。它有一个从 (0, 10) 到 (22, 10) 保持恒定的波动增加曲线，并增加到 (50, 275)。右图。T D
+    损失历史显示了一个不规则的左偏曲线，波动在 (0, 2) 和 (900, 3.8) 之间。数值是近似的。
 - en: Figure 7-7
   id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-7
 - en: NoisyNet DQN training graph
   id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: NoisyNet DQN 训练图
 - en: For a thorough study of the improvements and other observations, you are advised
     to refer to the original papers referenced in this chapter. You should also go
     through the accompanying Python notebooks in detail, and after you have grasped
@@ -977,10 +1177,13 @@
   id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了彻底研究改进和其他观察结果，建议您参考本章中引用的原始论文。您还应该详细阅读配套的 Python 笔记本，在掌握细节后，您应该尝试重新编写示例代码。图
+    [7-8](#Fig8) 显示了论文中的训练曲线，其中将 NoisyNet DQN 和 NoisyNet dueling 学习进度与基线版本进行了比较。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig8_HTML.jpg)'
   id: totrans-150
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig8_HTML.jpg)'
 - en: 2 line graphs of median score versus million frames. Left. It indicates 2 increasing
     fluctuating patterns for D Q N and Noisy Net D Q N. They overlap between (0, 0)
     and (40,30). Right. It indicates 2 increasing and fluctuating patterns for dueling
@@ -988,71 +1191,86 @@
   id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 2 条中值分数与百万帧的线图。左图。它显示了 D Q N 和 Noisy Net D Q N 的 2 种增加的波动模式。它们在 (0, 0) 和 (40,
+    30) 之间重叠。右图。它显示了对抗和 Noisy net 对抗的 2 种增加和波动模式。它们在 (0, 0) 和 (15, 95) 之间重叠。
 - en: Figure 7-8
   id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-8
 - en: NoisyNet comparison to the baseline from Figure 2 of the paper [`https://arxiv.org/pdf/1706.10295.pdf`](https://arxiv.org/pdf/1706.10295.pdf)
   id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 将 NoisyNet 与论文图 2 的基线进行比较[`https://arxiv.org/pdf/1706.10295.pdf`](https://arxiv.org/pdf/1706.10295.pdf)
 - en: 'You are also encouraged to try to code a noisy version of dueling DQN. Further,
     you could also try the DDQN variant of learning. In other words, with what you
     have learned so far, you could try the following combinations:'
   id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 鼓励你尝试编写一个带噪声的 dueling DQN 版本。此外，你也可以尝试学习 DDQN 变体。换句话说，利用你到目前为止所学到的知识，你可以尝试以下组合：
 - en: DQN
   id: totrans-155
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: DQN
 - en: DDQN (impacts how you learn)
   id: totrans-156
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: DDQN（影响学习方式）
 - en: Dueling DQN (impacts the architecture of training)
   id: totrans-157
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Dueling DQN（影响训练架构）
 - en: Dueling DDQN
   id: totrans-158
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Dueling DDQN
 - en: Replace the vanilla `ReplayBuffer` with a prioritized replay buffer
   id: totrans-159
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将原始的 `ReplayBuffer` 替换为优先级回放缓冲区
 - en: Replace ε-exploration with NoisyNets in any of the previous approaches
   id: totrans-160
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在任何先前的方法中将 ε-探索替换为 NoisyNets
 - en: Code all combinations
   id: totrans-161
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 编写所有组合
 - en: Try many other Gymnasium environments, making appropriate changes, if any, to
     the network
   id: totrans-162
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 尝试许多其他的 Gymnasium 环境，如果需要，对网络进行适当的调整
 - en: Run some of them on Atari, especially if you have access to a GPU machine
   id: totrans-163
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在 Atari 上运行其中一些，特别是如果你有访问 GPU 机器的话
 - en: Categorical 51-Atom DQN (C51)
   id: totrans-164
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分类 51-Atom DQN（C51）
 - en: In a 2017 paper titled “A Distributional Perspective on Reinforcement Learning,”^([6](#Fn6))
     the authors argued in favor of the distributional nature of RL. Instead of looking
     at the expected values like the q-value, they looked at *Z*, a random distribution
@@ -1060,17 +1278,23 @@
   id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 2017 年的一篇题为“强化学习的分布视角”（^([6](#Fn6)））的论文中，作者们支持强化学习的分布性质。他们不像看 q 值的期望值那样，而是看
+    *Z*，这是一个随机分布，其期望值是 *Q*。
 - en: 'Up to now you have been outputting *Q*(*s*, *a*) values for an input state
     *s*. The number of units in the output were of size `n_action`. In a way, the
     output values were the expected *Q*(*s*, *a*) as shown here:'
   id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，你已经为输入状态 *s* 输出了 *Q*(*s*, *a*) 值。输出单元的数量为 `n_action` 的大小。从某种意义上说，输出值是如这里所示预期的
+    *Q*(*s*, *a*)：
 - en: '![$$ Q\left(s,a\right)=E\left[R\left(s,a\right)\right]+\upgamma E\left[Q\left({s}^{''},{a}^{''}\right)\right]
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equh.png)'
   id: totrans-167
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ Q\left(s,a\right)=E\left[R\left(s,a\right)\right]+\upgamma E\left[Q\left({s}^{''},{a}^{''}\right)\right]
+    $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equh.png)'
 - en: In practice you have been estimating it using the Monte Carlo technique of averaging
     over a single sample or number of samples to form an estimate ![$$ \hat{Q}\left(s,a\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq15.png) of the
@@ -1079,6 +1303,7 @@
   id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实践中，你一直使用蒙特卡洛技术，通过平均单个样本或多个样本来估计实际的期望值 *E*[*Q*(*s*, *a*)]，正如在关于 TD 学习的章节中之前讨论的那样。
 - en: 'In categorial 51-Atom DQN, for each *Q*(*s*, *a*) (i.e. one per action and
     in total `n_action` of them), you produce an estimate of the distribution of *Q*(*s*,
     *a*) values: `n_atom` (51 to be precise) values for each *Q*(*s*, *a*). The network
@@ -1087,15 +1312,20 @@
   id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 51-Atom DQN 中，对于每个 *Q*(*s*, *a*)（即每个动作一个，总共 `n_action` 个），你产生一个 *Q*(*s*, *a*)
+    值的分布估计：每个 *Q*(*s*, *a*) 有 `n_atom` 个值（精确到 51 个）。现在网络正在预测整个分布，将其建模为分类概率分布，而不是仅仅估计
+    *Q*(*s*, *a*) 的平均值。
 - en: '![$$ Q\left(s,a\right)={\sum}_i{z}_i{p}_i\left(s,a\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equi.png)'
   id: totrans-170
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ Q\left(s,a\right)={\sum}_i{z}_i{p}_i\left(s,a\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equi.png)'
 - en: '*p*[*i*](*s*, *a*) is the probability that the action value at (*s*, *a*) will
     be *z*[*i*].'
   id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: '*p*[*i*](*s*, *a*) 是在 (*s*, *a*) 处的动作值将是 *z*[*i*] 的概率。'
 - en: You now have `n_action * n_atom` outputs, that is, `n_atom` outputs for each
     value of `n_action`. Further, these outputs are probabilities. For one action,
     you have `n_atom` probabilities, and these are the probability of the q-value
@@ -1104,6 +1334,8 @@
   id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 你现在有 `n_action * n_atom` 个输出，即对于每个 `n_action` 值，有 `n_atom` 个输出。进一步来说，这些输出是概率。对于一种动作，你有
+    `n_atom` 个概率，这些是 q 值在 `V_min` 到 `V_max` 范围内任何 `n_atom` 个离散值中的概率。有关更多详细信息，请参阅论文。
 - en: In the C51 version of distributional RL, the authors took *i* to be 51 atoms
     (support points) over the values -10 to 10\. You will use the same setup in the
     code. As these values are parameterized in the code, you are welcome to change
@@ -1111,6 +1343,7 @@
   id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 在C51版本的分布式强化学习（RL）中，作者将*i*取为51个原子（支撑点），覆盖的值从-10到10。你将在代码中使用相同的设置。由于这些值在代码中是参数化的，你可以随意更改它们并探索它们的影响。
 - en: After the Bellman updates are applied, the values shift and may not fall on
     the 51 support points. There is a step of projection to bring back the probability
     distribution to the support points of 51 atoms, that is, to the immediate value
@@ -1118,6 +1351,7 @@
   id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 在应用Bellman更新后，值会发生变化，可能不会落在51个支撑点上。有一个投影步骤将概率分布带回51个原子的支撑点，即*z*[*i*]的即时值。
 - en: The loss is also replaced from the mean squared error to cross-entropy loss.
     The agent is trained using an *ε*-greedy policy, similar to DQN. The math is fairly
     involved, and it will be a good exercise for you to go through the paper together
@@ -1126,6 +1360,7 @@
   id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 损失也被从均方误差替换为交叉熵损失。代理使用与DQN类似的*ε*-贪婪策略进行训练。数学相当复杂，因此，与代码一起阅读论文，将每一行代码与论文中的具体细节联系起来，将是一个很好的练习。这是RL从业者需要具备的重要技能。
 - en: 'Let’s now look at code. Similar to the DQN approach, you have the `CategoricalDQN`
     class, as shown in Listing [7-8](#PC8), which is the neural network that takes
     the state *s* as input to produce the distribution *Z* of *Q*(*s*, *a*). There
@@ -1137,6 +1372,8 @@
   id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来看看代码。与DQN方法类似，你有一个`CategoricalDQN`类，如列表[7-8](#PC8)所示，这是一个神经网络，它以状态*s*作为输入来产生*Q*(*s*,
+    *a*)的分布*Z*。有一个计算TD损失的函数：`td_loss_categorical_dqn`。如前所述，你需要一个投影步骤将值带回`n_atom`支撑点，这在`compute_projection`函数中完成。`compute_projection`函数在计算损失时被用在`td_loss_categorical_dqn`内部。其余的训练与之前相同。
 - en: '[PRE7]'
   id: totrans-177
   prefs: []
@@ -1147,10 +1384,12 @@
   id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[7-9](#Fig9)展示了通过`CartPole`环境运行此算法的训练曲线。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig9_HTML.jpg)'
   id: totrans-179
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig9_HTML.jpg)'
 - en: 2 graphs. Left. Mean return per episode with an increasing curve having fluctuating
     peaks between (0, 10) and (30, 220). Right. T D loss history with a decreasing
     curve that begins at (0, 7.2), peaks at (10, 7.6), and drops to (500, 2.25). The
@@ -1158,19 +1397,24 @@
   id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 2个图表。左图：每集平均回报随着曲线在(0, 10)和(30, 220)之间波动。右图：TD损失历史记录，曲线开始于(0, 7.2)，在(10, 7.6)处达到峰值，并在(500,
+    2.25)处下降。数值是近似的。
 - en: Figure 7-9
   id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: 图7-9
 - en: Categorical 51 Atom DQN (C51) training graph
   id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: Categorical 51 Atom DQN (C51)训练图
 - en: Quantile Regression DQN
   id: totrans-183
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分位数回归DQN
 - en: A little after the paper on C51 algorithm was published in mid-2017, some of
     the original authors with a few additional ones, all from DeepMind, came up with
     a variant that they called *Quantile Regression DQN*. In a paper titled “Distributional
@@ -1180,6 +1424,7 @@
   id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 在2017年中期C51算法论文发表后不久，一些原始作者以及一些额外的作者，他们都是DeepMind的成员，提出了一种他们称之为*分位数回归DQN*的变体。在题为“使用分位数回归的分布式强化学习”的论文中，作者们采用了与原始C51略有不同的方法，然而，它们都在分布RL的相同焦点领域。
 - en: Similar to the C51 approach of distributional RL, the QR-DQN approach also depended
     on using quantiles to predict the distribution of *Q*(*s*, *a*) instead of predicting
     an estimate of the average of *Q*(*s*, *a*). Both C51 and QR-DQN are variants
@@ -1187,6 +1432,7 @@
   id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 与分布式RL的C51方法类似，QR-DQN方法也依赖于使用分位数来预测*Q*(*s*, *a*)的分布，而不是预测*Q*(*s*, *a*)平均值的估计。C51和QR-DQN都是分布式RL的变体，由DeepMind的科学家们提出。
 - en: The C51 approach modeled the distribution of *Q*^(*π*)(*s*, *a*) named *Z*^(*π*)(*s*,
     *a*) as a categorical distribution of probability over fixed points in the range
     of *V*[*min*] to *V*[*max*]. The probability over these points was learned by
@@ -1198,12 +1444,16 @@
   id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: C51 方法将 *Q*^(*π*)(*s*, *a*) 的分布建模为在 *V*[*min*] 到 *V*[*max*] 范围内的固定点的概率分布，称为
+    *Z*^(*π*)(*s*, *a*)。这些点的概率由网络学习。这种方法导致在贝尔曼更新之后使用 *投影* 步骤，将新的概率带回到 `n_atoms` 的固定支持点，这些点在
+    *V*[*min*] 到 *V*[*max*] 上均匀分布。虽然结果有效，但与算法推导的理论基础之间有些脱节。
 - en: 'In QR-DQN, the approach is slightly different. The support points are still
     N but now the probabilities were fixed to 1/N with the location of these points
     being learned by the network. To quote the authors:'
   id: totrans-187
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 QR-DQN 中，方法略有不同。支持点仍然是 N 个，但现在这些点的概率被固定为 1/N，而这些点的位置由网络学习。正如作者所说：
 - en: '*We “transpose” the parametrization from C51: whereas the former uses N fixed
     locations for its approximation distribution and adjusts their probabilities,
     we assign fixed, uniform probabilities to N adjustable locations*'
@@ -1211,12 +1461,15 @@
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '*我们将 C51 的参数化“转置”：而前者使用 N 个固定的位置来近似其概率分布，并调整它们的概率，我们则分配给 N 个可调整的位置固定的、均匀的概率*'
 - en: The DQN network for QR DQN is similar to C51 DQN, as shown in Listing [7-9](#PC9).
     The network takes a batch of states to produce the distribution *Z* of *Q*(*s*,
     *a*).
   id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: QR DQN 的 DQN 网络类似于 C51 DQN，如列表 [7-9](#PC9) 所示。网络接收一批状态以产生 *Q*(*s*, *a*) 的分布
+    *Z*。
 - en: '[PRE8]'
   id: totrans-190
   prefs: []
@@ -1232,33 +1485,42 @@
   id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: QR DQN 中使用的损失是分位数回归损失与 Huber 损失混合的，称为 *分位数 Huber 损失*。相关论文中的方程 9 和 10 提供了详细信息。我不提供代码列表，因为我希望您阅读论文，并将论文中的方程与
+    `7.f- qr_dqn.ipynb` 笔记本中的代码相对应。这篇论文数学密集，所以除非您非常熟悉高级数学，否则您应该尝试关注方法的高级细节。
 - en: Figure [7-10](#Fig10) shows the training reward and loss curves.
   id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [7-10](#Fig10) 展示了训练奖励和损失曲线。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig10_HTML.jpg)'
   id: totrans-193
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig10_HTML.jpg)'
 - en: 2 graphs. Left. Mean reward per episode with an increasing line between (0,
     0) and (5, 1000) with a sharp bend at (4, 25). Right. T D loss history with a
     decreasing line between (0, 1.3) and (1, 1.195). The values are approximate.
   id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 2 个图表。左图：每集平均奖励随着从 (0, 0) 到 (5, 1000) 的增加而增加，在 (4, 25) 处有一个尖锐的弯曲。右图：T D 损失历史在
+    (0, 1.3) 到 (1, 1.195) 之间呈下降趋势。数值是近似的。
 - en: Figure 7-10
   id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-10
 - en: Quantile regression DQN
   id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 分位数回归 DQN
 - en: Hindsight Experience Replay
   id: totrans-197
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 事后经验回放
 - en: In the 2018 paper by OpenAI titled “Hindsight Experience Replay,”^([8](#Fn8))
     the authors presented a sample efficient approach to learn in an environment where
     the rewards are sparse. The common approach is to shape the reward function in
@@ -1266,6 +1528,7 @@
   id: totrans-198
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 OpenAI 2018 年发表的论文“Hindsight Experience Replay”中，作者提出了一种在奖励稀疏的环境中学习的样本高效方法。常见的方法是调整奖励函数，以引导代理向优化方向前进。这并不具有普遍性。
 - en: Compared to RL agents, which learn from a successful outcome, humans seem to
     learn not just from that but also from unsuccessful outcomes. This is the basis
     of the idea proposed in the hindsight replay approach known as *hindsight experience
@@ -1274,12 +1537,15 @@
   id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 与从成功结果中学习的 RL 代理相比，人类似乎不仅从成功的结果中学习，还从失败的结果中学习。这是事后回放方法（称为 *事后经验回放*，HER）提出的基础思想。虽然
+    HER 可以与各种 RL 方法结合使用，但在本代码讲解中，你将使用 HER 与对抗 DQN 结合，称为 HER-DQN。
 - en: In the HER approach, after an episode is played out, say an unsuccessful one,
     you form a secondary objective where the original goal is replaced with the last
     state before termination as a goal for this trajectory.
   id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 在HER方法中，在场景（比如一个不成功的场景）结束后，你将形成一个次要目标，其中原始目标被替换为终止前的最后一个状态作为这个轨迹的目标。
 - en: 'Say an episode has been played out *s*[0], *s*[1], …. *s*[*T*]. Normally you
     store a tuple of (*s*[*t*], *a*[*t*], *r*, *s*[*t* + 1], *done*) in the replay
     buffer. Let’s say the goal for this episode was *g* which could not be achieved
@@ -1287,11 +1553,13 @@
   id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设一个场景已经进行了*s*[0]，*s*[1]，…，*s*[*T*]。通常你会在重放缓冲区中存储一个元组(*s*[*t*]，*a*[*t*]，*r*，*s*[*t* + 1]，*done*)。假设这个场景的目标是*g*，在这个运行中无法实现。在HER方法中，你将在重放缓冲区中存储以下内容：
 - en: (*s*[*t*]| |*g*, *a*[*t*], *r*, *s*[*t* + 1]| ∣ *g*, *done*)
   id: totrans-202
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: (*s*[*t*]| |*g*, *a*[*t*], *r*, *s*[*t* + 1]| ∣ *g*, *done*)
 - en: '(*s*[*t*]| |*g*^′, *a*[*t*], *r*(*s*[*t*], *a*[*t*], *g*^′), *s*[*t* + 1]| ∣ *g*^′,
     *done*): other state transitions based on synthetical goals like last state of
     the episode as a sub-goal say g’. The reward is modified to show how state transition
@@ -1300,17 +1568,21 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: (*s*[*t*]| |*g*^′, *a*[*t*], *r*(*s*[*t*], *a*[*t*], *g*^′), *s*[*t* + 1]| ∣ *g*^′,
+    *done*)：基于合成目标（如场景的最后一个状态作为子目标g’）的其他状态转换。奖励被修改以显示状态转换*s*[*t*] → *s*[*t* + 1]对于子目标*g*^′是好是坏。
 - en: 'The original paper discusses various strategies for forming these subgoals.
     You will use the one called `future`:'
   id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 原始论文讨论了形成这些子目标的各种策略。你将使用被称为`future`的策略：
 - en: '`future` replays with k random states which come from the same episode as the
     transition being replayed and were observed after it.'
   id: totrans-205
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`future`重放使用k个随机状态，这些状态来自与正在重放转换相同的场景，并且在它之后被观察到。'
 - en: You will also use a different kind of environment from past notebooks. You will
     use an environment of bit-flipping experiment. Say you have a vector with n-bits,
     each being binary in the range {0,1}. Therefore, there are 2^(*n*) combinations
@@ -1322,11 +1594,14 @@
   id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 你还将使用与过去笔记本不同的环境。你将使用位翻转实验的环境。比如说，你有一个n位的向量，每个位都是范围{0,1}中的二进制数。因此，可能的组合有2^(*n*)种。在重置时，环境以随机选择的n位配置开始，目标也是随机选择的某个不同的n位配置。每个动作是翻转一个位。要翻转的位是代理试图学习的策略π(*a*|
+    *s*)。如果代理找到了匹配目标的正确配置，或者当代理在一个场景中耗尽了*n*个动作时，场景结束。
 - en: Listing [7-10](#PC10) contains the code for the environment. The complete code
     is in the `7.g-her_dqn.ipynb` notebook.
   id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表[7-10](#PC10)包含了环境的代码。完整的代码在`7.g-her_dqn.ipynb`笔记本中。
 - en: '[PRE9]'
   id: totrans-208
   prefs: []
@@ -1339,6 +1614,7 @@
   id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: 你已经实现了自己的`render`和`step`函数，以便这个环境的接口与Gymnasium中的类似，这样你就可以使用之前开发的工具。自定义的`compute_reward`函数在给定状态和目标输入时返回`reward`和`done`标志。
 - en: The authors show that, with a regular DQN, where the state (configuration of
     n-bits) is represented as a deep network, it is almost impossible for a regular
     DQN agent to learn beyond 15-digit combinations. However, coupled with the HER-DQN
@@ -1348,10 +1624,12 @@
   id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者表明，在常规的DQN中，其中状态（n位配置）被表示为深度网络，常规DQN代理几乎不可能学习超过15位组合。然而，结合HER-DQN方法，代理能够轻松学习，即使是像50位左右这样的大数字组合。图[7-11](#Fig11)展示了论文中的完整伪代码，并进行了某些修改以使其与符号匹配。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig11_HTML.jpg)'
   id: totrans-211
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig11_HTML.jpg)'
 - en: An algorithm of hindsight experience replay. The inputs are an off-policy algorithm,
     a strategy of sampling goals for replay, and a reward function. It initializes
     neural network A and replay buffer R, uses various loops and commands, and finally
@@ -1359,14 +1637,17 @@
   id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 后见之明的经验重放算法。输入是一个离线策略算法、用于重放的目标采样策略和奖励函数。它初始化神经网络 A 和重放缓冲区 R，使用各种循环和命令，并最终执行一次梯度下降步骤。
 - en: Figure 7-11
   id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-11
 - en: HER using a future strategy
   id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用未来策略的 HER
 - en: You use dueling DQN, which is similar to the one used for `CartPole` earlier
     in this chapter. For the BitFlipping environment, you use a smaller version of
     the same network. The most interesting part of the code is the implementation
@@ -1374,6 +1655,8 @@
   id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 你使用了与本章早期用于 `CartPole` 的类似的 dueling DQN。对于 BitFlipping 环境，你使用相同网络的较小版本。代码中最有趣的部分是实现
+    HER 算法，如图 [7-11](#Fig11) 中给出的伪代码所示。
 - en: Let’s look at the way replay buffer is filled. There are two ways as discussed
     previously. The first is to fill the replay buffer usual way just with the difference
     that you augment the states with the goal as depicted by (*s*[*t*]| |*g*, *a*[*t*],
@@ -1390,6 +1673,12 @@
   id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看如何填充重放缓冲区。正如之前讨论的那样，有两种方式。第一种是以通常的方式填充重放缓冲区，只是增加了状态，包括目标，如图 (*s*[*t*]|
+    |*g*, *a*[*t*], *r*, *s*[*t* + 1]| ∣ *g*, *done*) 所示。更有趣的部分是将使用合成目标填充到缓冲区中的额外转换，即
+    (*s*[*t*]| |*g*^′, *a*[*t*], *r*(*s*[*t*], *a*[*t*], *g*^′), *s*[*t* + 1]| ∣ *g*^′,
+    *done*)。您在论文中讨论的许多选项中使用 *future* 样本策略。未来策略涉及使用 k 个随机状态作为合成目标 *g*^′ 进行重放，这些状态来自与正在重放的转换相同的剧集，并且在它之后观察到。如果
+    *s*[*t*] 和 *g*^′ 的位相同，则奖励 *r*(*s*[*t*], *a*[*t*], *g*^′) 为 0。如果这两个不匹配，则奖励为 -1。列表
+    [7-11](#PC11) 展示了如何实现这一点。这是 `7.g-her_dqn.ipynb` 笔记本中 `train_her` 代理训练函数的一部分。
 - en: '[PRE10]'
   id: totrans-217
   prefs: []
@@ -1404,44 +1693,56 @@
   id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [7-12](#Fig12) 展示了训练曲线。对于一个 50 位的 `BitFlipping` 环境，带有 HER 的代理可以 100% 成功解决环境。记住，环境从
+    50 位的随机组合开始，并且有一个作为目标的另一个随机组合。代理有最多 50 次翻转操作才能达到目标组合。穷举搜索将需要代理尝试除了它开始时的那个之外的所有
+    2^(50) 种组合。
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig12_HTML.jpg)'
   id: totrans-219
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig12_HTML.jpg)'
 - en: A graph of success rate versus epoch for the number of bits = 50 indicates an
     increasing curve. It remains stable from (0, 0) to (5, 0), increases till (22.5,
     1), and stabilizes till (40, 1). The values are approximate.
   id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个表示成功率与比特数 = 50 的 epoch 数量的图表显示了一个上升曲线。它从 (0, 0) 到 (5, 0) 保持稳定，增加到 (22.5, 1)，然后稳定到
+    (40, 1)。这些值是近似的。
 - en: Figure 7-12
   id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 7-12
 - en: 'Success rate graph: bit flipping environment with HER using a future strategy'
   id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 成功率图表：使用未来策略的 HER 的位翻转环境
 - en: This brings you to the end of discussion on HER as well as to the end of chapter.
   id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 这使你结束了关于 HER 的讨论，也结束了本章。
 - en: Summary
   id: totrans-224
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: This was a short but dense chapter, where you looked at various modifications
     to the vanilla DQN.
   id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个简短但内容丰富的章节，其中你研究了 vanilla DQN 的各种修改。
 - en: The chapter began by looking at prioritized replay, where the samples from the
     buffer are picked based on a certain importance score assigned to them proportional
     to the magnitude of the TD error.
   id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章开始时，你研究了优先级重放，其中根据分配给缓冲区样本的与 TD 错误幅度成比例的重要性分数来选择样本。
 - en: Following this, you revisited double Q-learning in the context of DQN, known
     as double DQN. This is an approach that impacts the way learning takes place and
     attempts to reduce the maximization bias.

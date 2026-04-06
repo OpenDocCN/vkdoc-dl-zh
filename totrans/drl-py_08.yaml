@@ -1,7 +1,9 @@
 - en: 8. Policy Gradient Algorithms
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 8. 策略梯度算法
 - en: Up to now, the book has focused on model-based and model-free methods. All the
     algorithms using these methods estimate the state or state-action values for a
     given current policy as the first step. In the second step, these estimated values
@@ -10,39 +12,51 @@
     is observed. In this chapter, you look at a different approach for learning optimal
     policies, by directly operating in the policy space. You will learn to improve
     the policies without explicitly learning or using state or state-action values.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，本书一直专注于基于模型和无模型的方法。所有使用这些方法的算法都将估计给定当前策略的状态或状态-动作值作为第一步。在第二步中，这些估计的值被用来通过在给定状态下选择最佳动作来找到更好的策略。这两个步骤在一个循环中执行，直到观察到值的进一步改进。在本章中，你将探讨一种不同的学习方法，即直接在策略空间中操作，以学习最优策略。你将学习如何在不显式学习或使用状态或状态-动作值的情况下改进策略。
 - en: You will also learn that the policy-based approach and the value-based approach
     are not two disjoint approaches. There are approaches that combine the value-based
     and policy-based approaches such as the actor-critic methods.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 你还将了解到基于策略的方法和基于价值的方法并不是两种完全分离的方法。有一些方法结合了基于价值和基于策略的方法，例如演员-评论家方法。
 - en: The core of the chapter establishes the definition and mathematically derives
     the key parts of policy-based optimization. The policy-based approach is currently
     one of the most popular family of approaches for solving large and continuous
     space problems in reinforcement learning.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章的核心是建立定义并从数学上推导出基于策略优化的关键部分。基于策略的方法是目前解决强化学习中大型和连续空间问题最受欢迎的方法族之一。
 - en: Introduction
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 引言
 - en: You started your journey by first looking at simple model-based approaches wherein
     you solved small, discrete state space problems by iterating over Bellman equations.
     Following this, the book discussed a model-free setup using the Monte Carlo and
     temporal difference approaches. I then extended the analysis to cover large or
     continuous state spaces using function approximation. In particular, you learned
     about DQN and many of its variants as the way to go for policy learning.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 你开始你的旅程是通过首先查看简单的基于模型的方法，其中你通过迭代贝尔曼方程来解决小的、离散的状态空间问题。随后，本书讨论了使用蒙特卡洛和时序差分方法的基于无模型的环境。然后，我扩展了分析以涵盖使用函数逼近的大或连续状态空间。特别是，你学习了DQN及其许多变体作为策略学习的方法。
 - en: The core idea of all these approaches is to first learn the value of the current
     policy and then make iterative improvements to the policy to get better rewards.
     This is done using the general framework of *Generalized Policy Iteration* (GPI)*.*
     If you think for a minute, you will realize that the real objective is to learn
     a good policy. You use value functions as an intermediary step to finding a good
     policy.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有这些方法的核心思想是首先学习当前策略的价值，然后通过迭代改进策略以获得更好的奖励。这是通过使用广义策略迭代（GPI）的通用框架来完成的。如果你思考一分钟，你会意识到真正的目标是学习一个好的策略。你使用价值函数作为找到好策略的中间步骤。
 - en: This approach of learning value functions to improve a policy is an indirect
     one. It is not always easy to learn values as compared to learning good policies
     directly. Consider the case of encountering a bear on a jogging trail. What comes
@@ -60,12 +74,18 @@
     sure the answer is the second one. In both of these examples, the latter and easier
     alternative is learning to act directly instead of learning the value first, followed
     by use of the state value to find the best action among the possible choices.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种通过学习值函数来改进策略的方法是间接的。与直接学习良好的策略相比，学习值并不总是容易。考虑在慢跑小径上遇到熊的情况。你首先想到的是什么？你的大脑是否试图评估状态（你面前的熊）和可能采取的行动（“冻结”、“抚摸熊”、“逃跑”或“攻击熊”）？或者你几乎肯定地“跑”起来，即以1.0的概率遵循`action="run"`的策略？我相信答案是后者。再考虑另一个例子，玩Atari
+    Breakout游戏，这是在前一章DQN示例中使用的。考虑球靠近你的挡板右边并远离挡板（“状态”）的情况。作为一个人类玩家，你会怎么做？你会尝试评估*Q*(*s*,
+    *a*)，两个动作的状态-动作值，以决定挡板是否需要向右或左移动吗？或者你只是观察状态，学会将挡板向右移动以避免球掉落？我相信答案是后者。在这两个例子中，后者和更简单的方法是直接学习行动，而不是首先学习值，然后使用状态值在可能的选择中找到最佳行动。
 - en: Pros and Cons of Policy-Based Methods
+  id: totrans-8
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 基于策略方法的优缺点
 - en: The previous examples show that in many cases, it is easier to learn the policy
     (which action to take in a given state) as compared to learning the value functions
     and then using them to learn a policy. Why then did I go through the approach
@@ -73,57 +93,77 @@
     learning, while easier, is not a bed of roses. It has its own set of challenges,
     especially based on your current knowledge and available algorithms, which are
     listed here.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前的例子表明，在许多情况下，学习策略（在给定状态下采取什么行动）比学习值函数然后使用它们来学习策略要容易。那么，为什么我还要经历像SARSA、Q-learning、DQN等值方法的方法呢？因为策略学习虽然容易，但并非一帆风顺。它有其自身的一套挑战，特别是基于你当前的知识和可用的算法，这些挑战如下。
 - en: 'Advantages:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 优点：
 - en: '**Better convergence****:** The convergence during training toward an intended
     behavior is better for policy-based methods, as they directly optimize the policy
     instead of value-based algorithms that go through two step process of value function
     learning to policy optimization.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**更好的收敛性**：对于基于策略的方法，在训练过程中向预期行为的收敛性更好，因为它们直接优化策略，而不是像基于值的方法那样通过两个步骤的过程——值函数学习到策略优化。'
 - en: '**Effective in high-dimensional and continuous action spaces:** Policy-based
     methods can handle high dimensional and continuous action spaces.'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**在高维和连续动作空间中有效**：基于策略的方法可以处理高维和连续的动作空间。'
 - en: '**Adaptability to complex environments:** Policy-based methods are adaptive
     to complex and dynamic environments, allowing for effective decision-making in
     situations where the optimal policy may change over time.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**适应复杂环境的能力**：基于策略的方法能够适应复杂和动态的环境，允许在最优策略可能随时间变化的情况下进行有效的决策。'
 - en: '**Learn stochastic policies:** Policy-based methods that are learning stochastic
     policies inherently incorporate exploration, thereby offering a better balance
     between exploration and exploitation.'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**学习随机策略**：学习随机策略的基于策略方法本质上包含了探索，从而在探索和利用之间提供了更好的平衡。'
 - en: 'Disadvantages:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 缺点：
 - en: '**Sample inefficiency and computational overload:** Policy-based methods require
     many more episodes to learn optimal behavior. Therefore, these methods may need
     longer runtime and extra computational load.'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**样本效率低和计算负担重**：基于策略的方法需要更多的回合来学习最优行为。因此，这些方法可能需要更长的运行时间和额外的计算负担。'
 - en: '**Convergence issues:** Vanilla policy-based methods at times converge to local
     maximums instead of global ones. However, to a large extent these can be addressed
     with methods like PPO.'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**收敛问题**：传统的基于策略的方法有时会收敛到局部最大值而不是全局最大值。然而，在很大程度上，这些问题可以通过PPO等方法来解决。'
 - en: '**Policy evaluation inefficient and with high variance:** Vanilla policy-based
     methods do not maintain value functions, causing policy evaluation to be inefficient.
     Therefore, evaluation must be carried out over high number of episodes to keep
     the variance of policy estimate within a reasonable variance.'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**策略评估效率低下且方差大**：传统的基于策略的方法不维护值函数，导致策略评估效率低下。因此，必须进行大量剧集的评估，以保持策略估计的方差在合理的范围内。'
 - en: Elaborating on these points, remember the DQN learning curves? You saw how the
     value of policy varied a lot during training. In the “cart pole” problem, you
     saw that the score (as shown in the left graph of all the training progress diagrams
@@ -131,8 +171,10 @@
     a better policy. Policy-based methods, especially with some additional controls
     that I cover toward the end of the chapter, ensure a smooth and steady progress
     toward better policies as you move through the learning process.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 详细说明这些观点，还记得DQN的学习曲线吗？你看到了策略值在训练过程中变化很大。在“小车杆”问题中，你看到了分数（如前一章所有训练进度图的左侧图形所示）波动很大。没有稳定地向更好的策略收敛。基于策略的方法，特别是我在本章末尾介绍的一些额外控制，确保在学习过程中向更好的策略平稳且稳定地进步。
 - en: The action space has always been a small set of possible actions. Even in the
     case of function approximation coupled with deep learning like DQN, the action
     spaces were limited to single digits. The actions were unidimensional. Imagine
@@ -143,8 +185,10 @@
     the actions, such as speed of motors or angles by which an arm or a leg needs
     to move, are going to be in a continuous range. Policy-based methods are more
     suited to handle these actions.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 行动空间始终是一组可能动作的小集合。即使在像DQN这样的函数近似和深度学习的情况下，动作空间也限制在个位数。动作是一维的。想象一下尝试控制一个行走机器人的各个关节。你需要对机器人的每个关节做出决策，这些个别选择共同构成了给定状态下机器人的一个完整动作。此外，每个关节的个别动作不会是离散的。很可能是动作，如电机速度或手臂或腿部需要移动的角度，将处于一个连续的范围内。基于策略的方法更适合处理这些动作。
 - en: In all the value-based methods you have seen so far, you always learned an optimal
     policy—a deterministic one where you knew with certainty the best action to take
     in a given state. I had to introduce the concept of exploration to try different
@@ -152,23 +196,29 @@
     probability, which steadily reduced to a very small value as training progressed
     and the agent learned to act with better actions. The final output was always
     a deterministic policy.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 在你迄今为止看到的所有基于值的方法中，你总是学习到一个最优策略——一个确定性策略，其中你确信在给定状态下采取的最佳动作。我必须引入探索的概念，使用*ε*-贪婪策略尝试不同的动作，其中你从一个非零的探索概率开始，随着训练的进行和智能体学会采取更好的动作，这个概率稳步减少到一个非常小的值。最终的输出始终是一个确定性策略。
 - en: However, deterministic policies are not always *optimal*. There are situations
     where the optimal policy is to take multiple actions with some probability distribution,
     especially in multi-agent environments. If you have some experience with game
     theory, you will realize this immediately from setups like prisoner’s dilemma
     and the corresponding Nash equilibrium. Anyway, let’s look at a simple situation.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，确定性策略并不总是**最优的**。在某些情况下，最优策略是按照某种概率分布采取多个动作，尤其是在多智能体环境中。如果你对博弈论有所了解，你会立即从囚徒困境和相应的纳什均衡等设置中意识到这一点。无论如何，让我们看看一个简单的情况。
 - en: Have you ever played the game of rock-paper-scissors? It is a two-player game.
     In a single turn, each player must choose one of the three options—scissors, rock,
     or paper. Both players do so at the same time and reveal their choice at the same
     time. The rules state that scissors beat paper because scissors can cut paper,
     rock beats scissors because a rock can be used to smash the scissors, and paper
     beats rock because the paper can cover the rock.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 你玩过剪刀石头布的游戏吗？这是一个两人游戏。在单次回合中，每个玩家必须选择三种选项之一——剪刀、石头或布。两位玩家同时选择并同时揭示他们的选择。规则规定，剪刀胜过布，因为剪刀可以剪布，石头胜过剪刀，因为石头可以用来砸剪刀，布胜过石头，因为布可以覆盖石头。
 - en: What is the best policy? There are no clear winners. If you always choose, let’s
     say, rock, then I as your opponent will exploit that knowledge and always choose
     paper. Can you think of any other deterministic policy (i.e., of choosing one
@@ -179,28 +229,42 @@
     one choice has a probability of 1.0 with all other actions having a 0 probability.
     Stochastic policies are more general, and that’s what the policy-based approach
     learns.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 什么是最优策略？没有明显的胜者。如果你总是选择，比如说，石头，那么作为你的对手，我会利用这个知识总是选择布。你能想到任何其他的确定性策略（即，总是选择三种之一）吗？为了防止对手利用你的策略，你必须完全随机地做出选择。你必须随机地选择剪刀、石头或布，概率相等，即使用随机策略。确定性策略是随机策略的一种特殊形式，其中一种选择具有1.0的概率，而所有其他动作的概率为0。随机策略更通用，这就是基于策略的方法所学习的。
 - en: 'Here is the deterministic policy:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是确定性策略：
 - en: '![$$ a={\uppi}_{\uptheta}(s) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equa.png)'
+  id: totrans-26
   prefs: []
   type: TYPE_IMG
+  zh: '![a=πθ(s)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equa.png)'
 - en: In other words, this is the specific action *a* to be taken when in state *s*.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 换句话说，这是在状态*s*下要采取的具体动作*a*。
 - en: 'Here is the stochastic policy:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是随机策略：
 - en: '![$$ a\sim {\uppi}_{\uptheta}\left(a|s\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equb.png)'
+  id: totrans-29
   prefs: []
   type: TYPE_IMG
+  zh: '![a~πθ(a|s)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equb.png)'
 - en: In other words, this is the distribution of action probability in a given state
     *s*. To choose an action, you sample from this probability the distribution of
     the actions in a given state.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 换句话说，这是给定状态*s*中动作概率的分布。为了选择一个动作，你从这个概率分布中采样给定状态的动作分布。
 - en: There are disadvantages as well. Policy-based approaches, while having good
     convergence, can converge into local maxima. The second big disadvantage is that
     policy-based methods do not learn any direct representation of value functions,
@@ -212,64 +276,92 @@
     an average and get an estimate with lower variance. I discuss ways to address
     this concern by combining the best of both worlds of value-based methods and policy-based
     methods. This is known as the *actor-critic* family of algorithms.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样也存在一些缺点。基于策略的方法，虽然收敛性好，但可能会收敛到局部最大值。第二个大缺点是，基于策略的方法不学习任何价值函数的直接表示，这使得评估给定策略的价值效率低下。评估策略通常需要通过使用策略多次运行代理并汇总每次运行的奖励序列来形成一个对状态或状态-动作价值的估计，本质上就是蒙特卡洛方法。蒙特卡洛方法的问题在于估计的高方差，需要多次运行以取平均值并得到方差较低的估计。我讨论了通过结合基于价值的方法和基于策略的方法的优点来解决这一问题的方法。这被称为*演员-评论家*算法家族。
 - en: Policy Representation
+  id: totrans-32
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 策略表示
 - en: 'In Chapter [5](502835_2_En_5_Chapter.xhtml), which covered model-free setups
     with function approximation, I represented value functions in Equation [5-1](502835_2_En_5_Chapter.xhtml#Equ1)
     as follows:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在第[5](502835_2_En_5_Chapter.xhtml)章中，该章涵盖了具有函数近似的无模型设置，我在方程[5-1](502835_2_En_5_Chapter.xhtml#Equ1)中将价值函数表示如下：
 - en: '![$$ \hat{v}\left(s;w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equc.png)'
+  id: totrans-34
   prefs: []
   type: TYPE_IMG
+  zh: '![^v(s;w)≈vπ(s)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equc.png)'
 - en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equd.png)'
+  id: totrans-35
   prefs: []
   type: TYPE_IMG
+  zh: '![^q(s,a;w)≈q_π(s,a)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equd.png)'
 - en: 'There was a model (a linear model or a neural network) with weights *w*. It
     represented the state value *v* and state-action value *q* with functions parameterized
     by weights *w*. Instead, you will now parameterize the policy directly as follows:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 有一个模型（一个线性模型或神经网络）具有权重 *w*。它使用权重 *w* 参数化的函数表示状态值 *v* 和状态-动作值 *q*。相反，你现在将直接如下参数化策略：
 - en: '![$$ \uppi \left(a|s;\uptheta \right)\approx {\uppi}_{\uptheta}\left(a|s\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Eque.png)'
+  id: totrans-37
   prefs: []
   type: TYPE_IMG
+  zh: '![π(a|s;θ)≈πθ(a|s)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Eque.png)'
 - en: θ is the parameter of the function that defines the policy function, and what
     the learning algorithm will tune to make the agent learn to act in a meaningful
     way, generating desired rewards. Next you’ll see how this parameterization is
     done for cases when actions are discrete and when actions form a continuous range
     of values.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: θ 是定义策略函数的函数的参数，学习算法将调整它，使代理能够以有意义的方式行动，生成期望的奖励。接下来，你将看到当动作是离散的以及动作形成一个连续值范围时，如何进行这种参数化。
 - en: Discrete Cases
+  id: totrans-39
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 离散情况
 - en: For not-too-large a discrete action space, you can parameterize another function
     *h*(*s*, *a*; *θ*) for the state-action pairs. The probability distribution is
     formed using a soft-max of *h*.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于不太大的离散动作空间，你可以为状态-动作对参数化另一个函数 *h*(*s*, *a*; *θ*)。概率分布是通过 *h* 的软最大值形成的。
 - en: '![$$ \uppi \left(a|s;\uptheta \right)=\frac{e^{h\left(s,a;\uptheta \right)}}{\sum_b{e}^{h\left(s,b;\uptheta
     \right)}} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equf.png)'
+  id: totrans-41
   prefs: []
   type: TYPE_IMG
+  zh: '![π(a|s;θ)=e^(h(s,a;θ))/(∑_b e^(h(s,b;θ)))](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equf.png)'
 - en: The value *h*(*s*, *a*; *θ*) is known as *logits* or *action preferences*. It
     is like the approach used in the supervised classification case. In supervised
     learning, you input *X*, the observations. Here in RL, you input the state *S*
     to the model. The outputs of the model in supervised cases are the logits of input
     *X* belonging to different classes. And in RL, the output of the model is *action
     preference h* for taking that specific action, *a*.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 值 *h*(*s*, *a*; *θ*) 被称为 *logits* 或 *动作偏好*。它类似于在监督分类案例中使用的的方法。在监督学习中，你输入 *X*，即观察。在这里，在强化学习
+    (RL) 中，你将状态 *S* 输入到模型中。监督案例中模型的输出是输入 *X* 属于不同类别的 logits。在 RL 中，模型的输出是采取特定动作 *a*
+    的 *动作偏好 h*。
 - en: Continuous Cases
+  id: totrans-43
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 连续情况
 - en: In continuous action spaces, the Gaussian representation of a policy is a natural
     choice. Suppose the action space is continuous and multidimensional with a dimension
     of, say, *d*. The model will take state *S* as input and produce the multidimensional
@@ -277,55 +369,78 @@
     be kept constant. The policy the agent will follow is a Gaussian policy with mean
     μ and a variance σ²*I*[*d*]. The agent will poll actions from this probability
     distribution.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 在连续动作空间中，策略的高斯表示是一个自然的选择。假设动作空间是连续的且是多维的，例如维度为 *d*。模型将状态 *S* 作为输入并产生多维均值向量 μ
+    ∈ R^d。方差 σ²*I*[*d*] 也可以参数化或保持不变。代理将遵循的策略是一个具有均值 μ 和方差 σ²*I*[*d*] 的高斯策略。代理将从这个概率分布中抽取动作。
 - en: '![$$ \pi \left(a|s;\theta \right)\sim N\left(\mu, {\sigma}^2{I}_d\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equg.png)'
+  id: totrans-45
   prefs: []
   type: TYPE_IMG
+  zh: '![π(a|s;θ)~N(μ, σ^2I_d)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equg.png)'
 - en: Here, action *a* & μ ∈ *R*^(*d*).
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，动作 *a* 和 μ ∈ R^d.
 - en: Having formulated the notations of how policy is represented as a parameterized
     function, you will now shift your focus to the way the policy is learned by the
     agent directly, without resorting to learning state and state-action values.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 已经制定了如何将策略表示为参数化函数的符号，现在你将关注代理如何直接学习策略，而不需要求助于学习状态和状态-动作值。
 - en: Policy Gradient Derivation
+  id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 政策梯度推导
 - en: 'The approach to deriving a policy-based algorithm is similar to what you do
     in supervised learning. Here is the outline of steps to follow to come up with
     the algorithm:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 推导基于策略的算法的方法与你在监督学习中所做的方法类似。以下是制定算法的步骤概述：
 - en: Form an objective that you want to maximize, just like in supervised learning.
     It will be the total reward received by following a policy. That is the objective
     you want to maximize.
+  id: totrans-50
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 形成一个您想要最大化的目标，就像在监督学习中一样。这将是通过遵循策略所获得的奖励总和。这就是您想要最大化的目标。
 - en: Derive the gradient update rule to carry out the gradient ascent. You are doing
     gradient ascent and not gradient descent, as the objective is to maximize the
     total average return per episode/rollout.
+  id: totrans-51
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 推导梯度更新规则以执行梯度上升。您正在进行梯度上升而不是梯度下降，因为目标是最大化每场/迭代的平均总回报。
 - en: You need to recast the gradient update formula into an expectation so that the
     gradient update can be approximated using samples, such as an Monte Carlo estimate
     of an expectation.
+  id: totrans-52
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 您需要将梯度更新公式重写为一个期望值，以便可以使用样本近似梯度更新，例如使用蒙特卡洛方法估计期望值。
 - en: Now you formally convert the update rule into an algorithm that can be used
     with auto-differentiation libraries like PyTorch, JAX, or TensorFlow.
+  id: totrans-53
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 现在您将更新规则正式转换为可以与 PyTorch、JAX 或 TensorFlow 等自动微分库一起使用的算法。
 - en: Objective Function
+  id: totrans-54
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 目标函数
 - en: 'Let’s start with the objective you want to maximize. As mentioned, it will
     be the value of the policy, that is, the return an agent can get by following
     a policy. There are many variations to the expected return representation. You
@@ -333,42 +448,60 @@
     which representation. However, the detailed derivation of the algorithm is done
     using one of the variants, as the derivations for other reward formulations are
     similar. The reward function and its variants are as follows:'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从您想要最大化的目标开始。正如之前提到的，这将是对策的价值，即通过遵循策略，智能体可以获得的回报。期望回报的表示有很多变体。您将查看其中的一些，并简要了解何时使用哪种表示。然而，算法的详细推导使用的是其中的一种变体，因为其他奖励公式的推导是相似的。奖励函数及其变体如下：
 - en: 'Episodic undiscounted: ![$$ J\left(\theta \right)={\sum}_{t=0}^{T-1}{r}_r $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq1.png)'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 场次未折现：![$$ J\left(\theta \right)={\sum}_{t=0}^{T-1}{r}_r $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq1.png)
 - en: 'Episodic discounted: ![$$ J\left(\uptheta \right)={\sum}_{t=0}^{T-1}{\upgamma}^t{r}_t
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq2.png)'
+  id: totrans-57
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 场次折现：![$$ J\left(\uptheta \right)={\sum}_{t=0}^{T-1}{\upgamma}^t{r}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq2.png)
 - en: 'Infinite horizon discounted: ![$$ J\left(\uptheta \right)={\sum}_{t=0}^{\infty
     }{\upgamma}^t{r}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq3.png)'
+  id: totrans-58
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 无限时域折现：![$$ J\left(\uptheta \right)={\sum}_{t=0}^{\infty }{\upgamma}^t{r}_t
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq3.png)
 - en: 'Average reward: ![$$ J\left(\uptheta \right)=\underset{T\to \infty }{\mathit{\lim}}\frac{1}{T}\sum
     {r}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq4.png)'
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 平均奖励：![$$ J\left(\uptheta \right)=\underset{T\to \infty }{\mathit{\lim}}\frac{1}{T}\sum
+    {r}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq4.png)
 - en: Most of this derivation will follow an episodic undiscounted structure of reward,
     just to keep the math simple and focus on the key aspects of the derivation.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 大部分推导将遵循奖励的场次未折现结构，只是为了使数学简单，并关注推导的关键方面。
 - en: WHAT ROLE DOES **γ** PLAY?
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '**γ** 在其中扮演什么角色？'
 - en: I also want to give you a feel for the discount factor, γ. The discount is used
     in infinite formulation to keep the sum bounded. Usually, you use a discount value
     of 0.99 or something similar to keep the sum theoretically bounded. In some formulations,
     the discount factor also determines what role the rate of interest plays in financial
     markets—that is, a reward today is worth more than the same reward tomorrow. Using
     a discount factor brings in the concept of favoring the reward today.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 我还希望让您对折现因子 γ 有一个感觉。折现用于无限公式中，以保持总和有界。通常，您使用 0.99 或类似的折现值来保持总和在理论上有界。在某些公式中，折现因子还决定了利率在金融市场中的作用——也就是说，今天的奖励比明天的相同奖励更有价值。使用折现因子引入了今天奖励更受青睐的概念。
 - en: The discount factor is also used to reduce the variance in the estimation by
     providing a soft cutoff of the time horizon. Suppose you get a reward of 1 at
     every time step and you use the discount factor of γ. The sum of this infinite
@@ -377,75 +510,120 @@
     you can think of a discount of 0.99 as limiting your horizon to 100 steps, in
     which you collected a reward of 1 in each of the 100 steps, to give you a total
     return of 100.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 折扣因子还用于通过提供时间跨度的软截止来减少估计中的方差。假设你在每个时间步都获得1个奖励，并且你使用折扣因子γ。这个无穷级数的和是![$$ \frac{1}{1-\upgamma}
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq5.png)。比如说，γ
+    = 0.99。那么无穷级数的和就是100。因此，你可以将0.99的折扣看作是限制你的时间跨度为100步，在这100步中，你每步都收集到了1个奖励，从而获得总共100的回报。
 - en: To summarize, a discount of γ implies a time horizon of ![$$ \frac{1}{1-\upgamma}
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq6.png) steps.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 总结来说，折扣因子γ意味着一个包含![$$ \frac{1}{1-\upgamma} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq6.png)步的时间跨度。
 - en: Using *γ* also ensures that the impact of changing policy actions in the initial
     part of the trajectory has a higher impact on the overall quality of the policy
     versus the impact of decisions in the later part of the trajectory.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用*γ*也确保了策略在轨迹初始部分改变动作对整体策略质量的影响比轨迹后期部分决策的影响更大。
 - en: Moving back to derivation, you can now calculate the gradient update for improving
     a policy. The agent follows a policy as parameterized by *θ*. This involves a
     bit of math and if you want to skip ahead, skip to Equations [8-16](#Equ16) and
     [8-17](#Equ17), and follow along from that point.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 回到推导过程，你现在可以计算用于改进策略的梯度更新。代理遵循由*θ*参数化的策略。这涉及到一些数学，如果你想要跳过，可以跳到方程[8-16](#Equ16)和[8-17](#Equ17)，并从那个点开始跟随。
 - en: '![$$ {\uppi}_{\uptheta}\left({a}_t|{s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ1.png)'
+  id: totrans-67
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\uppi}_{\uptheta}\left({a}_t|{s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ1.png)'
 - en: (8-1)
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-1)
 - en: 'The agent follows the policy and generates the trajectory *τ* as follows:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 代理遵循策略并生成轨迹*τ*如下：
 - en: '![$$ {s}_1\to {a}_1\to {s}_2\to {a}_2\to \dots .\to {s}_{T-1}\to {a}_{T-1}\to
     {s}_T\to {a}_T $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equh.png)'
+  id: totrans-70
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {s}_1\to {a}_1\to {s}_2\to {a}_2\to \dots .\to {s}_{T-1}\to {a}_{T-1}\to
+    {s}_T\to {a}_T $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equh.png)'
 - en: Here, *s*[*T*] is not necessarily the terminal state but some time horizon *T*
     up to which you are considering the trajectory.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，*s*[*T*]不一定是终止状态，而是一个时间跨度*T*，你考虑的轨迹可以到达这个时间跨度。
 - en: 'The probability of observing trajectory *τ* during a rollout depends on the
     transition probabilities *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*]) and the policy
     *π*[*θ*](*a*[*t*]| *s*[*t*]). It is given by the following expression:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 在一次运行中观察到轨迹*τ*的概率取决于转移概率*p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*])和策略*π*[*θ*](*a*[*t*]|
+    *s*[*t*])。它由以下表达式给出：
 - en: '![$$ {p}_{\uptheta}\left(\uptau \right)={p}_{\uptheta}\left({s}_1,{a}_1,{s}_2,{a}_2,\cdots,
     {s}_T,{a}_T\right)=p\left({s}_1\right){\prod}_{t=1}^T{\uppi}_{\uptheta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ2.png)'
+  id: totrans-73
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {p}_{\uptheta}\left(\uptau \right)={p}_{\uptheta}\left({s}_1,{a}_1,{s}_2,{a}_2,\cdots,
+    {s}_T,{a}_T\right)=p\left({s}_1\right){\prod}_{t=1}^T{\uppi}_{\uptheta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ2.png)'
 - en: (8-2)
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-2)
 - en: 'The expected return from following the policy is given by the following:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 遵循策略的预期回报由以下公式给出：
 - en: '![$$ J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ3.png)'
+  id: totrans-76
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ3.png)'
 - en: (8-3)
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-3)
 - en: 'You want to find the *θ* that maximizes the expected return *J*(*θ*). In other
     words, the optimal θ = θ^∗ is given by the following expression:'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 你想要找到最大化预期回报*J*(*θ*)的*θ*。换句话说，最优的θ = θ^∗由以下表达式给出：
 - en: '![$$ {\uptheta}^{\ast }={\mathit{\arg}\mathit{\max}}_{\uptheta}{E}_{\uptau
     \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ4.png)'
+  id: totrans-79
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\uptheta}^{\ast }={\mathit{\arg}\mathit{\max}}_{\uptheta}{E}_{\uptau
+    \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ4.png)'
 - en: (8-4)
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-4)
 - en: 'Before moving forward, consider how you will evaluate the objective *J*(θ).
     You convert the expectation in Equation [8-3](#Equ3) to an average over samples,
     that is, you run the agent through the policy multiple times, collecting *N* trajectories.
@@ -454,252 +632,393 @@
     of the return across *N* trajectories. This is a Monte Carlo (MC) estimation of
     the expectation. This is what is meant when I talked about evaluating a policy.
     The expression you obtain is the following:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 在继续前进之前，考虑你将如何评估目标 *J*(θ)。你将方程 [8-3](#Equ3) 中的期望转换为样本的平均值，也就是说，你多次运行代理通过策略，收集
+    *N* 条轨迹。你计算每条轨迹的总奖励（轨迹中的总奖励也称为一个 episode 或单个 rollout 的回报），并对 *N* 条轨迹的回报取平均值。这是对期望的蒙特卡洛（MC）估计。这就是我所说的评估策略的含义。你得到的表达式如下：
 - en: '![$$ J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ5.png)'
+  id: totrans-82
   prefs: []
   type: TYPE_IMG
+  zh: '![J(θ) ≈ 1/N ∑_{i=1}^N ∑_{t=1}^Tr(s_t^i,a_t^i)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ5.png)'
 - en: (8-5)
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-5)
 - en: In the notation in Equation [8-5](#Equ5), ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq7.png)
     represents the state *s* in step *t* of rollout instance *i*. There are *T* steps
     in a rollout and there are *N* rollouts in total.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 在方程 [8-5](#Equ5) 的符号中，![s_t^i](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq7.png)
+    代表 rollout 实例 *i* 在步骤 *t* 的状态 *s*。一个 rollout 有 *T* 个步骤，总共有 *N* 个 rollout。
 - en: Derivative Update Rule
+  id: totrans-85
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 导数更新规则
 - en: 'Moving on, let’s try to find the optimal *θ*. To keep the notations easier
     to understand, I replace ∑[*t*]*r*(*s*[*t*], *a*[*t*]) with *r*(τ). Rewriting
     Equation [8-3](#Equ3), you get the following:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们尝试找到最优的 *θ*。为了使符号更容易理解，我将 ∑[*t*]*r*(*s*[*t*], *a*[*t*]) 替换为 *r*(τ)。重写方程
+    [8-3](#Equ3)，你得到以下内容：
 - en: '![$$ J\left(\theta \right)={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[r\left(\tau
     \right)\right]=\int {p}_{\theta}\left(\tau \right)r\left(\tau \right)\  d\tau
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ6.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![J(θ) = E_τ~p_θ(τ)[r(τ)] = ∫p_θ(τ)r(τ) dτ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ6.png)'
 - en: (8-6)
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-6)
 - en: Take the gradient/derivative of Equation [8-6](#Equ6) with respect to *θ*.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 对方程 [8-6](#Equ6) 关于 *θ* 求梯度/导数。
 - en: '![$$ {\nabla}_{\theta }J\left(\theta \right)={\nabla}_{\theta}\int {p}_{\theta}\left(\tau
     \right)r\left(\tau \right) d\tau $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ7.png)'
+  id: totrans-90
   prefs: []
   type: TYPE_IMG
+  zh: '![∇_θJ(θ) = ∇_θ∫p_θ(τ)r(τ)dτ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ7.png)'
 - en: (8-7)
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-7)
 - en: Using linearity, you can move the gradient inside the integral.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用线性性质，你可以将梯度移到积分内部。
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\int {\nabla}_{\uptheta}{p}_{\uptheta}\left(\uptau
     \right)r\left(\uptau \right)d\uptau $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ8.png)'
+  id: totrans-93
   prefs: []
   type: TYPE_IMG
+  zh: '![∇_θJ(θ) = ∫∇_θp_θ(τ)r(τ)dτ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ8.png)'
 - en: (8-8)
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-8)
 - en: 'With the log derivative trick, you know that ∇[*x*]*f*(*x*) = *f*(*x*)∇[*x*] log *f*(*x*).
     Using this, you can write the previous Equation [8-8](#Equ8) as follows:'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用对数导数技巧，你知道 ∇[*x*]*f*(*x*) = *f*(*x*)∇[*x*]log*f*(*x*)。利用这一点，你可以将之前的方程 [8-8](#Equ8)
+    写成以下形式：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\int {p}_{\uptheta}\left(\uptau
     \right)\left[{\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)r\left(\uptau
     \right)\right]d\uptau $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ9.png)'
+  id: totrans-96
   prefs: []
   type: TYPE_IMG
+  zh: '![∇_θJ(θ) = ∫p_θ(τ)[∇_θlogp_θ(τ)r(τ)]dτ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ9.png)'
 - en: (8-9)THE LOG DERIVATIVE TRICK
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-9)对数导数技巧
 - en: 'Start with a probability distribution *p*[θ](*x*), where x is the random variable
     and θ represents the parameters of the probability distribution. Say you have
     this expression:'
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 从一个概率分布 *p*[θ](*x*) 开始，其中 x 是随机变量，θ 代表概率分布的参数。比如说你有这个表达式：
 - en: '![$$ G\left(\uptheta \right)={E}_{x\sim {p}_{\uptheta}(x)}\left[f(x)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equi.png)'
+  id: totrans-99
   prefs: []
   type: TYPE_IMG
+  zh: '![G(θ) = E_x~p_θ(x)[f(x)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equi.png)'
 - en: 'You now want to calculate the derivate of *G*(θ) w.r.t \theta. For simplicity’s
     sake, assume that *x* and θ are both single dimensional variables. You write *G*(θ)
     by converting expectation to an integral. You can rewrite *G*(θ) as:'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 你现在想要计算*G*(θ)相对于θ的导数。为了简化，假设*x*和θ都是单变量。你通过将期望转换为积分来写出*G*(θ)。你可以将*G*(θ)重写为：
 - en: '![$$ G\left(\uptheta \right)=\int {p}_{\uptheta}(x)f(x) dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equj.png)'
+  id: totrans-101
   prefs: []
   type: TYPE_IMG
+  zh: '![积分公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equj.png)'
 - en: 'Taking a derivative w.r.t θ on both sides, you get:'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 对θ进行求导，两边得到：
 - en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\frac{d}{d\uptheta}\int {p}_{\uptheta}(x)f(x)
     dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equk.png)'
+  id: totrans-103
   prefs: []
   type: TYPE_IMG
+  zh: '![导数公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equk.png)'
 - en: 'Taking a derivative inside due to linearity property, you get:'
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于线性性质，对内部进行求导，你得到：
 - en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\int \left(\frac{d}{d\uptheta}{p}_{\uptheta}(x)\right)f(x)
     dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equl.png)'
+  id: totrans-105
   prefs: []
   type: TYPE_IMG
+  zh: '![导数公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equl.png)'
 - en: 'Now multiply and divide the right side by *p*[*θ*](*x*):'
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在将右侧乘以*p*[θ](*x*)并除以*p*[θ](*x*)：
 - en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\int \left(\frac{p_{\uptheta}(x)}{p_{\uptheta}(x)}\frac{d}{d\uptheta}{p}_{\uptheta}(x)\right)f(x)
     dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equm.png)'
+  id: totrans-107
   prefs: []
   type: TYPE_IMG
+  zh: '![导数公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equm.png)'
 - en: 'This gives:'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 这给出：
 - en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\int {p}_{\uptheta}(x)\left(\frac{1}{p_{\uptheta}(x)}\frac{d}{d\uptheta}{p}_{\uptheta}(x)\right)f(x)
     dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equn.png)'
+  id: totrans-109
   prefs: []
   type: TYPE_IMG
+  zh: '![导数公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equn.png)'
 - en: 'The expression inside the brackets on the left side is the derivative of log*p*[θ](*x*):'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 左侧括号内的表达式是log*p*[θ](*x*)的导数：
 - en: '![$$ \frac{d}{d\theta}G\left(\theta \right)=\int {p}_{\theta }(x)\left(\frac{d}{d\theta}\mathit{\log}{p}_{\theta
     }(x)\right)f(x) dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equo.png)'
+  id: totrans-111
   prefs: []
   type: TYPE_IMG
+  zh: '![导数公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equo.png)'
 - en: 'Now convert the integral back to expectation over *p*[*θ*](*x*):'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在将积分转换回*p*[θ](*x*)的期望：
 - en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)={E}_{\uptheta \sim {p}_{\uptheta}(x)}\left[\frac{d}{d\uptheta}\log
     {p}_{\uptheta}(x)f(x)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equp.png)'
+  id: totrans-113
   prefs: []
   type: TYPE_IMG
+  zh: '![导数公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equp.png)'
 - en: This is log derivative trick, where the derivative of a function is the function
     in an expectation and you want to take the derivate of the function with respect
     to the parameters of the probability distribution over which the expectation has
     been taken. The log derivative trick allows you to represent the derivative, which
     in turn allows you to take Monte Carlo estimates of the derivative expression.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一种对数导数技巧，其中函数的导数是期望中的函数，并且你想要对概率分布的参数进行函数的求导。对数导数技巧允许你表示导数，从而允许你计算导数表达式的蒙特卡洛估计。
 - en: 'You can now write the integral back as the expectation, which gives the following
     expression:'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，你可以将积分重新写为期望，从而得到以下表达式：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[{\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)r\left(\uptau
     \right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ10.png)'
+  id: totrans-116
   prefs: []
   type: TYPE_IMG
+  zh: '![梯度公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ10.png)'
 - en: (8-10)
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-10)
 - en: Now expand the term ∇[*θ*] log *p*[*θ*](*τ*) by writing out the full expression
     of *p*[*θ*](*τ*) from Equation [8-2](#Equ2).
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在通过写出从方程[8-2](#Equ2)中得到的*p*[θ](*τ*)的完整表达式来展开项∇[*θ*] log *p*[*θ*](*τ*)。
 - en: '![$$ {\nabla}_{\theta}\log {p}_{\theta}\left(\tau \right)={\nabla}_{\theta}\mathit{\log}\left[p\left({s}_1\right){\prod}_{t=1}^T{\pi}_{\theta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ11.png)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\theta}\log {p}_{\theta}\left(\tau \right)={\nabla}_{\theta}\mathit{\log}\left[p\left({s}_1\right){\prod}_{t=1}^T{\pi}_{\theta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ11.png)'
 - en: (8-11)
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-11)
 - en: 'You know that the log of the product of terms can be written as a sum of the
     log of terms. In other words:'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 你知道项的乘积的对数可以写成项的对数之和。换句话说：
 - en: '![$$ \log {\prod}_i{f}_i(x)={\sum}_i\log {f}_i(x) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ12.png)'
+  id: totrans-122
   prefs: []
   type: TYPE_IMG
+  zh: '![对数乘积和的对数等于对数的和](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ12.png)'
 - en: (8-12)
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-12)
 - en: 'Substituting Equation [8-12](#Equ12) in Equation [8-11](#Equ11), you get the
     following:'
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 将方程[8-12](#Equ12)代入方程[8-11](#Equ11)，得到以下结果：
 - en: '![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\nabla}_{\uptheta}\left[\log
     p\left({s}_1\right)+{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)+\log
     p\left({s}_{t+1}|{s}_t,{a}_t\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ13.png)'
+  id: totrans-125
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\nabla}_{\uptheta}\left[\log
+    p\left({s}_1\right)+{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)+\log
+    p\left({s}_{t+1}|{s}_t,{a}_t\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ13.png)'
 - en: (8-13)
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-13)
 - en: 'The only term in Equation [8-13](#Equ13) dependent on *θ* is *π*[*θ*](*a*[*t*]|
     *s*[*t*]). The other two terms—log*p*(*s*[1]) and log*p*(*s*[*t* + 1]| *s*[*t*],
     *a*[*t*])—do not depend on *θ*. Accordingly, you can simplify Equation [8-13](#Equ13)
     as follows:'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 方程[8-13](#Equ13)中唯一依赖于*θ*的项是*π*[*θ*](*a*[*t*]| *s*[*t*]). 其他两项——log*p*(*s*[1])和log*p*(*s*[*t* + 1]|
+    *s*[*t*], *a*[*t*])——不依赖于*θ*. 因此，你可以将方程[8-13](#Equ13)简化如下：
 - en: '![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t|{s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ14.png)'
+  id: totrans-128
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ14.png)'
 - en: (8-14)
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-14)
 - en: 'By substituting Equation [8-14](#Equ14) into the expression for ∇[*θ*]*J*(*θ*)
     in Equation [8-10](#Equ10), as well as expanding *r*(*τ*) as ∑[*t*]*r*(*s*[*t*],
     *a*[*t*]), you get the following:'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过将方程[8-14](#Equ14)代入方程[8-10](#Equ10)中∇[*θ*]*J*(*θ*)的表达式，以及将回报r(*τ*)展开为∑[*t*]*r*(*s*[*t*],
+    *a*[*t*])，得到以下结果：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ15.png)'
+  id: totrans-131
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ15.png)'
 - en: (8-15)
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-15)
 - en: 'You can now replace the outer expectation with an estimate/average over multiple
     trajectories to get the following expression for the *gradient of policy objective*:'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 你现在可以用多个轨迹的估计/平均来替换外层期望，得到以下关于*策略目标梯度*的表达式：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ16.png)'
+  id: totrans-134
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ16.png)'
 - en: (8-16)
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-16)
 - en: where superscript index *i* denotes the *i*^(th) trajectory.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中上标索引*i*表示第*i*条轨迹。
 - en: To improve the policy, take a +ve step in the direction of ∇[*θ*]*J*(*θ*) with
     a learning rate α.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了改进策略，沿着梯度∇[*θ*]*J*(*θ*)的方向采取正步，学习率α。
 - en: '![$$ \uptheta =\uptheta +\upalpha {\nabla}_{\uptheta}J\left(\uptheta \right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ17.png)'
+  id: totrans-138
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \uptheta =\uptheta +\upalpha {\nabla}_{\uptheta}J\left(\uptheta \right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ17.png)'
 - en: (8-17)
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-17)
 - en: Summarizing, you have designed a model that takes state *s* as the input and
     produces the policy distribution *π*[*θ*](*a*| *s*) as the output of the model.
     You use a policy as determined by cthe urrent model parameters *θ* to generate
     trajectories and calculate the total return of each trajectory. You then calculate
     ∇[*θ*]*J*(*θ*) using Equation [8-16](#Equ16) and change the model parameters *θ*
     using the expression *θ* = *θ* + *α*∇[*θ*]*J*(*θ*) in Equation [8-17](#Equ17).
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 总结来说，你设计了一个模型，该模型以状态 *s* 作为输入，并产生模型的输出策略分布 *π*[*θ*](*a*| *s*)。你使用由当前模型参数 *θ*
+    确定的策略来生成轨迹并计算每条轨迹的总回报。然后，你使用方程式 [8-16](#Equ16) 计算 ∇[*θ*]*J*(*θ*) 并使用方程式 [8-17](#Equ17)
+    中的表达式 *θ* = *θ* + *α*∇[*θ*]*J*(*θ*) 来改变模型参数 *θ*。
 - en: Intuition Behind the Update Rule
+  id: totrans-141
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 更新规则的直觉
 - en: This section develops some intuition behind Equation [8-16](#Equ16) by explaining
     the equation in words. You carry out an average over *N* trajectories and that
     is the outermost sum. What is it that you average over the trajectories? For each
     trajectory, you look at the total reward obtained in that trajectory, that is,
     the second term inside the summation. This return is multiplied with the first
     term, which is the sum of log probabilities of all the actions along that trajectory.
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节通过文字解释方程式 [8-16](#Equ16) 来发展对其背后的直觉。你是对 *N* 条轨迹进行平均，这是最外层的求和。你在轨迹上平均的是什么？对于每条轨迹，你查看在该轨迹中获得的总奖励，即求和中的第二项。这个回报与第一项相乘，第一项是沿着该轨迹所有动作的对数概率之和。
 - en: Suppose the total reward *r*(*τ*^(*i*)) of a trajectory was +ve. Each gradient
     inside the first inner sum, ![$$ {\nabla}_{\theta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq8.png), which
@@ -714,47 +1033,75 @@
     and [8-17](#Equ17) lead to moving *θ* in the -ve direction, resulting in a decrease
     of the probability of taking action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq12.png)
     when the system is in state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq13.png).
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设一条轨迹的总奖励 *r*(*τ*^(*i*)) 是正值。第一个内层求和中的每个梯度，即 ![${\nabla}_{\theta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq8.png)，这是该动作对数概率的梯度——被总奖励
+    *r*(*τ*^(*i*)) 乘以。结果是，单个 *梯度-对数* 项被轨迹的总奖励放大，在方程式 [8-17](#Equ17) 中，其贡献是使模型参数 *θ*
+    向 ![${\nabla}_{\theta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq9.png)
+    的正值方向移动，即当系统处于状态 ![${s}_t^i$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq11.png)
+    时，增加采取动作 ![${a}_t^i$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq10.png)
+    的概率。然而，对于 *r*(*τ*^(*i*)) 是负值的情况，方程式 [8-16](#Equ16) 和 [8-17](#Equ17) 导致 *θ* 向负值方向移动，结果是当系统处于状态
+    ![${s}_t^i$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq13.png)
+    时，减少采取动作 ![${a}_t^i$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq12.png)
+    的概率。
 - en: You could summarize the whole explanation by saying that policy optimization
     is all about trial and error. You roll out multiple trajectories. The probability
     of all the actions along the trajectory is increased for those trajectories that
     are good. For the trajectories that are bad, the probability of all the actions
     along those bad trajectories are reduced, as depicted in Figure [8-1](#Fig1).
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以用一句话总结整个解释，那就是策略优化完全是关于试错。你推出了多个轨迹。对于好的轨迹，沿着轨迹的所有动作的概率都会增加。对于不好的轨迹，那些轨迹中所有动作的概率都会减少，如图
+    [8-1](#Fig1) 所示。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig1_HTML.jpg)'
+  id: totrans-145
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig1_HTML.jpg)'
 - en: An illustration of trajectory rollouts. It represents the multiple trajectories
     of reward versus time. Trajectory 3 has a lower probability while Trajectory 1
     and Trajectory 2 have higher probabilities.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 轨迹展开的示意图。它表示了奖励与时间相关的多个轨迹。轨迹3的概率较低，而轨迹1和轨迹2的概率较高。
 - en: Figure 8-1
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 图8-1
 - en: Trajectory rollouts. Trajectory 1 is good, so you want the model to produce
     more of these. Trajectory 2 is neither good nor bad, and the model should not
     worry too much about it. Trajectory 3 is bad, so you want the model to reduce
     the probability of it
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 轨迹展开。轨迹1很好，所以你希望模型产生更多这样的轨迹。轨迹2既不好也不坏，模型对此不必过于担心。轨迹3很糟糕，所以你希望模型降低其发生的概率。
 - en: 'Consider this interpretation by comparing the expression in Equation [8-17](#Equ17)
     with that of maximum likelihood. If you just wanted to model the probability of
     seeing the trajectories you saw, you would get the maximum likelihood estimation—you
     observe some data (trajectories), and you want to build a model with the highest
     probability of producing the observed data/trajectory. This is the maximum likelihood
     model building. Under that, you would get an equation as follows:'
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过比较方程[8-17](#Equ17)中的表达式与最大似然的表达式，考虑这种解释。如果你只想对观察到的轨迹的概率进行建模，你会得到最大似然估计——你观察到一些数据（轨迹），你希望构建一个模型，该模型具有产生观察到的数据/轨迹的最高概率。这是最大似然模型构建。在这种情况下，你会得到以下方程：
 - en: '![$$ {\nabla}_{\uptheta}{J}_{MLE}\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ18.png)'
+  id: totrans-150
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}{J}_{MLE}\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ18.png)'
 - en: (8-18)
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-18)
 - en: In Equation [8-18](#Equ18), you are just increasing the probability of the actions
     to increase the overall probability of trajectories that were observed. You are
     not making any differentiation for the good vs bad trajectories. In the case of
@@ -763,56 +1110,82 @@
     the log probability gradients with the return of the trajectory so that the probability
     of good trajectories is increased, and the probability of bad trajectories is
     decreased.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 在方程[8-18](#Equ18)中，你只是在增加动作的概率，以增加观察到的轨迹的整体概率。你并没有对好轨迹和坏轨迹进行任何区分。在方程[8-16](#Equ16)中的策略梯度的情况下，你做的是类似于最大似然估计（MLE）的事情，但增加了对轨迹回报的加权，以增加好轨迹的概率，并降低坏轨迹的概率。
 - en: Before concluding this section, one observation I want to make is regarding
     the Markov property and partial observability. You have not really used the Markov
     assumption in the derivation. In the end, Equation [8-16](#Equ16) just increases
     the probability of good stuff and reduces the probability of bad stuff. You have
     not used Bellman equations so far. Therefore, a policy gradient approach can also
     work for non-Markovian setups.
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 在结束本节之前，我想提出的一个观察是关于马尔可夫性质和部分可观测性。你实际上并没有在推导中使用马尔可夫假设。最终，方程[8-16](#Equ16)只是增加了好事发生的概率，减少了坏事发生的概率。到目前为止，你还没有使用贝尔曼方程。因此，策略梯度方法也可以用于非马尔可夫设置。
 - en: The REINFORCE Algorithm
+  id: totrans-154
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: REINFORCE算法
 - en: You’ll now convert Equation [8-16](#Equ16) into an algorithm for policy optimization.
     The basic algorithm is shown in Figure [8-2](#Fig2). It is known as REINFORCE.
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，你将方程[8-16](#Equ16)转换为策略优化的算法。基本算法如图[8-2](#Fig2)所示。它被称为REINFORCE。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig2_HTML.jpg)'
+  id: totrans-156
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig2_HTML.jpg)'
 - en: An algorithm for R E I N F O R C E for policy optimization. It includes input,
     initialize, other parameters, and a loop.
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于策略优化的REINFORCE算法。它包括输入、初始化、其他参数和一个循环。
 - en: Figure 8-2
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 图8-2
 - en: The REINFORCE algorithm
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: REINFORCE算法
 - en: Consider some implementation-level details. Suppose you use a neural network
     as a model that takes a state value as input and produces the *logit* (log probability)
     of taking all possible actions in that state. Figure [8-3](#Fig3) shows a diagram
     of such a model.
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑一些实现层面的细节。假设你使用一个神经网络作为模型，它接受状态值作为输入，并产生该状态下所有可能动作的*logit*（对数概率）。图[8-3](#Fig3)展示了这样一个模型的示意图。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig3_HTML.jpg)'
+  id: totrans-161
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig3_HTML.jpg)'
 - en: A network model for the predicting policy of neural networks. The state value
     is provided as an input and the log probability is provided for the possible actions.
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 神经网络预测策略的网络模型。状态值作为输入提供，可能的动作提供对数概率。
 - en: Figure 8-3
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 8-3
 - en: Neural network model for predicting policy
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 预测策略的神经网络模型
 - en: 'You can use auto-differentiation libraries such as PyTorch, JAX, or TensorFlow.
     You do not explicitly calculate the differentiation. Equation [8-16](#Equ16) gives
     you the expression for ∇[θ]*J*(θ). With PyTorch or such other libraries, you need
@@ -824,23 +1197,36 @@
     packages like PyTorch or TensorFlow will automatically calculate the gradient
     ∇[θ]*J*(θ) from the expression for *J*(θ). The correct expression for *J*(θ) is
     as follows:'
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用 PyTorch、JAX 或 TensorFlow 等自动微分库。您不需要显式地计算微分。方程 [8-16](#Equ16) 给出了 ∇[θ]*J*(*θ*)
+    的表达式。使用 PyTorch 或其他此类库时，您需要一个 *J*(θ) 表达式，在反向传播过程中，将使用自动微分来计算 ∇[θ]*J*(*θ*)，然后使用方程
+    [8-17](#Equ17) 更新神经网络权重 θ。神经网络模型将状态 *s* 作为输入，并产生 π[θ](*a*[*t*]| *s*[*t*])。因此，您需要使用这个输出并执行进一步计算，以得到
+    *J*(θ) 的表达式。PyTorch 或 TensorFlow 等自动微分包将自动从 *J*(θ) 的表达式中计算梯度 ∇[θ]*J*(*θ*)。*J*(θ)
+    的正确表达式如下：
 - en: '![$$ J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ19.png)'
+  id: totrans-166
   prefs: []
   type: TYPE_IMG
+  zh: '![J(θ)≈1/N∑i=1N[∑t=1Tlogπθ(aTi|st^i)∑t=1T∑t=1^Tr(st^i,at^i)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ19.png)'
 - en: (8-19)
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-19)
 - en: You can check and confirm that the gradient of this expression will give you
     the correct value for ∇[*θ*]*J*(*θ*), as shown in Equation [8-16](#Equ16). Start
     with Equation [8-19](#Equ19) for *J*(*θ*) and take a derivative with respect to
     *θ*. It will give you an expression for ∇[*θ*]*J*(*θ*) that matches the Equation
     [8-16](#Equ16).
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以检查并确认这个表达式的梯度将给出正确的 ∇[*θ*]*J*(*θ*) 值，正如方程 [8-16](#Equ16) 所示。从方程 [8-19](#Equ19)
+    开始，对 *J*(*θ*) 求导，相对于 *θ*。这将给出一个与方程 [8-16](#Equ16) 匹配的 ∇[*θ*]*J*(*θ*) 表达式。
 - en: Note that the expression *J*(*θ*) in Equation [8-19](#Equ19) is not same as
     the one in Equation [8-6](#Equ6). While moving from expression of *J*(*θ*) in
     Equation [8-6](#Equ6) to the derivative ∇[θ]*J*(θ) in Equation [8-16](#Equ16)
@@ -852,8 +1238,14 @@
     derivative expression ∇[θ]*J*(θ), shown in Equation [8-16](#Equ16). This expression
     implements in auto-diff libraries like PyTorch. It is just being used to tune
     the agent and, as such, has no physical significance.
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，方程 [8-19](#Equ19) 中的 *J*(*θ*) 表达式与方程 [8-6](#Equ6) 中的不同。当从方程 [8-6](#Equ6)
+    中的 *J*(*θ*) 表达式移动到方程 [8-16](#Equ16) 中的导数 ∇[θ]*J*(θ) 并然后回到方程 [8-19](#Equ19) 中的
+    *J*(*θ*) 表达式时，您引入了对数技巧。您从与 θ 无关的项中移除了概率，这些项是环境的属性，即状态转移概率 *p*(*s*[*t* + 1]| *s*[*t*],
+    *a*[*t*])。*J*(*θ*) 表达式被称为 *伪目标函数*。这是一个导数与正确的导数表达式 ∇[θ]*J*(θ) 匹配的表达式，如方程 [8-16](#Equ16)
+    所示。这个表达式在 PyTorch 等自动微分库中实现。它只是被用来调整智能体，因此没有物理意义。
 - en: 'You then calculate the log probabilities ![$$ \log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq14.png), weigh
     the probabilities with the total reward of the trajectory ![$$ {\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)
@@ -864,16 +1256,27 @@
     learning setup. The only difference is weighing the log probability by the trajectory
     reward. This is the approach you will take when actions are discrete. The loss
     you implement in PyTorch is as follows:'
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后你计算对数概率 ![$$ \log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq14.png)，根据轨迹的总奖励
+    ![$$ {\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq15.png)
+    来权衡概率，然后计算加权量的负对数似然（NLL，或交叉熵损失），这给出了方程 [8-20](#Equ20) 中的表达式。这与在监督学习设置中训练多类分类模型的方案类似。唯一的区别是使用轨迹奖励来权衡对数概率。当动作是离散的时，你将采取这种方法。你在
+    PyTorch 中实现的损失如下：
 - en: '![$$ {L}_{\mathrm{cross}-\mathrm{entropy}}\left(\uptheta \right)=-1\cdotp \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ20.png)'
+  id: totrans-171
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {L}_{\mathrm{cross}-\mathrm{entropy}}\left(\uptheta \right)=-1\cdotp \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ20.png)'
 - en: (8-20)
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-20)
 - en: Note that PyTorch (and other auto-diff libraries) minimize the loss by taking
     a step in a negative direction of the loss. And note that the -ve gradient of
     Equation [8-20](#Equ20) is a +ve gradient of Equation [8-19](#Equ19) due to the
@@ -882,52 +1285,84 @@
     that increases the value of *J*[(θ)] in Equation [8-19](#Equ19). By extension,
     this increases the value of the actual objective *J*(θ), as shown in Equation
     [8-6](#Equ6), which is the average of the return per episode.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，PyTorch（以及其他自动微分库）通过在损失负方向上迈出一步来最小化损失。并且注意，由于方程 [8-20](#Equ20) 中存在一个 -1 的因子，方程
+    [8-20](#Equ20) 的负梯度是方程 [8-19](#Equ19) 的正梯度。因此，在梯度负方向上迈出一步是增加方程 [8-19](#Equ19)
+    中 *J*[(θ)] 值的方向。通过扩展，这增加了实际目标函数 *J*(θ) 的值，如方程 [8-6](#Equ6) 所示，它是每集回报的平均值。
 - en: Having looked at the formulation when action space is discrete, you can now
     turn your attention to the formulation under continuous action space. As discussed
     earlier in this chapter, the model parameterized by *θ* will take state *s* as
     input and produce the mean *μ* of a multivariate normal distribution. This considers
     the case where the variance of the normal distribution is known and fixed to some
     small value, say σ²*I*[*d*].
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 在查看动作空间离散时的公式之后，你现在可以将注意力转向连续动作空间下的公式。如本章前面所述，由 *θ* 参数化的模型将状态 *s* 作为输入并产生多元正态分布的均值
+    *μ*。这考虑了正态分布的方差已知且固定为某个小值的情况，例如 σ²*I*[*d*]。
 - en: '![$$ \uppi \left(a|s;\uptheta \right)\sim N\left(\upmu, {\upsigma}^2{I}_d\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equq.png)'
+  id: totrans-175
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \uppi \left(a|s;\uptheta \right)\sim N\left(\upmu, {\upsigma}^2{I}_d\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equq.png)'
 - en: 'Say for state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq16.png)
     the mean that the model produces is ![$$ {\upmu}_{\theta}\left({s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq17.png). The
     value of ![$$ \log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq18.png)
     is then given by the following:'
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设对于状态 ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq16.png)，模型产生的均值是
+    ![$$ {\upmu}_{\theta}\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq17.png)。那么
+    ![$$ \log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq18.png)
+    的值由以下给出：
 - en: '![$$ \log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)=\log \frac{1}{\sqrt{2\pi}\sigma
     }{e}^{-\frac{1}{2{\sigma}^2}{\left({a}_t^i-{\mu}_{\theta}\right)}^2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equr.png)'
+  id: totrans-177
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)=\log \frac{1}{\sqrt{2\pi}\sigma
+    }{e}^{-\frac{1}{2{\sigma}^2}{\left({a}_t^i-{\mu}_{\theta}\right)}^2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equr.png)'
 - en: '![$$ =-\frac{1}{2}\ \log 2\pi -\log \sigma -\frac{1}{2{\sigma}^2}{\left({a}_t^i-{\mu}_{\theta}\right)}^2
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ21.png)'
+  id: totrans-178
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ =-\frac{1}{2}\ \log 2\pi -\log \sigma -\frac{1}{2{\sigma}^2}{\left({a}_t^i-{\mu}_{\theta}\right)}^2
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ21.png)'
 - en: (8-21)
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-21)
 - en: 'The only value in the previous expression that depends on model parameters
     *θ* is ![$$ {\mu}_{\theta}\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq19.png).
     Now take a gradient of Equation [8-21](#Equ21) with regard to *θ*. You obtain
     the following:'
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前面的表达式中，唯一依赖于模型参数 *θ* 的值是 ![$$ {\mu}_{\theta}\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq19.png)。现在对等式
+    [8-21](#Equ21) 关于 *θ* 求梯度。你得到以下结果：
 - en: '![$$ {\nabla}_{\uptheta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)=\mathrm{const}\cdotp
     \left({a}_t^i-{\mu}_{\theta}\right)\ {\nabla}_{\theta }{\mu}_{\theta}\left({s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ22.png)'
+  id: totrans-181
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)=\mathrm{const}\cdotp
+    \left({a}_t^i-{\mu}_{\theta}\right)\ {\nabla}_{\theta }{\mu}_{\theta}\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ22.png)'
 - en: (8-22)
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-22)
 - en: To implement this in PyTorch, JAX or TensorFlow, you will form a modified mean
     squared error, just like the approach you took with the previous case of discrete
     actions. You find an expression whose derivative will yield the above expression
@@ -935,43 +1370,70 @@
     By observation of Equation [8-22](#Equ22), you can find an expression, as shown
     in Equation [8-23](#Equ23), whose derivative will be equal to the one in Equation
     [8-22](#Equ22).
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在 PyTorch、JAX 或 TensorFlow 中实现这一点，您将形成一个修改后的均方误差，就像您在之前的离散动作案例中所采取的方法一样。您找到一个导数将产生上述
+    ![$$ {\nabla}_{\uptheta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq20.png)
+    表达式的表达式。通过观察等式 [8-22](#Equ22)，您可以找到一个表达式，如等式 [8-23](#Equ23) 所示，其导数将等于等式 [8-22](#Equ22)
+    中的导数。
 - en: '![$$ {\left({a}_t^i-{\mu}_{\theta}\right)}^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ23.png)'
+  id: totrans-184
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\left({a}_t^i-{\mu}_{\theta}\right)}^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ23.png)'
 - en: (8-23)
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-23)
 - en: Now you weigh the mean squared error with the trajectory return and that will
     form the loss equation you implement in PyTorch, which is given in Equation [8-24](#Equ24).
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在您将均方误差与轨迹回报相权衡，这将形成您在 PyTorch 中实现的损失方程，如等式 [8-24](#Equ24) 所示。
 - en: '![$$ {L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\left({a}_t^i-{\mu}_{\theta}\right)}^2\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ24.png)'
+  id: totrans-187
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\left({a}_t^i-{\mu}_{\theta}\right)}^2\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ24.png)'
 - en: (8-24)
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-24)
 - en: 'Again, note that using gradient of *L*[*MSE*](θ) and then taking a step in
     the -ve direction of the gradient will produce the following expression:'
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 再次注意，使用 *L*[*MSE*](θ) 的梯度，然后沿着梯度的负方向进行一步，将产生以下表达式：
 - en: '![$$ -{\nabla}_{\theta }{L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\left({a}_t^i-{\mu}_{\theta}\right)\
     {\nabla}_{\theta }\ {\mu}_{\theta}\left({s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ25.png)'
+  id: totrans-190
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ -{\nabla}_{\theta }{L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\left({a}_t^i-{\mu}_{\theta}\right)\
+    {\nabla}_{\theta }\ {\mu}_{\theta}\left({s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ25.png)'
 - en: (8-25)
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-25)
 - en: A step in the direction of −∇[*θ*]*L*[*MSE*](θ) is a step in the direction of
     ∇[θ]*J*(θ), as given in Equation [8-19](#Equ19). This step increases the value
     of *J*(*θ*) from Equation [8-6](#Equ6), that is, maximizing the return from the
     policy.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 −∇[*θ*]*L*[*MSE*](θ) 方向上的一个步长，等同于在 ∇[θ]*J*(θ) 方向上的一个步长，如等式 [8-19](#Equ19)
+    所示。这一步增加了等式 [8-6](#Equ6) 中 *J*(*θ*) 的值，即最大化策略的回报。
 - en: To summarize, implementations in auto-diff libraries like PyTorch require you
     to form cross-entropy loss in discrete action space and mean squared loss in the
     case of continuous action space, where the loss term is weighted by the total
@@ -980,8 +1442,12 @@
     This is similar to the approach you take in supervised learning, except for the
     extra step of weighing by the trajectory return ![$$ r\left({\uptau}^i\right)={\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq22.png).
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 总结一下，在PyTorch等自动微分库中的实现要求你在离散动作空间中形成交叉熵损失，在连续动作空间中形成均方损失，其中损失项由该轨迹的总回报加权。这与你在监督学习中所采取的方法类似，只是额外的一步是按照轨迹回报加权！[$$
+    \left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq21.png)。这类似于你在监督学习中所采取的方法，只是额外的一步是按照轨迹回报加权！[$$
+    r\left({\uptau}^i\right)={\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq22.png)。
 - en: To reiterate, remember that *weighted cross-entropy loss* or *weighted mean-squared
     loss* has no physical meaning or significance. It is just a convenient expression
     that allows you to use auto-diff capabilities of PyTorch to calculate the gradients
@@ -991,31 +1457,42 @@
     However, there is no such inference or meaning that can be attached to the weighted
     loss in the case of the policy gradient scenario in reinforcement learning. That’s
     why they are called pseudo-loss/objectives.
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 再次强调，记住*加权交叉熵损失*或*加权均方损失*没有物理意义或重要性。它只是一个方便的表达式，允许你使用PyTorch的自动微分功能通过反向传播计算梯度，然后采取一步来改进策略。与这种方法相比，在监督学习中，损失确实表示预测的质量。在监督学习中，较低的损失意味着模型可以做出准确的预测。然而，在强化学习的策略梯度场景中，加权损失并没有这样的推断或意义。这就是为什么它们被称为伪损失/目标。
 - en: Variance Reduction with Rewards-to-Go
+  id: totrans-195
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 基于奖励的方差减少
 - en: The expression derived in Equation [8-16](#Equ16), if used in its current form,
     has an issue. It has high variance. You will now leverage the temporal nature
     of the problem to do some variance reduction.
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 方程 [8-16](#Equ16) 中推导出的表达式，如果以当前形式使用，存在一个问题。它具有高方差。你现在将利用问题的时序性质来执行一些方差减少。
 - en: When you roll out the policy (i.e., take actions as per the policy) to produce
     a trajectory, you calculate the total reward of the trajectory *r*(τ). As shown
     in Equation [8-16](#Equ16), each of the action probability terms for the actions
     in the trajectory are weighted by this trajectory reward.
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 当你滚动策略（即按照策略采取行动）以产生轨迹时，你计算轨迹的总奖励*r*(τ)。如方程 [8-16](#Equ16) 所示，轨迹中每个动作的概率项都由这个轨迹奖励加权。
 - en: However, the world is causal when the agent interacts with the environment.
     An action taken in a time step, say *t*, can only impact the reward you see after
     that action. The reward you see prior to time step *t* is not impacted by the
     action you take at time step *t* or any subsequent actions. Future actions cannot
     impact past rewards. You will use this property to drop certain terms in Equation
     [8-16](#Equ16). This will help you reduce the variance.
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，当智能体与环境交互时，世界是因果的。在时间步长*t*采取的动作，例如，只能影响该动作之后的奖励。在时间步长*t*之前看到的奖励不会受到你在时间步长*t*或任何后续动作采取的动作的影响。未来的动作不能影响过去的奖励。你将使用这个属性来删除方程
+    [8-16](#Equ16) 中的某些项。这将有助于你减少方差。
 - en: You may ask why? Remember that you are using the sample trajectories as the
     Monte Carlo estimate of the expected trajectory reward. Each action in the trajectory
     comes from a probability distribution. The first sum inside Equation [8-16](#Equ16)
@@ -1023,42 +1500,65 @@
     know that as you add more random variables to an existing sequence of random variables,
     the total variance of the sum will grow linearly. Therefore, by dropping irrelevant
     terms, you help reduce the length of the sequence and hence the variance.
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可能会问为什么？记住，你正在使用样本轨迹作为期望轨迹奖励的蒙特卡洛估计。轨迹中的每个动作都来自一个概率分布。方程 [8-16](#Equ16) 中第一个求和项是将这些随机变量的所有样本相加。从基本的概率论知识，你知道当你将更多的随机变量添加到现有的随机变量序列中时，总和的总方差将线性增长。因此，通过删除不相关的项，你有助于减少序列的长度和方差。
 - en: The steps that derive the revised formula under the causal world assumption
     are shown here. Note that it is not a rigorous mathematical proof.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 在因果世界假设下推导修正公式的步骤在此展示。请注意，这并不是一个严格的数学证明。
 - en: Start with Equation [8-15](#Equ15).
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 从方程 [8-15](#Equ15) 开始。
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equs.png)'
+  id: totrans-202
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equs.png)'
 - en: 'Now change the index of summation for the reward term from *t* to *t*^′ and
     move the reward sum term inside the first summation over actions from policy π[θ].
     This gives you the following expression:'
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在将奖励项的求和索引从 *t* 改为 *t*^′，并将奖励求和项移到策略 π[θ] 的第一个动作求和内部。这给出了以下表达式：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime
     }=1}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equt.png)'
+  id: totrans-204
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime
+    }=1}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equt.png)'
 - en: 'Inside the summation over index *t*, you drop the reward terms that came before
     time *t*. At time *t*, the action you take can only impact the reward that comes
     at time *t as well as those that come later*. This leads to changing the second
     inner sum starting from *t*^′ = *t* instead of *t*^′ = 1\. The revised expression
     is as follows:'
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 *t* 的索引求和内部，您将时间 *t* 之前的奖励项丢弃。在时间 *t*，您采取的动作只能影响时间 *t* 以及之后到来的奖励。这导致第二个内部求和从
+    *t*^′ = *t* 开始，而不是从 *t*^′ = 1 开始。修正后的表达式如下：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime
     }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equu.png)'
+  id: totrans-206
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime
+    }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equu.png)'
 - en: 'The inner sum ![$$ {\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime
     }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq23.png)
     is no longer the total reward of the trajectory. Rather, it is the reward of the
@@ -1071,50 +1571,83 @@
     }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq25.png)
     is for only one trajectory, you denote it is a single sample estimate of the expected
     reward-to-go. The updated gradient equations are as follows:'
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 内部求和 ![$$ {\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq23.png) 已不再是轨迹的总奖励。相反，它是从时间
+    *t* 到 *T* 的剩余轨迹的奖励。如您所回忆的那样，这仅仅是当前策略在状态-动作对 ![$$ \left({s}_{t^{\prime }},{a}_{t^{\prime
+    }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq24.png)
+    时的 q 值的样本。一个策略的 q 值是在时间 *t* 从状态 *s*[*t*] 开始采取一步/动作 *a*[*t*] 后，直到结束的预期奖励。您也可以称之为
+    *剩余奖励*。由于表达式 ![$$ {\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime
+    }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq25.png)
+    仅针对一条轨迹，因此您将其表示为预期剩余奖励的单个样本估计。更新的梯度方程如下：
 - en: '![$$ {\hat{Q}}_t^i={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime
     }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ26.png)'
+  id: totrans-208
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\hat{Q}}_t^i={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime
+    }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ26.png)'
 - en: (8-26)
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-26)
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ {\hat{Q}}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ27.png)'
+  id: totrans-210
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ {\hat{Q}}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ27.png)'
 - en: (8-27)
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-27)
 - en: To use this equation in PyTorch, you just need to make a minor modification
     to the naive REINFORCE algorithm from Figure [8-2](#Fig2). Instead of weighing
     each log probability term with the total trajectory reward, you will now weigh
     it with the reward-to-go from that time step. Figure [8-4](#Fig4) shows the revised
     REINFORCE algorithm using reward-to-go.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在 PyTorch 中使用此方程，你只需要对图 [8-2](#Fig2) 中的朴素 REINFORCE 算法进行一些修改。现在，你将用那个时间步的奖励到去而不是总轨迹奖励来权衡每个对数概率项。图
+    [8-4](#Fig4) 展示了使用奖励到去的修改后的 REINFORCE 算法。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig4_HTML.jpg)'
+  id: totrans-213
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig4_HTML.jpg)'
 - en: An algorithm of R E I N F O R C E variance reduction with reward to go. It includes
     input, initialize, loop, and model parameters.
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 一种具有奖励到去的 R E I N F O R C E 方差减少算法。它包括输入、初始化、循环和模型参数。
 - en: Figure 8-4
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 8-4
 - en: The REINFORCE algorithm using reward-to-go
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用奖励到去的 REINFORCE 算法
 - en: You have been doing a lot of theory so far in this chapter, and there is a bit
     of overload of mathematical formula. I have tried to keep it minimal, and if there
     is one takeaway from the chapter thus far, it is that of the REINFORCE algorithm
     in Figure [8-4](#Fig4). Let’s now put this equation into practice. You will implement
     REINFORCE from Figure [8-4](#Fig4) to the usual `CartPole` problem with continuous
     state space and discrete actions.
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，本章你已经做了很多理论，数学公式有点多。我已经尽量保持其最小化，如果从到目前为止的章节中有一个要点的话，那就是图 [8-4](#Fig4)
+    中的 REINFORCE 算法。现在让我们将这个方程应用到实践中。你将实现从图 [8-4](#Fig4) 到通常的 `CartPole` 问题，该问题具有连续状态空间和离散动作。
 - en: Before you do, I want to introduce one last mathematical term. The exploration
     of state-action space in policy gradient algorithms comes from the fact that you
     learn a stochastic policy that assigns some probability to all the actions for
@@ -1122,84 +1655,124 @@
     that exploration is maintained and to ensure that π[θ](*a*| *s*) does not collapse
     into a single action with high probability, you introduce a regularization term
     known as *entropy*.
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 在此之前，我想介绍一个最后的数学术语。策略梯度算法中状态动作空间的探索来自于你学习了一个随机策略，该策略为给定状态的所有动作分配一些概率，而不是像 DQN
+    那样选择最佳可能动作。为了确保探索得以维持，并确保 π[θ](*a*| *s*) 不会以高概率塌缩为单个动作，你引入了一个称为 *熵* 的正则化项。
 - en: 'Entropy of a distribution *X* ∼ *p*(*X*) is defined as follows:'
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 分布 *X* ∼ *p*(X) 的熵定义为如下：
 - en: '![$$ H(X)={\sum}_x-p(x).\mathit{\log}\ p(x) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ28.png)'
+  id: totrans-220
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ H(X)={\sum}_x-p(x).\mathit{\log}\ p(x) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ28.png)'
 - en: (8-28)
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-28)
 - en: 'To keep enough exploration, you will want the probability to have a spread-out
     distribution and not let the probability distribution peak around a single value
     or a small region too soon. The bigger the spread of a distribution, the higher
     the entropy H(x) of a distribution. Accordingly, the term fed into the PyTorch
     minimizer is as follows:'
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了保持足够的探索，你希望概率分布是分散的，不要让概率分布过早地集中在单个值或小区域内。分布的分散程度越大，分布的熵 H(x) 就越高。因此，输入 PyTorch
+    最小化器的项如下：
 - en: '![$$ Loss\left(\uptheta \right)=-J\left(\uptheta \right)-H\left({\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equv.png)'
+  id: totrans-223
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ Loss\left(\uptheta \right)=-J\left(\uptheta \right)-H\left({\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equv.png)'
 - en: '![$$ =-\frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right){\sum}_{t^{\prime
     }=t}^T{\upgamma}^{t^{\prime }-t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)\right)-\upbeta
     {\sum}_{a_i}{\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right).\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ29.png)'
+  id: totrans-224
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ29.png)'
 - en: (8-29)
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-29)
 - en: 'In this code example, you are taking only one trajectory, that is, *N* = 1\.
     You will, however, average it over the number of actions to get the average loss.
     The function you will implement is as follows:'
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个代码示例中，你只取了一条轨迹，即*N* = 1。然而，你将平均这些动作的数量以获得平均损失。你将要实现的函数如下：
 - en: '![$$ Loss\left(\uptheta \right)=-J\left(\uptheta \right)-H\left({\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equw.png)'
+  id: totrans-227
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equw.png)'
 - en: '![$$ =-\frac{1}{T}{\sum}_{t=1}^T\left(\log {\pi}_{\theta}\left({a}_t|{s}_t\right)G\left({s}_t\right)-\beta
     {\sum}_{a_i}{\pi}_{\theta}\left({a}_t|{s}_t\right).\log {\pi}_{\theta}\left({a}_t|{s}_t\right)\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ30.png)'
+  id: totrans-228
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ30.png)'
 - en: (8-30)
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-30)
 - en: Where,
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中，
 - en: '![$$ G\left({s}_t\right)={\sum}_{t^{\prime }=t}^T{\upgamma}^{t-{t}^{\prime
     }}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equx.png)'
+  id: totrans-231
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equx.png)'
 - en: Note that the discount factor γ was reintroduced in the previous expressions.
     You had dropped γ to reduce overload of terms in the derivations and now have
     brought it back for actual implementation. The purpose that γ serves was explained
     in the beginning of the chapter.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，折现因子γ在之前的表达式中被重新引入。你之前为了减少推导过程中的项的负担而省略了γ，现在为了实际实现而将其重新引入。γ的作用在章节的开头已经解释过了。
 - en: With this complete all the machinery required to implement this first policy
     gradient algorithm in the form of REINFORCE with reward-to-go. Now you’ll look
     at an implementation and how it can be used to train an agent in cart-world gymnasium
     environment.
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过这个，你现在已经完成了实现第一个策略梯度算法的所有机械，该算法以REINFORCE和奖励到行为的形式。现在，你将查看一个实现示例以及它是如何用于训练在cart-world
+    gymnasium环境中的代理的。
 - en: Let’s now walk through the implementation. You can find the complete code in
     the `8.a-reinforce.ipynb` notebook. I explained the environment `CartPole` in
     earlier chapters. It has a four-dimensional continuous state space and a discrete
     action space of two actions:—move left and move right. You first define a simple
     policy network with one hidden layer of 192 units and ReLU activation. The final
     output has no activation. Listing [8-1](#PC1) shows the code.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来逐步分析实现过程。你可以在`8.a-reinforce.ipynb`笔记本中找到完整的代码。我在前面的章节中解释了`CartPole`环境。它有一个四维的连续状态空间和两个动作的离散动作空间：向左移动和向右移动。你首先定义一个简单的策略网络，包含一个有192个单位的隐藏层和ReLU激活函数。最终输出没有激活函数。列表[8-1](#PC1)展示了代码。
 - en: '[PRE0]'
+  id: totrans-235
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Next, you define a `generate_trajectory` function that takes the current policy
     to generate a trajectory of `(states, actions, rewards)` for one episode. It uses
     a helper function called `predict_probs` to do so. You’ll use `torch.no_grad`
@@ -1209,11 +1782,16 @@
     until there are 1,000 steps or until the current episode is terminated, whichever
     is earlier. It returns the list of `(states, actions, rewards)` tuples observed
     during the episode.
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，你定义一个`generate_trajectory`函数，它接受当前的策略来生成一个`(states, actions, rewards)`轨迹，用于一个回合。它使用一个名为`predict_probs`的辅助函数来完成这个任务。你将在`predict_probs`函数中使用`torch.no_grad`来避免在PyTorch训练步骤中额外累积梯度。列表[8-2](#PC2)展示了代码。它从初始化环境开始，然后依次按照当前策略执行步骤，直到达到1,000步或当前回合结束，以先到者为准。它返回在回合期间观察到的`(states,
+    actions, rewards)`元组的列表。
 - en: '[PRE1]'
+  id: totrans-237
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'You also have another helper function to convert the individual step returns
     ![$$ r\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq26.png)
     to reward-to-go as per the expression: ![$$ G\left({s}_t\right)={\sum}_{t^{\prime
@@ -1224,11 +1802,19 @@
     are many other efficient ways to do this. See if you can think of other vectorized
     ways to do this. As a hint, check the documentation of the `cumsum` function in
     PyTorch. Listing [8-3](#PC3) contains the implementation of this function.'
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
+  zh: 您还有一个辅助函数，可以将单个步骤的回报 ![$$ r\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq26.png) 转换为奖励到去，按照以下表达式：![$$
+    G\left({s}_t\right)={\sum}_{t^{\prime }=t}^T{\gamma}^{t-{t}^{\prime }}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq27.png)。您使用一个从末尾开始的循环，在每一步计算带有折扣因子的累积和，同时从列表的末尾到开头。还有许多其他高效的方法可以做到这一点。看看您是否能想到其他矢量化方法来完成这个任务。作为一个提示，请检查
+    PyTorch 中 `cumsum` 函数的文档。列表 [8-3](#PC3) 包含了这个函数的实现。
 - en: '[PRE2]'
+  id: totrans-239
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: You are now ready to implement the training. You build the loss function that
     you are going to feed into the PyTorch optimizer. As explained, you are going
     to implement the expression given in Equation [8-29](#Equ29). Listing [8-4](#PC4)
@@ -1240,11 +1826,17 @@
     calculates the rewards-to-go followed, then calculates the training loss, which
     is comprised of weighted cross-entropy loss and entropy. The optimizer uses the
     loss to inprove the parameters of the neural network.
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 您现在可以开始实现训练了。您构建将要输入 PyTorch 优化器的损失函数。如前所述，您将实现方程 [8-29](#Equ29) 中给出的表达式。列表
+    [8-4](#PC4) 包含了用于单个训练步骤的代码。如前所述，我添加了一个表示动作概率分布熵的额外项。这防止策略塌缩为单个动作。熵使用以下表达式计算：*H*(*X*) = ∑[*x*] − *p*(*x*)。 *log p*(*x*)。该函数接受在轨迹中观察到的
+    (`states, actions, rewards`) 的元组，计算后续的奖励到去，然后计算训练损失，该损失由加权交叉熵损失和熵组成。优化器使用损失来改进神经网络的参数。
 - en: '[PRE3]'
+  id: totrans-241
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: You are now ready to carry out the training. Listing [8-5](#PC5) shows how to
     train the agent for 10,000 steps, plotting the progress as training progresses.
     You can stop the training once you achieve a mean reward of 500\. The code initializes
@@ -1255,39 +1847,58 @@
     average score per episode has crossed 500\. There is also code that plots the
     performance by showing graphs of return per episode and the training loss during
     the course of the training.
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
+  zh: 您现在可以开始进行训练了。列表 [8-5](#PC5) 展示了如何对智能体进行 10,000 步的训练，并随着训练的进行绘制进度图。一旦您达到平均奖励
+    500，就可以停止训练。代码初始化了两个数组来跟踪每集的回报和损失。在循环内部，它遵循一个简单的流程，如图 [8-4](#Fig4) 中所示的 REINFORCE
+    带有奖励到去的算法所述。在循环的末尾，代码会定期检查智能体的性能，如果每集的平均分数超过 500，则停止训练。此外，还有代码通过显示每集的回报图和训练过程中的训练损失图来绘制性能。
 - en: '[PRE4]'
+  id: totrans-243
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: By the end of training, the agent has learned to balance the pole well. You
     will also notice that the program needed fewer iterations and less time to achieve
     this result as compared to the DQN-based approach. Figure [8-5](#Fig5) shows the
     graphs observed during training.
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
+  zh: 到训练结束时，智能体已经学会了很好地平衡杆子。您还会注意到，与基于 DQN 的方法相比，程序需要更少的迭代和更少的时间来实现这一结果。图 [8-5](#Fig5)
+    展示了训练过程中观察到的图表。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig5_HTML.jpg)'
+  id: totrans-245
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig5_HTML.jpg)'
 - en: 2 line graphs. Left, plots the mean return episode, The y axis ranges from 0
     to 2000 and x axis ranges from 0 to 300\. Right, plots the loss history. The y
     axis ranges from 0 to 30 and x axis ranges from 0 to 3000\. They exhibit a fluctuating
     trend.
+  id: totrans-246
   prefs: []
   type: TYPE_NORMAL
+  zh: 两条线图。左图绘制了平均回报集，y轴范围从0到2000，x轴范围从0到300。右图绘制了损失历史。y轴范围从0到30，x轴范围从0到3000。它们表现出波动趋势。
 - en: Figure 8-5
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
+  zh: 图8-5
 - en: Training progess from 8.a-reinforce.ipynb
+  id: totrans-248
   prefs: []
   type: TYPE_NORMAL
+  zh: 从8.a-reinforce.ipynb的训练进度
 - en: As you can observe from Figure [8-5](#Fig5), the training is very unstable and
     the return per episode fluctuates a lot. You could try to tune the hyperparameters,
     such as relative weight given entropy of the action, probability distribution
     in function via `entropy_coef`, number of training steps, network, and so on.
     You could tune these manually or using the Optuna as explained Chapter [6](502835_2_En_6_Chapter.xhtml).
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
+  zh: 如从图[8-5](#Fig5)中可以观察到的，训练非常不稳定，每集的回报波动很大。你可以尝试调整超参数，例如通过`entropy_coef`赋予动作熵的相对权重，概率分布函数中的数量，训练步数，网络等。你可以手动调整这些参数，或者使用第[6](502835_2_En_6_Chapter.xhtml)章中解释的Optuna。
 - en: This brings you to the end of section on the REINFORCE algorithm. Note that
     REINFORCE is an *on-policy* algorithm. After every step of training, you regenerate
     a new trajectory, throwing away the observations from the previous trajectory.
@@ -1295,53 +1906,73 @@
     where it is expensive to generate samples, throwing away observations at the end
     of each trajectory is very inefficient. You’ll need to look further and define
     off-policy approaches.
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将你带到REINFORCE算法部分的结尾。请注意，REINFORCE是一个**on-policy**算法。在每一步训练之后，你将重新生成一个新的轨迹，丢弃上一个轨迹的观察结果。对于像`CartPole`这样的环境，这无关紧要。然而，对于生成样本成本较高的环境，在每个轨迹结束时丢弃观察结果是非常低效的。你需要进一步探索并定义off-policy方法。
 - en: Further Variance Reduction with Baselines
+  id: totrans-251
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用基线进一步减少方差
 - en: Strating with the original policy gradient update expression in Equation [8-15](#Equ15),
     you converted the expectation to an estimate using the average in Equation [8-16](#Equ16).
     Following this, you learned how the variance could be reduced by considering rewards-to-go
     instead of full trajectory rewards. The expression with the rewards-to-go was
     given in Equation [8-27](#Equ27).
+  id: totrans-252
   prefs: []
   type: TYPE_NORMAL
+  zh: 从方程[8-15](#Equ15)中的原始策略梯度更新表达式开始，你使用方程[8-16](#Equ16)中的平均值将期望转换为估计。随后，你学习了如何通过考虑奖励到达而不是完整轨迹奖励来减少方差。具有奖励到达的表达式在方程[8-27](#Equ27)中给出。
 - en: 'In this section, you look at yet another change that makes the policy gradient
     even more stable. Consider the motivation. Assume you have performed three rollouts
     of the trajectory following a policy. And let’s say the trajectory returns were
     300, 200, and 100\. To keep the explanation simple, consider the case of total
     rewards and total trajectory probability of the gradient update equation, as given
     in Equation [8-10](#Equ10), reproduced here:'
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，你将看到另一个使策略梯度更加稳定的改变。考虑一下动机。假设你已经执行了三个遵循策略的轨迹的rollout。假设轨迹的回报分别是300、200和100。为了简化解释，考虑总奖励和总轨迹概率的梯度更新方程，如方程[8-10](#Equ10)所示，此处重新呈现：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[{\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)r\left(\uptau
     \right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equy.png)'
+  id: totrans-254
   prefs: []
   type: TYPE_IMG
+  zh: '![梯度计算公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equy.png)'
 - en: What will the gradient update do? It will weigh the gradient of the log probability
     of the first trajectory with 300, the second trajectory with 200, and the third
     trajectory with 100\. This means that the probability of each of these three trajectories
     is being increased by some different amount. Figure [8-6](#Fig6) shows a pictorial
     representation.
+  id: totrans-255
   prefs: []
   type: TYPE_NORMAL
+  zh: 梯度更新将如何操作？它将第一个轨迹的日志概率梯度乘以300，第二个轨迹乘以200，第三个轨迹乘以100。这意味着这三个轨迹的概率将以不同的数量增加。图[8-6](#Fig6)展示了这一过程的图示。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig6_HTML.jpg)'
+  id: totrans-256
   prefs: []
   type: TYPE_IMG
+  zh: '![图8-6](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig6_HTML.jpg)'
 - en: A multiline graph plots the actual trajectory rewards to time. The episode returns
     are 300, 200, and 100\. Probability and probability after update curves has increasing
     trends initially and then decrease.
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个多行图绘制了实际轨迹奖励随时间的变化。集的回报是300、200和100。概率和更新后的概率曲线最初呈上升趋势，然后下降。
 - en: Figure 8-6
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 图8-6
 - en: The gradient update for a policy with actual trajectory rewards
+  id: totrans-259
   prefs: []
   type: TYPE_NORMAL
+  zh: 具有实际轨迹奖励的策略的梯度更新
 - en: As you can see in Figure [8-6](#Fig6), you are increasing the probability of
     all three trajectories with different weighting factors, all +ve weights, making
     the probability of all trajectories go up. Ideally, you would increase the probability
@@ -1352,8 +1983,10 @@
     is becoming flatter, as it is trying to increase the probability of all three
     trajectories and the total area under the probability curve must be 1 given that
     it is a probability curve.
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 如图[8-6](#Fig6)所示，你通过不同的加权因子增加了所有三个轨迹的概率，所有+ve权重，使得所有轨迹的概率都上升。理想情况下，你会增加回报为300的轨迹的概率，并减少回报为100的轨迹的概率，因为它不是一个很好的轨迹。你希望策略改变，使其不会太频繁地生成回报为100的轨迹。然而，使用当前的方法，修正后的概率曲线正在变得平坦，因为它试图增加所有三个轨迹的概率，并且由于它是一个概率曲线，其下总面积必须为1。
 - en: Let’s consider a scenario in which you subtract the average return of three
     trajectories, (300 + 200 + 100)/3 = 200 from each of the three rewards. You get
     the revised trajectory returns of 100, 0, and -100 (300-200; 200-200; 100-200).
@@ -1361,22 +1994,32 @@
     update. Figure [8-7](#Fig7) shows the outcome of such an update. You can see that
     the probability curve is becoming narrower and sharper as its spread reduces along
     the x-axis.
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们考虑一个场景，你从每个奖励中减去三个轨迹的平均回报，即(300 + 200 + 100)/3 = 200。你得到修正后的轨迹回报为100、0和-100（300-200；200-200；100-200）。让我们使用修正后的轨迹回报作为权重来进行梯度更新。图[8-7](#Fig7)显示了这种更新的结果。你可以看到，随着其在x轴上的分布减少，概率曲线变得越来越窄和尖锐。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig7_HTML.jpg)'
+  id: totrans-262
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig7_HTML.jpg)'
 - en: A multiline graph plots the actual trajectory rewards to time. The episode returns
     are 100, 0, and negative 100\. Probability and probability after update curves
     has increasing trends initially and then decrease.
+  id: totrans-263
   prefs: []
   type: TYPE_NORMAL
+  zh: 多行图绘制了实际轨迹奖励随时间的变化。一期的回报为100、0和-100。概率和更新后的概率曲线最初呈上升趋势，然后下降。
 - en: Figure 8-7
+  id: totrans-264
   prefs: []
   type: TYPE_NORMAL
+  zh: 图8-7
 - en: The gradient update for a policy with trajectory rewards reduced by a baseline
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
+  zh: 具有通过基线减少的轨迹奖励的策略的梯度更新
 - en: Reducing the rewards with a baseline reduces the variance of the update. In
     the limit, whether you use or do not use a baseline, the outcome will be same.
     The introduction of a baseline does not alter the optimal solution. It just reduces
@@ -1386,155 +2029,231 @@
     or it can be a changing quantity that depends on the state. *However, it cannot
     depend on the action.* Let’s first go through the derivation in which the baseline
     is a function of the state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq28.png).
+  id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用基线减少奖励可以减少更新的方差。在极限情况下，无论你是否使用基线，结果都将相同。引入基线不会改变最优解。它只是减少了方差并加快了学习速度。我将从数学上证明引入基线不会改变梯度更新的期望值。基线可以是所有轨迹和轨迹中所有步骤的固定基线，也可以是一个随状态变化的量。*然而，它不能依赖于动作。*让我们首先通过以下推导来了解基线是状态函数的情况
+    ![${s}_t^i$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq28.png)。
 - en: Update Equation [8-15](#Equ15) to introduce a baseline.
+  id: totrans-267
   prefs: []
   type: TYPE_NORMAL
+  zh: 将方程[8-15](#Equ15)更新以引入基线。
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left(r\left(\tau
     \right)-\mathrm{b}\Big({\mathrm{s}}_t\right)\Big)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equz.png)'
+  id: totrans-268
   prefs: []
   type: TYPE_IMG
+  zh: '![${\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left(r\left(\tau
+    \right)-\mathrm{b}\Big({\mathrm{s}}_t\right)\Big)\right]$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equz.png)'
 - en: Separate out the term of *b*(*s*[*t*]) and evaluate what the expectation would
     be.
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 将*b*(*s*[*t*])项单独列出并评估其期望值。
 - en: '![$$ {E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)b\left({s}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaa.png)'
+  id: totrans-270
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaa.png)'
 - en: Now move the first inner sum out due to the property of linearity of expectation
     to obtain the expression.
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在利用期望的线性性质将第一个内部求和项移出，以获得表达式。
 - en: '![$$ {\sum}_{t=1}^T{E}_{{\mathrm{a}}_t\sim {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}\left[{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equab.png)'
+  id: totrans-272
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equab.png)'
 - en: You have switched the expectation from τ ∼ *p*[θ](τ) to a[*t*] ∼ π[θ](*a*[*t*]|
     *s*[*t*]). This is because you moved the first inner sum outside the expectation,
     and after that, the only term that depends on a probability distribution is the
     action *a*[*t*] with probability π[θ](*a*[*t*]| *s*[*t*]).
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: 你已经将期望从 τ ∼ *p*[θ](τ) 转换为 a[*t*] ∼ π[θ](*a*[*t*]| *s*[*t*])。这是因为你将第一个内部求和项移出了期望之外，之后，唯一依赖于概率分布的项是具有概率
+    π[θ](*a*[*t*]| *s*[*t*]) 的动作 *a*[*t*]]。
 - en: 'Now just focus on the inner expectation: ![$$ {E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_t\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq29.png). You
     can write this as an integral, as shown here:'
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在只需关注内部期望：![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq29.png)。你可以将其写成积分形式，如下所示：
 - en: '![$$ {E}_{{\mathrm{a}}_t\sim {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}\left[{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equac.png)'
+  id: totrans-275
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equac.png)'
 - en: '![$$ =\int {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.5em \left({\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\ b\left({s}_t\right)\ d{a}_t
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equad.png)'
+  id: totrans-276
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equad.png)'
 - en: '![$$ =\int {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.5em \frac{\nabla_{\uptheta}{\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}{\uppi_{\uptheta}\left({a}_t|{s}_t\right)}\kern0.5em
     b\left({s}_t\right)\ d{a}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equae.png)'
+  id: totrans-277
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equae.png)'
 - en: '![$$ =\int {\nabla}_{\uptheta}{\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.5em
     b\left({s}_t\right)\ d{a}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaf.png)'
+  id: totrans-278
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaf.png)'
 - en: '![$$ =b\left({s}_t\right)\ {\nabla}_{\uptheta}\int {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.75em
     d{a}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equag.png)'
+  id: totrans-279
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equag.png)'
 - en: 'As *b*(*s*[*t*]) does not depend on *a*[*t*], you can take it out. Again, due
     to the linearity of the integral, you can swap the gradient and the integral.
     Now the integral will evaluate to 1, as that is the total probability using the
     curve for π[θ](*a*[*t*]| *s*[*t*]). Accordingly, you get the following:'
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于 *b*(*s*[*t*]) 不依赖于 *a*[*t*]，你可以将其提出。再次，由于积分的线性性质，你可以交换梯度与积分。现在积分将等于1，因为这是使用
+    π[θ](*a*[*t*]| *s*[*t*]) 的曲线计算出的总概率。因此，你得到以下结果：
 - en: '![$$ {E}_{{\mathrm{a}}_t\sim {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}\left[{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_{t\prime}\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equah.png)'
+  id: totrans-281
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equah.png)'
 - en: '![$$ =b\left({s}_t\right){\nabla}_{\uptheta}(1)=b\left({s}_t\right).0 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equai.png)'
+  id: totrans-282
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equai.png)'
 - en: '![$$ =0 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaj.png)'
+  id: totrans-283
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaj.png)'
 - en: The previous derivation shows that subtracting a baseline that depends on the
     state or on a constant will not change the expectation. *The condition is that
     it should not depend on the action a*[*t*].
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前的推导表明，减去依赖于状态或常数的基线不会改变期望值。*条件是它不应依赖于动作 a*[*t*]。
 - en: 'Therefore, REINFORCE with the baseline will go through the updates as follows:'
+  id: totrans-285
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，带有基线的 REINFORCE 将按照以下方式进行更新：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
     \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left(r\left(\tau
     \right)-\mathrm{b}\Big({\mathrm{s}}_t\right)\Big)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ31.png)'
+  id: totrans-286
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ31.png)'
 - en: (8-31)
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-31)
 - en: 'You can further modify and combine the rewards-to-go using the same rationale
     of causal world where actions today do not influence the rewards in the past,
     rather only the current and future rewards. You can combine Equations [8-31](#Equ31)
     and [8-27](#Equ27) to get the following set of equations:'
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用因果世界的相同推理进一步修改和组合“到达奖励”，在这个世界中，今天的动作不会影响过去的奖励，而只会影响当前和未来的奖励。您可以将方程 [8-31](#Equ31)
+    和 [8-27](#Equ27) 结合起来得到以下方程组：
 - en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^T{\upgamma}^{t^{\prime
     }-t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equak.png)'
+  id: totrans-289
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equak.png)'
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ32.png)'
+  id: totrans-290
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ32.png)'
 - en: (8-32)
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-32)
 - en: Equation [8-32](#Equ32) is REINFORCE with a baseline and rewards-to-go. You
     have used two tricks to reduce the variance of the vanilla REINFORCE. You used
     a temporal structure to remove the rewards that are in the past and not impacted
     by the actions in the present. Then you used the baseline to have the bad policies
     get -ve rewards and the good policies +ve rewards. Both these tricks lead to lower
     variance as you go through the learning.
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: 方程 [8-32](#Equ32) 是带有基线和到达奖励的 REINFORCE。您使用了两个技巧来减少原始 REINFORCE 的方差。您使用时间结构来移除过去不受当前动作影响的奖励。然后您使用基线，使不良策略获得负奖励，而良好策略获得正奖励。这两个技巧都导致学习过程中的方差降低。
 - en: Note that REINFORCE and all its variations are *on-policy algorithms*. After
     the weights of the policy are updated, you need to roll out new trajectories.
     The old trajectories are no longer representative of the old policy. This is one
     of the reasons that, like the value-based on-policy methods, REINFORCE is also
     sample inefficient. You cannot use transitions from earlier policies. You must
     discard them and generate new transitions after each weight update.
+  id: totrans-293
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，REINFORCE 及其所有变体都是 *on-policy 算法*。在策略的权重更新后，您需要推出新的轨迹。旧的轨迹不再代表旧策略。这是像基于值函数的
+    on-policy 方法一样，REINFORCE 样本效率低下的原因之一。您不能使用早期策略的转换。您必须在每次权重更新后丢弃它们并生成新的转换。
 - en: Actor-Critic Methods
+  id: totrans-294
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Actor-Critic 方法
 - en: In this section, you’ll further refine the algorithm by combining the policy
     gradient with the value functions to get something called the *actor-critic* family
     of algorithms (A2C/A3C). You’ll first define a term called *advantage A*(*s*,
     *a*).
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，您将通过结合策略梯度与值函数来进一步优化算法，得到所谓的 *actor-critic* 算法系列（A2C/A3C）。您首先定义一个称为 *优势
+    A*(*s*, *a*) 的术语。
 - en: Defining Advantage
+  id: totrans-296
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 定义优势
 - en: 'I first talk about the expression ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq30.png) in Equation
     [8-32](#Equ32). It is the reward-to-go in a given trajectory (*i*) and in a given
     state *s*[*t*]:'
+  id: totrans-297
   prefs: []
   type: TYPE_NORMAL
+  zh: 我首先讨论方程 [8-32](#Equ32) 中的表达式 ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq30.png)。它是给定轨迹
+    (*i*) 和给定状态 *s*[*t*] 中的“到达奖励”：
 - en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equal.png)'
+  id: totrans-298
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equal.png)'
 - en: To evaluate the ![$$ \hat{Q} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq31.png)
     value in this expression, you use the Monte Carlo simulation. In other words,
     you are adding all the rewards from that time step *t* until the end, that is,
@@ -1547,35 +2266,57 @@
     It is nothing but the q-value of the state-action pair (*s*[*t*], *a*[*t*]). If
     you had access to the q-value, you could replace the summation of individual rewards
     with the q-estimate.
+  id: totrans-299
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了评估这个表达式中的 ![$$ \hat{Q} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq31.png)
+    值，你使用蒙特卡洛模拟。换句话说，你将从这个时间步 *t* 到结束的所有奖励加起来，即直到 *T*。由于它只是期望的一个轨迹估计，所以它将再次具有高方差。在之前关于无模型策略学习的章节中，你看到
+    MC 方法具有零偏差但高方差。相比之下，TD 方法有一些偏差但方差低，并且由于方差低，可以导致更快地收敛。你在这里也能做类似的事情吗？这个“到达奖励”是什么？表达式
+    ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq32.png)
+    的期望是什么？这不过是状态-动作对 (*s*[*t*], *a*[*t*]) 的 q 值。如果你能访问 q 值，你可以用 q 估计值替换单个奖励的总和。
 - en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=q\left({s}_t^i,{a}_t^i;\phi \right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ33.png)'
+  id: totrans-300
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=q\left({s}_t^i,{a}_t^i;\phi \right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ33.png)'
 - en: (8-33)
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-33)
 - en: 'Let’s roll the value of *q*(*s*[*t*], *a*[*t*]) by one time step. This is similar
     to the *TD*(0) approach in Chapter [5](502835_2_En_5_Chapter.xhtml). You can write
     ![$$ {\hat{Q}}^i\left({s}_t,{a}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq33.png)
     as follows:'
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将 *q*(*s*[*t*], *a*[*t*]) 的值向前滚动一个时间步。这与第 [5](502835_2_En_5_Chapter.xhtml)
+    章中提到的 *TD*(0) 方法类似。你可以将 ![$$ {\hat{Q}}^i\left({s}_t,{a}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq33.png)
+    写成如下形式：
 - en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ34.png)'
+  id: totrans-303
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ34.png)'
 - en: (8-34)
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-34)
 - en: This is the undiscounted rollout. As discussed at the beginning of the chapter,
     you will do all the derivations in the context of the finite horizon undiscounted
     setting. The analysis can be easily extended to other settings. You will switch
     to a more general case in the final pseudocode for the algorithm while restricting
     the analysis to the undiscounted case.
+  id: totrans-305
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是不折扣的滚动。正如本章开头所讨论的，你将在有限时间范围的不折扣设置中进行所有推导。分析可以很容易地扩展到其他设置。在算法的最终伪代码中，你将切换到更一般的情况，同时将分析限制在不折扣的情况下。
 - en: Looking at Equation [8-33](#Equ33) again, can you think of a good baseline ![$$
     b\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq34.png)
     that could be used? How about using the state value ![$$ V\left({s}_t^i\right)
@@ -1591,22 +2332,28 @@
     depends on the policy you follow, which impacts the actions in general you take
     in that state, but it does not depend on the specific action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq43.png)
     you want to take.
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ b\left({s}_t^i\right)=V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ35.png)'
+  id: totrans-307
   prefs: []
   type: TYPE_IMG
 - en: (8-35)
+  id: totrans-308
   prefs: []
   type: TYPE_NORMAL
 - en: 'Using the previous expression:'
+  id: totrans-309
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)=\hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ36.png)'
+  id: totrans-310
   prefs: []
   type: TYPE_IMG
 - en: (8-36)
+  id: totrans-311
   prefs: []
   type: TYPE_NORMAL
 - en: 'The right side is known as the advantage ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)
@@ -1617,47 +2364,68 @@
     versus the average reward you get in state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq48.png)
     under a given policy as denoted by ![$$ V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq49.png).
     You can now substitute Equation [8-34](#Equ34) in 8-36 to get the following:'
+  id: totrans-312
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)-V\left({s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ37.png)'
+  id: totrans-313
   prefs: []
   type: TYPE_IMG
 - en: (8-37)
+  id: totrans-314
   prefs: []
   type: TYPE_NORMAL
 - en: The changes you have made to the basic reinforce algorithm equation will bring
     significant benefits to the learning process. These changes form the basis for
     the set of algorithms known as *Advantage Actor-Critic* algorithms, which you
     will study next.
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
+  zh: 你对基本强化算法方程所做的修改将为学习过程带来显著的好处。这些变化构成了被称为 *优势演员-评论家* 算法集的基础，你将在下一节学习。
 - en: Advantage Actor-Critic (A2C)
+  id: totrans-316
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 优势演员-评论家 (A2C)
 - en: 'Continuing from the previous section, you can rewrite the gradient update given
     in Equation [8-32](#Equ32). Here is the original gradient update from Equation
     [8-32](#Equ32):'
+  id: totrans-317
   prefs: []
   type: TYPE_NORMAL
+  zh: 从上一节继续，你可以重新写方程 [8-32](#Equ32) 中给出的梯度更新。以下是方程 [8-32](#Equ32) 中的原始梯度更新：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equam.png)'
+  id: totrans-318
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equam.png)'
 - en: 'Substituting, ![$$ b\left({s}_t^i\right)=V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq50.png)
     from Equation [8-35](#Equ35), you get the following:'
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
+  zh: 代入方程 [8-35](#Equ35) 中的 ![$$ b\left({s}_t^i\right)=V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq50.png)，你得到以下结果：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ38.png)'
+  id: totrans-320
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ38.png)'
 - en: (8-38)
+  id: totrans-321
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-38)
 - en: Look at the inner expression ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq51.png). *Q*
     is the value of following a specific step *a*[*t*] using the current policy. In
@@ -1671,81 +2439,123 @@
     \hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq53.png)
     as the advantage of a specific action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq54.png)
     over the general state value under current policy.
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
+  zh: 看一下内层表达式 ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq51.png)。*Q*
+    是使用当前策略跟随特定步骤 *a*[*t*] 的值。换句话说，*actor* 和 *V* 是当前策略的平均值，即 *critic*。*actor* 试图最大化奖励，而
+    *critic* 告诉算法该特定步骤相对于当前平均值的优劣。*actor-critic* 方法是一系列算法，其中 *actor* 使用策略梯度来改进动作，而
+    *critic* 通知算法当前策略的好坏。你有 ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)= $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq52.png)
+    ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq53.png)
+    作为特定动作 ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq54.png)
+    在当前策略下的状态值优势。
 - en: 'There are two ways to handle ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq55.png).
     You can use the original definition of:'
+  id: totrans-323
   prefs: []
   type: TYPE_NORMAL
+  zh: 处理 ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq55.png)
+    有两种方法。你可以使用以下原始定义：
 - en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equan.png)'
+  id: totrans-324
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equan.png)'
 - en: 'This is the MC approach, where you evaluate the rewards-to-go ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq56.png) as a
     sample estimate of one rollout. This has high variance, as you are making an estimate
     based on a single rollout. Under the MC approach the gradient update for the Actor-Critic
     algorithm takes the following form:'
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是MC方法，其中你评估奖励到去![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq56.png)作为单次运行的样本估计。由于你基于单次运行进行估计，因此具有高方差。在MC方法下，演员-评论家算法的梯度更新采用以下形式：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[{\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)-V\left({s}_t^i\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ39.png)'
+  id: totrans-326
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ39.png)'
 - en: (8-39)
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-39)
 - en: 'Or you could take the *TD*(0) approach, as shown in Equation [8-34](#Equ34),
     where ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)+V\left({s}_{t+1}^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq57.png). The
     *TD*(0) approach will take you to Equation [8-37](#Equ37), as shown here:'
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者你可以采用*TD*(0)方法，如方程[8-34](#Equ34)所示，其中![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq57.png)。*TD*(0)方法将带你到方程[8-37](#Equ37)，如下所示：
 - en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)-V\left({s}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equao.png)'
+  id: totrans-329
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equao.png)'
 - en: 'You substitute this into the gradient update Equation [8-32](#Equ32) to get
     the gradient update for Actor-Critic, as the following update equation:'
+  id: totrans-330
   prefs: []
   type: TYPE_NORMAL
+  zh: 你将这个代入梯度更新方程[8-32](#Equ32)，以获得演员-评论家的梯度更新，如下更新方程：
 - en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
     {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)-V\left({s}_t^i\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ40.png)'
+  id: totrans-331
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ40.png)'
 - en: (8-40)
+  id: totrans-332
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-40)
 - en: This expression is the update reason you will implement and it’s known as *advantage
     actor-critic* (A2C). Note that the actor-critic is a family of approaches, with
     A2C and A3C being two specific instances of it. Sometimes in the literature, actor-critic
     is also interchangeably referred to as A2C. At the same time, some papers refer
     to A2C as a synchronous version of A3C, which I will talk about in the next section.
+  id: totrans-333
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个表达式是你将实现更新的原因，它被称为*优势演员-评论家*（A2C）。请注意，演员-评论家是一系列方法，其中A2C和A3C是它的两个具体实例。有时在文献中，演员-评论家也互换地被称为A2C。同时，一些论文将A2C称为A3C的同步版本，我将在下一节中讨论。
 - en: You must have two estimators. One is a policy network π[θ](*a*| *s*) with parameters
     θ and another network with parameters ϕ to estimate the *V*[ϕ](*s*[*t*]). The
     general approach to design a single network with two heads having a small subnet—one
     head for outputting the policy π and another to output the state-value *V*. Figure
     [8-8](#Fig8) shows a sample of such a network. This is the architecture you will
     be implementing in the code walkthrough.
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
+  zh: 你必须有两个估计器。一个是具有参数θ的策略网络π[θ](*a*| *s*)，另一个是具有参数ϕ的网络来估计*V*[ϕ](*s*[*t*])。设计具有两个头部的小子网络的单个网络的一般方法——一个头部用于输出策略π，另一个用于输出状态值*V*。图[8-8](#Fig8)显示了这样一个网络的样本。这就是你将在代码演练中实现的架构。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig8_HTML.jpg)'
+  id: totrans-335
   prefs: []
   type: TYPE_IMG
+  zh: '![演员-评论家网络图](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig8_HTML.jpg)'
 - en: A network diagram of the actor-critic network. It begins with state S with C
     N N dense, a final dense common layer for A 2 C pseudo code advantage.
+  id: totrans-336
   prefs: []
   type: TYPE_NORMAL
+  zh: 演员评论家网络的网络图。它从状态S开始，具有C N N密集层，一个用于A 2 C伪代码优势的最终密集公共层。
 - en: Figure 8-8
+  id: totrans-337
   prefs: []
   type: TYPE_NORMAL
+  zh: 图8-8
 - en: Actor-critic network with common weights in the initial layers
+  id: totrans-338
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始层具有公共权重的演员-评论家网络
 - en: Now look at the pseudocode. Figure [8-9](#Fig9) shows the complete pseudocode
     for the actor-critic (also known as A2C for advantage actor-critic) of the Actor-Critic
     algorithm. In a loop, you sample a trajectory. You use this trajectory to calculate
@@ -1754,71 +2564,106 @@
     π(*a*| *s*) is tuned using the cross-entropy loss weighted by the advantage, as
     per Equation [8-40](#Equ40). Note that while forming the cross-entropy loss for
     policy, you also use the output of the *V*(*s*) produced by the other head.
+  id: totrans-339
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在看看伪代码。图 [8-9](#Fig9) 展示了 Actor-Critic 算法（也称为 A2C，即优势 Actor-Critic）的完整伪代码。在一个循环中，你采样一条轨迹。你使用这条轨迹来计算剩余奖励，这将成为图
+    [8-8](#Fig8) 中显示的神经网络 *V*(*s*) 头的目标值。第二个产生策略 π(*a*| *s*) 的头使用优势加权的交叉熵损失进行调整，如公式
+    [8-40](#Equ40) 所示。请注意，在形成策略的交叉熵损失时，你也使用了由另一个头产生的 *V*(*s*) 的输出。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig9_HTML.jpg)'
+  id: totrans-340
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig9_HTML.jpg)'
 - en: An illustration of the advantages of actor critic algorithm. It includes an
     input, initialize, loop, fit value function, update policy model parameters, and
     carry out a stochastic gradient step.
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
+  zh: Actor-Critic 算法优势的说明。它包括输入、初始化、循环、拟合值函数、更新策略模型参数和执行随机梯度步骤。
 - en: Figure 8-9
+  id: totrans-342
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 8-9
 - en: Advantage actor-critic algorithm
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
+  zh: 优势 Actor-Critic 算法
 - en: 'The pseudocode in Figure [8-9](#Fig9) uses one-step undiscounted return for
     advantage ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq58.png):'
+  id: totrans-344
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [8-9](#Fig9) 中的伪代码使用了一步未折现的回报来计算优势 ![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq58.png)：
 - en: '![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+{V}_{\varnothing}\left({s}_{t+1}\right)-{V}_{\varnothing}\left({s}_t\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equap.png)'
+  id: totrans-345
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equap.png)'
 - en: 'There are many other ways to formulate the advantage ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq59.png). The
     discounted one-step version is as follows:'
+  id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 有许多其他方式来表述优势 ![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq59.png)。折现的单步版本如下：
 - en: '![$$ r\left({s}_t^i,{a}_t^i\right)+\gamma {V}_{\varnothing}\left({s}_{t+1}\right)-{V}_{\varnothing}\left({s}_t\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaq.png)'
+  id: totrans-347
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaq.png)'
 - en: 'Similarly, the discounted n-step return version is as follows:'
+  id: totrans-348
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样，折现的 n 步回报版本如下：
 - en: '![$$ \left(\sum \limits_{t^{\prime }=t}^{t+n-1}{\gamma}^{t\prime -t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)\right)+{\gamma}^n{V}_{\varnothing}\left({s}_{t+n}\right)-{V}_{\varnothing}\left({s}_t\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equar.png)'
+  id: totrans-349
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equar.png)'
 - en: 'There is also one more way, that is, using the MC approach. In that approach,
     you directly use rewards-to-go. The advantage is as follows:'
+  id: totrans-350
   prefs: []
   type: TYPE_NORMAL
+  zh: 还有另一种方法，即使用蒙特卡洛方法。在该方法中，你直接使用剩余奖励。优势如下：
 - en: '![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^T{\gamma}^{t\prime
     -t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)-V\left({s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equas.png)'
+  id: totrans-351
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equas.png)'
 - en: So, you have many ways to formulate the advantage function—you can choose to
     use discount *γ* or use it undiscounted, which is the version you will implement
     in this code. You will be implementing the version given in Equation [8-40](#Equ40)
     with a discount and the one explained in the pseudocode in Figure [8-9](#Fig9).
     That brings you to the next section, which covers the code walkthrough of the
     A2C implementation in PyTorch.
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，你有多种方式来表述优势函数——你可以选择使用折现 *γ* 或不使用折现，这是你将在代码中实现的方式。你将实现公式 [8-40](#Equ40) 中给出的带有折现的版本，以及图
+    [8-9](#Fig9) 中伪代码中解释的版本。这引出了下一节，该节涵盖了 PyTorch 中 A2C 实现的代码解析。
 - en: Implementation of the A2C Algorithm
+  id: totrans-353
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: A2C 算法的实现
 - en: 'In this code walkthrough, you will make the following changes to the actor-critic
     algorithm given in Figure [8-9](#Fig9):'
+  id: totrans-354
   prefs: []
   type: TYPE_NORMAL
 - en: Like you did with REINFORCE, you will introduce the entropy regularizer.
+  id: totrans-355
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1827,6 +2672,7 @@
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq60.png) instead
     of the TD(0) approach of ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+{V}_{\varnothing}\left({s}_{t+1}\right)-{V}_{\varnothing}\left({s}_t\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq61.png)
+  id: totrans-356
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1834,49 +2680,60 @@
     and then doing the policy gradient, you will form a single loss objective that
     will carry out the *V*(*s*) fitting as well as the policy gradient step together
     with the entropy regularizer.
+  id: totrans-357
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'The loss using actor-critic with the previous modifications is as follows:'
+  id: totrans-358
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Loss\left(\uptheta, \upphi \right)=-J\left(\uptheta, \upphi \right)-H\left({\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equat.png)'
+  id: totrans-359
   prefs: []
   type: TYPE_IMG
 - en: '![$$ =-\frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T\left(\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)\left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-{V}_{\phi}\left({s}_t^i\right)\right]\right)-\beta
     {\sum}_a{\pi}_{\theta}\left(a|{s}_t^i\right).\log {\pi}_{\theta}\left(a|{s}_t^i\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equau.png)'
+  id: totrans-360
   prefs: []
   type: TYPE_IMG
 - en: 'As with REINFORCE, you will carry out weight updates after each trajectory.
     Therefore, N will be equal to 1 in the previous equation. Instead, you will average
     it over the number of actions to get the average loss. The function you will implement
     is as follows:'
+  id: totrans-361
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Loss\left(\uptheta, \upphi \right)=-\frac{1}{T}\left[{\sum}_{t=1}^T\left(\log
     {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\left[\hat{Q}\left({s}_t,{a}_t\right)-{V}_{\upphi}\left({s}_t\right)\right]\right)-\upbeta
     {\sum}_a{\uppi}_{\uptheta}\left(a|{s}_t\right).\log {\uppi}_{\uptheta}\left(a|{s}_t\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equav.png)'
+  id: totrans-362
   prefs: []
   type: TYPE_IMG
 - en: Now turn your attention to the actual PyTorch code, which you can find in `8.b-action_critic.ipynb`.
     Let’s first talk about the network. You will have a joint network with shared
     weights, one producing the policy action probabilities and another the value of
     state. For `CartPole`, it is a simple network and is shown in Figure [8-10](#Fig10).
+  id: totrans-363
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig10_HTML.jpg)'
+  id: totrans-364
   prefs: []
   type: TYPE_IMG
 - en: A network diagram for state s for dense in batch 1 and batch 2.
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 8-10
+  id: totrans-366
   prefs: []
   type: TYPE_NORMAL
 - en: Actor-critic network for the CartPole enviroment from 8.b-action_critic.ipynb
+  id: totrans-367
   prefs: []
   type: TYPE_NORMAL
 - en: Listing [8-6](#PC6) shows the implementation of this network in PyTorch. It
@@ -1888,11 +2745,17 @@
     dense layer in the code. The other output produces state value V(s) and has a
     dimension of 1 since state value is a scaler quantity. This layer is denoted as
     `self.critic` in the listing.
+  id: totrans-368
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表 [8-6](#PC6) 展示了该网络在 PyTorch 中的实现。它是对网络的直接实现，如图 [8-10](#Fig10) 所示。`CartPole`
+    的状态维度为 4。这个输入通过一个输出为 128 个单位的公共层，在代码中由 `self.fc1` 表示。这个层的输出随后通过两个独立的网络。一个是与动作数量相匹配的线性层，在代码中由
+    `self.actor` 密集层表示。另一个输出产生状态值 V(s)，由于状态值是一个标量量，其维度为 1。这个层在列表中标记为 `self.critic`。
 - en: '[PRE5]'
+  id: totrans-369
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The other change big change is the way you implement the training code for one
     episode. It is similar to the code in Listing [8-4](#PC4) for REINFORCE; however,
     with a change to introduce *V*(*s*[*t*]) as a baseline value. Listing [8-7](#PC7)
@@ -1903,40 +2766,62 @@
     explained previously. You also add the entropy of the action distribution as a
     penalty to ensure that the action probabilities do not collapse into a single
     action.
+  id: totrans-370
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一个重大变化是您实现单个剧集训练代码的方式。它与列表 [8-4](#PC4) 中 REINFORCE 的代码类似；然而，引入 *V*(*s*[*t*])
+    作为基线值。列表 [8-7](#PC7) 提供了 `train_one_episode` 的完整代码。您首先计算奖励到结束。接下来，将 (`状态，动作，奖励`)
+    的元组列表转换为适当的张量格式。然后，状态通过网络传递，产生状态值 *V*(*s*) 和 logπ[θ](*a*| *s*)。这些值用于计算损失，如前所述。您还添加了动作分布的熵作为惩罚，以确保动作概率不会塌缩为单个动作。
 - en: '[PRE6]'
+  id: totrans-371
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Note that the code to train over multiple trajectories is the same as before.
     The curves of the episode return and loss during training are shown in Figure
     [8-11](#Fig11). Comparing the graphs in this figure with the previous ones for
     REINFORCE in Figure [8-5](#Fig5), you can see that the training using A2C happens
     faster with steady progress toward a better policy.
+  id: totrans-372
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，训练多个轨迹的代码与之前相同。训练过程中每一步的回报和损失曲线如图 [8-11](#Fig11) 所示。将此图中的图表与图 [8-5](#Fig5)
+    中 REINFORCE 的图表进行比较，你可以看到使用 A2C 的训练速度更快，并且政策向更好方向稳步进展。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig11_HTML.jpg)'
+  id: totrans-373
   prefs: []
   type: TYPE_IMG
+  zh: '![图 8-11](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig11_HTML.jpg)'
 - en: 2 line graphs. Left, plots the mean return episode. The y-axis ranges from 0
     to 3000 and the x-axis from 0 to 70\. It exhibits a fluctuation upward trend.
     Right, plots the loss history. The y-axis ranges from negative 10 to 20 and the
     x-axis ranges from 0 to 600\. It exhibits a fluctuation upward trend.
+  id: totrans-374
   prefs: []
   type: TYPE_NORMAL
+  zh: 两条线图。左图，绘制了平均回报剧集。y 轴范围从 0 到 3000，x 轴范围从 0 到 70。它表现出向上的波动趋势。右图，绘制了损失历史。y 轴范围从
+    -10 到 20，x 轴范围从 0 到 600。它表现出向上的波动趋势。
 - en: Figure 8-11
+  id: totrans-375
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 8-11
 - en: Training progess A2C from 8.a-action_critic.ipynb
+  id: totrans-376
   prefs: []
   type: TYPE_NORMAL
+  zh: 从 8.a-action_critic.ipynb 训练 A2C 进度
 - en: Note that actor-critic is also an *on-policy* approach, just like with REINFORCE.
+  id: totrans-377
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，演员-评论家也是一种 *on-policy* 方法，就像 REINFORCE 一样。
 - en: Asynchronous Advantage Actor-Critic
+  id: totrans-378
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 异步优势演员-评论家
 - en: In 2016, the authors of the paper “Asynchronous Methods for Deep Reinforcement
     Learning,”^([1](#Fn1)) introduced the asynchronous version of A2C. The basic idea
     is simple. You have a global server that is the “parameter” server providing the
@@ -1948,25 +2833,31 @@
     train an algorithm using A3C on multiple instances of the simulator. A subsequent
     learning would be to further fine-tune/train the algorithm on a physical robot
     in the real environment.
+  id: totrans-379
   prefs: []
   type: TYPE_NORMAL
 - en: Figure [8-12](#Fig12) shows a high-level schematic of A3C. Note that it is a
     simplistic explanation of the approach. For actual implementation details, you
     are advised to refer to the referenced paper in detail.
+  id: totrans-380
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig12_HTML.jpg)'
+  id: totrans-381
   prefs: []
   type: TYPE_IMG
 - en: An illustration of asynchronous advantage actor critic of a global server. It
     consists of a network at state s, agent 1, agent i, agent n, stimulator 1, stimulator
     i, and stimulator n.
+  id: totrans-382
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 8-12
+  id: totrans-383
   prefs: []
   type: TYPE_NORMAL
 - en: Asynchronous advantage actor-critic (A3C)
+  id: totrans-384
   prefs: []
   type: TYPE_NORMAL
 - en: 'As explained, some papers refer to the synchronous version with multiple agents
@@ -1976,6 +2867,7 @@
     where you use two networks together: a value network to estimate the *V*(*s*)
     and a policy network to estimate the policy π[θ](*a*| *s*). You are leveraging
     the best of both worlds: value-based methods and policy gradient methods.'
+  id: totrans-385
   prefs: []
   type: TYPE_NORMAL
 - en: Next, you will look at some other approaches to the policy algorithm. These
@@ -1984,9 +2876,11 @@
     for safety, instructions, and for mimicking human preferences. This approach is
     called RLHF (Reinforcement Learning with Human Feedback). I cover this in detail
     in a future chapter.
+  id: totrans-386
   prefs: []
   type: TYPE_NORMAL
 - en: Trust Region Policy Optimization Algorithm
+  id: totrans-387
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1998,22 +2892,30 @@
     is only so much you add it as penalty. If you add too much weight to the entropy
     penalty term, the model will be significantly constrained and will start producing
     uniform distribution probability across all possible actions.
+  id: totrans-388
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章详细阐述的方法也被称为*香草策略梯度*（VPG）。使用VPG训练的策略是一个具有探索性的随机策略，它不需要显式地使用ε-greedy探索。随着训练的进行，策略分布变得更加尖锐，集中在最优动作上。即使使用了熵惩罚项，这也可能发生，因为你可以添加的惩罚量是有限的。如果你给熵惩罚项赋予过多的权重，模型将受到显著约束，并开始对所有可能动作产生均匀分布的概率。
 - en: The peaking of policy starts to reduce the exploration, making the algorithm
     exploit more and more what it has learned. It can cause the policy to get stuck
     at a local maxima. Using entropy as a regularizer/penalty is not the only approach.
+  id: totrans-389
   prefs: []
   type: TYPE_NORMAL
+  zh: 策略的峰值开始减少探索，使算法越来越多地利用它所学到的东西。这可能导致策略陷入局部最大值。使用熵作为正则化/惩罚并不是唯一的方法。
 - en: 'As you saw in the policy gradient approach in previous sections, specifically
     in Equation [8-17](#Equ17), you update the policy parameters by a small amount
     given by the following equation:'
+  id: totrans-390
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如你在前几节中看到的策略梯度方法中，特别是在方程[8-17](#Equ17)中，你通过以下方程以一小量更新策略参数：
 - en: '![$$ {\uptheta}_{\mathrm{new}}={\uptheta}_{\mathrm{old}}+\upalpha \cdotp {\nabla}_{\uptheta}J\left(\uptheta
     \right){\left.\kern0em \right|}_{\uptheta ={\uptheta}_{\mathrm{old}}} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaw.png)'
+  id: totrans-391
   prefs: []
   type: TYPE_IMG
+  zh: '![θ_new=θ_old+α⋅∇_θJ(θ){|}_{θ=θ_old}](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaw.png)'
 - en: In other words, the gradient is evaluated at the old policy parameter θ = θ[old]
     and then updated by taking a small step determined by the step size *α*. VPG tries
     to keep the new and old policies near to each other in the parameter space by
@@ -2026,130 +2928,201 @@
     is the key insight as detailed by authors of the 2015 paper titled “Trust Region
     Policy Optimization.”^([2](#Fn2)) Before diving into the details, I spend a few
     minutes talking about a metric called the Kullback-Liebler divergence (KL divergence).
+  id: totrans-392
   prefs: []
   type: TYPE_NORMAL
+  zh: 换句话说，梯度是在旧策略参数θ = θ[old]处评估的，然后通过以下步骤大小*α*进行更新。VPG试图通过限制策略参数从θ[old]到θ[new]的变化来保持新旧策略在参数空间中的接近，使用学习率*α*。然而，仅仅因为策略参数接近，并不能保证新旧策略（即动作概率分布）在概率空间中接近。参数θ的微小变化可能导致策略概率的显著差异。理想情况下，你应该在概率空间中而不是在参数空间中保持新旧策略的接近。这是2015年发表的论文“信任域策略优化”的作者详细阐述的关键洞察。[2](#Fn2)
+    在深入细节之前，我花了几分钟时间讨论一个称为库尔巴克-利布勒散度（KL散度）的度量。
 - en: KULLBACK-LIEBLER DIVERGENCE (KL DIVERGENCE)
+  id: totrans-393
   prefs: []
   type: TYPE_NORMAL
+  zh: 库尔巴克-利布勒散度（KL 散度）
 - en: KL divergence is a measure of how different the two probabilities are. It comes
     from the field of information theory, and diving deep into it would require a
     book of its own. I only attempt to explain the formula and some intuition behind
     it without getting into the mathematical proof.
+  id: totrans-394
   prefs: []
   type: TYPE_NORMAL
+  zh: KL散度是衡量两个概率差异的度量。它来自信息论领域，深入探讨它需要一本自己的书。我仅尝试解释公式和一些背后的直觉，而不涉及数学证明。
 - en: Suppose you have two discrete probability distributions, *P* and *Q* defined
     over some range of values (called *support*). Let the support be “*x*” going from
     1 to 6—just like the case of a rolling die. *P*[*X*](*X* = *x*) defines the probability
     of *X* = *x* using the probability distribution *P*. Similarly, you have another
     probability distribution *Q* defined over the same support. As an example, consider
     a die with six faces with a probability distribution.
+  id: totrans-395
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设您有两个离散概率分布 *P* 和 *Q*，它们定义在某个值域上（称为 *支持*）。让支持是“*x*”从 1 到 6，就像掷骰子的例子一样。*P*[*X*](*X* = *x*)
+    使用概率分布 *P* 定义 *X* = *x* 的概率。同样，您还有一个在相同支持上定义的另一个概率分布 *Q*。作为一个例子，考虑一个有六个面且概率分布的骰子。
 - en: '| *x* | 1 | 2 | 3 | 4 | 5 | 6 |'
+  id: totrans-396
   prefs: []
   type: TYPE_TB
+  zh: '| *x* | 1 | 2 | 3 | 4 | 5 | 6 |'
 - en: '| *P*(*x*) | 1/6 | 1/6 | 1/6 | 1/6 | 1/6 | 1/6 |'
+  id: totrans-397
   prefs: []
   type: TYPE_TB
+  zh: '| *P*(*x*) | 1/6 | 1/6 | 1/6 | 1/6 | 1/6 | 1/6 |'
 - en: '| *Q*(*x*) | 2/9 | 1/6 | 1/6 | 1/6 | 1/6 | 1/9 |'
+  id: totrans-398
   prefs: []
   type: TYPE_TB
+  zh: '| *Q*(*x*) | 2/9 | 1/6 | 1/6 | 1/6 | 1/6 | 1/9 |'
 - en: The die *Q* is loaded to show less of 6 and more of 1, while *P* is a fair die
     with equal probabilities of showing any face of the dice.
+  id: totrans-399
   prefs: []
   type: TYPE_NORMAL
+  zh: 骰子 *Q* 被加载以显示较少的 6 和更多的 1，而 *P* 是一个公平的骰子，显示任何面的概率相等。
 - en: 'The KL divergence between *P* and *Q* is expressed as follows:'
+  id: totrans-400
   prefs: []
   type: TYPE_NORMAL
+  zh: '*P* 和 *Q* 之间的 KL 散度表示如下：'
 - en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\sum \limits_xP(x)\log \frac{P(x)}{Q(x)}
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ41.png)'
+  id: totrans-401
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\sum \limits_xP(x)\log \frac{P(x)}{Q(x)}
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ41.png)'
 - en: (8-41)
+  id: totrans-402
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-41)
 - en: Calculate *D*[*KL*](*P*‖*Q*) for the previous table.
+  id: totrans-403
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算前表中 *D*[*KL*](*P*‖*Q*)。
 - en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\frac{1}{6}\log \frac{1/6}{2/9}+\frac{1}{6}\log
     \frac{1/6}{1/6}+\frac{1}{6}\log \frac{1/6}{1/6}\kern0.5em +\frac{1}{6}\log \frac{1/6}{1/6}+\frac{1}{6}\log
     \frac{1/6}{1/6}+\frac{1}{6}\log \frac{1/6}{1/9} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equax.png)'
+  id: totrans-404
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\frac{1}{6}\log \frac{1/6}{2/9}+\frac{1}{6}\log
+    \frac{1/6}{1/6}+\frac{1}{6}\log \frac{1/6}{1/6}\kern0.5em +\frac{1}{6}\log \frac{1/6}{1/6}+\frac{1}{6}\log
+    \frac{1/6}{1/6}+\frac{1}{6}\log \frac{1/6}{1/9} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equax.png)'
 - en: '![$$ =\frac{1}{6}\log \frac{3}{4}+\frac{1}{6}\log 1+\frac{1}{6}\log 1\kern0.5em
     +\frac{1}{6}\log 1+\frac{1}{6}\log 1+\frac{1}{6}\log \frac{3}{2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equay.png)'
+  id: totrans-405
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ =\frac{1}{6}\log \frac{3}{4}+\frac{1}{6}\log 1+\frac{1}{6}\log 1\kern0.5em
+    +\frac{1}{6}\log 1+\frac{1}{6}\log 1+\frac{1}{6}\log \frac{3}{2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equay.png)'
 - en: '![$$ =\frac{1}{6}\log \frac{3}{4}+\frac{1}{6}x\ 0+\frac{1}{6}x\ 0+\frac{1}{6}x\
     0+\frac{1}{6}x0+\frac{1}{6}\log \frac{3}{2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaz.png)'
+  id: totrans-406
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ =\frac{1}{6}\log \frac{3}{4}+\frac{1}{6}x\ 0+\frac{1}{6}x\ 0+\frac{1}{6}x\
+    0+\frac{1}{6}x0+\frac{1}{6}\log \frac{3}{2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaz.png)'
 - en: '![$$ =\frac{1}{6}\left(\log \frac{3}{4}+\log \frac{3}{2}\ \right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equba.png)'
+  id: totrans-407
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ =\frac{1}{6}\left(\log \frac{3}{4}+\log \frac{3}{2}\ \right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equba.png)'
 - en: '![$$ =\frac{1}{6}\log \left(\frac{3}{4}x\ \frac{3}{2}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbb.png)'
+  id: totrans-408
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ =\frac{1}{6}\log \left(\frac{3}{4}x\ \frac{3}{2}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbb.png)'
 - en: '![$$ =\frac{1}{6}\log \left(\frac{9}{8}\right)=0.0196 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbc.png)'
+  id: totrans-409
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ =\frac{1}{6}\log \left(\frac{9}{8}\right)=0.0196 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbc.png)'
 - en: You can satisfy yourself by putting P = Q to obtain *D*[*KL*](*P*‖*Q*) = 0\.
     When two probabilities are equal, the KL divergence is 0\. For any other two unequal
     probability distributions, you will always get a +ve KL divergence. The farther
     apart the distribution is, the higher the KL divergence value. There is a rigorous
     mathematical proof to show that KL divergence is always +ve and 0 only when the
     two distributions are equal.
+  id: totrans-410
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过将 P = Q 来满足自己，以获得 *D*[*KL*](*P*‖*Q*) = 0\. 当两个概率相等时，KL 散度是 0\. 对于任何其他两个不相等的概率分布，您总是会得到一个正值
+    KL 散度。分布之间的差距越大，KL 散度值就越高。有一个严格的数学证明可以证明 KL 散度总是正值，并且只有当两个分布相等时才为 0。
 - en: Also note that KL divergence is not symmetric.
+  id: totrans-411
   prefs: []
   type: TYPE_NORMAL
+  zh: 还要注意，KL 散度不是对称的。
 - en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)\ne {D}_{KL}\left(Q\Big\Vert P\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbd.png)'
+  id: totrans-412
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)\ne {D}_{KL}\left(Q\Big\Vert P\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbd.png)'
 - en: 'KL divergence is a kind of pseudo-measure of distance between two probability
     distributions in probability space. The KL divergence formula for continuous probability
     distributions is given as follows:'
+  id: totrans-413
   prefs: []
   type: TYPE_NORMAL
+  zh: KL 散度是概率空间中两个概率分布之间的一种伪度量。连续概率分布的 KL 散度公式如下所示：
 - en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\int P(x)\log \frac{P(x)}{Q(x)} dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ42.png)'
+  id: totrans-414
   prefs: []
   type: TYPE_IMG
+  zh: '![D_KL(P||Q) = ∫P(x)log(P(x)/Q(x)) dx](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ42.png)'
 - en: (8-42)
+  id: totrans-415
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-42)
 - en: With the basics of KL divergence defined, it's time to move back to the discussion
     of TRPO algorithm.
+  id: totrans-416
   prefs: []
   type: TYPE_NORMAL
+  zh: 在定义了KL散度的基本概念之后，现在是时候回到TRPO算法的讨论上了。
 - en: Coming back to TRPO, you need to keep the new and old policies close to each
     other, not in parameter space but in probability space. This is the same as saying
     that you want the KL divergence to be bounded in each update step to ensure that
     the new and old policies do not diverge too far.
+  id: totrans-417
   prefs: []
   type: TYPE_NORMAL
+  zh: 回到TRPO，你需要保持新旧策略在概率空间中彼此接近，而不是在参数空间中。这意味着你希望在每次更新步骤中KL散度是有界的，以确保新旧策略不会相差太远。
 - en: '![$$ {D}_{KL}\left(\theta \Big\Vert {\theta}_k\right)\le \delta $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Eqube.png)'
+  id: totrans-418
   prefs: []
   type: TYPE_IMG
+  zh: '![D_KL(θ||θ_k) ≤ δ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Eqube.png)'
 - en: Here, θ[*k*] is the current policy parameter, and θ is the parameter for the
     updated policy.
+  id: totrans-419
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，θ[*k*] 是当前策略参数，而 θ 是更新策略的参数。
 - en: 'Now turn your attention to the objective that you are trying to maximize. The
     previous metric *J*(*θ*) did not have any explicit dependence on new and old policy
     parameters, say θ[*k* + 1] and θ[*k*], respectively. There is an alternative formulation
     for the policy objective using importance sampling. You can state this without
     mathematical derivation, as shown here:'
+  id: totrans-420
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在将注意力转向你试图最大化的目标。之前的指标 *J*(*θ*) 并没有对新旧策略参数有明确的依赖，比如说 θ[*k* + 1] 和 θ[*k*]。使用重要性采样，可以给出策略目标的另一种表述。你可以像这里一样陈述，而不需要数学推导：
 - en: '![$$ J\left(\uptheta, {\uptheta}_k\right)={E}_{a\sim {\uppi}_{\uptheta_k}\left(a|s\right)}\left[\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ43.png)'
+  id: totrans-421
   prefs: []
   type: TYPE_IMG
+  zh: '![J(θ, θ_k) = E_{a~π_θ_k(a|s)}[π_θ(a|s)/π_θ_k(a|s)A_π_θ_k(s,a)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ43.png)'
 - en: (8-43)
+  id: totrans-422
   prefs: []
   type: TYPE_NORMAL
+  zh: (8-43)
 - en: 'Here, *θ* is the parameter of the revised/updated policy, and *θ*[*k*] is the
     parameter of the old policy. You are trying to take the largest possible step
     to go from the old policy parameter *θ*[*k*] to the revised policy with the parameter
@@ -2158,35 +3131,54 @@
     maximum extent without going out of the trust region around the old policy, as
     defined by *D*[*KL*](*θ*‖*θ*[*k*]) ≤ *δ*. In mathematical terms, you can summarize
     the maximization problem as follows:'
+  id: totrans-423
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，*θ* 是更新/修订策略的参数，而 *θ*[*k*] 是旧策略的参数。你试图从旧策略参数 *θ*[*k*] 到具有参数 *θ* 的修订策略迈出尽可能大的步伐，使得新旧策略之间的KL散度不是太大。换句话说，你需要找到一个新策略，在不超过由
+    *D*[*KL*](*θ*‖*θ*[*k*]) ≤ *δ* 定义的旧策略信任区域的情况下，最大限度地提高目标函数。用数学术语来说，可以将最大化问题总结如下：
 - en: '![$$ {\uptheta}_{k+1}=\underset{\uptheta}{\arg\ \max }\ J\left(\uptheta, {\uptheta}_k\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbf.png)'
+  id: totrans-424
   prefs: []
   type: TYPE_IMG
+  zh: '![θ_{k+1} = argmax_θ J(θ, θ_k)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbf.png)'
 - en: '![$$ s.t.{D}_{KL}\left(\uptheta \Big\Vert {\theta}_k\right)\le \updelta $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbg.png)'
+  id: totrans-425
   prefs: []
   type: TYPE_IMG
+  zh: '![s.t. D_KL(θ||θ_k) ≤ δ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbg.png)'
 - en: '![$$ where,J\left(\uptheta, {\uptheta}_k\right)={E}_{a\sim {\uppi}_{\uptheta_k}\left(a|s\right)}\left[\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right]
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbh.png)'
+  id: totrans-426
   prefs: []
   type: TYPE_IMG
+  zh: '![其中，J(θ, θ_k) = E_{a~π_θ_k(a|s)}[π_θ(a|s)/π_θ_k(a|s)A_π_θ_k(s,a)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbh.png)'
 - en: 'The advantage ![$$ {A}^{\uppi_{\uptheta_k}}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq62.png)
     is defined as before:'
+  id: totrans-427
   prefs: []
   type: TYPE_NORMAL
+  zh: 优势 ![A_π_θ_k(s,a)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq62.png)
+    的定义与之前相同：
 - en: '![$$ {A}^{\uppi_{\uptheta_k}}\left(s,a\right)={Q}^{\uppi_{\uptheta_k}}\left(s,a\right)-{V}^{\uppi_{\uptheta_k}}(s)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbi.png)'
+  id: totrans-428
   prefs: []
   type: TYPE_IMG
+  zh: '![A_π_θ_k(s,a) = Q_π_θ_k(s,a) - V_π_θ_k(s)](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbi.png)'
 - en: 'Or, when you roll out by one step and *V* is parameterized by another network
     with parameter *ϕ*, here is the equation:'
+  id: totrans-429
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，当你滚动一步并且 *V* 由另一个参数为 *ϕ* 的网络参数化时，这里是有方程的：
 - en: '![$$ {A}^{\uppi_{\uptheta_k}}\left({s}_t,{a}_t\right)=r\left({s}_t,{a}_t\right)+{V}^{\uppi_{\uptheta_k}}\left({s}_{t+1};\upphi
     \right)-{V}^{\uppi_{\uptheta_k}}\left({s}_t;\upphi \right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbj.png)'
+  id: totrans-430
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {A}^{\uppi_{\uptheta_k}}\left({s}_t,{a}_t\right)=r\left({s}_t,{a}_t\right)+{V}^{\uppi_{\uptheta_k}}\left({s}_{t+1};\upphi
+    \right)-{V}^{\uppi_{\uptheta_k}}\left({s}_t;\upphi \right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbj.png)'
 - en: This is the theoretical representation of the objective maximization in TRPO.
     However, with the Taylor series expansion of the objective ![$$ {\theta}_{k+1}=\underset{\uptheta}{\arg\
     \max }\ J\left(\theta, {\theta}_k\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq63.png)
@@ -2197,95 +3189,140 @@
     an *n x n* matrix, which is not easier to compute. In that case, the conjugate
     gradient algorithm is used. At this point, you have a practical algorithm to calculate
     the update using TRPO.
+  id: totrans-431
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是TRPO中目标最大化的理论表示。然而，通过目标函数的泰勒级数展开 ![$$ {\theta}_{k+1}=\underset{\uptheta}{\arg\
+    \max }\ J\left(\theta, {\theta}_k\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq63.png)
+    和KL约束 *D*[*KL*](*θ*‖*θ*[*k*]) ≤ *δ*，结合凸优化中的拉格朗日对偶性，可以得到一个近似的更新表达式。这种近似可能会破坏KL散度的有界性保证，因此更新规则中添加了回溯线搜索。最后，它涉及到一个
+    *n x n* 矩阵的求逆，这并不容易计算。在这种情况下，使用共轭梯度算法。到此，你就有了一个使用TRPO计算更新的实用算法。
 - en: The mathematical derivation of the approach is fairly involved, and the final
     algorithm has many tweaks to make it efficient. I am not getting into the details,
     as this is beyond the scope of this book. Interested readers can refer to the
     original paper for more.
+  id: totrans-432
   prefs: []
   type: TYPE_NORMAL
+  zh: 该方法的数学推导相当复杂，最终的算法有很多微调以使其高效。我不会深入细节，因为这超出了本书的范围。感兴趣的读者可以参考原始论文以获取更多信息。
 - en: Proximal Policy Optimization Algorithm (PPO)
+  id: totrans-433
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 近端策略优化算法（PPO）
 - en: Proximal policy optimization (PPO) is also motivated by the same question as
     TRPO. “How can we take the maximum possible step size in policy parameters without
     going too far and getting to a worse policy than the original one before the update?”
+  id: totrans-434
   prefs: []
   type: TYPE_NORMAL
+  zh: 近端策略优化（PPO）同样受到与TRPO相同问题的启发。“我们如何在策略参数中采取最大可能的步长，而又不会走得太远，在更新之前得到比原始策略更差的政策？”
 - en: The PPO-clip variant does not have KL divergence. It depends on clipping the
     gradients in the objective function such that the update has no incentive to move
     the policy too far from the original step. The exact details of how this clipping
     works are explained in the next chapter, which does a deep dive into the PPO algorithm.
+  id: totrans-435
   prefs: []
   type: TYPE_NORMAL
+  zh: PPO-clip变体没有KL散度。它依赖于在目标函数中对梯度进行裁剪，使得更新没有激励将策略移动得太远。这种裁剪的确切细节将在下一章中解释，该章将深入探讨PPO算法。
 - en: PPO is simpler to implement and has empirically been shown to perform as good
     as TRPO. The details are in the 2017 paper titled “Proximal Policy Optimization
     Algorithms.”^([3](#Fn3))
+  id: totrans-436
   prefs: []
   type: TYPE_NORMAL
+  zh: PPO更容易实现，并且经验上已经证明其性能与TRPO相当。详细信息请参阅2017年发表的论文“Proximal Policy Optimization
+    Algorithms。”^([3](#Fn3))
 - en: 'The objective using the PPO-clip variant is as follows:'
+  id: totrans-437
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用PPO-clip变体的目标如下：
 - en: '![$$ J\left(\uptheta, {\uptheta}_k\right)=\mathit{\min}\left(\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right),g\left(\upvarepsilon,
     {A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right)\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbk.png)'
+  id: totrans-438
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ J\left(\uptheta, {\uptheta}_k\right)=\mathit{\min}\left(\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right),g\left(\upvarepsilon,
+    {A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right)\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbk.png)'
 - en: 'where:'
+  id: totrans-439
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中：
 - en: '![$$ g\left(\upvarepsilon, A\right)=\kern0.5em \left\{\begin{array}{c}\left(1+\epsilon
     \right)A,\kern0.5em A\ge 0\\ {}\left(1-\epsilon \right)A,\kern0.5em A&lt;0\end{array}\right.
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbl.png)'
+  id: totrans-440
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ g\left(\upvarepsilon, A\right)=\kern0.5em \left\{\begin{array}{c}\left(1+\epsilon
+    \right)A,\kern0.5em A\ge 0\\ {}\left(1-\epsilon \right)A,\kern0.5em A&lt;0\end{array}\right.
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbl.png)'
 - en: 'Rewrite *J*(*θ*, *θ*[*k*]), when advantage *A* is +ve, as shown here:'
+  id: totrans-441
   prefs: []
   type: TYPE_NORMAL
+  zh: 当优势 *A* 为正值时，按照以下方式重写 *J*(*θ*, *θ*[*k*])：
 - en: '![$$ J\left(\uptheta, {\uptheta}_k\right)=\mathit{\min}\left(\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)},\left(1+\upvarepsilon
     \right)\right){A}^{\uppi_{\uptheta_k}}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbm.png)'
+  id: totrans-442
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbm.png)'
 - en: When the advantage is +ve, you want to update the parameters so that the new
     policy *π*[*θ*](*a*| *s*) is higher than the old policy ![$$ {\pi}_{\theta_k}\left(a|s\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq64.png). But
     instead of increasing it too far, you clip the gradients to ensure that the new
     policy increase is within 1 + *ε* times the old policy.
+  id: totrans-443
   prefs: []
   type: TYPE_NORMAL
+  zh: 当优势为正值时，你希望更新参数，使新的策略*π*[*θ*](*a*| *s*)高于旧策略![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq64.png)。但不是增加太多，你剪裁梯度以确保新的策略增加在旧策略的1 + *ε*倍之内。
 - en: 'Similarly, when the advantage is -ve, you get the following:'
+  id: totrans-444
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似地，当优势为负值时，你得到以下结果：
 - en: '![$$ J\left(\theta, {\theta}_k\right)=\mathit{\min}\left(\frac{\pi_{\theta}\left(a|s\right)}{\pi_{\theta_k}\left(a|s\right)},\left(1-\epsilon
     \right)\right){A}^{\pi_{\theta_k}}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbn.png)'
+  id: totrans-445
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbn.png)'
 - en: In other words, when the advantage is -ve, you want the parameters to be updated
     so that you decrease the policy probability for that (*s*, *a*) pair. However,
     instead of decreasing all the way, you clip the gradients so that the new policy
     probability does not go down below (1 − *ε*) times the old policy probability.
+  id: totrans-446
   prefs: []
   type: TYPE_NORMAL
+  zh: 换句话说，当优势为负值时，你希望参数更新以降低该(*s*, *a*)对的策略概率。然而，而不是完全降低，你剪裁梯度以确保新的策略概率不会低于旧策略概率的(1 − *ε*)倍。
 - en: In other words, you are clipping the gradients to ensure that the policy updates
     leave the policy probability distribution to be within (1 − *ε*) to (1 + *ε*)
     times the old probability distribution. *ϵ* acts as a regularizer. It is easy
     to implement PPO as compared to TRPO. You can follow the same pseudocode given
     in Figure [8-9](#Fig9) for A2C with just one change, to swap the objective *J*(*θ*)
     with the objective in the previous paragraphs.
+  id: totrans-447
   prefs: []
   type: TYPE_NORMAL
+  zh: 换句话说，你剪裁梯度以确保策略更新使策略概率分布在旧概率分布的(1 − *ε*)到(1 + *ε*)倍之间。*ϵ*充当正则化器。与TRPO相比，实现PPO更容易。你可以遵循图[8-9](#Fig9)中给出的相同伪代码，只需将目标*J*(*θ*)与前面段落中的目标进行交换，以实现A2C。
 - en: This time, instead of coding it, you can use SB3 (`stable-Baselines3`), which
     was introduced previously. As discussed earlier, SB3 has implementations for many
     of the popular and newest algorithms.
+  id: totrans-448
   prefs: []
   type: TYPE_NORMAL
+  zh: 这次，你不需要再编写代码，可以使用之前介绍过的SB3（`stable-Baselines3`）。如前所述，SB3实现了许多流行和最新的算法。
 - en: This code will follow the same pattern as before, except that you will not be
     explicitly defining the policy network. You will also not write the training step
     of calculating loss and stepping through the gradient. You can find the complete
     code to train and record the performance of `CartPole` training using PPO in `8.c-ppo_sb3.ipynb`.
+  id: totrans-449
   prefs: []
   type: TYPE_NORMAL
+  zh: 这段代码将遵循之前的模式，但你将不会明确定义策略网络。你也不会编写计算损失和通过梯度的训练步骤。你可以在`8.c-ppo_sb3.ipynb`中找到使用PPO训练`CartPole`并记录性能的完整代码。
 - en: 'I will now walk through the code snippet of creating an agent, training it
     on `CartPole`, and evaluating the performance, as given in Listing [8-8](#PC8).
     You will use almost everything from SB3 library. First, you import the required
@@ -2300,26 +3337,36 @@
     the overall quality of the agent’s performance, and 2) the standard deviation
     signifying the variability of the first metric, that is, the mean value of return
     per episode.'
+  id: totrans-450
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我将逐步讲解创建代理、在`CartPole`上训练它以及评估性能的代码片段，如列表[8-8](#PC8)所示。你将几乎使用SB3库中的所有内容。首先，你导入所需的包。接下来，创建环境。然后，你创建一个SB3中默认的MLP策略。在之前的一章中，你学习了如果需要如何定制策略。在这个阶段，你只需在模型上调用`learn`函数，这将启动所有必要的机制来训练，并可选择以多种不同的方式记录进度。一旦代理被训练，你将再次使用SB3提供的`evaluate_policy`函数来评估代理。`evaluate_policy`函数运行代理100个回合（`n_eval_episodes=100`），并计算两个指标：1）每个回合的回报平均值，表示代理整体性能的质量，2）标准差表示第一个指标的变化性，即每个回合的回报平均值。
 - en: You want the mean value to be as high as possible and sthe tandard deviation
     to be as low as possible, which will signal a high quality (high mean value) and
     consistent (low standard deviation) performance of the agent.
+  id: totrans-451
   prefs: []
   type: TYPE_NORMAL
+  zh: 你希望平均值尽可能高，而标准差尽可能低，这将表明代理的高质量（高平均值）和一致性（低标准差）表现。
 - en: In Listing [8-8](#PC8), you can see that the agent has trained well. The accompanying
     notebook carries the usual additional code to record a video in order to share
     the trained model on the HuggingFace hub.
+  id: totrans-452
   prefs: []
   type: TYPE_NORMAL
+  zh: 在列表[8-8](#PC8)中，你可以看到代理已经训练得很好。附带的笔记本包含了记录视频的额外代码，以便在HuggingFace hub上分享训练好的模型。
 - en: '[PRE7]'
+  id: totrans-453
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: If you want to know more about the details of PPO, continue to read. I have
     a full chapter devoted to PPO, as this is a state-of-the-art algorithm and has
     recently been used to fine-tune Large Language Models under the RLHF approach.
+  id: totrans-454
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你想了解更多关于PPO细节的信息，请继续阅读。我有一个专门关于PPO的章节，因为这个算法是当前最先进的，最近在RLHF方法下被用来微调大型语言模型。
 - en: I want to also use this opportunity to stress once more the point of getting
     to know the popular RL libraries well. While walking through the implementations
     of various algorithms in this book, you should note that it is equally important
@@ -2330,26 +3377,34 @@
     production grade. Libraries like SB3 and others introduced previously have highly
     optimized code with the ability to leverage the GPU and multiple cores to run
     many agents in parallel.
+  id: totrans-455
   prefs: []
   type: TYPE_NORMAL
+  zh: 我想利用这个机会再次强调熟悉流行的RL库的重要性。在本书中浏览各种算法的实现时，你应该注意，同样重要的是要熟悉流行的RL实现，并学会根据你的特定需求使用它们。本章中的代码突出了关键概念，而本书附带的笔记本帮助你深入理解这些概念，并包含一个完整的端到端训练过程。然而，这些绝对不是生产级别的。像SB3这样的库以及其他之前介绍的库具有高度优化的代码，能够利用GPU和多个核心并行运行多个代理。
 - en: Curiosity-Driven Learning
+  id: totrans-456
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 好奇心驱动的学习
 - en: Having studied most of the popular policy gradient algorithms, you can now focus
     on how reward quality impacts the learning in all these algorithms. You have seen
     that all algorithms use reward-to-go to shape the policy, whether it be REINFORCE,
     actor-critic, TRPO, or PPO.
+  id: totrans-457
   prefs: []
   type: TYPE_NORMAL
+  zh: 在研究了大多数流行的策略梯度算法之后，你现在可以专注于奖励质量如何影响所有这些算法中的学习。你已经看到，所有算法都使用奖励到未来来塑造策略，无论是REINFORCE、actor-critic、TRPO还是PPO。
 - en: Sometimes, these *extrinsic rewards* are given all the time, like the score
     in a video game or how close a robotic arm is to an object it’s trying to reach.
     But often, especially in real-life situations, these outside rewards are rare
     or don’t exist, making it hard for the agent to learn because it only gets feedback
     when it reaches a specific goal. This is like trying to find a goal by randomly
     guessing, which usually doesn’t work unless the environment is very simple.
+  id: totrans-458
   prefs: []
   type: TYPE_NORMAL
+  zh: 有时，这些*外部奖励*总是被给予，比如视频游戏中的得分或机器人臂试图触及的对象的接近程度。但通常，尤其是在现实生活场景中，这些外部奖励很少见或不存在，这使得智能体难以学习，因为它只有在达到特定目标时才会得到反馈。这就像试图通过随机猜测来找到目标，通常除非环境非常简单，否则通常不会成功。
 - en: Humans also deal with rare rewards. For example, an entrepreneur’s ultimate
     reward is making a profit, but that might take years. Yet, they keep going, driven
     by their own motivation or curiosity. This inner drive helps them explore and
@@ -2359,31 +3414,46 @@
     and learn, which might help it achieve rewards later. This the what the authors
     of a 2017 paper titled “Curiosity-driven Exploration by Self-Supervised Prediction”^([4](#Fn4))
     showed as to how adding intrinsic rewards can help improve learning.
+  id: totrans-459
   prefs: []
   type: TYPE_NORMAL
+  zh: 人类也处理罕见的奖励。例如，企业家最终的目标是获得利润，但这可能需要几年时间。然而，他们仍然继续前进，受到他们自己的动机或好奇心的驱动。这种内在动力帮助他们探索和学习新事物，即使奖励很远。同样，在强化学习中，当外部奖励罕见时，智能体的自身/内在动机或好奇心变得至关重要。这种*内在奖励*鼓励智能体探索和学习，这可能会帮助它后来获得奖励。这就是2017年一篇题为“通过自监督预测驱动的探索”的论文的作者所展示的，该论文展示了添加内在奖励如何有助于提高学习效果。
 - en: There are two common ways to model these intrinsic rewards 1) encourage agents
     to explore unseen/novel states, or 2) encourage the agent to perform actions that
     reduce the error/uncertainty in the agent’s ability to predict the consequence
     of its own actions (i.e., its knowledge about the environment or transition function
     *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*])).
+  id: totrans-460
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两种常见的建模内在奖励的方法 1) 鼓励智能体探索未见/新颖的状态，或 2) 鼓励智能体执行减少其预测自身行动后果的错误/不确定性的动作（即，其对环境的了解或转移函数
+    *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*])）。
 - en: The authors proposed a very interesting approach, as shown in Figure [8-13](#Fig13).
+  id: totrans-461
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者提出了一种非常有趣的方法，如图 [8-13](#Fig13) 所示。
 - en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig13_HTML.jpg)'
+  id: totrans-462
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig13_HTML.jpg)'
 - en: A model diagram of the Intrinsic Curiosity Module formulation. The I C M includes
     the connection of the following components. Forward model, features, inverse model
+  id: totrans-463
   prefs: []
   type: TYPE_NORMAL
+  zh: 内在好奇心模块公式的模型图。I C M 包括以下组件的连接。前向模型、特征、逆模型
 - en: Figure 8-13
+  id: totrans-464
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 8-13
 - en: 'Intrinsic Curiosity Module (ICM) formulationSource: [https://​arxiv.​org/​pdf/​1705.​05363.​pdf](https://arxiv.org/pdf/1705.05363.pdf)'
+  id: totrans-465
   prefs: []
   type: TYPE_NORMAL
+  zh: 内在好奇心模块 (ICM) 公式来源：[https://​arxiv.​org/​pdf/​1705.​05363.​pdf](https://arxiv.org/pdf/1705.05363.pdf)
 - en: 'I first focus on the Intrinsic Curiosity Module (ICM) on the right side of
     Figure [8-13](#Fig13). ICM takes the current state *s*[*t*], the action *a*[*t*]
     and the next state observed *s*[*t* + 1] as input. It converts the high dimensional
@@ -2400,20 +3470,33 @@
     from *s*[*t*] to *s*[*t* + 1] due to the action *a*[*t*], are weeded out from
     the feature extractor submodule during training. Mathematically, this can be expressed
     by a set of equations as follows:'
+  id: totrans-466
   prefs: []
   type: TYPE_NORMAL
+  zh: 我首先关注图 [8-13](#Fig13) 右侧的内在好奇心模块 (ICM)。ICM 接受当前状态 *s*[*t*]、动作 *a*[*t*] 和观察到的下一个状态
+    *s*[*t* + 1] 作为输入。它将高维状态——游戏的图像——通过一个网络转换为较小的维度特征空间。状态 *s*[*t*] 被映射到 ϕ(*s*[*t*])，状态
+    *s*[*t* + 1] 被映射到 ϕ(*s*[*t* + 1]) 使用相同的特征提取器。ϕ(*s*[*t*]) 和 ϕ(*s*[*t* + 1]) 被作为输入输入到另一个网络，称为
+    *逆模型**，它使用这两个输入来预测使系统从 *s*[*t*] 转换到 *s*[*t* + 1] 的动作 *a*[*t*]。这样，特征提取器就学会了将状态表示为较小的维度空间，只关注与动作
+    *a*[*t*] 最相关或受其影响的部分。由于动作 *a*[*t*]，*s*[*t*] 中不相关的部分，在使系统从 *s*[*t*] 转换到 *s*[*t* + 1]
+    时不会产生任何影响，这些部分在训练过程中被从特征提取器子模块中剔除。从数学上讲，这可以表示为以下一组方程：
 - en: '![$$ {\hat{a}}_t=g\left({s}_t,{s}_{t+1};{\uptheta}_I\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbo.png)'
+  id: totrans-467
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\hat{a}}_t=g\left({s}_t,{s}_{t+1};{\uptheta}_I\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbo.png)'
 - en: '![$$ \underset{\uptheta_I}{\min }{L}_I\left({\hat{a}}_t,{a}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbp.png)'
+  id: totrans-468
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \underset{\uptheta_I}{\min }{L}_I\left({\hat{a}}_t,{a}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbp.png)'
 - en: where θ[*I*] are the parameters of the feature extractor and inverse model jointly,
     as shown in Figure [8-13](#Fig13). *L*[*I*] is a loss that depends on the nature
     of action. For example, for a discrete action space, it will be the usual cross-entropy
     loss.
+  id: totrans-469
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 θ[*I*] 是特征提取器和逆模型共同参数，如图 [8-13](#Fig13) 所示。*L*[*I*] 是一个依赖于动作性质的损失。例如，对于离散动作空间，它将是通常的交叉熵损失。
 - en: 'The third submodule is called the forward model and it takes the feature ϕ(*s*[*t*])
     and the action *a*[*t*] to predict the next state ![$$ \hat{\upphi}\left({s}_{t+1}\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq65.png) feature
@@ -2423,68 +3506,104 @@
     higher for unvisited states. The higher the error, the higher the intrinsic reward
     to the agent to explore the new state *s*[*t* + 1] via action *a*[*t*]. Mathematically,
     this can be represented as follows:'
+  id: totrans-470
   prefs: []
   type: TYPE_NORMAL
+  zh: 第三个子模块被称为前向模型，它接受特征 ϕ(*s*[*t*]) 和动作 *a*[*t*] 来预测下一个状态 ![$$ \hat{\upphi}\left({s}_{t+1}\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq65.png) 的下一个状态特征
+    *s*[*t* + 1]. 预测的下一个状态特征与实际下一个状态特征之间的误差最小化，并称为内在奖励 *r*^(*i*). 这个误差或内在奖励对于已经访问过的状态会更低，而对于未访问的状态会更高。误差越高，对智能体通过动作
+    *a*[*t*] 探索新状态 *s*[*t* + 1] 的内在奖励就越高。从数学上讲，这可以表示如下：
 - en: '![$$ \hat{\upphi}\left({s}_{t+1}\right)=f\left(\upphi \left({s}_t\right),{a}_t;{\uptheta}_F\right)
     $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbq.png)'
+  id: totrans-471
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{\upphi}\left({s}_{t+1}\right)=f\left(\upphi \left({s}_t\right),{a}_t;{\uptheta}_F\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbq.png)'
 - en: 'where θ[*F*] are the parameters of the forward model inside the ICM. The loss
     you minimize and the intrinsic reward are represented as follows:'
+  id: totrans-472
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 θ[*F*] 是 ICM 内部前向模型的参数。你最小化的损失和内在奖励如下所示：
 - en: '![$$ {L}_F=\frac{1}{2}{\left\Vert \hat{\upphi}\left({s}_{t+1}\right)-\upphi
     \left({s}_{t+1}\right)\right\Vert}_2^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbr.png)'
+  id: totrans-473
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {L}_F=\frac{1}{2}{\left\Vert \hat{\upphi}\left({s}_{t+1}\right)-\upphi
+    \left({s}_{t+1}\right)\right\Vert}_2^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbr.png)'
 - en: '![$$ {r}_t^i=\frac{\upeta}{2}{\left\Vert \hat{\upphi}\left({s}_{t+1}\right)-\upphi
     \left({s}_{t+1}\right)\right\Vert}_2^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbs.png)'
+  id: totrans-474
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {r}_t^i=\frac{\upeta}{2}{\left\Vert \hat{\upphi}\left({s}_{t+1}\right)-\upphi
+    \left({s}_{t+1}\right)\right\Vert}_2^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbs.png)'
 - en: They are the same quantities, except for a scaling factor η for intrinsic reward.
+  id: totrans-475
   prefs: []
   type: TYPE_NORMAL
+  zh: 它们是相同的量，除了内在奖励的缩放因子 η。
 - en: 'The usual policy gradient algorithm is now trained, not just on the extrinsic
     reward *r*^(*e*) from the environment, but on a combined extrinsic and intrinsic
     reward *r*^(*e*) + *r*^(*i*). In practice, all three submodules of the ICM module
     and the policy parameters are trained together via a combined loss using this
     equation:'
+  id: totrans-476
   prefs: []
   type: TYPE_NORMAL
+  zh: 常规的策略梯度算法现在不仅训练于环境的外部奖励 *r*^(*e*)，还训练于结合了外部和内在奖励 *r*^(*e*) + *r*^(*i*)。在实践中，通过使用此方程的联合损失，ICM模块的三个子模块和策略参数一起通过联合损失进行训练：
 - en: '![$$ \underset{\uptheta_P,{\uptheta}_I,{\uptheta}_F}{\min}\left[-\uplambda
     {E}_{\uppi \left({s}_t;{\uptheta}_P\right)}\left[{\Sigma}_t{r}_t\right]+\left(1-\upbeta
     \right){L}_I+\upbeta {L}_F\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbt.png)'
+  id: totrans-477
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \underset{\uptheta_P,{\uptheta}_I,{\uptheta}_F}{\min}\left[-\uplambda
+    {E}_{\uppi \left({s}_t;{\uptheta}_P\right)}\left[{\Sigma}_t{r}_t\right]+\left(1-\upbeta
+    \right){L}_I+\upbeta {L}_F\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbt.png)'
 - en: where 0 ≤ *β* ≤ 1 is a scalar that weighs the inverse model loss against the
     forward model loss and *λ* > 0 is a scalar that weighs the importance of the policy
     gradient loss against the importance of learning the intrinsic reward signal.
+  id: totrans-478
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 0 ≤ *β* ≤ 1 是一个标量，用于权衡逆模型损失与前向模型损失，*λ* > 0 是一个标量，用于权衡策略梯度损失与学习内在奖励信号的重要性。
 - en: In Figure 5 of the paper, the authors show that curiosity-driven exploration
     learning offers much better performance in all the settings of dense rewards,
     sparse rewards, and very sparse rewards. Interested readers can refer to the paper
     for more details. The [https://​pathak22.​github.​io/​noreward-rl/​](https://pathak22.github.io/noreward-rl/)
     website has a demo and source code implementation using TensorFlow and OpenAI
     Gym environment.
+  id: totrans-479
   prefs: []
   type: TYPE_NORMAL
+  zh: 在论文的第5图，作者展示了好奇心驱动的探索学习在密集奖励、稀疏奖励和非常稀疏奖励的所有设置中均提供了更好的性能。感兴趣的读者可以参考论文以获取更多详细信息。[https://pathak22.github.io/noreward-rl/](https://pathak22.github.io/noreward-rl/)
+    网站有一个使用 TensorFlow 和 OpenAI Gym 环境的演示和源代码实现。
 - en: 'A year after this paper came out, a team from OpenAI published a paper in 2018
     titled “Large-Scale Study of Curiosity-Driven Learning”^([5](#Fn5)) which further
     extends the results to even more extreme situations of zero extrinsic rewards.
     The paper, based on a large-scale study, narrowed down a few qualities that a
     good feature space should have:'
+  id: totrans-480
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这篇论文发表一年后，OpenAI的一个团队在2018年发表了一篇题为“Large-Scale Study of Curiosity-Driven Learning”^([5](#Fn5))
+    的论文，该论文进一步将结果扩展到零外部奖励的更极端情况。基于大规模研究，这篇论文缩小了几种良好特征空间应具备的品质：
 - en: '**Compact:** The features should be low dimensional and filter out irrelevant
     parts of the observation space.'
+  id: totrans-481
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**紧凑：** 特征应该是低维的，并过滤掉观察空间中的无关部分。'
 - en: '**Sufficient:** The features should contain all the important information.'
+  id: totrans-482
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**充分：** 特征应包含所有重要信息。'
 - en: '**Stable:** Non-stationary rewards make it difficult for reinforcement agents
     to learn. Exploration bonuses introduce non-stationarity since what is new becomes
     old and boring with time. In a dynamics-based curiosity formulation such as the
@@ -2492,9 +3611,11 @@
     model is evolving over time as it is trained, and the features are changing as
     they learn. The former is intrinsic to the method, and the latter should be minimized
     where possible.'
+  id: totrans-483
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**稳定：** 非平稳奖励使得强化学习代理难以学习。探索奖励引入了非平稳性，因为随着时间的推移，新的事物会变得陈旧和无聊。在基于动态的好奇心公式，如ICM方法中，存在两种非平稳性的来源：前向动力学模型在训练过程中随时间演变，特征在学习过程中发生变化。前者是方法固有的，后者应尽可能最小化。'
 - en: The feature space was represented by a model that learned to follow the random
     initialized model. The error between the feature space value produced via a random
     model and the learned model acts as guidance on whether the state is a new one
@@ -2502,26 +3623,36 @@
     states and higher for newer states. As before, while you reduce this error to
     train the feature space model, you also use the error as a form of intrinsic reward.
     This approach works even in environments with no extrinsic rewards.
+  id: totrans-484
   prefs: []
   type: TYPE_NORMAL
+  zh: 特征空间由一个学习跟随随机初始化模型的模型来表示。通过随机模型产生的特征空间值与学习模型之间的误差，充当了指导，以判断状态是新的还是代理已经访问过的。对于旧状态，误差会较低，而对于较新的状态，误差会较高。与之前一样，当你减少这个误差来训练特征空间模型时，你也将误差作为一种内在奖励。这种方法即使在没有外部奖励的环境中也能工作。
 - en: This brings you to the end of this chapter.
+  id: totrans-485
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就结束了本章的内容。
 - en: Summary
+  id: totrans-486
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 摘要
 - en: This chapter introduced the alternate approach of directly learning a policy
     instead of going through the learning state/action values first and then using
     these values to find the optimal policy.
+  id: totrans-487
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章介绍了直接学习策略而不是首先通过学习状态/动作值，然后再使用这些值来找到最优策略的替代方法。
 - en: First, thew chapter looked at the derivation of REINFORCE, the most basic of
     the policy gradient methods. After the initial derivation, you looked at a couple
     of variance reduction techniques such as rewards-to-go and the use of baselines.
     You also implemented a version of REINFORCE from scratch.
+  id: totrans-488
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，本章探讨了REINFORCE的推导，这是策略梯度方法中最基本的。在初步推导之后，你查看了一些方差减少技术，如奖励到去和基线使用。你还从头实现了一个REINFORCE版本。
 - en: This led you to look at the actor-critic family, which combined value-based
     methods to learn state values acting as baselines inside REINFORCE with rewards-to-go.
     The chapter showed two approaches for reward-to-go estimation—one used the MC
@@ -2531,20 +3662,26 @@
     on the asynchronous version known as A3C. You implemented actor-critic from scratch.
     The chapter also showed the improved learning stability that actor-critic algorithms
     have compared to REINFORCE.
+  id: totrans-489
   prefs: []
   type: TYPE_NORMAL
+  zh: 这引导你查看演员-评论家家族，它结合了基于值的方法来学习状态值，在REINFORCE中使用奖励到去作为基线。本章展示了两种奖励到去估计方法——一种使用蒙特卡洛估计，另一种是*TD*(0)方法。具有状态值网络（评论家）的策略网络（演员）使你能够结合基于值的方法和策略梯度方法的优势。本章简要提到了异步版本A3C。你从头实现了演员-评论家。本章还展示了与REINFORCE相比，演员-评论家算法具有的改进学习稳定性。
 - en: After discussing the vanilla policy gradient approaches, you looked at a couple
     of advanced policy optimization techniques, such as trust region policy optimization
     (TRPO) and proximal policy optimization (PPO). I talked about the key motivations
     and approaches using each of these two techniques and demonstrated how these can
     be leveraged using standard RL libraries such as SB3.
+  id: totrans-490
   prefs: []
   type: TYPE_NORMAL
+  zh: 在讨论了基本的策略梯度方法之后，你查看了一些高级策略优化技术，例如信任域策略优化（TRPO）和近端策略优化（PPO）。我讨论了使用这两种技术时的关键动机和方法，并展示了如何使用标准强化学习库如SB3来利用这些技术。
 - en: Finally, you turned your attention to the setting when extrinsic rewards may
     be sparse or completely absent. I discussed two papers that applied the concept
     of curiosity-driven learning to use intrinsic rewards in addition to the external
     extrinsic rewards. I discussed the formulation of this approach in detail and
     explained how the performance of the agent improves significantly, especially
     when extrinsic rewards are sparse.
+  id: totrans-491
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，你将注意力转向了外部奖励可能稀疏或完全不存在的情况。我讨论了两篇将好奇心驱动学习概念应用于使用内在奖励以及外部奖励的论文。我详细讨论了这种方法的形式化，并解释了代理的性能如何显著提高，尤其是在外部奖励稀疏的情况下。
