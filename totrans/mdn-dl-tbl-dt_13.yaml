@@ -1,0 +1,1462 @@
+- en: 10. Meta-optimization
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: If you optimize everything, you will always be unhappy.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Donald Knuth, Computer Scientist
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The legendary Donald Knuth was right about many things, but meta-optimization
+    is indeed strong evidence that most people can be pretty happy optimizing most
+    things (not quite *everything*, admittedly). Optimization in its standard form
+    concerns the reconciliation of ambiguities and uncertainties on the direct level
+    of parameter-to-loss model. But when we construct said models, we also run into
+    ambiguities and uncertainties that are generally overlooked and forgotten. Meta-optimization
+    concerns the optimization of these *meta-parameters* (alternatively, “hyperparameters”),
+    which can not only improve performance but also potentially be more efficient
+    than manual tuning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter begins with a brief discussion of key concepts and motivations
+    of meta-optimization, followed by an exploration of no-gradient optimization methods
+    often used for meta-optimization procedures. The next two sections demonstrate
+    how meta-optimization with the library Hyperopt can be used to optimize the model
+    and the data pipeline. Lastly, the chapter concludes with a brief section on Neural
+    Architecture Search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Meta-optimization: Concepts and Motivations'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: If you have been following along with the scripts outlined throughout the book,
+    you inevitably will sometimes encounter points at which you must decide how to
+    build a system, but which specific possibility you choose feels arbitrary or equally
+    unsure – for instance, whether to use the `GradientBoostingClassifier` or the
+    `AdaBoostClassifier`, whether the maximum tree depth should be 128 or 64, how
+    many layers should be in a particular neural network cell, how many nodes to put
+    in a particular layer, the exact proportion used for a dropout layer, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The truth is that for most of these decisions, it doesn’t really matter which
+    path you choose. Whether a specific layer has 128 or 256 nodes likely will not
+    noticeably impact the final performance because deep learning systems are so large
+    and one single decision is comparatively insignificant. Which optimizer you use
+    might have an impact, but not one that is incredible (unless you are switching
+    from a primitive caveman optimizer, of course). We can call these decisions *meta-parameters*
+    because they are decisions determining the “form” and “shape” of the model rather
+    than the specific weights determining its predictive behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, if we somehow make decisions for all these meta-parameters simultaneously
+    – that is, we set each meta-parameter such that it is optimal with respect to
+    all other meta-parameters – we can end up significantly altering the system’s
+    performance overall.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Meta-optimization*, also referred to sometimes as meta-learning or auto-ML,
+    is the process of “learning how to learn” – a meta-model (or “*controller* model”)
+    finds the best meta-parameters for a *candidate* model’s validation performance
+    (Figure [10-1](#Fig1)). We can use meta-optimization to find the best type of
+    model to use, the best meta-parameters for that best model, and the best data
+    preprocessing and postprocessing schemes for that best model and best set of meta-parameters.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a meta optimization procedure of a controller that adjusts to
+    maximize candidate valid performance through a model structure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationship between controller model and controlled model in meta-optimization
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are three key components of a meta-optimization campaign: the meta-parameter
+    space, the objective function, and the optimization procedure.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *meta-parameter space* describes (a) which meta-parameters are being optimized
+    and (b) how the optimization procedure should go about sampling the meta-parameters
+    being optimized. Some meta-parameters must be integers (e.g., number of nodes),
+    whereas others must be proportions (e.g., dropout rate). Moreover, we may have
+    more confidence in the success of certain domains of the meta-parameter space
+    over others. For instance, a low dropout rate (e.g., 0.1–0.3) is almost surely
+    more effective at regularization than a high dropout rate (e.g., 0.7–0.9), because
+    high dropout rates significantly hinder information transfer. This distribution
+    of confidence must be specified in the construction of the meta-parameter space.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The *objective function* describes how the meta-parameters being sampled come
+    together into a model and returns the performance of a model built and trained
+    using the sampled meta-parameters. For instance, if we want to optimize the number
+    of hidden nodes in a shallow neural network with only one hidden layer, the objective
+    function will accept the sampled number of hidden nodes, construct a neural network
+    with that many hidden nodes, fit until convergence, and return performance on
+    the validation dataset. The goal of meta-optimization is to minimize this objective
+    function.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The *optimization procedure* is the algorithm by which new combinations of meta-parameters
+    are sampled from the search space given the performance of previous meta-parameter
+    combinations. Ideally, such an algorithm would be adaptive – if a set of meta-parameters
+    performs very poorly, it should sample meta-parameters quite far away; if a set
+    performs exceptionally well, it should sample nearby meta-parameters to “hang
+    on to” and exploit the good performance. The user generally does not need to implement
+    the optimization procedure.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Hyperparameter optimization in deep learning is generally considered to be an
+    expensive task, because (a) neural networks have so many more possible directions
+    for hyperparameter variation compared with classical machine learning algorithms
+    and (b) neural networks generally take significantly longer than classical machine
+    learning algorithms to train. Research in fields like Neural Architecture Search,
+    a subfield of hyperparameter optimization in which a meta-model/controller (often
+    another neural network) attempts to find the optimal neural network architecture
+    for a task, can involve experiments lasting several days on supercharged hardware.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, hyperparameter optimization in deep learning for structured data is
+    comparatively more accessible than optimizing deep learning pipelines for computer
+    vision and natural language processing tasks. Neural network models for structured
+    data are often faster to train and smaller; this allows the optimization procedure
+    to repeatedly sample a much wider array of neural network meta-parameter combinations
+    without specialized hardware in a feasible amount of time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this section, we’ll explore hyperparameter optimization for a variety of
+    applications, including optimizing classical machine learning models, deep learning
+    training procedures, deep learning architectures, data pipelines, and more.
+  prefs: []
+  type: TYPE_NORMAL
+- en: No-Gradient Optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The hyperparameter optimization tools we will be using are more broadly tools
+    for *no-gradient optimization*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider some function *f*(*x*). You only have access to its output given a
+    certain input, and you know that it is expensive to calculate (i.e., it takes
+    a nontrivial amount of time to process one query). Your task is to find the set
+    of inputs that minimizes the output of the function as much as possible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sort of setup is known as a black box optimization problem (Figure [10-2](#Fig2)),
+    because the algorithm or entity attempting to find a solution to the problem has
+    access to very little or no information about the function. You have access only
+    to the output of any input passed into the function, but not the derivative. This
+    bars the usage of gradient-based methods that have proved successful in the domain
+    of neural networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration presents 2 black box minimized objective functions with inputs
+    and outputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Objective functions to minimize. Top: black box function with no explicit information
+    given. Bottom: explicitly defined loss function (in this case MSE)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Black box optimization is, generally speaking, the name of the game in feasible
+    meta-parameter optimization. While there are several methods for differentiating
+    meta-parameter optimization,^([1](#Fn1)) black box optimization has been a long-studied
+    problem that has strong applications to expensive black box problems. The meta-parameter
+    optimization procedure is given no information other than the loss incurred by
+    a candidate model trained with the sampled meta-parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'So-called “naïve” meta-optimization algorithms/procedures use the following
+    general structure to solve black box optimization problems:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Select structural parameters for a proposed controlled model.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Obtain the performance of a controlled model trained under those selected structural
+    parameters.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Repeat.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'There are two generally recognized naïve meta-optimization algorithms used
+    as a baseline against more sophisticated meta-optimization methods:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Grid search*: In a grid search, every combination of a user-specified list
+    of values for each parameter is tried and evaluated. Consider a hypothetical model
+    with two structural parameters we would like to optimize, *A* and *B*. The user
+    may specify the search space for *A* to be [1, 2, 3] and the search space for
+    *B* to be [0.5, 1.2]. Here, “search space” indicates the values for each parameter
+    that will be tested. A grid search would train six models for every combination
+    of these parameters – *A* = 1 and *B* = 0.5, *A* = 1 and *B* = 1.2, *A* = 2 and
+    *B* = 0.5, and so on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Random search*: In a random search, the user provides information about a
+    feasible distribution of potential values that each structural parameter could
+    take on. For instance, the search space for *A* may be a normal distribution with
+    mean 2 and standard deviation 1, and the search space for *B* might be a uniform
+    choice from the list of values [0.5, 1.2]. A random search would then randomly
+    sample parameter values and return the best-performing set of values.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Grid search and random search are considered to be naïve search algorithms because
+    they do not incorporate the results from their previously selected structural
+    parameters into how they select the next set of structural parameters; they simply
+    repeatedly “query” structural parameters blindly and return the best-performing
+    set. While grid and random searches have their place in certain meta-optimization
+    problems – grid search suffices for small meta-optimization problems, and random
+    search proves to be a surprisingly strong strategy for models that are relatively
+    cheaper to train – they cannot produce consistently strong results for more complex
+    models, like neural networks. The problem is not necessarily that these naïve
+    methods inherently cannot produce good sets of parameters, but that they take
+    too long to do so due to the large search space and slow black box query time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A key component of the unique character of meta-optimization that distinguishes
+    it from other fields of optimization problems is the impact of the evaluation
+    step in amplifying any inefficiencies in the meta-optimization system. Generally,
+    to quantify how good certain selected structural parameters are, a model is fully
+    trained under those structural parameters, and its performance on the test set
+    is used as the evaluation. In the context of neural networks, this evaluation
+    step can take hours. Thus, an effective meta-optimization system should attempt
+    to require as few models to be built and trained as possible before arriving at
+    a good solution. (Compare this with standard neural network optimization, in which
+    the model queries the loss function and updates its weights accordingly anywhere
+    from hundreds of thousands to millions of times in the span of hours.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To prevent inefficiency in the selection of new structural parameters to evaluate,
+    successful meta-optimization methods used for models like neural networks include
+    another step – incorporating knowledge from previous “experiments” into determining
+    the next best set of parameters to select:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Select structural parameters for a proposed controlled model.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Obtain the performance of a controlled model trained under those selected structural
+    parameters.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Incorporate knowledge about the relationship between selected structural parameters
+    and the performance of a model trained under such parameters into the next selection.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Repeat.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Hyperopt, the popular hyperparameter optimization framework we will use for
+    meta-optimization, uses Bayesian optimization to address the black box optimization
+    problem. Provided with a well-designed search space, Hyperopt can generally find
+    solutions that perform better than manual designs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bayesian optimization is often used in black box optimization problems because
+    it succeeds in obtaining reliably good results with a relatively small number
+    of required queries to the objective function. The spirit of Bayesian modeling
+    is to begin with a set of *prior* beliefs and continually update that set of beliefs
+    with new information to form *posterior* beliefs. It is this spirit of continuous
+    update – searching for new information in places where it is needed – that makes
+    Bayesian optimization a robust and versatile tool in black box optimization problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider a hypothetical objective function, represented in Figure [10-3](#Fig3).
+    In the context of meta-optimization, this function represents the loss or cost
+    of a certain model (*y*-axis) incurred by a model trained using the sample parameter(s)
+    (*x*-axis). The goal is to find the value(s) of *x* that minimizes the cost (Figure
+    [10-3](#Fig3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a line displayed from left to right in a fluctuating trend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: A hypothetical cost function, showing the loss incurred by a model with some
+    parameter x. For the sake of convenient visualization, in this case we are optimizing
+    a one-parameter model or optimizing the loss with respect to only one parameter
+    (i.e., looking at a cross-section of the full loss landscape)
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, to the meta-optimization algorithm, the cost function is a black box.
+    It cannot “see” the entire function – if it could, solving the minimization problem
+    would be trivial. The function is displayed for the user for convenience in understanding
+    Bayesian optimization, but be sure to distinguish between what the optimization
+    process does and doesn’t know!
+  prefs: []
+  type: TYPE_NORMAL
+- en: All the optimization procedure has access to is the set of sampled points. Using
+    these sampled points, it develops a *hypothesis* about the shape of the true cost
+    function. This is known formally as a *surrogate function*. The surrogate function
+    approximates the objective/cost function and represents the current set of beliefs
+    on how the objective function behaves with respect to sampled parameters/independent
+    variables.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [10-4](#Fig4) demonstrates how two sampled points are used as the basis
+    for a surrogate function (red, dotted). While the model isn’t able to “see” the
+    complete objective function, it *can* “see” the complete surrogate function. The
+    surrogate function is a mathematically represented function whose properties can
+    be easily accessed through established techniques. The optimization procedure
+    can determine which points are promising or risky based on the surrogate model.
+    If a certain proposed point *x* has a high surrogate function value, then it is
+    a riskier decision. If a certain proposed point *x* has a low surrogate function
+    value, then it is more promising (Figure [10-4](#Fig4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a surrogate function through 2 lines with a trend of fluctuation.
+    4 locations are labelled on the lines as promising points, sampled point, risky
+    point, and sampled point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fitting a surrogate function to two sampled points and using the surrogate function
+    to develop estimations for how promising and risky certain unsampled points are
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because our surrogate function here is defined only by two points, it is unwise
+    for the optimization procedure to enact a strictly greedy sampling policy. Suppose
+    the procedure decides to evaluate the true value of both of these points (by evaluating
+    them through the objective function). We find that the risky point actually minimized
+    the objective function more than the promising point, which means that taking
+    the risk paid off! We can now update the surrogate function to reflect these sampled
+    points and identify new promising points to sample (Figure [10-5](#Fig5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration. It presents a refitting of the surrogate function through 3
+    lines with a trend of fluctuation, and intersection at 4 locations of sampled
+    point. A promising point on located on one of the lines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: A refitting of the surrogate function to newly sampled points and an update
+    of estimations for how promising or risky unsampled points are
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This process repeats: increased “intelligent”/informed sampling helps to define
+    the surrogate function such that it becomes a more and more accurate representation
+    of the true objective function (Figure [10-6](#Fig6)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of refitting of the surrogate function through 4 lines with
+    a trend of fluctuation. 5 sampled points are located on the dark shaded line.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: A second refitting of the surrogate function to newly sampled points and an
+    update of estimations for how promising or risky unsampled points are
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that the visualization of the surrogate models here is deterministic, but
+    in practice the surrogate functions used are probabilistic. The functions return
+    *p*(*y*| *x*), or the probability that the objective function’s output is *y*
+    given *x*. Probabilistic surrogate functions are more natural to update and sample
+    from in a Bayesian manner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because a random or grid search does not take any of the previous results into
+    consideration when determining the next sampled set of parameters, these “naïve”
+    algorithms save time and computation in calculating the next set of parameters
+    to sample. However, the additional computation Bayesian optimization algorithms
+    use to determine the next point to sample is used to construct a surrogate function
+    more intelligently with fewer queries. Net-wise, the reduction in necessary queries
+    to the objective function generally outweighs the increase in time and computation
+    to determine the next sampled point, making the Bayesian optimization method more
+    efficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This process of optimization is known more abstractly as *Sequential Model–Based
+    Optimization (SMBO)*. It operates as a central concept or template against which
+    various model optimization strategies can be formulated and compared. SMBO contains
+    one key feature: a surrogate function for the objective function that is updated
+    with new information and used to determine new points to sample. Two key attributes
+    differentiate different SMBO methods: the design of the acquisition function (the
+    process determining how new points are sampled given the surrogate models) and
+    the method of constructing the surrogate model (how to incorporate sampled points
+    into an approximate representation of the objective function). Hyperopt uses the
+    Tree-Structured Parzen Estimator (TPE) surrogate model and acquisition strategy.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Expected Improvement measurement quantifies the expected improvement with
+    respect to the set of parameters to be optimized, *x*. For instance, if the surrogate
+    model *p*(*y*| *x*) evaluates to zero for all values of *y* less than some threshold
+    value *y*^∗ – that is, there is zero probability that the set of input parameters
+    *x* could yield an output of the objective function less than *y*^∗ – there is
+    probably no improvement to be found by sampling *x*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Tree-Structured Parzen Estimator is built to work toward a set of parameters
+    *x* that maximizes Expected Improvement. Like all surrogate functions used in
+    Bayesian optimization, it returns *p*(*y*| *x*) – the probability that the objective
+    function’s output is *y* given an input *x*. Instead of directly obtaining this
+    probability, it uses Bayes’s rule:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ p\left(y|x\right)=\frac{p\left(x|y\right)\cdot p(y)}{p(x)} $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The *p*(*x*| *y*) term represents the probability that the input to the objective
+    function was *x* given an output *y*. To calculate this, two distribution functions
+    are used: *l*(*x*) if the output *y* is less than some threshold *y*^∗ and *g*(*x*)
+    if the output *y* is less than some threshold *y*^∗. To sample values of *x* that
+    yield objective function outputs less than the threshold, the strategy is to draw
+    from *l*(*x*) rather than *g*(*x*). (The other terms, *p*(*x*) and *p*(*y*), can
+    be easily calculated as they do not involve conditionals.) Sampled values with
+    the highest expected improvement are evaluated through the objective function.
+    The resulting value is used to update the probability distributions *l*(*x*) and
+    *g*(*x*) for better prediction.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ultimately, the Tree-Structured Parzen Estimator strategy attempts to find the
+    best objective function inputs to sample by continually updating its two internal
+    probability distributions to maximize the quality of prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You may be wondering: What is tree-structured about the Tree-Structured Parzen
+    Estimator strategy? In the original TPE paper, the authors suggest that the “tree”
+    component of the algorithm’s name is derived from the tree-like nature of the
+    hyperparameter space: the value chosen for one hyperparameter determines the set
+    of possible values for other parameters. For instance, if we are optimizing the
+    architecture of a neural network, we first determine the number of layers before
+    determining the number of nodes in the third layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin exploring the implementation of no-gradient optimization by finding
+    the minima of simple scalar-to-scalar functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider the following problem: find the value of *x* that minimizes'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(x)={\left(x-1\right)}^2 $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (Recall a similar exercise in Chapter [1](525591_1_En_1_Chapter.xhtml), used
+    to demonstrate the gradient descent algorithm.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Some simple math will tell you that the global minimum is at *x* = 1\. However,
+    the model does not have access to the analytical expression – it must find the
+    minimum by iteratively sampling from the function (Listing [10-1](#PC1), Figure
+    [10-7](#Fig7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph with grids. Y axis is numbered from 0 to 35, in increments of 5\. X
+    axis is numbered from 0 to 4 and negative 4, in increments of 2\. A curve is displayed
+    with a decreasing and an increasing trend, with a point marked at approximately
+    (1, 0).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The graph of *y* = (*x* − 1)² and its minimum at *x* = 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first step is to define the search space. Say that we are most confident
+    that the true value of *x* that minimizes *y* = (*x* − 1)² is somewhere near 0
+    and that the farther *x* is from 0, the less confidence that it will minimize
+    the function. This reflects a *normal distribution* with a center of 0\. The standard
+    deviation represents how quickly our confidence drops in *x*’s merits to minimize
+    the objective function as *x* moves farther from the mean.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To define spaces in Hyperopt, you must create a dictionary in which keys are
+    parameter identifiers/references/names and the values are Hyperopt hyperparameter
+    search space objects (Listing [10-2](#PC2)). In this case, we will use hp.normal,
+    which defines a parameter that will be sampled in a Gaussian fashion. All `hp.type`
+    spaces accept a name as the first argument. For `hp.normal`, we can specify the
+    mean (`mu`) and standard deviation (`sigma`) afterward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Our objective function takes in a dictionary params. params is structured in
+    the same way as our search space, except each of the keys has been replaced with
+    the sampled value. `params['x']` will return a float sampled from the normal distribution,
+    rather than a `hp.normal` object. We can evaluate the sampled value through our
+    sample function (Listing [10-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: To perform optimization, use the function minimization function `fmin`, which
+    accepts the objective function and search space arguments. You can additionally
+    provide the algorithm (the previously discussed Tree-Structured Parzen Estimator
+    is recommended) and the maximum number of queries/evaluations that can be made
+    to the objective function. Note that Hyperopt may stop earlier than the maximum
+    number of evaluations if it reaches a satisfactory solution and determines that
+    it is unlikely there are other unexplored better solutions (Listing [10-4](#PC4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: After several hundred evaluations, Hyperopt finds the minimizing value of *x*
+    to be 1.0058378772703804, which is very close to the true value of 1\. Success!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider another function defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(x)={\sin}^2x $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Multiples of *π* minimize this function, since sin(*kπ*) = 0 for any integer
+    *k*. Suppose we want Hyperopt to find a solution that minimizes the function and
+    resides between 2 and 4\. We know that 2 < *π* < 4 and that argmin(sin²*x*) = *kπ*;
+    thus, argmin(sin²*x*{2 < *x* < 4}) = *π*. Tackling this optimization problem leads
+    us nicely to an approximation for *π* (Listing [10-5](#PC5), Figure [10-8](#Fig8))!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph with grids. Y axis is numbered from 0.0 to 1.0, in increments of 0.2\.
+    X axis is numbered from negative 2 to 8, in increments of 2\. A curve is displayed
+    with a trend of fluctuation, a point marked at approximately (3, 0.0).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: The graph of *sin*²*x* and one of its minima at *x* = *π* marked
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Rather than using a normal distribution, we use a uniform distribution with
+    minimum 2 and maximum 4 to reflect our knowledge of the space (Listing [10-6](#PC6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: After ten trials, Hyperopt’s approximation of *π* is 3.254149; after 100 trials,
+    it is 3.139025; after 1000, it is 3.141426\. For reference, the actual value of
+    pi rounded to six digits is 3.141593 – our no-gradient approximation was only
+    about 0.00017 off!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Often, however, functions are not defined for all values in the domain we want
+    to search on. Hyperopt allows us to specify when a parameter or set of parameters
+    is invalid using *statuses*. Consider minimizing the following function, which
+    is undefined at *x* = 0 (Listing [10-7](#PC7), Figure [10-9](#Fig9)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ y=\frac{1}{x^2}+{x}^2 $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph with grids. Y axis is numbered from 2 to 16, in increments of 2\. X
+    axis is numbered from negative 4 to 4, in increments of 1\. 2 curves are presented
+    with each low peak point at approximately, (negative 1, 2) and (1, 2), respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: The graph of ![$$ \frac{1}{x^2}+{x}^2 $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_IEq1.png),
+    with both minimas at *x* ∈ {−1, 1}
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'It’s not easy to specify in the search space that *x* should not be 0; instead,
+    we return `{''status'':''fail''}` from the objective function if it receives an
+    invalid value. If the sampled parameters are valid, we return `{''status'':''ok'',
+    ''loss'': ...}` – filling in the “loss” with whatever loss is incurred by the
+    given set of sampled parameters (Listing [10-8](#PC8)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Notice that this particular function has two global minima, both of which are
+    equally valid. Given that the search space is symmetric and centered directly
+    in between the minimizing values of *x*, Hyperopt will arrive at a particular
+    solution entirely random about half of the time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Sometimes, we can’t even describe precisely which sampled parameters or parameter
+    sets will yield invalid results. For instance, consider the following function,
+    which is invalid on the real domain both for values of *x* < 0 and sin(*x*²) < 0
+    (the latter condition occurring more frequently as *x* → ∞) (Listing [10-9](#PC9),
+    Figure [10-10](#Fig10)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ y=\frac{1}{\sqrt{x}}-\sqrt{\sin \left({x}^2\right)} $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig10_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph with grids. 16 low peak point curves are presented between 0 to 10 on
+    the x axis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: The graph of ![$$ y=\frac{1}{\sqrt{x}}-\sqrt{\mathit{\sin}\left({x}^2\right)}
+    $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_IEq3.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Say we want to minimize this function between 0 and 10\. Rather than specifying
+    which sampled parameter values will yield an invalid result – which is a pretty
+    arduous algebraic task – we can carry out the calculation first and then deal
+    with the fallout afterward if it blows up. In this case, if we perform an invalid
+    operation with NumPy, the result will be `np.nan`. We can execute the objective
+    function evaluation and return a failed status if it is `nan` (Listing [10-10](#PC10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: In alternative situations where executing the objective function given the sampled
+    set of parameters throws an error (e.g., building a neural network with an invalid
+    architecture), you can also use a try/except architecture in which a failed status
+    is returned if there is any error in the objective function evaluation. Hyperopt
+    finds a reasonably good minimum (Figure [10-11](#Fig11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig11_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph with grids. 16 low peak point curves are presented between 0 to 10 on
+    the x axis. The fifteenth curve towards the right side, presents a point marked
+    approximately at (9.5, negative 0.4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: The graph of ![$$ y=\frac{1}{\sqrt{x}}-\sqrt{\mathit{\sin}\left({x}^2\right)}
+    $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_IEq5.png) with
+    the minimum discovered by Hyperopt marked as a point
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optimizing Model Meta-parameters
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, we’ll apply our knowledge of Hyperopt’s syntax to begin meta-optimization
+    of classical machine learning models and deep learning models. Rather than dealing
+    with simple *f* : *x* → *y* minimization problems, we will be constructing large
+    possible search spaces that are used to build and train a model in the objective
+    function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s consider the Higgs Boson dataset, which we have approached from multiple
+    different directions previously in the book. This dataset is a generally difficult
+    modeling problem, but perhaps we will be able to find a better solution using
+    meta-optimization (Figure [10-12](#Fig12)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig12_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table of 22 columns with the Higgs Boson dataset. At the bottom a text presents
+    as, 68636 rows, cross, 29 columns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Higgs Boson dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will begin by trying to find the best classical machine learning model:
+    one of Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, AdaBoost,
+    and multilayer perceptron (Figure [10-13](#Fig13)). This is the most overarching
+    implicit meta-parameter in the modeling pipeline: which model you even choose
+    to model a dataset with is itself a meta-parameter! Beyond this, however, there
+    are meta-parameters within each model that need to be optimized. For instance,
+    there are different depth values and criteria used in constructing a Decision
+    Tree; these can significantly alter the behavior of one Decision Tree compared
+    with the other. The Random Forest and Gradient Boosting models have an additional
+    meta-parameter – the number of estimators in the ensemble. We not only want to
+    choose the best model but also the best set of meta-parameters for that model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig13_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of 6 search space for model type. They are, logistic regression,
+    decision tree, random forest, gradient boosting, AdaBoost, and multilayer perception.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Search space for which model to use and parameters relevant to that model
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin by importing each of our relevant models (Listing [10-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will use the F1 score to evaluate the best model. Recall from Chapter [1](525591_1_En_1_Chapter.xhtml)
+    that the F1 score is a more balanced and informed metric for binary classification
+    problems than accuracy. Additionally, we need to import our space definition (`hyperopt.hp`),
+    function minimization (`hyperopt.fmin`), and Tree-Structured Parzen Estimator
+    (`hp.tpe`) utilities (Listing [10-12](#PC12)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can begin to construct our space. We want to make a decision about which
+    model to use; the key-value pair `''model'': hp.choice(''model'', models)` tells
+    Hyperopt that this meta-parameter called ‘model’ must be sampled as one choice
+    out of the given list of models (which are uninstantiated model objects). If the
+    selected model is Linear Regression, we want to choose whether to use no regularization
+    or L2 regularization; if the selected model is a decision tree, we want to choose
+    whether to use Gini or entropy criterion (see Chapter [1](525591_1_En_1_Chapter.xhtml))
+    and the maximum depth. To define the sampling space of a meta-parameter that is
+    roughly continuous but only takes on quantized values, we use `hp.qtype`; in this
+    case, `quniform(''name'', 1, 30, q=1)` defines a uniform distribution between
+    1 and 30 quantized with factor 1 (quantization defined as ![$$ x\to \frac{\textrm{round}\left(q\cdot
+    x\right)}{q} $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_IEq6.png)
+    for some quantization factor *q*). If we wanted multiples of two, we could set
+    the quantization factor to `q=2`. We can continue listing out each of the meta-parameters
+    in a similar fashion (Listing [10-13](#PC13)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, this is a very poor way to structure our search space for a number
+    of reasons. Philosophically, we are not structuring the space in a way consistent
+    with the inherent nature of the meta-parameters. Everything is placed linearly,
+    whereas they should be somehow nested (as shown in the hierarchical diagram in
+    Figure [10-13](#Fig13)). From a technical-theoretical perspective, most of the
+    points we end up sampling have no effect on the output. For instance, if the selected
+    model is Linear Regression, then only one other meta-parameter is relevant (lr_penalty),
+    and all other 11 are irrelevant. We are structuring the space in a way that makes
+    optimization difficult, because the majority of sampled parameters are guaranteed
+    to not affect the outcome at all. From an implementation perspective, this sort
+    of search space structuring forces us to write a horrendously long objective function.
+    We need to duplicate everything and implicitly structure relationships anyway,
+    as shown in Listing [10-14](#PC14).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: To avoid this, we will use a *nested search space*. Rather than just choosing
+    a model objective, we choose a model “bundle.” This “bundle” includes not only
+    the actual model itself but a *sub–search space* for meta-parameters specific
+    to that selected model. By nesting dictionaries within each other, we can more
+    accurately capture the relationship between meta-parameters. Technically speaking,
+    we are creating a list of dictionaries, in which each dictionary represents a
+    subspace with potentially more search spaces and each `hp.choice()` samples a
+    dictionary during exploration (Listing [10-15](#PC15)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: When we define our search space this way, our objective function becomes exceptionally
+    clean (Listing [10-16](#PC16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: What is Listing [10-16](#PC16) doing? Recall that the model is stored as an
+    uninstantiated object, which can be instantiated using the parenthesis notation
+    (e.g., `model = DecisionTreeClassifier()`). Additionally, we want to construct
+    the model with the sampled set of parameters. From the search space defined in
+    Listing [10-15](#PC15), we see that `params['models']['parameters']` yields a
+    dictionary in which keys are parameter names and values will be the sampled values
+    for those parameters. The unpacking `**` command in Python can be used to “translate”
+    this dictionary into object construction such that each key is a parameter and
+    each value is the parameter value. We conveniently have named each of the keys
+    in our parameter dictionaries in the search space the same as the initialization
+    arguments in the model constructor, and thus we can initialize our model and all
+    the sampled parameters in one line of code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Practically speaking, however, we have to make one adjustment. Hyperopt samples
+    quantized inputs (e.g., for tree depth of a Decision Tree) as floats, even if
+    the actual values are mathematically integers (e.g., `2.0`, `42.0`). `sklearn`
+    throws an error when we pass a float value into an argument that accepts only
+    integers. Therefore, we can add some “cleaning” code in our objective function
+    to make sure that the `n_estimators` parameter is cast to an integer and also
+    is at least 1 (it is possible for Hyperopt to sample values less than 1, since
+    we technically defined a quantized *normal* distribution). We can initialize our
+    model as previously with this set of cleaned parameters (Listing [10-17](#PC17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note additionally that we return the negative F1 score because Hyperopt *minimizes*
+    the given objective function. If we were to omit the negation, Hyperopt would
+    in fact be finding the worst model. (Purely theoretically speaking, the worst
+    model is very close to the best model – just flip the labels.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After 30 evaluations, Hyperopt determines that the best set of parameters (stored
+    in `best`) is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: The selected value for the parameter ‘models’ is 2; the model at index 2 in
+    the list of models in the search space is the Random Forest classifier. The optimal
+    model is a Random Forest classifier using the entropy criterion with a maximum
+    tree depth of 16 and 69 estimators. After training separately, this model obtains
+    an F score of about 0.73, which is quite high for the Higgs Boson dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can also use meta-optimization to optimize how we train neural networks.
+    For instance, we may want to choose the best optimizer, optimizer parameters,
+    and the decay factor and patience of a learning rate manager. Note that we need
+    to structure our optimizer in a nested/hierarchical fashion because some parameters
+    are only relevant if another parameter is sampled at a certain value (i.e., we
+    want to capture parameter dependencies). However, we will reliably need to sample
+    the patience and decay factor of a learning rate manager; thus, we can add these
+    to the space as parameters in a sub-dictionary for the purposes of organization
+    but don’t “choose” whether they are relevant or not via nested choice (Listing
+    [10-18](#PC19)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since creating a neural network requires a nontrivial amount of code, it’s good
+    practice to create a separate method that constructs a neural network architecture.
+    In this case, we will employ a simple static seven-layer network (Listing [10-19](#PC20)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Our objective is to minimize the validation binary cross-entropy. The objective
+    function takes in the sampled parameters, initializes a neural network, and fits
+    it using the given optimizer parameters and learning rate manager (Listing [10-20](#PC21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that because we are using a relatively lightweight neural network architecture
+    and tabular datasets are comparatively small, training and evaluating 100 neural
+    networks (or more) is not computationally unfeasible on ordinary hardware.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The best solution yielded in one run is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: This particular neural network model reaches an F1 score of almost 0.74.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Beyond just optimizing the model’s training parameters, we can also try to optimize
+    the neural network’s architecture. Let’s parametrize the `build_NN` function by
+    allowing for various dimensions of the network (Listing [10-21](#PC23)). In an
+    effort to build more complex nonlinear network topologies, we will use multiple
+    branches (see Figure [10-14](#Fig14)). Each branch is composed of a certain number
+    of 28-neuron fully connected layers, followed by a certain number of 16-neuron
+    fully connected layers. These branches are merged together through a certain joining
+    method (either adding or concatenating) and processed by a certain number of 16-neuron
+    layers. This gives us five dimensions of parametrization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can correspondingly design a search space (Listing [10-22](#PC24)). In addition
+    to optimizing for the optimizer and learning rate management, we will also provide
+    five fields for Hyperopt to optimize the neural network architecture. `quniform`
+    works fine for all the fields except for the join method, which is a choice between
+    adding and concatenating.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: To understand how different branch sizes manifest, see Listing [10-23](#PC25)
+    and Figure [10-14](#Fig14).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig14_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 6 flowcharts of 6 branches. Each branch varies in design, with similar features
+    of input, out dense, and add.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of architectures with varying numbers of branches (holding other
+    architectural features constant)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Moreover, to illustrate the architectural diversity of topologies generated
+    from our five dimensions of architecture parametrization, see Listing [10-24](#PC26)
+    and Figure [10-15](#Fig15). You can think of each of the displayed architectures
+    as occupying some point in the search space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 35 flowcharts. They present the branch samples in the search space for suitable
+    selection. Each sample varies in design, with similar features of input, out dense,
+    and add.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample selection of architectures possible in our search space
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: The objective function is not difficult to write, due to our well-designed implementation
+    of the search space. We can simply unpack relevant architectural parameters and
+    pass them into the `build_NN` function, which instantiates the sampled architecture
+    (Listing [10-25](#PC27)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The best-discovered architecture for a sample run had two branches, three 28-node
+    layers followed by three 110-node layers in each branch and four 110-node layers
+    after an add-based joining. The discovered architecture seems reasonable: it exploits
+    the nonlinearity of multiple branches, but is overall a well-balanced topology
+    (Figure [10-16](#Fig16)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig16_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart. It presents a suitable option through a hyperopt architecture.
+    Dense numbers 2266 to 2282 are displayed, along with input, output, none and numbers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: The best architecture (within our problem space) for this problem, discovered
+    by Hyperopt
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, note that Hyperopt was not designed for intensive architecture search.
+    Later in this chapter, we’ll explore how we can use more specialized frameworks
+    to run Neural Architecture Search (NAS) operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optimizing Data Pipelines
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Building the model itself is a relatively small component of the overall modeling
+    process! Any data scientist who has worked on real-world data problems understands
+    that tasks like data cleaning and preparation comprise a large part of the labor
+    and time required to work one’s way through the data pipeline. Along the way,
+    you will make many decisions on how to manipulate the data that may seem arbitrary
+    or unoptimized. We can optimize these decisions, too, with meta-optimization tools.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s use the Ames Housing dataset, which has many categorical features that
+    require intensive data encoding. Recall we used this dataset in Chapter [2](525591_1_En_2_Chapter.xhtml)
+    to try out different categorical encoding techniques (Listing [10-26](#PC28),
+    Figure [10-17](#Fig17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig17_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table of 22 columns with the Ames housing dataset. At the bottom a text presents
+    as, 1460 rows, cross, 60 columns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Ames Housing dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Plotting out a univariate distribution of house prices demonstrates a pretty
+    significant range of prices, spanning the range of hundreds of thousands of dollars
+    (Figure [10-18](#Fig18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A graph of count versus sale price. Values are estimated. The highest and lowest
+    data are, 100000 to 200000: 175, and 600000 to 700000: 1.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of house prices in the Ames Housing dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: We mainly care about categorical features here, since these are ones that need
+    preprocessing. We want to find which type of categorical encoding is optimal for
+    each feature.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Categorical features need to be encoded somehow. Instead of guessing which categorical
+    encoding technique to use for each feature (or across all features), we can define
+    a search space in which we want to choose the best categorical encoder for each
+    categorical column in the Ames Housing dataset (Figure [10-19](#Fig19)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table of 5 columns with 4 sets of search space of label encoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Demonstration of mapping a set of possible categorical encoders to each categorical
+    feature
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ideally, at the conclusion of such a search, the meta-optimization procedure
+    would select the best combination of categorical encoding techniques for each
+    column such that a model trained on the categorically encoded dataset yields the
+    best validation performance (Figure [10-20](#Fig20)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table of 5 columns with 4 sets of search space of label encoder. 4 encoder
+    categories are highlighted in each set, namely, one hot encoder, target encoder,
+    James Stein encoder, and label encoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Demonstration of selecting a single best categorical encoder from the set of
+    categorical encoders for each categorical feature in the dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'First, we need to determine which columns in the dataset are categorical or
+    not. This is not a trivial task, because there are several dozen columns in the
+    dataset and some categorical features are numbers. Moreover, some features can
+    be reasonably considered both to be categorical and continuous, like the number
+    of bathrooms in a house. This quantity is technically continuous, but is categorical
+    in nature because there are only really four to five unique values that this feature
+    could feasibly occupy. We’ll define a categorical feature as a feature that satisfies
+    the following condition: it either is filled with strings or contains five or
+    less unique values (Listing [10-27](#PC29)). This isn’t perfect, but it gets the
+    job done.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, we need to actually construct our space. To begin with, we want a set of
+    categorical encoders to consider for each feature (Listing [10-28](#PC30)). We’ll
+    choose several earlier discussed in Chapter [2](525591_1_En_2_Chapter.xhtml) and
+    create a list of possible encoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: To create the space, we simply need to loop through each column in the dataset
+    and determine if it is a categorical feature or not. If it is, we take note of
+    it in `cat_features` and create a parameter in the search space that allows Hyperopt
+    to choose between any of the encoders to apply for that particular feature (Listing
+    [10-29](#PC31)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, our space has a parameter for each categorical variable. You can probably
+    already imagine the structure of the objective function from our previous exercises.
+    The objective function will accept a dictionary of parameters, and we will apply
+    the selected encoders to each feature (using something like `encoder.fit_transform(data)`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, there’s a problem. Some of the categorical encoders (e.g., count encoder,
+    target encoder) used require a target feature *y* in addition to the categorical
+    feature *x*, whereas others (e.g., one-hot encoder, ordinal encoder) require only
+    the categorical feature *x*. We cannot train all encoders the same way. To reconcile
+    with this, we can associate each encoder in the search space with metadata (similar
+    to the practice of “bundling” introduced earlier with nested search spaces). In
+    this case, we can attach a Boolean to each encoder indicating if it requires a
+    target feature during training or not. When we read in the set of selected parameters,
+    we can determine exactly how to use the encoder with respect to the categorical
+    feature by observing that Boolean status.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To implement this, we can restructure our list of encoders to instead a list
+    of encoder “bundles,” in which each bundle contains the actual encoder object
+    as its first element and the Boolean value as the second element (Listing [10-30](#PC32)).
+    Note that Hyperopt doesn’t care about how you structure the choice search space,
+    as long as you give it a list of some objects (e.g., sets, tuples, lists) to choose
+    from.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we can build our objective function. We will loop through each of the categorical
+    features and encode them using the sampled encoder and then add them to a dataset
+    (Listing [10-31](#PC33)). We’ll run train-test split with the same seed and train
+    a Random Forest regressor model on that dataset. The performance of the set is
+    the mean absolute error of that model on the validation dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can fit it using standard objectives (Listing [10-32](#PC34)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: The best model obtains a validation loss of 825\. This is a good result – that’s
+    825 dollars off on predicting house price with a much larger target output range.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Moreover, we can print out the contents of the best-discovered set of encoders.
+    Hyperopt displays the indices of the best encoders for a particular column. The
+    results are interesting to think about; you can do a lot of important analyses
+    about the nature of the feature based on which type of encoder is most beneficial
+    to prediction:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can also optimize which model is used. It may be the case that the best set
+    of encoders for the Random Forest regressor is not the best set of encoders for
+    a different regressor that performs better overall. This follows similar logic
+    as previously discussed; we can define a search space of possible models that
+    will be instantiated and trained inside the objective function (Listing [10-33](#PC36)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: Within the objective function, we instantiate the model with `()` and fit on
+    the encoded set of features, returning the validation Mean Absolute Error as a
+    measure of badness to be minimized (Listing [10-34](#PC37)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: This model performs much better, obtaining a Mean Absolute Error of 373.589\.
+    The best selected model uses LASSO regression, which you likely would not have
+    expected to be the best-performing algorithm!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Moreover, we can optimize the hyperparameters of the model. This brings everything
+    previously discussed together: we are optimizing, more or less, the entire data
+    pipeline from encoding to model training. The definition of the model hyperparameter
+    search space is very similar to the previously discussed sample, but in this case
+    we use regression rather than classification models and therefore optimize a somewhat
+    different set of hyperparameters (Listing [10-35](#PC38)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We get a validation error of about 145 with the following parameter dictionary.
+    This is almost a fivefold decrease in error from our first hyperparameter optimization
+    procedure on this dataset and likely an even larger decrease in error compared
+    with a manually designed model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, it should be noted that meta-optimization can – in a minority of cases
+    – be prone to *meta-overfitting*, in which we overly parametrize our search space
+    and end up creating a highly specialized model that performs very well on the
+    validation dataset, but not on new data. Meta-overfitting is only relevant when
+    the search space size drastically overshadows the size of the dataset, because
+    it is quite difficult to overfit on a “secondary” level through the outputs of
+    a model. This can occur when optimizing a very large set of neural network meta-parameters
+    on a comparatively much smaller dataset, but seldom in other cases. Imagine, for
+    instance, that your hands were replaced with monkeys that had their own will and
+    actions. Performing intricate, fine-grained, and highly coordinated movements
+    like grabbing a cup of coffee (i.e., having the monkey’s hand grab the coffee
+    and bring it to your lips) is very difficult because you only have “meta-level”
+    control over the monkeys, but not direct control over the monkeys’ hands. In cases
+    where meta-overfitting may be a risk, either reduce the search space, increase
+    the dataset (perhaps through data generation techniques like VAEs), and/or separate
+    the validation dataset itself into two parts such that you can evaluate the “true”
+    performance of the hyper-optimized best model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A common criticism of meta-optimization is that it takes a long time. However,
+    the evaluation metric for whether to use meta-optimization or not is to evaluate
+    *its efficiency relative to your efficiency*. We can define efficiency as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{efficiency}=\frac{\textrm{success}\ \textrm{of}\ \textrm{model}}{\textrm{time}\
+    \textrm{and}\ \textrm{labor}\ \textrm{exerted}\ \textrm{creating}\ \textrm{model}}
+    $$](../images/525591_1_En_10_Chapter/525591_1_En_10_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: More often than not, using meta-optimization techniques will have higher efficiency
+    than manually creating a model, because manually designing models often takes
+    a nontrivial amount of time and labor yet on average yields average performance.
+    Even if the meta-optimization space is even just reasonably set up, chances are
+    that you will get something out of it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In many ways, meta-optimization allows you to integrate many of the deep learning
+    tools learned before (and tools we will learn later). For instance, you could
+    use meta-optimization to determine whether to and how to use artificial, convolutional,
+    and/or recurrent processing layers in your neural network design. The design is
+    in your hands!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Architecture Search
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Previously, we demonstrated how general Bayesian hyperparameter optimization
+    methods implemented in Hyperopt could be used to accomplish tasks like optimizing
+    a neural network architecture. However, neural network architecture optimization
+    is a quite specific task, and attempting to apply general tools to solve specific
+    tasks generally causes inefficiency due to overhead (like using a generic tool
+    like a shovel to move large mounds of rock when a specialized tool like a bulldozer
+    is needed).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The specific theory behind the subfield of Neural Architecture Search is beyond
+    the scope of the book. In this section, we will demonstrate client-end usage of
+    the friendly, high-level NAS library AutoKeras. True to its name, AutoKeras is
+    a Keras/TensorFlow-based Neural Architecture Search library that uses a variation
+    of Bayesian optimization designed particularly for NAS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'AutoKeras’s syntax reflects that of Keras: different “blocks” or “layers” can
+    be chained together in functional API–like syntax. The blocks in AutoKeras can
+    be thought of as “super-layers” – the use can specify the general nature of the
+    block, but the specific composition of the block is optimized using the AutoKeras
+    NAS algorithm.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Say we want to find the optimal neural network architecture for the Higgs Boson
+    dataset. We will use the `ak.StructuredDataInput` block to accept structured data
+    input (i.e., tabular data). Afterward, we attach `ak.StructuredDataBlock`, which
+    is an abstracted block object that processes structured data. The output of the
+    structured data block is passed into `ak.ClassificationHead`, because we want
+    to perform a classification task (Listing [10-36](#PC40)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: The layers can then be compiled into `ak.AutoModel`. The `overwrite` parameter
+    allows new better-performing models to replace older poorer-performing models
+    in storage and is recommended for large-scale trials. The `max_trials` parameter
+    determines the maximum number of sample neural network architectures AutoKeras
+    will run before experiment termination. The search can be fitted using standard
+    Keras syntax. Note that AutoKeras further splits the `X_train` and `y_train` into
+    “subtraining” and “subvalidation” sets. After training, the best model can be
+    exported using `.export_model()`. Since the output is a Keras model, we can perform
+    operations like saving the model or plotting its architecture (Listing [10-37](#PC41),
+    Figure [10-21](#Fig21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig21_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart. It presents a suitable option through Auto Keras classification
+    of a dataset. Input layer displays, multicategory encoding, normalization of batch,
+    dense, R e L U, dropout, and activation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: The best deep learning model architecture for the Higgs Boson dataset, discovered
+    by AutoKeras
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can also adapt our search to a regression problem – the Ames Housing dataset
+    – by simply swapping the output `ak.ClassificationHead` with `ak.RegressionHead`.
+    In this case, we can also pass in `categorical_encoding = True` to have AutoKeras
+    learn optimal categorical encoding techniques too (Listing [10-38](#PC42)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: AutoKeras’s best solution performs quite poorly (although acceptably, speaking
+    on the absolute) relative to our more manual design implemented earlier in the
+    “Optimizing Data Pipelines” subsection (Figure [10-22](#Fig22)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_10_Chapter/525591_1_En_10_Fig22_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart. It presents a suitable option through Auto Keras classification
+    of a dataset. Input layer displays, multicategory encoding, dense, R e L U, dropout,
+    along with regression head 1, none and numbers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: The best deep learning model architecture for the Ames Housing dataset, discovered
+    by AutoKeras
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The poor performance of AutoKeras’s search for the optimal Ames Housing dataset
+    neural network can demonstrate one or multiple of three takeaways: (a) neural
+    networks are not the best for every problem (and can actually do very poorly in
+    some contexts), (b) custom-optimized categorical encoding can do wonders for categorical
+    feature–heavy datasets, and (c) Neural Architecture Search – for all its shiny
+    glitz and glamour – doesn’t always work out.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: AutoKeras has many additional adaptations for multi-input and multi-output heads,
+    which can be useful if you want to build multimodal models like in Chapter [4](525591_1_En_4_Chapter.xhtml)
+    or [5](525591_1_En_5_Chapter.xhtml). It is especially helpful for processing text
+    data, which can require a significant labor investment; AutoKeras’s text heads
+    and embedding layers require little manual work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generally speaking, AutoKeras and NAS are neither tools to be wholly relied
+    upon nor wholly dismissed. In many cases, a NAS-discovered architecture may be
+    the inspiration for a high-performing somewhat manually designed network, as is
+    often the case in deep learning research.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, we discussed meta-optimization and its application to various
+    components of the model development process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In meta-optimization, a meta-model searches for the set of hyperparameters that
+    optimizes a model’s performance.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In Bayesian optimization, a probabilistic surrogate model is both updated by
+    sampled points and used to inform next points to sample.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Meta-optimization can be used to optimize which model is used, model hyperparameters
+    (including the architecture and training parameters of models), and data encodings
+    (among other components of the modeling process).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Meta-optimization is especially feasible with tabular data models, relatively
+    speaking, since these tend to be smaller than computer vision or natural language
+    processing models.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the next chapter, we will explore how models can be effectively arranged
+    to form powerful ensembles and “self-aware” systems.
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,2319 @@
+- en: 8. Autoencoders
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*Weak encoding means mistakes and weak decoding means illiteracy.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Rajesh Walecha, Author
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'An autoencoder is a very simple model: a model that predicts its own input.
+    In fact, it may seem deceivingly simple to the point of being worthless. (After
+    all, what use is a model that predicts what we already know?) Autoencoders are
+    extraordinarily valuable and versatile architectures not because of their functionality
+    to reproduce the input, but because of the internal capabilities developed in
+    order to obtain said functionality. Autoencoders can be chopped up into desirable
+    parts and stuck onto other neural networks, like playing with Legos or performing
+    surgery (take your pick of analogy), with incredible success, or can be used to
+    perform other useful tasks, such as denoising.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter begins by explaining the intuition of the autoencoder concept,
+    followed by a demonstration of how one would implement a simple “vanilla” autoencoder.
+    Afterward, four applications of autoencoders – pretraining, denoising, sparse
+    learning for robust representations, and denoising – are discussed and implemented.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Concept of the Autoencoder
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The operations of encoding and decoding are fundamental to information. Some
+    hypothesize that all transformation and evolution of information results from
+    these two abstracted actions of encoding and decoding (Figures [8-1](#Fig1) and
+    [8-2](#Fig2)). Say Alice sees Humpty Dumpty hit his head on the ground after some
+    precarious wall-sitting and tells Bob, “Humpty Dumpty hit his head badly on the
+    ground!” Upon hearing this information, Bob *encodes* the information from a language
+    representation into thoughts and opinions – what we might call *latent* representations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Say Bob is a chef, and so his encoding “specializes” in features relating to
+    food. Bob then *decodes* the latent representations back into a language representation
+    when he tells Carol, “Humpty Dumpty cracked his shell! We can use the innards
+    to make an omelet.” Carol, in turn, encodes the information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Say Carol is an egg activist and cares deeply about the well-being of Humpty
+    Dumpty. Her latent representations will encode the information in a way that reflects
+    her priorities and interests as a thinker. When she decodes her latent representations
+    into language, she tells Drew that “People are trying to eat Humpty Dumpty after
+    he has suffered a serious injury! It is horrible.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: So on and so forth. The conversation continues and evolves, information passed
+    and transformed from thinker to thinker. Because each thinker *encodes* the information
+    represented in language in a semantic system relevant to their experiences, priorities,
+    and interests, they correspondingly *decode* information in a fashion colored
+    through these lens.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram highlights the encoding and decoding transformation results.
+    It exhibits evolution of information from the abstracted actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transformation of information as a series of encoding and decoding operations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the abstract actions of encoding and decoding. The labels
+    are input, encoder, latent space, decoder and output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: A high-level autoencoder architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: Of course, this interpretation of encoding and decoding is very broad and more
+    psychological than anything else. In the strict context of computer science, encoding
+    is an operation to represent some information in another form, usually with smaller
+    information content (there are few applications for encoding techniques that make
+    the storage size larger). Decoding, in turn, “undoes” the encoding operation to
+    recover the original information. Encoding and decoding are commonly used terms
+    in the context of compression (Figure [8-3](#Fig3)). Various computer scientists
+    throughout the decades have proposed very clever algorithms to map information
+    to smaller storage sizes with lossless and lossy reconstruction of the original
+    information, making the transmission of large data like long text, images, and
+    videos across limited information transfer connections feasible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the sender and receiver. The sender labels are data,
+    encoding scheme and encrypted while that of receiver are encrypted, decoding scheme
+    and reconstructed data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interpretation of autoencoders as sending and receiving encrypted data
+  prefs: []
+  type: TYPE_NORMAL
+- en: Encoding and decoding in deep learning are a bit of a fusion of these two understandings.
+    *Autoencoders* are versatile neural network structures consisting of an encoder
+    and a decoder component. The encoder maps the input into a smaller latent/encoded
+    space, and the decoder maps the encoded representation back to the original input.
+    The goal of the autoencoder is to reconstruct the original input as faithfully
+    as possible, that is, to minimize the *reconstruction loss*. In order to do so,
+    the encoder and decoder need to “work together” to develop an encoding and decoding
+    scheme.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders reduce the representation size of the original input information,
+    which can be thought of as a form of lossy compression. However, numerous studies
+    have demonstrated that autoencoders are generally quite bad at compression when
+    put into contrast with human-designed compression schemes. Rather, when we build
+    autoencoders, it is almost always to *extract meaningful features at the “core”
+    of the data*. The smaller representation size of the latent space compared with
+    the original input emerges only because we need to impose an information bottleneck
+    to force the network to learn meaningful latent features. The architectures in
+    Figures [8-4](#Fig4) and [8-5](#Fig5) demonstrate constant and expanded information
+    representations compared with the input; the autoencoder can trivially learn weights
+    that simply pass/carry the input from the input to the output. On the other hand,
+    the architecture in Figure [8-6](#Fig6) must learn nontrivial patterns to compress
+    and reconstruct the original input. The information bottleneck and information
+    compression, therefore, is the means, not the end, of the autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network diagram depicts the compression and reconstruction of the original
+    input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: A good autoencoder architecture (latent space representation size is smaller
+    than input representation size)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network architecture represents expanded data in comparison with the input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: An even worse autoencoder architecture (latent space representation size is
+    larger than input representation size)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network architecture highlights constant data representation related with
+    the input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: A bad autoencoder architecture (latent space representation size is equal to
+    input representation size)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders are very good at finding higher-level abstractions and features.
+    In order to reliably reconstruct the original input from a much smaller latent
+    space representation, the encoder and decoder must develop a system of mapping
+    that most meaningfully characterizes and distinguishes each input or set of inputs
+    from others. This is no trivial task!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider the following autoencoder design scheme adapted for humans (Figure
+    [8-7](#Fig7)): person A is the encoder and attempts to “encode” a high-resolution
+    image of a sketch as a natural language description, restricted to *N* words or
+    less; person B is the decoder and attempts to “decode” the original image person
+    A was looking at by drawing a reconstructed image based on person A’s natural
+    language description. Person A and person B must work together to develop a system
+    to reliably reconstruct the original image.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts two images, a photograph of a cat on the left and a diagram
+    on the right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Image-to-text encoding guessing game
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Say that you are person B and you are given the following natural language
+    description by person A: “a black pug dressed in a black and white scarf looks
+    at the upper-left region of the camera among an orange background.” For the sake
+    of intuition, it is a worthwhile exercise to try actually playing the role of
+    person B in this game by sketching out/”decoding” the original input.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Figure [8-8](#Fig8) shows the (hypothetical) image that person A encoded into
+    the given natural language description. Chances are that your sketch is very different
+    from the actual image. By performing this exercise, you will have experienced
+    first-hand two key low-level challenges in autoencoding: reconstructing a complex
+    output from a comparatively simpler encoding requires a lot of thinking and conceptual
+    reasoning about the encoding, and the encoding scheme itself needs to effectively
+    communicate both key concepts and precision/positioning information.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A photograph of a dog.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: What person A was hypothetically looking at when they provided you the natural
+    language encoding. Taken by Charles Deluvio
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this example, the latent space is in the form of language – which is discrete,
+    sequential, and variable-length. Most autoencoders for tabular data use latent
+    spaces that satisfy none of these attributes: they are (quasi-) continuous, read
+    and generated all at once rather than sequentially, and fixed-length. These general
+    autoencoders can reliably find effective encoding and decoding schemes with lifted
+    restrictions, but the two-player game is still good intuition for thinking through
+    challenges associated with autoencoder training.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although autoencoders are relatively simple neural network architectures, they
+    are incredibly versatile. In this section, we will begin with the plain “vanilla”
+    autoencoder and move to more complex forms and applications of autoencoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Vanilla Autoencoders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s begin with the traditional understanding of an autoencoder, which merely
+    consists of an encoder and a decoder component working together to translate the
+    input into a latent representation and then back into original form. The value
+    of autoencoders will become clearer in following sections, in which we will use
+    autoencoders to substantively improve model training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The goal of this subsection is not only to demonstrate and implement autoencoder
+    architectures but also to understand implementation best practices and to perform
+    technical investigations and explorations into how and why autoencoders work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders are traditionally applied to image and text-based datasets, because
+    this sort of data often features semantic concepts that should take a smaller
+    amount of space to represent than is used in raw form. For instance, consider
+    the following approximately 3000-by-3000 pixel image of a line (Figure [8-9](#Fig9)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image of a line embedded in a square.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: An image of a line
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This image contains nine million pixels, meaning we are representing the concept
+    of this line with nine million data values. However, in actuality we can express
+    any line with just four numbers: a slope, a *y*-intercept, a lower *x* bound,
+    and a higher *x* bound (or a starting *x* point, a starting *y* point, an ending
+    *x* point, and an ending *y* point). If we were to design an encoding and decoding
+    scheme set, the encoder would identify these four parameters – yielding a very
+    compact four-dimensional latent space – and the decoder would redraw the line
+    given those four parameters. By collecting higher-level abstract *latent* features
+    from the semantics represented in the images, we are able to represent the dataset
+    more compactly. We’ll revisit this example later in the subsection.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Notice, however, that the autoencoder’s reconstruction capability is conditional
+    on the existence of structural similarities (and differences) within the dataset.
+    An autoencoder cannot reliably reconstruct an image of random noise, for instance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The MNIST dataset is a particularly useful demonstration of autoencoders. It
+    is technically visual/image-based, which is useful for understanding various autoencoder
+    forms and applications (given that autoencoders are most well developed for images).
+    However, it spans a small enough number of features and is structurally simple
+    enough such that we can model it without any convolutional layers. Thus, the MNIST
+    dataset serves as a nice link between the image and tabular data worlds. Throughout
+    this section, we’ll use the MNIST dataset as an introduction to autoencoder techniques
+    before demonstrating applications to “real” tabular/structured datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin by loading the MNIST dataset from Keras datasets (Listing [8-1](#PC1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Recall that the key feature of an autoencoder is an information bottleneck.
+    We want to begin from the original representation size, progressively force the
+    information flow into smaller vector sizes, and then progressively force the information
+    back into the original size. Such a design is simple to quickly implement in Keras,
+    where we can successively decrease and increase the number of nodes in a sequence
+    of fully connected layers (Listing [8-2](#PC2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The architecture is visualized in Figure [8-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig10_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A framework architecture visualises features and layers of an autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sequential autoencoder architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are a few features of this autoencoder architecture to note. Firstly,
+    the output activation of the autoencoder is a sigmoid function, but this is only
+    because the input vector has values ranging from 0 to 1 (recall that we scaled
+    the dataset upon loading in Listing [8-1](#PC1)). If we had not scaled the dataset
+    as such, we would need to change the activation function such that the network
+    could feasibly predict in the entire domain of possible values. If the input values
+    consist of values larger than 0, ReLU may be a good activation output choice.
+    If the inputs contain both positive and negative values, using a plain linear
+    activation may be the easiest possible option. Moreover, the loss function chosen
+    must be reflective of the output activation. Since our particular example contains
+    outputs between 0 and 1 and the distribution of values is more or less binary
+    (i.e., most values are very close to 0 or 1, as shown in Figure [8-11](#Fig11)),
+    binary cross-entropy is a suitable loss to apply. We can treat reconstruction
+    as a series of binary classification problems for each pixel in the original input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A bar graph represents the construction of the binary classification of the
+    pixel in its original input. It depicts that maximum values are near 0 or 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of pixel values (scaled between 0 and 1) in the MNIST dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, in other cases, reconstruction is more of a regression problem in which
+    the distribution of possible values is not binarized toward the ends of the domains
+    but rather more spread out. This is common in more complex image datasets (Figure
+    [8-12](#Fig12)) and in many tabular datasets (Figure [8-13](#Fig13)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A bar graph represents the distribution of values in tabular datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of values for a feature in the Higgs Boson dataset (we will work
+    with this dataset later in the chapter)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A frequency distribution represents the possible values that are not binarised
+    in a complex image datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of pixel values (scaled between 0 and 1) from a set of images in
+    CIFAR-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: In these cases, it is more suitable to use a regression loss, like the generic
+    Mean Squared Error or a more specialized alternative (e.g., Huber). Refer to Chapter
+    [1](525591_1_En_1_Chapter.xhtml) for a review of regression losses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders are generally easier to work with when implemented in *compartmentalized
+    form*. Rather than simply constructing the autoencoder as a continuous stack of
+    layers with a bottleneck, we can build encoder and decoder models/components and
+    chain them together to form a complete autoencoder (Listing [8-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: This method of construction is philosophically more desirable because it reflects
+    our understanding of the autoencoder structure as meaningfully composed of a separate
+    encoding and decoding component. When we visualize our architecture, we obtain
+    a much cleaner high-level breakdown of the autoencoder model (Figure [8-14](#Fig14)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A visualised architecture model diagram represents the advanced level breakdown
+    of the autoencoder model. It has labels namely the input, encoder sequential and
+    decoder sequential layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of the compartmentalized model
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, using compartmentalized design is incredibly helpful because we can
+    reference the encoder and decoder components separately from the autoencoder.
+    For instance, if we desire to obtain the encoded representation for an input,
+    we can simply call `encoder.predict(…)` on our input. The encoder and decoder
+    are used to build the autoencoder; after the autoencoder is trained, the encoder
+    and decoder still exist as references to components of that (now trained) autoencoder.
+    The alternative would be to go searching for the latent space layer of the model
+    and create a temporary model to run predictions, in a similar approach to the
+    demonstration in Chapter [4](525591_1_En_4_Chapter.xhtml) used to visualize learned
+    convolutional transformations in CNNs. Similarly, if we desire to decode a latent
+    space vector, we can simply call `decoder.predict(…)` on our sample latent vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For instance, Listing [8-4](#PC4) demonstrates visualization (Figures [8-15](#Fig15)
+    through [8-18](#Fig18)) of the internal state and reconstruction of the autoencoder
+    created in Listing [8-3](#PC3) after training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig18_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image depicts the reconstruction of the encoder formed after training according
+    to the listing. It exhibits the results from original input, latent space and
+    reconstructed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample latent shape and reconstruction for the digit “5”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig17_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image represents the decoding of sample shapes in the latent space and reconstruction
+    stage of the number two. It exhibits the results from original input, latent space,
+    and reconstructed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample latent shape and reconstruction for the digit “2”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig16_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A visual representation of reconstruction for the digit 1 created after the
+    training stage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample latent shape and reconstruction for the digit “1”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A visualisation of images represents the shape of the internal state of encoder.
+    It exhibits the results from original input, latent space and reconstructed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample latent shape and reconstruction for the digit “7”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: When we build standard neural networks that we may want multiple models of with
+    small differences, it is often useful to create a “builder” or “constructor.”
+    The two key parameters of a neural network are the input size and the latent space
+    size. Given these two key “determining’ parameters,” we can infer how we generally
+    want information to flow. For instance, halving the information space in each
+    subsequent layer in the encoder (and doubling in the decoder) is a good generic
+    update rule.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let the input size be *I*, and let the latent space size be *L*. In order to
+    maintain this rule, we want all intermediate layers to use nodes as multiples
+    of *L*. Consider the case in which *I* = 4*L*, for instance (Figure [8-19](#Fig19)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An infographic image represents the intermediate layers that is used to denote
+    nodes as multiples of L.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of a “halving” autoencoder architecture logic
+  prefs: []
+  type: TYPE_NORMAL
+- en: We see that the number of layers needed to either reduce the input to the latent
+    space or to expand the latent space to the output is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\log}_2\frac{I}{L} $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This simple expression measures how many times we need to multiply *L* by 2
+    in order to reach *I*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, it will often be the case that ![$$ \raisebox{1ex}{$I$}\!\left/ \!\raisebox{-1ex}{$L$}\right.\notin
+    \mathbb{Z} $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_IEq1.png)
+    (i.e., *I* does not divide cleanly into *L*), in which case our earlier logarithmic
+    expression will not be integer. In these cases, we have a simple fix: we can cast
+    the input to a layer with *N* nodes, where *N* = 2^(*k*) · *L* for the largest
+    integer *k* such that *N* < *I*. For instance, if *I* = 4*L* + 8, we first “cast”
+    down to 4*L* and execute our standard halving policy from that point (Figure [8-20](#Fig20)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts execution of halving policy from the point 4 L.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adapting the halving autoencoder logic to inputs that are not powers of 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To accommodate for cases in which ![$$ {\log}_2\raisebox{1ex}{$I$}\!\left/
+    \!\raisebox{-1ex}{$L$}\right.\notin \mathbb{Z} $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_IEq2.png)
+    (i.e., we cannot express the input size in relationship to the layer size as an
+    exponent of 2), we can modify our expression for the number of layers required
+    by wrapping with the floor function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\lfloor {\log}_2\frac{I}{L}\right\rfloor $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Using this halving/doubling information flow logic, we can create a generalized
+    `buildAutoencoder` function that constructs a feed-forward autoencoder given an
+    input size and a latent size (Listing [8-5](#PC5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Rather than just returning the model, we also return the encoder and decoder.
+    Recall from earlier discussion of compartmentalized design that retaining a reference
+    to the encoder and decoder components of the autoencoder can be helpful. If not
+    returned, these references – created internally inside the function – will be
+    lost and irretrievable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having a generalized autoencoder creation function allows us to perform larger-scale
+    autoencoder experiments. One particularly important phenomenon to understand is
+    the trade-off between model performance and the latent size. As previously mentioned,
+    the latent size must be configured properly such that the task is challenging
+    enough to force the autoencoder to develop meaningful and nontrivial representations,
+    but also feasible enough such that the autoencoder can gain traction at solving
+    the problem (rather than stagnating and not learning anything at all due to the
+    difficulty of the reconstruction problem). Let’s train several autoencoders on
+    the MNIST dataset with bottleneck sizes 2^(*n*) where *n* ∈ [1, 2, …, ⌊log[2]*I*⌋]
+    (the last value of *n* being the largest power of 2 less than the original input
+    size) and obtain each one’s validation performance (Listing [8-6](#PC6), Figure
+    [8-21](#Fig21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig21_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of validation performance against Latent size represents a sloping
+    curve.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationship between the latent size of a tabular autoencoder (2^(*x*) neurons)
+    and the validation performance. Note the diminishing returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The diminishing returns for larger latent sizes are very apparently clear. As
+    the latent size increases, the benefit we can reap from it decreases. This phenomenon
+    is true generally in deep learning models (recall “Deep Double Descent” from Chapter
+    [1](525591_1_En_1_Chapter.xhtml), which similarly compared model size vs. performance
+    in a supervised domain with CNNs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can do one better and visualize the differences in the learned latent representations
+    for different bottleneck sizes. The latent representations for the training set
+    after the autoencoder has been trained can be obtained via `encoder.predict(x_train)`.
+    Of course, the latent representations will be in different dimensions for each
+    autoencoder. We can use the t-SNE method (introduced in Chapter [2](525591_1_En_2_Chapter.xhtml))
+    to visualize these latent spaces (Listing [8-7](#PC7), Figures [8-22](#Fig22)
+    through [8-30](#Fig30)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig30_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A visual representation of S N E projection of an autoencoder with bottleneck
+    size of 516 nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-30
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of 512 nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig29_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image depicts varying shapes resulting from t S N E project of size of 256
+    nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-29
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of 256 nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig28_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A projection image displays 128 nodes training set that results from an autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-28
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of 128 nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig27_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A t S N E projection image depicts the bottleneck size of 64 nodes after training
+    set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-27
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of 64 nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig26_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image represents latent space with the bottleneck size of 32 nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-26
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of 32 nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig25_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image within a square represents the bottleneck size of sixteen nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of 16 nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig24_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image plotted against t S N E and latent space of autoencoders with size
+    of eight nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of eight nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig23_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image represents size of the bottleneck in relation with the algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-23
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of four nodes trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig22_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A visualisation of variation of latent representation for the given training
+    set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder with a bottleneck size
+    of two nodes trained on MNIST. Note that in this case, we are projecting into
+    a number of dimensions (2) equal to the dimensionality of the original dataset
+    (2), hence the pretty snake-like arrangements
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If we had loaded the model as `model = buildAutoencoder(784, 32)[‘model’]` and
+    the encoder as `encoder = buildAutoencoder(784, 32)[‘encoder’]`, we indeed would
+    obtain a model architecture and an encoder architecture – but they wouldn’t be
+    “linked.” The stored model would be associated with an encoder that we haven’t
+    captured, and the stored encoder would be part of an overarching model that we
+    haven’t captured. Thus, we make sure to store the entire set of model components
+    into `modelSet` first.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each individual point is colored by the target label (i.e., the digit associated
+    with the data point) for the purpose of exploring the autoencoder’s ability to
+    implicitly “cluster” points of the same digit together or separate them, even
+    though the autoencoder was never exposed to the labels. Observe that as the dimensionality
+    of the latent space increases, the overlap between data samples of different digits
+    decreases until there is functionally complete separation between digits of different
+    classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If we build an architecture in which the input is expanded rather than compressed
+    and visualize a dimensionality reduction of the latent space (Listing [8-8](#PC8)),
+    we find that the learned representations are significantly less meaningful (Figure
+    [8-31](#Fig31)) – despite this architecture obtaining very high performance (i.e.,
+    low training error).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig31_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image visualises compressed latent space reduction. It indicates high performance
+    with low training errors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-31
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an overcomplete autoencoder with a bottleneck
+    size of 2048 trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s revisit the example given at the beginning of this subsection: reconstruction
+    of an image of a line. Listing [8-9](#PC9) generates a dataset of 50-by-50 images
+    with randomly placed line segments using the image processing library `cv2` (Listing
+    [8-9](#PC9)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since theoretically we can intuitively represent each line segment with four
+    values, we’ll build and train an autoencoder with four neurons in the latent space
+    on the dataset (Listing [8-10](#PC10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model reaches near 0.03 binary cross-entropy, which is quite good. Its reconstructions
+    are very accurate (Figure [8-32](#Fig32)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig32_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image represents binary cross-entropy that results in accurate reconstructions.
+    It depicts a line in different dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-32
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Left column: original input images of lines. Right column: reconstructions
+    via an autoencoder with a latent space dimensionality of 4'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In fact, an autoencoder trained with only two neurons does a decent job at identifying
+    the general shape of the line marked in the input (Figure [8-33](#Fig33)). If
+    you look closely, you will identify the silhouette of other lines. There are many
+    hypotheses to explain their presence. One possibility is that the autoencoder
+    has “memorized”/”internalized” a set of generally useful “landmark” samples that
+    are then mapped to during prediction and that with a larger latent space increased
+    information for precise placement could be passed through.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig33_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image represents input received as a straight line from an autoencoder trained
+    set with two neurons.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-33
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Left column: original input images of lines. Right column: reconstructions
+    via an autoencoder with a latent space dimensionality of 2'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, let’s explore how we can apply autoencoders to a strictly tabular dataset
+    – the Mice Protein Expression dataset, used in previous chapters (Listing [8-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Recall that we need to look at the input data in order to gauge how to deal
+    with the model output in autoencoders. If we call `mpe_x_train.min()`, Pandas
+    returns a series with the minimum value per column.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calling `.``min()` again takes the minimum of the minimums across columns. We
+    find that the smallest value across the entire dataset is –0.062007874, whereas
+    the maximum is 8.482553422\. Since values can theoretically be negative, we’ll
+    use a linear output activation instead of a ReLU and optimize using the standard
+    Mean Squared Error loss for regression problems (Listing [8-12](#PC13)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: After 150 epochs of training, which progresses very quickly (this is a comparatively
+    small dataset), the autoencoder obtains good training and validation performance
+    (Table [8-1](#Tab1), Figure [8-34](#Fig34)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig34_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph represents validation and training performance received after 150 epochs
+    of training sets. It exhibits an L shaped curve.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-34
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training history of an autoencoder trained on the Mice Protein Expression dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 8-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of the autoencoder trained on the Mice Protein Expression dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | Train | Validation |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Mean Squared Error | 0.0117 | 0.0118 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Mean Absolute Error | 0.0626 | 0.0625 |'
+  prefs: []
+  type: TYPE_TB
+- en: Figures [8-35](#Fig35) demonstrates some sample latent vectors and reconstructions
+    made by our autoencoder, with the input and reconstructed vectors reshaped into
+    8-by-10 grids for more convenient viewing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig35_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image pattern highlights the latent vectors samples and reconstruction created
+    by the autoencoder. It exhibits the vectors into 8 by 10 grids.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-35
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples and the associated latent vector and reconstruction by an autoencoder
+    trained on the Mice Protein Expression dataset. Samples and reconstructions are
+    represented in two spatial dimensions for convenience of viewing
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can employ a similar technique as previously employed on the MNIST dataset
+    – visualizing the latent space of an autoencoder using t-SNE. Each data point
+    in Figure [8-36](#Fig36) is colored by one of the eight classes each row in the
+    Mice Protein Expression dataset falls into. This tabular autoencoder obtains pretty
+    good separation between classes without any exposure to the labels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig36_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A scatter diagram visualises data points obtained as a result of tabular autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-36
+  prefs: []
+  type: TYPE_NORMAL
+- en: t-SNE projection of a latent space for an autoencoder trained on the Mice Protein
+    Expression dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that a more formal/rigorous tabular autoencoder design would require us
+    to standardize or normalize all columns to within the same domain. Tabular datasets
+    often contain features that operate on different scales; for instance, say feature
+    A represents a proportion (i.e., between 0 and 1, inclusive), whereas feature
+    B measures years (i.e., likely larger than 1000). Regression losses simply take
+    the mean error across all columns, which means that the reward for correctly reconstructing
+    A is negligible compared to reconstructing feature B. In this case, however, all
+    columns are in roughly the same range, so skipping this step is tolerable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next subsection, we will explore a direct application of autoencoders
+    to concretely improve the performance of supervised models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders for Pretraining
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Vanilla autoencoders, as we have already seen, can do some pretty cool things.
+    We see that a vanilla autoencoder trained on various datasets can perform implicit
+    clustering and classification of digits, without being exposed to the labels themselves
+    as well. Rather, natural differences in the input resulting from differences in
+    labels are independently observed and implicitly recognized by the autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sort of impressive feature extraction capability is valuable in the context
+    of training neural networks to perform supervised tasks. Say we want a neural
+    network to classify digits from the MNIST dataset. If we start from scratch, we
+    are asking the neural network to learn both how to extract the optimal set of
+    features and how to interpret them – all at once, with no prior information. However,
+    we see that the encoder of an autoencoder trained on the MNIST dataset has developed
+    an impressive feature extraction and class separation scheme. We can use the encoder
+    of the autoencoder as a *pretraining* instrument; rather than building and training
+    a new network that learns both extraction and interpretation from scratch, we
+    can simply append a model component to the output of the encoder to interpret
+    the already-learned feature extractor (i.e., the encoder) (Figure [8-37](#Fig37)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig37_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An infographic image illustrates autoencoder and task training sets. It describes
+    the features of the extractor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-37
+  prefs: []
+  type: TYPE_NORMAL
+- en: Schematic of multistage pretraining
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the first stage of training, we train the autoencoder on the standard input
+    reconstruction task. After sufficient training, we can extract the encoder and
+    append an “interpretation”-focused model component that assembles and arranges
+    the features extracted by the encoder into the desired output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: During stage 2, we impose *layer freezing* upon the encoder, meaning that we
+    prevent its weights from being trained. This is to retain the learned structures
+    of the encoder. We spent a significant amount of effort obtaining a good feature
+    extractor; if we do not impose layer freezing, we will find that optimizing a
+    good feature extractor connected to a very poor (randomly initialized) feature
+    interpreter degrades the feature extractor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, once good performance is obtained on training with a frozen feature
+    extractor and a trainable feature interpreter, the entire model can be trained
+    for a few epochs for the purposes of fine-tuning (Figure [8-38](#Fig38)). The
+    idea here is that the feature interpreter has developed a good relationship with
+    the static feature extractor, but now both can be jointly optimized to improve
+    the relationship. (Just like couples in relationships, it’s not healthy if one
+    partner is always static!)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig38_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the performance achieved as a result of the feature interpreter.
+    It has labels namely primary training and fine-tuning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-38
+  prefs: []
+  type: TYPE_NORMAL
+- en: Freezing followed by fine-tuning can be an effective way to perform autoencoder
+    pretraining.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin by demonstrating autoencoder pretraining on MNIST. We’ll use the
+    `buildAutoencoder` function defined previously to fit an autoencoder, making sure
+    to retain references to both the original model and the encoder (Listing [8-13](#PC14)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: After the model has been sufficiently trained, we can extract the encoder and
+    stack it as the feature extraction unit/component of our task model (Listing [8-14](#PC15)).
+    The outputs of the encoder (named encoded in the following script) are further
+    interpreted via several fully connected layers. The encoder is set not to be trainable
+    (i.e., layer freezing). The task model is trained on the original supervised task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: After sufficient training, it is common practice to make the encoder trainable
+    again and fine-tune the entire architecture in an end-to-end fashion (Listing
+    [8-15](#PC16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: We often reduce the learning rate on fine-tuning tasks to prevent destruction/”overwriting”
+    of information learned during the pretraining process. This can be accomplished
+    by recompiling the model after pretraining with an optimizer configured with a
+    different initial learning rate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can compare the performance of this model to one with no pretraining (i.e.,
+    begins learning in a supervised fashion from scratch) (Listing [8-16](#PC17),
+    Figure [8-39](#Fig39)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig39_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph represents the comparison of the given model during the pretraining
+    stage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-39
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing the training curves for a classifier trained on the MNIST dataset
+    with and without autoencoder pretraining
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: The MNIST dataset is relatively simple, so both models converge relatively quickly
+    to good weights. However, the model with pretraining is noticeably “ahead” of
+    the other. By taking the difference between the epoch at which a model with and
+    without pretraining obtains some performance value, we can estimate how “far ahead”
+    a model with autoencoder pretraining is. For any loss *p* (at least one epoch
+    in training), the model with pretraining reaches *p* two to four epochs before
+    the model without pretraining.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This process seems and is superfluous on the MNIST dataset, which has a comparatively
+    simple set of rules in a comparatively small number of dimensions. However, this
+    advantage manifests more significantly for more complex datasets, as has been
+    shown with more advanced computer vision and natural language processing tasks.
+    Neural networks trained to perform large-scale image classification (e.g., ImageNet),
+    for instance, benefit significantly from performing an autoencoder pretraining
+    task that learns useful latent features that are later interpreted and fine-tuned.
+    Similarly, it has been shown that language models learn important fundamental
+    structures of language by performing reconstruction tasks, which can be later
+    used as the basis for a supervised task like text classification or generation
+    (Figure [8-40](#Fig40)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig40_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A model diagram represents reconstruction tasks that can be used as a basis
+    for generation and text classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-40
+  prefs: []
+  type: TYPE_NORMAL
+- en: General transfer learning/pretraining design used dominantly in computer vision
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall, for instance, the Inception and EfficientNet models discussed in Chapter
+    [4](525591_1_En_4_Chapter.xhtml). Keras allows users to load weights from a model
+    trained on ImageNet because the feature extraction “skills” required to perform
+    well on a wide-ranging task like ImageNet are valuable or can be adapted to become
+    valuable in most computer vision tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, as we have previously seen in Chapters [4](525591_1_En_4_Chapter.xhtml)
+    and [5](525591_1_En_5_Chapter.xhtml), the success of a deep learning method on
+    complex image and natural language data does not necessarily bar it from being
+    useful to tabular data applications too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s consider the Mice Protein Expression dataset. We can begin by instantiating
+    and training a sample autoencoder (Listing [8-17](#PC18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can now create and fit a task model using the trained encoder in two phases,
+    the first in which the encoder is frozen and the second in which the encoder is
+    trainable (Listing [8-18](#PC19), Figure [8-41](#Fig41)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig41_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph represents a task model utilising the trained encoder in the frozen
+    and training phases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-41
+  prefs: []
+  type: TYPE_NORMAL
+- en: Validation and training curves for stages 1 and 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternatively, consider the Higgs Boson dataset. This dataset only has 28 features.
+    If we use our standard autoencoder logic, which halves the number of nodes in
+    each encoder layer and doubles the number of nodes in each decoder layer, we will
+    either need to have a very smaller number of layers to use a reasonable latent
+    space size or a very small latent space to use a reasonable number of layers.
+    For instance, if our latent space has only eight features, the autoencoder logic
+    would build only two layers (28 → 16 → 8). On the other hand, if we want a larger
+    number of layers (e.g., five), we would need a very small latent space (e.g.,
+    an autoencoder with 28 → 16 → 8 → 4 → 2 → 1). In this case, it’s most beneficial
+    to design a custom autoencoder with a sufficiently large latent space and a sufficient
+    number of layers. We could design an autoencoder, for instance, with six layers
+    in the encoder and decoder each and a latent space of 16 dimensions (Listing [8-19](#PC20)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can treat a static encoder as a feature extractor for our task model (Listing
+    [8-20](#PC21), Figures [8-42](#Fig42) and Figure [8-43](#Fig43)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig43_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph represents a rising and erratic curve which makes the static encoder
+    a feature extractor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-43
+  prefs: []
+  type: TYPE_NORMAL
+- en: Validation and training accuracy curves for stages 1 and 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig42_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph represents downward-sloping and erratic curves. It exhibits pre-trained
+    encoder functioning as a feature extractor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-42
+  prefs: []
+  type: TYPE_NORMAL
+- en: Validation and training loss curves for stages 1 and 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can observe a significant amount of overfitting in this particular case.
+    We can attempt to improve generalization by employing best practices such as adding
+    dropout or batch normalization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Lastly, it should be noted that using autoencoders for pretraining is a great
+    *semi-supervised* method. Semi-supervised methods make use of data with and without
+    labels (and are used most often in cases where labeled data is scarce and unlabeled
+    data is abundant). Say you possess three sets of data: *X*[unlabeled], *X*[labeled],
+    and *y* (which corresponds to *X*[labeled]). You can train an autoencoder to reconstruct
+    *X*[unlabeled] and then use the frozen encoder as the feature extractor in a task
+    model to predict *y* from *X*[labeled]. This technique generally works well even
+    when the size of *X*[unlabeled] is significantly larger than the size of *X*[labeled];
+    the autoencoding task learns meaningful representations that should be significantly
+    easier to associate with a supervised target than beginning from initialization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multitask Autoencoders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Pretraining with autoencoders is often an effective strategy to take advantage
+    of quality learned latent features. However, one criticism of the system is that
+    it proceeds *sequentially* – autoencoder training takes place at a separate stage
+    than the task training. Multitask autoencoders train the network on the autoencoder
+    task and the intended task *simultaneously* (hence the name multitask). These
+    autoencoders accept one input that is encoded by the encoder into a latent space.
+    This one set of latent features is decoded separately by two “decoders” into two
+    outputs; one output is dedicated to the autoencoder task, while the other is dedicated
+    to the intended task. The network learns both of these tasks at the same time
+    during training (Figures [8-44](#Fig44) and [8-45](#Fig45)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig45_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the latent features dedicated to the intended task. It
+    has labels namely the input data, encoding layers, and latent space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-45
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multitask learning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig44_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A model represents output dedicated to the task of the autoencoder. It has labels
+    namely the input data, model and task output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-44
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original task model
+  prefs: []
+  type: TYPE_NORMAL
+- en: By training the autoencoder simultaneously along the task network, we can theoretically
+    experience the benefits of the autoencoder in a dynamic fashion. Say the encoder
+    has “difficulty” encoding features in a way relevant to the task output, which
+    can be difficult. However, the encoder component of the model can still decrease
+    the overall loss by learning features relevant to the autoencoder reconstruction
+    task. These features may provide continuous support for the task output by providing
+    the optimizer a viable path to loss minimization – it is “another way out,” so
+    to speak. Using multitask autoencoders is often an effective technique to avoid
+    or minimize difficult local minimum problems, in which the model makes mediocre
+    to negligible progress in the first few moments of training and then plateaus
+    (i.e., is stuck in a poor local minimum).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to construct a multitask autoencoder, we begin by initializing an autoencoder
+    and extracting the encoder and decoder components. We create a “tasker” model
+    that accepts latent features (i.e., data of the shape of the encoder output) and
+    processes them into the task output (i.e., one of ten digits, in the case of MNIST).
+    Each of these components can be linked using functional API syntax to form a complete
+    multitask autoencoder architecture (Listing [8-21](#PC22), Figure [8-46](#Fig46)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig46_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network architecture depicts the interlinking of functional A P I syntax to
+    create a complete multitask autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-46
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of a multitask autoencoder architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Because the multitask autoencoder has multiple outputs, we need to specify losses
+    and labels for each of the outputs by referencing a particular output’s name.
+    In this case, the two outputs have been named “decoder” and “taskOut.” The decoder
+    output will be given the original input (i.e., `x_train`) and optimized with binary
+    cross-entropy, since its objective is to perform pixel-wise reconstruction. The
+    task output will be given the image labels (i.e., `y_train`) and optimized with
+    categorical cross-entropy, since its objective is to perform multiclass classification
+    (Listing [8-22](#PC23)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can observe from the training history that the model is able to reach both
+    a fairly good task loss and a reconstruction loss within just a few dozen epochs
+    (Listing [8-23](#PC24), Figure [8-47](#Fig47)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig47_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph depicts three different curves. It exhibits a similar pattern.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-47
+  prefs: []
+  type: TYPE_NORMAL
+- en: Different dimensions of performance (reconstruction loss, task loss, overall
+    loss)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figures [8-48](#Fig48) to [8-51](#Fig51) visualize how the state of the multitask
+    autoencoder progresses throughout each epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig51_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An output image represents the progression of multitask encoder at several more
+    epochs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-51
+  prefs: []
+  type: TYPE_NORMAL
+- en: Several more epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig50_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image in the shape of the number seven at two epochs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-50
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multitask autoencoder at two epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig49_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image in a square represents an autoencoder at one epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-49
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multitask autoencoder at one epoch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig48_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An image interprets the performance of the encoder at every epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-48
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multitask autoencoder at zero epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: From these visualizations and the training history, we see that the multitask
+    autoencoder obtains better performance on the task than the autoencoding task
+    that is intended to assist task performance! In this case, the MNIST dataset’s
+    task output is more straightforward than the autoencoding task, which makes sense.
+    In this case, using a multitask autoencoder is not beneficial. It probably is
+    more beneficial to directly train or use an autoencoder for pretraining when multitask
+    autoencoders perform poorly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can use an adapted approach on the Mice Protein Expression dataset, in which
+    we see that autoencoding is a more approachable problem than the task of classification
+    itself, both from the training history (Figures [8-52](#Fig52)) and output state
+    progression visualizations (Figures [8-53](#Fig53) through [8-56](#Fig56)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig56_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Four images. 3 grid images display various encoding features at the original
+    input, decoder output, and other stages and one graph plots the Absolute error,
+    truth, and predicted values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-56
+  prefs: []
+  type: TYPE_NORMAL
+- en: The state of the multitask autoencoder after 50 epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig55_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Four images. 3 grid images illustrate the variation in output in a multitask
+    encoder and one graph plots the Absolute error, truth, and predicted values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-55
+  prefs: []
+  type: TYPE_NORMAL
+- en: The state of the multitask autoencoder after five epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig54_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Four images. 3 grid images visualize the various outputs obtained after one
+    epoch and one graph plots the Absolute error, truth, and predicted values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-54
+  prefs: []
+  type: TYPE_NORMAL
+- en: The state of the multitask autoencoder after one epoch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig53_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Four images. 3 grid image visualizes various output state progression values
+    of the set of 80 features and one graph plots the Absolute error, truth and predicted
+    values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-53
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The state of the multitask autoencoder after zero epochs (i.e., upon initialization).
+    Top: displays the original set of 80 features in the Mice Protein Expression dataset
+    (arranged in a grid for more convenient visual viewing), the output of the decoder
+    (of which the goal is to reconstruct the input), and the absolute error of the
+    reconstruction. Bottom: the predicted and true classes (eight in total) and the
+    absolute probability error'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig52_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph exhibits autoencoding from the training history of the approach
+    on the Mice protection expression dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-52
+  prefs: []
+  type: TYPE_NORMAL
+- en: Different dimensions of performance on the Mice Protein Expression dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figures [8-53](#Fig53) through [8-56](#Fig56) demonstrate the performance of
+    the reconstruction task alongside the classification task at various stages in
+    training. Notice that the reconstruction error converges near zero quickly and
+    helps “pull”/”guide” the task error to zero over time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In many cases, simultaneous execution of the autoencoder task and the original
+    desired task can help provide stimulus to “push” progress on the desired task.
+    However, you may make the valid objection that once the desired task reaches sufficiently
+    good performance, it becomes limited by the autoencoding task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One method to reconcile with this is simply to detach the autoencoder output
+    from the model by creating a new model connecting the input to the task output
+    and fine-tuning on the dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another more sophisticated technique is to change the loss weights between the
+    original desired task and the autoencoding task. While Keras weighs multiple losses
+    equally by default, we can provide different weights to reflect different levels
+    of priority or importance delegated to each of the tasks. At the beginning of
+    training, we can give a high weight to the autoencoding task, since we want the
+    model to develop useful representations through a (ideally somewhat easier) task
+    of autoencoding. Throughout the training duration, the weight on the original
+    task model loss can be successively increased and the weight on the autoencoder
+    model loss decreased. To formalize this, let *α* be the weight on the task output
+    loss, and let 1 − *α* be the weight on the decoder output loss (with 0 < *α* < 1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The sigmoid equation ![$$ \sigma (x)=\frac{1}{1+{e}^{-x}} $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_IEq3.png)
+    is a pretty good way to get from a value very close to some minimum bound to another
+    value very close to an upper bound. Over the span of 100 epochs, we can employ
+    a simple (arbitrarily set but functional) transformation on the sigmoid function
+    to obtain a smooth transition from a slow to high value of *α* (visualized by
+    Listing [8-24](#PC25) in Figure [8-57](#Fig57)), where *t* represents the epoch
+    number:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \alpha =\sigma \left(\frac{t-50}{10}\right)=\frac{1}{1+{e}^{-\left(\frac{t-50}{10}\right)}}
+    $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig57_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph represents a smooth transition from a slow to a high value of the
+    sigmoid function. It plots the output weight and the decoder output weight.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-57
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot of the task output loss weight and the decoder weight across each epoch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'A generalized equation to scale *α* through *t*[max] using a transformation
+    of the sigmoid function is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \alpha =\sigma \left(\frac{t-\frac{t_{\textrm{max}}}{2}}{\frac{t_{\textrm{max}}}{10}}\right)=\frac{1}{1+{e}^{-\left(\frac{t-\frac{t_{\textrm{max}}}{2}}{\frac{t_{\textrm{max}}}{10}}\right)}}
+    $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: At initial conditions, we have *α* at a very small value. (For the purposes
+    of this calculation, we use *t* = 1 for simplification of calculation.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \alpha @\left\{t\approx 0\right\}\to \frac{1}{1+{e}^{-\left(\frac{-\frac{t_{\textrm{max}}}{2}}{\frac{t_{\textrm{max}}}{10}}\right)}}=\frac{1}{1+{e}^5}\approx
+    0.006692 $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The training regime completes at *t* = *t*[max], at which *α* is very close
+    to 1:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \alpha @\left\{t={t}_{\textrm{max}}\right\}\to \frac{1}{1+{e}^{-\left(\frac{t_{\textrm{max}}-\frac{t_{\textrm{max}}}{2}}{\frac{t_{\textrm{max}}}{10}}\right)}}=\frac{e^5}{1+{e}^5}\approx
+    0.993307 $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Moreover, we observe by taking the derivative and solving for the maximum that
+    the largest change for some *t*[max] is ![$$ \frac{5}{2\cdotp {t}_{\textrm{max}}}
+    $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_IEq4.png). As *t*[max]
+    increases, analysis of the derivative reveals that the overall change becomes
+    more uniformly spread out. For large values of *t*[max], this functionally becomes
+    a horizontal line (i.e., the derivative becomes near 0). A simple linear transformation
+    of *α* also suffices in most cases in which *t*[max] is reasonably large.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Loss weighting is conveyed in the compiling stage. This means that we’ll have
+    to recompile and fit every epoch. This is not difficult to do; we can write a
+    for loop that loops through every epoch, calculates the *α* value for that epoch,
+    compiles the model with that loss weighting, and fits for one epoch. Collecting
+    the training history is slightly more manual; we need to collect the metrics for
+    the single epoch and append them to user-created lists (Listing [8-25](#PC26)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For another higher-code but perhaps smoother approach to dynamically adjusting
+    the loss calculation weights of multi-output models, which does not require repeated
+    refitting, see Anuj Arora’s well-written post on adaptive loss weighting in Keras
+    using callbacks: [https://​medium.​com/​dive-into-ml-ai/​adaptive-weighing-of-loss-functions-for-multiple-output-keras-models-71a1b0aca66e](https://medium.com/dive-into-ml-ai/adaptive-weighing-of-loss-functions-for-multiple-output-keras-models-71a1b0aca66e).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [8-58](#Fig58) demonstrates the history of the reconstruction, task,
+    and overall losses throughout training of the multitask autoencoder, with the
+    background shaded by the value of *α* used at that epoch. Note that the reconstruction
+    task is more trivial than the original intended task (hence the faster decline
+    in loss) and the logistically shaped overall loss function that makes major changes
+    in *α* in epochs 40–60 and “switches” bounds from the reconstruction to the original
+    task loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig58_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram interprets the reconstruction task and the total losses incurred through
+    the entire training of the multitask autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-58
+  prefs: []
+  type: TYPE_NORMAL
+- en: Diagram of reconstruction loss, task loss, and overall loss (now a dynamically
+    weighted sum) with the weighting gradient shaded in the background
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multitask autoencoders perform best in difficult supervised classification tasks
+    that benefit from rich latent features, which can be learned well by autoencoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparse Autoencoders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Standard autoencoders are given the limitation of size representation – autoencoder
+    architectures are built with a “physical” bottleneck through which information
+    must be compressed. The autoencoder attempts to maximize the amount of information
+    it can squeeze through a significantly compressed latent space such that the information
+    can reliably be decoded into the original output (Figure [8-59](#Fig59)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig59_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network architecture exhibits compressed latent space. It indicates data is
+    decoded reliably into the original output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-59
+  prefs: []
+  type: TYPE_NORMAL
+- en: A standard autoencoder, which encodes information into a densely packed and
+    quasi-continuous latent space
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, this is not the only limit we can impose. Another information bottleneck
+    tool is *sparsity*. We can make the bottleneck layer very large, but force only
+    a few nodes to be active at any one pass. While this still forces a limitation
+    on the amount of *information* that can pass through the bottleneck layer, the
+    network is given more freedom and control to “choose” *which* nodes information
+    passes through, which itself is an additional medium of information expression
+    (Figure [8-60](#Fig60)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig60_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network diagram exhibits a free pattern that enables the selection of the
+    data of nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-60
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sparse autoencoder, in which a much larger latent size is accessible but only
+    a few nodes can be used at any one time
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To maintain sparsity, we generally impose L1 regularization on the layer’s
+    activity. (Recall the discussion of regularization in Chapter [3](525591_1_En_3_Chapter.xhtml),
+    “Regularization Learning Networks.”) L1 regularization penalizes the output activity
+    of the bottleneck layer by being too large. Assuming a network uses binary cross-entropy
+    loss to minimize task output and *λ* represents the overall activity/output of
+    the bottleneck layer, the joint loss of an L1-regularized network is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{loss}= BCE\left({y}_{\textrm{pred}},{\textrm{y}}_{\textrm{true}}\right)+\alpha
+    \cdotp \mid \lambda \mid $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The parameter *α* is user-defined and controls the “importance” of the L1 regularization
+    term relative to the task loss. Setting the correct value of *α* is important
+    for correct behavior. If *α* is too small, the network ignores the sparsity restriction
+    in favor of completing the task, which is now made quasi-trivial by the overcomplete
+    bottleneck layer. If *α* is too large, the network ignores the task by learning
+    the “ultimate sparsity” – predicting all zeros in the bottleneck layer, which
+    entirely minimizes *λ* but performs poorly on the actual task we want it to learn.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An alternative commonly used penalty is L2 regularization, in which the square
+    rather than the absolute value is penalized:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{loss}= BCE\left({y}_{\textrm{pred}},{\textrm{y}}_{\textrm{true}}\right)+\alpha
+    \cdotp {\lambda}^2 $$](../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is a common machine learning paradigm. L2 regularization tends to produce
+    sets of values generally near zero but not at zero, whereas L1 regularization
+    tends to produce values solidly at zero. An intuitive explanation is that L2 regularization
+    significantly discounts the need to decrease values that are already somewhat
+    near zero. The decrease from 3 to 2, for instance, is rewarded with a penalty
+    decrease of 3² − 2² = 5\. The decrease from 1 to 0, on the other hand, is rewarded
+    with a measly penalty decrease of 1² − 0² = 1\. On the other hand, L1 regularization
+    rewards the decrease from 3 to 2 identically as the decrease from 1 to 0\. We
+    generally use L1 regularization to impose sparsity constraints because of this
+    property.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To implement this, we need to make a slight modification to our original `buildAutoencoder`
+    function. We can build the autoencoder as if we were leading up to and from a
+    certain *implicit* latent size, but replace the *implicit* latent size with the
+    *real* (expanded) latent size. For instance, consider an autoencoder build with
+    an input of 64 dimensions and an implicit latent space of 8 dimensions. The node
+    count progression in each layer of a standard autoencoder using our prebuilt autoencoder
+    logic would be 64 → 32 → 16 → 8 → 16 → 32 → 64\. However, because we are planning
+    to impose a sparsity constraint on the bottleneck layer, we need to provide an
+    expanded set of nodes to pass information through. Say the real bottleneck size
+    is 128 nodes. The node count progression in each layer of this sparse autoencoder
+    would be 64 → 32 → 16 → 128 → 16 → 32 → 64.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To actually implement the sparsity constraint, note that almost all layers in
+    Keras have an `activity_regularizer` parameter, set upon initialization. This
+    parameter penalizes the *activity*, or the output, of the layer (Listing [8-26](#PC27)).
+    Note that you can also set the `weight_regularizer` or `bias_regularizer` parameter
+    if you desire to penalize the learned weights or biases. In this case, we don’t
+    care about how the encoder *arrives* at a sparse encoding, only that the encoder
+    *creates* a sparse encoding. Hence, we perform regularization on the layer activity.
+    The arguments accept a `keras.regularizers` object. We will use the L1 regularization
+    object, which accepts the specific weighting of the penalty as a parameter. Setting
+    the weight is important and should be given thought and experimentation, considering
+    the model power, difficulty of autoencoding, and latent space size. As discussed
+    previously, setting an improper weight in either direction (too large or too small)
+    yields adverse outcomes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [8-61](#Fig61) demonstrates performance of the sparse autoencoder on
+    the MNIST dataset, in which a 64-dimensional latent space vector is reshaped into
+    an 8-by-8 grid for convenient viewing. The reconstruction is not visibly worse
+    than a standard autoencoder without a sparsity constraint. Notice that only two
+    to five of the 64 nodes are active at any one pass (and that which node(s) are
+    active vary for each image). A standard autoencoder trained even with five nodes
+    in the bottleneck layer (no sparsity requirement) would obtain poor performance
+    on reconstruction, demonstrating the informational richness of “choosing” which
+    nodes are active.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig61a_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An interpreter image represents sparse encoder performance on the M N I S T
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig61b_HTML.jpg)![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig61c_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-61
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sampled original inputs (left), latent space (middle), and reconstruction (right)
+    for a sparse autoencoder trained on MNIST. The latent space is 256 neurons reshaped
+    into a 16-by-16 grid for viewing. The actual latent space is not arranged in two
+    spatial directions
+  prefs: []
+  type: TYPE_NORMAL
+- en: If we decreased the regularization alpha value (i.e., the L1 penalty would be
+    weighted less relative to the loss), the network would obtain better overall loss
+    at the cost of decreased sparsity (i.e., more nodes would be active at any one
+    pass). If we increased the regularization alpha, the network would obtain worse
+    overall loss at the benefit of increased sparsity (i.e., even fewer nodes would
+    be active at any one pass).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can apply the same sparse autoencoding scheme to the Higgs Boson dataset,
+    encoding a 28-dimensional input vector into a 64-dimensional latent space. At
+    each pass, about one-fourth to one-third of the latent space is active, although
+    many bottleneck nodes are “quasi-active” – they are not zero, but very close.
+    Figure [8-62](#Fig62) demonstrates the internal state and reconstruction of the
+    sparse autoencoder on different inputs, with 28-dimensional input vectors reshaped
+    into 7-by-4 grids for more convenient viewing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig62a_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 12 Images depict the reshaping of a sparse autoencoder with a latent space of
+    a 16 by 16 grid.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig62b_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-62
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sampled original inputs (left), latent space (middle), and reconstruction (right)
+    for a sparse autoencoder trained on the Higgs Boson dataset. The latent space
+    is 256 neurons reshaped into a 16-by-16 grid for viewing; the input and reconstruction
+    are 28 dimensions arranged into 7-by-4 grids
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly, Figure [8-63](#Fig63) shows the application of a trained sparse autoencoder
+    to various elements of the Mice Protein Expression dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig63a_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 12 images represent the utilization of sparse autoencoder to different elements
+    pertaining to the given dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig63b_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-63
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sampled original inputs (left), latent space (middle), and reconstruction (right)
+    for a sparse autoencoder trained on the Mice Protein Expression dataset. The latent
+    space is 256 neurons reshaped into a 16-by-16 grid for viewing; the input and
+    reconstruction are 80 dimensions arranged into 8-by-10 grids
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why would you want to use sparse autoencoders? The primary reason is to take
+    advantage of sparse encoders’ robustness properties. Adversarial examples are
+    instances generated to deliberately fool a neural network into some image originally
+    correctly classified as class *A* into class *B* with high confidence simply by
+    making miniscule, barely visible changes to the input. The canonical example in
+    the field is a diagram created by Ian Goodfellow et al. in the paper “Explaining
+    and Harnessing Adversarial Examples.” The Fast Signed Gradient Method (FSGM) generates
+    a permutation matrix that adjusts every pixel in the input in a way that significantly
+    changes the network’s final prediction (Figure [8-64](#Fig64)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig64_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A mathematical expression. The first input is the photograph of a panda, the
+    second one is a nematode and the output is a gibbon which is depicted by a panda.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-64
+  prefs: []
+  type: TYPE_NORMAL
+- en: Demonstration of the FSGM method. From “Explaining and Harnessing Adversarial
+    Examples,” Goodfellow et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adversarial example finders profit from continuity and gradients. Because neural
+    networks operate in very large continuous spaces, adversarial examples can be
+    found by “sneaking” through smooth channels and ridges in the surface of the landscape.
+    Adversarial examples can be security threats (some instances of naturally occurring
+    adversarial examples, like tape placed onto a traffic sign in a particular orientation
+    causing egregious misidentification), as well as potential symptoms of poor generalization.^([1](#Fn1))
+    However, sparse encoders impose a discreteness upon the encoded space. It becomes
+    significantly more difficult to generate successful adversarial examples when
+    a frozen encoder is used as the feature extractor for a network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparse autoencoders can also be useful for the purposes of interpretability.
+    We’ll talk more about specialized interpretability techniques later in this chapter,
+    but sparse autoencoders can be easily interpreted without additional complex theoretical
+    tools. Because only a few neurons are active at any one time, understanding which
+    neurons are activated for any one input is relatively simple, especially compared
+    with the latent vectors generated by standard autoencoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Denoising and Reparative Autoencoders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'So far, we’ve only considered applications of autoencoder training in which
+    the desired output is identical to the input. However, autoencoders can perform
+    another function: to repair or restore a damaged or noisy input.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here’s the clever way we go about it – we artificially add realistic noise or
+    corruption to a “pure”/”clean” dataset and then train the model to recover the
+    cleaned image from its artificially corrupted version (Figure [8-65](#Fig65)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig65_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram represents the training dataset to recover a clean image from
+    the artificially corrupted image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-65
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deriving a noisy image as input and the original clean image as the desired
+    output of a denoising autoencoder
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are many applications for such a model. We can use it, most obviously,
+    to denoise a noisy input; the “cleaned” input can then be used for other purposes.
+    Alternatively, if we are developing a model that we know will operate in a domain
+    with lots of noisy data, we can use the encoder of a denoising autoencoder as
+    a robust or resilient feature extractor (similarly to in autoencoder pretraining),
+    exploiting the encoder’s “denoised” latent representations (Figure [8-66](#Fig66)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig66_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the functioning of the denoising autoencoder. It has
+    the labels input data, denoising autoencoder, model and task output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-66
+  prefs: []
+  type: TYPE_NORMAL
+- en: A potential application of denoising autoencoders as a structure that learns
+    to clean up the input before it is actually used in a model for a task
+  prefs: []
+  type: TYPE_NORMAL
+- en: These reparative models have particularly exciting applications for intelligent
+    or deep graphics processing. Many graphics operations are not *trivially two-way
+    invertible* in that it is trivial to go from one state to another but not in the
+    inverse direction. For instance, if I convert a color image or movie into grayscale
+    (for instance, using the pixel-wise methods covered in the image case study in
+    Chapter [2](525591_1_En_2_Chapter.xhtml)), there is no simple way to invert it
+    back to color. Alternatively, if you spill coffee on an old family photo, there
+    is no trivial process to “erase” the stain.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders, however, exploit the triviality of going from the “pure” to the
+    “corrupted” state by artificially imposing corruption upon pure data and forcing
+    powerful autoencoder architectures to learn the “undoing.” Researchers have used
+    denoising autoencoder architectures to generate color versions of historical black-and-white
+    film and to repair photos that have been ripped, stained, or streaked. Another
+    application is in biological/medical imaging, where an imaging operation can be
+    disrupted by environmental conditions; replicating this noise/image damage artificially
+    and training an autoencoder to become robust to it can make the model more resilient
+    to noise.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will begin with demonstrating the application of a denoising autoencoder
+    to the MNIST dataset by successively increasing the amount of noise in the image
+    and observing how well the denoising autoencoder performs (similarly to exercises
+    in Chapter [4](525591_1_En_4_Chapter.xhtml)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can use a simple but effective technique to introduce noise into an image:
+    adding random noise sampled from a normal distribution with mean 0 and a specified
+    standard deviation. The result is clipped to ensure that the resulting value is
+    still between 0 and 1, the feasible domain of pixel values. Listing [8-27](#PC28)
+    implements and visualizes artificial noise for a given standard deviation `std`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [8-67](#Fig67) demonstrates a grid of sample images with no artificial
+    noise added as reference for comparison.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig67_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A numerical grid represents various sample images that have no artificial noise
+    added as a comparison reference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-67
+  prefs: []
+  type: TYPE_NORMAL
+- en: A grid of untampered clean images from MNIST for reference
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [8-68](#Fig68) demonstrates the same set of images with random noise
+    sampled from a normal distribution with standard deviation of 0.1\. We can observe
+    marginal noise, especially in affecting the consistency of the digit outlines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig68_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 6 by 6 numerical grid illustrates the images acquired as a result of random
+    noise sampled from a normal distribution with standard deviation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-68
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample of MNIST images with added normally distributed random noise using
+    standard deviation 0.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s build an autoencoder to denoise this data (Listing [8-28](#PC29)). There
+    is no difference between the architecture of the autoencoder used here and in
+    previous applications; the difference rather is in the data that we pass in (namely,
+    that the input should have artificial noise applied). In this implementation,
+    we compute new noise in each epoch. This is desired because it provides “fresh”
+    noise that the denoising autoencoder must learn to denoise rather than to “accept”/”memorize.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: After training, we can evaluate the Mean Absolute Error on a fresh validation
+    set of noisy images (Listing [8-29](#PC30)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [8-30](#PC31) and Figure [8-69](#Fig69), respectively, implement and
+    demonstrate a sampling of images with normally distributed random noise, using
+    a standard deviation of 0.1\. A denoising autoencoder trained to recover the original
+    version given a noisy image generated using this procedure obtains a validation
+    Mean Squared Error of 0.0266.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig69_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 3 by 3 grid represents the corrupted images with reference to random noise
+    distributed using a standard deviation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-69
+  prefs: []
+  type: TYPE_NORMAL
+- en: The noisy/perturbed input (left), the unperturbed desired output (middle), and
+    the predicted output (right) for a denoising autoencoder trained on MNIST with
+    a noisy normal distribution of standard deviation 0.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s increase the standard deviation to 0.2\. Figure [8-70](#Fig70) demonstrates
+    the noise effect on the images, and Figure [8-71](#Fig71) demonstrates the reconstruction
+    performance on a set of images. The denoising autoencoder obtains a validation
+    Mean Absolute Error of 0.0289, slightly more than that of the denoising autoencoder
+    trained on noise drawn from a normal distribution with standard deviation 0.1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig71_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 3 by 3 grid represents a set of images displaying reconstruction performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-71
+  prefs: []
+  type: TYPE_NORMAL
+- en: The noisy/perturbed input (left), the unperturbed desired output (middle), and
+    the predicted output (right) for a denoising autoencoder trained on MNIST with
+    a noisy normal distribution of standard deviation 0.2
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig70_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 6 by 6 grid highlights the noise impact on the images with the increase of
+    standard deviation of zero point two.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-70
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample of MNIST images with added normally distributed random noise using
+    standard deviation 0.2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figures [8-72](#Fig72) and [8-73](#Fig73) demonstrate a sample of images and
+    the denoising autoencoder performance on images corrupted using noise drawn from
+    a normal distribution with standard deviation 0.3\. The denoising autoencoder
+    obtains a validation Mean Absolute Error of about 0.0343.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig73_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 3 by 3 numerical grid interprets images achieved through the performance of
+    a denoising autoencoder that obtains a validation mean absolute error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-73
+  prefs: []
+  type: TYPE_NORMAL
+- en: The noisy/perturbed input (left), the unperturbed desired output (middle), and
+    the predicted output (right) for a denoising autoencoder trained on MNIST with
+    a noisy normal distribution of standard deviation 0.3
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig72_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 6 by 6 numerical grid network exhibits a sample of images that interprets
+    normal distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-72
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample of MNIST images with added normally distributed random noise using
+    standard deviation 0.3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figures [8-74](#Fig74) and [8-75](#Fig75) demonstrate a sample of images and
+    the denoising autoencoder performance on images corrupted using noise drawn from
+    a normal distribution with standard deviation 0.5\. The denoising autoencoder
+    obtains a validation Mean Absolute Error of about 0.0427.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig75_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 3 by 3 number grid framework represents noisy input and desired output using
+    denoising autoencoder performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-75
+  prefs: []
+  type: TYPE_NORMAL
+- en: The noisy/perturbed input (left), the unperturbed desired output (middle), and
+    the predicted output (right) for a denoising autoencoder trained on MNIST with
+    a noisy normal distribution of standard deviation 0.5
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig74_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 6 by 6 grid framework represents images drawn from the standard deviation
+    of zero point five.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-74
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample of MNIST images with added normally distributed random noise using
+    standard deviation 0.5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figures [8-76](#Fig76) and [8-77](#Fig77) demonstrate a sample of images and
+    the denoising autoencoder performance on images corrupted using noise drawn from
+    a normal distribution with standard deviation 0.9\. The denoising autoencoder
+    obtains a validation Mean Absolute Error of about 0.0683\. Note that this is an
+    exceedingly nontrivial task – even humans would have some difficulty denoising
+    many of the shown samples! The autoencoder reconstructions are more abstracted
+    – there is no physical way to exactly reconstruct all the details due to the significant
+    amount of information corruption, so the autoencoder instead performs implicit
+    digit recognition and reconstructs the image as a “generalized” digit with specific
+    positional and orientational characteristics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig77_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A grid of images represents noisy input, true and predicted denoised output.
+    It depicts the performance of the denoising autoencoder with a standard deviation
+    of 0.9.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-77
+  prefs: []
+  type: TYPE_NORMAL
+- en: The noisy/perturbed input (left), the unperturbed desired output (middle), and
+    the predicted output (right) for a denoising autoencoder trained on MNIST with
+    a noisy normal distribution of standard deviation 0.9
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_8_Chapter/525591_1_En_8_Fig76_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 6 by 6 number grid of various image patterns acquired as a result of the performance
+    of autoencoder having the denoising feature.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-76
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample of MNIST images with added normally distributed random noise using
+    standard deviation 0.9
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can see that denoising autoencoders can perform reconstruction to a pretty
+    impressive degree. In practice, however, we want to keep our noise level somewhat
+    low; increasing the noise level can destroy information and cause the network
+    to develop incorrect and/or overly simplified representations of decisions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A similar logic can be applied to tabular data. There are many situations in
+    which you find that a tabular dataset is particularly noisy. This is especially
+    common in scientific datasets recording variable physical activity, like low-level
+    physics dynamics or biological system data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s build a denoising autoencoder for the Mice Protein Expression dataset.
+    Listing [8-31](#PC32) loads the dataset and splits it into a training and a validation
+    set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [8-32](#PC33) builds a standard autoencoder architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: To train, we generate noise to the input and train the model to reconstruct
+    the original input from the noisy input. In tabular datasets, we generally cannot
+    add randomly distributed noise to the entire set of data in blanket fashion, because
+    different features operate on different scales. Instead, the noise should be dependent
+    on the standard deviation of each feature itself. In this implementation, we add
+    noise randomly sampled from a normal distribution with a standard deviation equal
+    to one-fifth of the actual feature’s standard deviation (Listing [8-33](#PC34)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [8-34](#PC35) demonstrates the evaluation of such a model on novel validation
+    noisy data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: After training, the encoder of the denoising autoencoder can be used for pretraining
+    or other previously described applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, we discussed the autoencoder architecture and how it can be
+    used in four different contexts – pretraining, multitask training, sparse autoencoders,
+    and denoising autoencoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoders are neural network architectures trained to encode an input into
+    a latent space with a representation size smaller than the original input and
+    then to reconstruct the input from the latent space. Autoencoders are forced to
+    learn meaningful latent representations of the data because of this imposed information
+    bottleneck.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The encoder of a trained autoencoder can be detached and built as the feature
+    extractor of a supervised network; that is, the autoencoder serves the purpose
+    of pretraining.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In cases where supervised learning is difficult to get started with, creating
+    a multitask autoencoder that can optimize its loss by performing both the supervised
+    task and an auxiliary autoencoding task can help overcome initial learning hurdles.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Sparse autoencoders use a significantly expanded latent space size, but are
+    trained with restrictions on latent space activity, such that only a few nodes/neurons
+    can be active at any one pass. Sparse autoencoders are thought to be more robust.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Denoising autoencoders are trained to reconstruct clean data from an artificially
+    corrupted, noisy data. In the process, the encoder learns to look for key patterns
+    and “denoises” data, which can be a useful component for supervised models.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the next chapter, we will look into deep generative models – including a
+    particular type of autoencoder, the Variational Autoencoder (VAE) – which can
+    notably be used to reconcile unbalanced datasets, improve model robustness, and
+    train models on sensitive/private data, in addition to other applications.
+  prefs: []
+  type: TYPE_NORMAL

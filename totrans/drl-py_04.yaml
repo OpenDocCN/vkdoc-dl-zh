@@ -1,0 +1,2249 @@
+- en: 4. Model-Free Approaches
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: The previous chapter looked at dynamic programming, used when you know the model
+    dynamics *p*(*s*^′, *r*| *s*, *a*), and the knowledge is used to “plan” the optimal
+    actions. This is also known as the *planning problem*. This chapter shifts focus
+    and looks at *learning problems*—that is, setups where the model dynamics (aka
+    transition dynamics) are not known. You will learn to calculate/learn state values
+    and state-action values by *sampling*—that is, collecting experience by following
+    some policy in the real world or running the agent through a policy in simulation.
+    There is another class of problems where the model-free approach is more applicable.
+    In some problems, it is easier to sample than to calculate the transition dynamics,
+    such as a problem of finding the best policy to play a game like blackjack. There
+    are many combinations to reach a score that depend on the cards seen so far and
+    the cards still in the deck. It is almost impossible to calculate the exact transition
+    probability from one state to another, but it is easy to sample states from an
+    environment. To summarize, you use model-free methods when either you do not know
+    the model dynamics or you know the model, but it is much more practical to sample
+    than to calculate the transition dynamics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This chapter looks at two broad classes of model-free learning: Monte Carlo
+    (MC) methods and temporal difference (TD) methods. You will first learn how policy
+    evaluation works in a model-free setup and then extend this understanding to look
+    at control—that is, finding the optimal policy. I also touch upon the important
+    concepts of bootstrapping and the exploration-versus-exploitation dilemma as well
+    as off-policy versus on-policy learning. Initially, the focus is to look at the
+    MC and TD methods individually. Subsequently, I cover additional concepts like
+    *n*-step returns, importance sampling, and eligibility traces in a bid to combine
+    the MC and TD methods into a common, more generic approach, called TD(*λ*).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Estimation/Prediction with Monte Carlo
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: When you do not know the model dynamics, what do you do? Think back to a situation
+    when you did not know something about a problem. What did you do in that situation?
+    You experiment. In the context of reinforcement learning, it could mean having
+    an agent take actions randomly and seeing how the system responds. For example,
+    say you want to find out if a playing die or a coin is biased or not. You toss
+    the coin or throw the die multiple times, observe the outcomes, and use that to
+    form your opinion. In other words, you sample. In the case of coin, say you toss
+    the coin 10,000 times and calculate the fraction of times it shows heads. If that
+    fraction is close to 0.5, you can surmise that the coin is unbiased with a high
+    degree of confidence. If the experiment is conducted 100,000 times with fraction
+    of heads still hovering around 0.5, your confidence in the unbiasedness of the
+    coin will be even higher. Why does taking the average of outcomes from samples
+    and using it as an estimate work?
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*The* *law of large numbers (LLN)* from statistics tells us that the average
+    of samples is a good estimate for the actual unknown quantity and that this estimate
+    becomes better and better as the number of trials of the experiment (samples)
+    increases. Further, these estimates formed by averaging the outcomes from samples
+    become better as the number of samples increase—stated in mathematical language
+    the error as measured by the variance between the average of samples and the actual
+    unobserved value decreases as the number of trial n increases and with n going
+    to infinity, the estimate from trials becomes equal to the actual unobserved value.
+    This law is one of the very important laws in the field of statistics. Having
+    said that, do remember that there are some cases where such convergence does not
+    happen. However, thankfully you will not be encountering such pathological cases
+    in most real-world RL examples.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you examine the Bellman equations in the previous chapter, you will notice
+    that there is an expectation operator *E*[·] in those equations; for example,
+    the value of a state being *v*(*s*) = *E*[*G*[*t*]| *S*[*t*] = *s*]. Further,
+    to calculate *v*(*s*), you used dynamic programming requiring the transition dynamics
+    *p*(*s*^′, *r* | *s*, *a*). In the absence of the model dynamics knowledge, what
+    can you do?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Following the law of large numbers, you sample from the model. You fix a starting
+    state *S*[*t*] = *s* and fix a policy π for which you want to calculate *v*[π](*s*).
+    You let the agent start from this state *S*[*t*] = *s*, follow the policy π to
+    take actions, and keep doing so until termination. You record the total sum of
+    rewards—that is, the return the agent gets in the current single sequence/episode.
+    This sequence of state, action, reward until termination is also known as an *episode*
+    or a single *rollout* of the policy. You repeat this experiment to collect individual
+    returns from each such rollout and average these as an estimate of *v*[*π*](*s*)
+    for the policy *π*. This, in a nutshell, is the approach of *Monte Carlo (MC)
+    methods*: replace expected returns with the average of sample returns.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are a few points to note. The MC approach does not require knowledge of
+    the model. The only thing required is that you should be able to sample from it.
+    The ability to sample or play out the agent depends a lot on the problem. If it
+    is a board game whose laws can be easily modeled in a program or if there is a
+    simulator available for a real-world system, you can use such a program or simulator
+    to sample very quickly and cheaply. However, if a rollout of an episode will involve
+    interaction with the agent in the real world and if the real-world agent is something
+    like an expensive robot or a self-driving car, such interaction may not be feasible,
+    especially when the agent is still not trained enough and is bound to make mistakes.
+    In some cases, a mistake could be very costly, leading to the destruction of the
+    machine or endangering the public safety. Therefore, the MC approach to sample
+    the return from a complete rollout may not always work, especially if it involves
+    real-world interactions. There is another scenario where MC may not work—in the
+    case of non-terminating environments where there is no terminal state. You need
+    to know the return of starting from a state until termination, and hence you can
+    use MC methods only on episodic MDPs in which every run finally terminates. It
+    will not work on non-terminating environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second point is that for a large MDP, you can keep the focus on sampling
+    only that part of the MDP that is relevant and avoid exploring irrelevant parts
+    of the MDP. Such an approach makes MC methods highly scalable for very large problems.
+    As stated earlier, the MC approach can be useful for the class of problems in
+    which listing all states and/or all actions in a state makes the problem intractable
+    and where there could be large parts of the state and state-action combinations
+    not of interest in a specific context. A very good example was demonstrated by
+    OpenAI, when they used a variant of the MC method called Monte Carlo tree search
+    (MCTS) to train a Go game-playing agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third point is about Markov assumption—that is, the past is fully encoded
+    in the present state. In other words, knowing the present makes the future independent
+    of the past. As more formally stated the transition to state *S*[*t* + 1] in time
+    *t* + 1 is only dependent on the current state *S*[*t*] and action *A*[*t*] taken
+    in time *t*. This transition is completely independent of the states and actions
+    that came before *S*[*t*], *A*[*t*]. I talked about this property in Chapter [2](http://dx.doi.org/10.1007/978-1-4842-6809-4_2).
+    Markov independence forms the basis of the recursive nature of Bellman equations,
+    where a state just depends on the successor state values. However, under the MC
+    approach, you observe the full return starting from a state *S* going until termination.
+    You are not depending in any way on the value of the successor states to calculate
+    the current state value. There is no Markov property assumption being made here.
+    A lack of Markov assumption in MC methods make them much more feasible for the
+    class of MDPs known as POMDPs (for “partially observable MDPs”). In a POMDP environment,
+    you get only partial-state information, which is known as an observation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We have been talking about using MC methods to estimate the state and state-action
+    values without making any Markov property assumption or without worrying about
+    the transition dynamics. However, you can also use the MC method to roll out multiple
+    episodes, and then use these rollouts in turn to calculate the dynamics *p*(*s*^′,
+    *r*| *s*, *a*). Such an approach will take you back to the world of model-based
+    RLs by first using MC rollouts to estimate system dynamics and then using those
+    system dynamics in a DP setup to find the optimal policies. I will talk about
+    those in detail in a future chapter. For now, the chapter focuses on the model-free
+    approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moving on, let’s look at a formal way to estimate the state values for a given
+    policy. You let the agent start a new episode and observe the stepwise rewards
+    from the time agent enters state *S* = *s* for the first time in that specific
+    episode going until the termination of the episode. The cumulative reward from
+    first time *S* = *s* until termination is called the reward *G*. Many episode
+    runs are carried out, every time calculating the return from *S* = *s* to termination.
+    The average of return across episodes is taken as an estimate of *v*[*π*](*S* = *s*).
+    This is known as the *first-visit MC method*. Note that, depending on the dynamics,
+    an agent may visit the same state *S* = *s* in some later step within the same
+    episode before termination. In the first-visit MC method, you take the total return
+    only from the first visit in an episode until the end of the episode. There is
+    another variant in which you take the average of returns from every visit to that
+    state until the end of the episode. This is known as the *every-visit MC* method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s see how the value of a state under a specific policy can be estimated
+    under first-visit MC method. Figure [4-1](#Fig1) shows the backup diagram for
+    the MC method. In DP, in a given state you take a full swipe to cover all the
+    actions possible from a state and all the possible transitions to a new state
+    from the state-action pair (*S* = *s*, *A* = *a*). You go only one level deep
+    from state *S* = *s* to *A* = *a* and then to the next state *S* = *s*^′. Compared
+    to this, in the MC method, the backup covers a full sample trajectory from the
+    current state *S* = *s* to the terminal state. However, It does not cover all
+    the branching possibilities; rather, it covers only one single path that was sampled
+    from the start state *S* = *s* to the terminal state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A set of 2 diagrams represents the comparison of D P estimation and M C estimation
+    methods. Nodes represent states S and actions A, with arrows indicating transitions
+    and rewards R.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backup diagram of MC methods as compared to Bellman equation–based DP backup
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now look at the pseudocode for the first-visit version, which is shown in Figure
+    [4-2](#Fig2). You input the agent’s current policy *π*. You initialize two arrays:
+    one to hold the current estimate of *V*(*s*) and the second to hold the number
+    of visits *N*(*s*) to a state *S* = *s*. Multiple episodes are executed, and you
+    update *V*(*s*) as well as *N*(*s*) for each of the states the agent visits in
+    every episode, taking care to do the update for the first visit in the “first-visit”
+    variant and updating every visit in the “every-visit” variant. The pseudocode
+    covers only the “first visit” variant. The “every visit” variant is easy to implement
+    by just dropping the condition toward the end of the pseudocode, which reads as
+    “`Unless` *S*[*t*] appears in *S*[0], *S*[1]`, ....`” As per the law of large
+    numbers, the statistical law on which Monte Carlo simulations are based, *V*(*s*),
+    will converge to true *v*[*π*](*s*) for all states under the condition that the
+    number of visits to each state approaches infinity.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the first visit M C prediction algorithm. The pi and the policy
+    to be evaluated is the input. It initializes state values and visit counts to
+    zero. Sample episodes and update state values based on first visits.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: First-visit MC prediction for estimating vπ(s). The pseudocode uses the online
+    version to update the values as samples are received
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You store the cumulative total and the count of first visits to a state. The
+    average is calculated by dividing the total by the count. Every time a state is
+    visited, the following update is carried out:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ N(s)=N(s)+1 $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ S(s)=S(s)+G $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ V(s)=\frac{S(s)}{N(s)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: With a minor change, you could look at the update in another way, without needing
+    the cumulative totals *S*(*s*). In this alternate formulation, you have only one
+    array *V*(*s*) that is updated for every visit directly without needing to divide
+    the total by the count. This is an important computational optimization that will
+    occur many times, whenever you need a running average of the numbers that are
+    coming one at a time in some kind of online fashion. If you have two numbers,
+    instead of remembering them all, you just keep the average. When a third number
+    arrives, you update the average of the two numbers with the third number so that
+    the new average is now an average of the three numbers. The derivation of this
+    updated rule is as follows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the following derivation, *N*(*s*) is the visit count, which is also the
+    notation used in Figure [4-2](#Fig2). S(s) is the cumulative sum of returns that
+    the agent sees in state *s* and *V*(*s*) is the value function of state *s*. The
+    cumulative sum *S*(*s*) and state value *V*(*s*) are specific to the policy the
+    agent is following, which is fixed and provided as input in the beginning, as
+    shown in Figure [4-2](#Fig2). You also use subscript *n* or *n* + 1 to indicate
+    the *n*^(*th*) or *n* + 1^(*th*) visit to the specific state *s*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ N{(s)}_{n+1}=N{(S)}_n+1 $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ V{(s)}_{n+1}=\frac{S{(s)}_n+G}{N{(s)}_{n+1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.N{(s)}_n+G}{N{(s)}_{n+1}}
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.\left[N{(s)}_{n+1}-1\right]+G}{N{(s)}_{n+1}}
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.N{(s)}_{n+1}+\left[G-V{(s)}_n\right]}{N{(s)}_{n+1}}
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--}
+    V{(s)}_n\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--}
+    V{(s)}_n\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The difference [*G* – *V*(*s*)[*n*]] can be viewed as an error between the latest
+    sampled value *G* and the current estimate *V*(*s*)[*n*]. The difference/error
+    is then used to update the current estimate by adding ![$$ \frac{1}{N}. error
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq1.png) to the
+    current estimate. As the number of visits increases, the new sample has increasingly
+    low influence in revising the estimate of *V*(*s*). This is because the multiplication
+    factor 1/*N* reduces to zero as *N* becomes very large.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sometimes, instead of using a diminishing factor 1/*N*, you can use a constant
+    *α* as the multiplication factor in front of [*G* – *V*(*s*)[*n*]]. You use this
+    approach for non-stationary environments specifically. As the environment could
+    be changing, you want to always give enough importance to the latest error with
+    the help of a contact, α.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{n+1}={V}_n+\upalpha \left(G\hbox{--} {V}_n\right)\  for\  all\  states\
+    s\in S $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that in Equation [4-2](#Equ2), I have removed the function arguments *s*
+    from *V*[*n* + 1] and *V*[*n*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: The constant multiplication factor approach is more appropriate for problems
+    that are non-stationary or when you want to give a constant weight to all the
+    errors. A situation like this can happen when the old estimate *V*[*n*] may not
+    be very accurate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having looked at the pseudocode, now it is time to look at the Python implementation
+    of the first visit MC and run the logic on the same grid world you saw in the
+    previous chapter. In Chapter [3](502835_2_En_3_Chapter.xhtml), you learned how
+    to derive the state values for a random walk policy using DP. Now you will arrive
+    at the same state value estimates using the MC method. Remember that with MC methods,
+    you do not know or use the knowledge of transition dynamics. Rather, you just
+    sample the rollouts for multiple episodes and use the rewards collected in those
+    rollouts to estimate the state values for all the states in the grid for the random
+    walk policy agent is following.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this, you need to update the implementation of grid world from Chapter [3](502835_2_En_3_Chapter.xhtml).
+    The Python code in `gridworld.py` inside the Chapter [4](502835_2_En_4_Chapter.xhtml)
+    code includes revised code for the grid world environment. There is a section
+    toward the end of this chapter devoted to the things you need to do to implement
+    your own Gymnasium environment. For now, it suffices to know that you need to
+    implement two new functions in your environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first function is `env.reset()`, which randomly initializes the environment
+    and returns the starting state of the agent plus some debug info about the environment.
+    The second function is `env.step(action)` and it takes an `action` as input, transitions
+    the agent to the new state as per the internal dynamics of the system, and returns
+    a tuple of five values `(new_state, reward, terminated, truncated, info)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now look at the implementation of the MC value prediction. Listing [4-1](#PC1)
+    shows the code, and the full code is available in the `4.a-mc_estimation.ipynb`
+    file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code in Listing [4-1](#PC1) is a straight implementation of the pseudocode
+    in Figure [4-2](#Fig2). The code implements the online version of the update,
+    as explained in Equation [4-1](#Equ1)—that is, `N[s]+=1; V[s]=V[s]+1/N[s]*(G-V[s])`.
+    The code also implements the “first-visit” version but can be converted to “every
+    visit” with a very small tweak. You just need to drop the `if` check—that is,
+    “`if s not in episode_states[:t]`” and move the code under this condition as an
+    unconditional code to carry out the updates at every step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To obtain convergence to the true state values, you need to ensure each state
+    is visited enough times, ideally infinite times in limit. As shown in Figure [4-3](#Fig3),
+    state values do not converge very well for 100 episodes. However, with 10,000
+    episodes, the values have converged well and match those produced with the DP
+    method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A set of two heatmaps representing policy evaluation in reinforcement learning
+    depicts the change in state-value function estimates after 100 iterations and
+    after 10,000 iterations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Policy evaluation: *v*[*π*](*s*) computed using the MC method for the grid
+    world when the agent is following a random policy. Each of the four actions (`UP`,
+    `DOWN`, `LEFT`, and `RIGHT`) have an equal probability of `0.25`. The left figure
+    shows the values after `100` iterations and the right figure shows the state values
+    after `10,000` iterations'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A key aspect of Monte Carlo techniques is that the predictions for each state
+    stand alone. One state’s estimate doesn’t rely on the estimate of another, unlike
+    in dynamic programming (DP). Put simply, Monte Carlo methods don’t use bootstrapping
+    as described in the earlier chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Related to the same point is that of computational expense in estimating a specific
+    state value. The computational expense incurred for calculating a single state’s
+    value is independent of the total number of states and independent of the branching
+    factor of possible actions in that specific state. In the case of DP, you need
+    to consider all actions in a specific state as well as all following possible
+    successor states for each action. This is expressed by the two summation signs
+    in Equation [3-6](502835_2_En_3_Chapter.xhtml#Equ5). However, in the MC method,
+    you just consider the rollouts that happen without worrying about an exhaustive
+    list of possible actions and successor states. Therefore, if the interest is in
+    calculating a specific state’s value, you just need the agent to start from that
+    state and follow the policy being evaluated until termination. And you do so for
+    many episodes to take the average value of each episode’s return as an estimate
+    of specific starting state’s value. In the MC approach, you are not worried about
+    all other states and actions that you do not see in the sample rollouts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next subsection dives deeper into the two versions of MC methods: *first-visit*
+    vs *every-visit.*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bias and Variance of MC Predication Methods
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s now look at the pros and cons of “first visit” versus “every visit.” Do
+    both converge to the true underlying *V*(*s*)? Do they fluctuate a lot while converging?
+    Does one converge faster to the true value? Before I answer these questions, let’s
+    first review the basic concept of bias-variance tradeoff that you see in all statistical
+    model estimations, for example , in supervised learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Bias* refers to the property of the model to converge to the true underlying
+    value that you are trying to estimate—in this case, *v*[*π*](*s*). Some estimators
+    are biased, meaning they are not able to converge to the true value due to their
+    inherent lack of flexibility—that is, estimation approach being too simple or
+    restricted for a given true value. The bias of a model goes down as you increase
+    the number of samples in an estimate or as you make the estimation process more
+    complex and hence more flexible. A biased estimation approach or a model will
+    consistently over- or under-predict the true values. For example, a model that
+    is biased toward predicting higher values will consistently predict that new data
+    points will have higher values than they do.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Variance* refers to the model estimate being sensitive to the specific sample
+    data being used. This means the estimate value may fluctuate a lot. Mostly all
+    estimation processes show lower variance as you increase the number of samples.
+    However, for a given number of samples, some approaches may have lower variance,
+    and some may have more. Usually, the models that are more complex show higher
+    variance as they can fit better for a given data. Therefore, as you collect different
+    sets of samples with multiple runs of an experiment, the estimated value from
+    each run will fit well to the data seen in that run. This in turn leads to higher
+    variance of these estimated values across multiple runs. The model with higher
+    complexity or flexibility will show lower bias but will show more variance.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A model that is trained on a small dataset may have a high variance, because
+    the predictions will be sensitive to the specific data points that are included
+    in the training set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you have unlimited data, you could always choose a very complex model and
+    still drive down the variance by using an increasingly large volume of data to
+    form the estimate. However, in all practical problems, you do not have unlimited
+    data, or compute, or time to process unlimited data even if it was available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This fundamental tradeoff between the bias and variance is a tradeoff between
+    the accuracy and variability of an estimation approach, especially for a given
+    and fixed volume of data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The bias-variance tradeoff can be illustrated by the following example. Suppose
+    you are trying to estimate the average height of all adults in the world. You
+    can collect samples of adults and measure their heights. Then, you can use the
+    sample mean to estimate the population mean height. “Population mean” refers to
+    the true average height of all the adults in the world, which is unknown, and
+    which is what you are trying to estimate with the help of samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sample mean is an unbiased estimator of the population mean height. This
+    means that the average of all possible sample means will be equal to the population
+    mean height. However, the sample mean is also a variable estimator. This means
+    that the value of the sample mean will vary from sample to sample.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The variance of the sample mean is inversely proportional to the sample size.
+    This means that the larger the sample size, the smaller the variance of the sample
+    mean. In other words, the more data you have, the more accurate your estimate
+    of the population mean height will be.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, there is a limit to how much you can reduce the variance of the sample
+    mean by increasing the sample size. This is because the sample mean is still a
+    biased estimator of the population mean height. The bias of the sample mean is
+    due to the fact that you are only sampling a small fraction of the population.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you want to reduce the bias of the sample mean, you need to use a more complex
+    model. For example, you could use a regression model to predict the height of
+    an individual based on their age, gender, and other factors. A regression model
+    will typically have a lower bias than the sample mean, but it will also have a
+    higher variance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The bias-variance tradeoff is important because it is impossible to have a model
+    that has both zero bias and zero variance. If a model has zero bias, then it will
+    perfectly fit the training data. However, this means that the model is likely
+    to overfit the training data and will not generalize well to new data. On the
+    other hand, if a model has zero variance, then it will produce the same prediction
+    for all data points. This means that the model is not able to capture any of the
+    complexity in the data. The models, which are very flexible, have low bias as
+    they can fit the model to any configuration of a dataset. At the same time, due
+    to flexibility, they can be overfit to the data, making the estimates vary a lot
+    as the training data changes. On the other hand, models that are simpler have
+    high bias. Such models, due to the inherent simplicity and restrictions, may not
+    be able to represent the true underlying model. But they will also have low variance
+    as they do not overfit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider that you have some data points (say 100). You are trying to fit a regression
+    model with a polynomial of degree n and assume that underlying true curve on which
+    the data points lie follow some unknown equation. Further, assume that each data
+    point may not lie exactly on this unknown ground truth curve due to noise in data.
+    If you take a polynomial of lower degree (less complex model), say a degree of
+    1, it will do a poor fit and hence will have a higher bias. However, the fitted
+    curve will not change much even if you were to carry out the fitting exercise
+    with another set of 100 data points generated from the game ground truth—that
+    is, it will show lower variance. Now consider the other extreme of using a polynomial
+    of degree=100\. For any given 100 data points, the curve will exactly fit all
+    the data points—that is, lower bias. However, in this case another set of 100
+    data points may produce a fitted curve very different from the previous curve.
+    In other words, the fitted curve will fluctuate wildly in shape based on which
+    100 sample points are used for fitting the curve. Such a situation is known as
+    high variance. As the model complexity increases the bias reduces but variance
+    increases. Based on the problem, there is a range in the middle that balances
+    bias and variance. Readers may refer to any standard text on machine learning
+    for an in-depth discussion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tradeoff, known as *bias-variance tradeoff**,* is presented in the graph
+    in Figure [4-4](#Fig4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph illustrates the bias-variance tradeoff in statistical learning. It depicts
+    error versus model complexity. As model complexity increases, variance rises while
+    bias decreases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bias variance tradeof f. Model complexity is increasing toward the right on
+    the x-axis. Bias starts off high when the model is restricted and drops off as
+    the model becomes flexible. Variance shows a reverse trend with model complexity
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the field of reinforcement learning, until a certain point, you can reduce
+    variance without increasing the bias by making model simpler on time domain. This
+    is because of causality. The action agent takes in current state—that is, the
+    policy it follows in the current state does not impact the rewards seen in the
+    past transition. Current action can only impact the future rewards. You will see
+    variations of these when you study policy gradient methods in later chapters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With this background, now turn your attention back to comparing “first visit”
+    to “every visit”. The *first visit* is unbiased but has high variance. *Every
+    visit* has bias that goes down to zero as the number of trials increases. In addition,
+    *every visit* has low variance and usually converges to the true value estimates
+    faster than the *first visit*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Control with Monte Carlo
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s now talk about control in a model-free setup. You need to find the optimal
+    policy in this setup without knowing the model dynamics. As a refresher, let’s
+    look at the generalized policy iteration (GPI) that was introduced in Chapter
+    [3](502835_2_En_3_Chapter.xhtml). In GPI, you iterate between two steps. The first
+    step is to find the state values for a given policy, and the second step is to
+    improve the policy using greedy optimization. You will follow the same GPI approach
+    for control under MC. You will have some tweaks, though, to account for the fact
+    that you are in a model-free world with no access/knowledge of transition dynamics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [3](502835_2_En_3_Chapter.xhtml) looked at state values, *v*(*s*). However,
+    in the absence of transition dynamics, state values alone will not be sufficient.
+    For the greedy improvement step, you need access to the action values, *q*(*s*,
+    *a*). You need to know the *q*-values for all possible actions—that is, all *q*(*S* = *s*,
+    *a*) for all possible actions *a* in state *S* = *s*. Only with that information
+    will you be able to apply a greedy maximization to pick the best action—that is,
+    *argmax*[*a*]*q*(*s*, *a*)*.*
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is another complication when compared to DP. The agent follows a policy
+    at the time of generating the samples. However, such a policy may result in many
+    state-action pairs never being visited, and even more so if the policy is a deterministic
+    one. If the agent does not visit a state-action pairs for a given state, it does
+    not know all *q*(*s*, *a*) for that state. Hence it cannot find the action yielding
+    maximum *q*-value. One way to solve the issue is to ensure enough exploration
+    by *exploring starts*—that is, ensuring that the agent starts an episode from
+    a random state-action pair and over the course of many episodes covers each state-action
+    pair enough times as a starting point*.* Ideally, an infinite number of times
+    in the limit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [4-5](#Fig5) shows the GPI diagram with one change, *v*-values being
+    replaced by *q*-values. The evaluation step now is the MC prediction step that
+    I talked about in the previous section. Once the q-values stabilize, greedy maximization
+    can be applied to obtain a new policy. The policy improvement theorem ensures
+    that the new policy will be better or at least as good as the old policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates an iterative process with two steps labeled evaluation
+    and improvement. Arrows indicate a cycle between the two, with Q leading to pi
+    in evaluation and pi leading back to Q in improvement, where pi is influenced
+    by a function greedy Q.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iteration between the two steps. The first step evaluates to get the state-action
+    values in sync with the policy being followed. The second step performs policy
+    improvement to do a greedy maximization for actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: This approach of GPI will be a recurring theme. Based on the setup, the evaluation
+    steps will change, and the improvement step invariably will continue to be greedy
+    maximization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The assumption of “exploring starts” is not very practical and efficient. It’s
+    not practical, as in many scenarios, because the agent does not get to choose
+    the starting condition, for example, while training a self-driving car. It may
+    not be feasible, and it may also be wasteful for the agent to visit each state-action
+    pair infinite times in limit. However, you still need continued exploration for
+    the agent to visit all the actions in the states that are visited by the current
+    policy. This is achieved by using an *ε-greedy policy.*
+  prefs: []
+  type: TYPE_NORMAL
+- en: In an *ε*-greedy policy, the agent takes the action with the maximum q-value
+    with the probability 1 − ϵ, and it takes any action randomly with probability
+    ![$$ \frac{\upvarepsilon}{\left|A\right|} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq2.png).
+    In other words, the remaining probability of ϵ is divided equally across all actions
+    to ensure that the agent continues to explore non-maximizing actions. In other
+    words, the agent *exploits* the knowledge with probability 1-ε, and it *explores*
+    with probability ε. You will see this concept of exploration and exploitation
+    being repeated in RL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uppi \left(\mathrm{a}|\mathrm{s}\right)=\left\{\begin{array}{c}1-\upvarepsilon
+    +\frac{\upvarepsilon}{\left|\mathrm{A}\right|}\mathrm{fora}={\mathrm{a}\mathrm{rgmax}}_{\mathrm{a}}\mathrm{Q}\left(\mathrm{s},\mathrm{a}\right)\\
+    {}\frac{\upvarepsilon}{\left|\mathrm{A}\right|}\kern3em \mathrm{otherwise}\kern5.5em
+    \end{array}\right. $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The action with a maximum *q*-value gets picked with probability 1 − ϵ from
+    greedy max. All actions are picked up with a probability ϵ/|*A*|.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While ϵ-greedy solves the problem of exploring all possible pairs of *s*, *a*,
+    it is a compromise. The final policy learned by the agent is also an *ϵ*-greedy
+    one. Imagine such a final policy for an autonomous robot. The probability ϵ/ ∣ *A*∣
+    of some random action could put the robot in a destructive state or could cause
+    some harm to objects/people around it. So how do you fix it? An easy fix is to
+    reduce the value of ϵ as the episode count increases and in limit you let ϵ → 0\.
+    This lets the agent learn the optimal greedy policy in the limit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s make one more refinement to the estimation/prediction step of the iteration.
+    In the previous section, you saw that even for a simple 4×4 grid MDP, you needed
+    an order of 10,000 episodes for the values to converge. Refer to Figure [3-10](502835_2_En_3_Chapter.xhtml#Fig10),
+    which shows the convergence of GPI: the MC prediction/evaluation step makes the
+    *v*-values or *q-*values in sync with the current policy. However, in the previous
+    chapter, you also saw that there was no need for the agent to go all the way to
+    the convergence of values. This was shown in Figure [3-11](502835_2_En_3_Chapter.xhtml#Fig11).
+    Similarly, you could run MC prediction followed by policy improvement on an episode-by-episode
+    basis. This approach will remove the need for a large number of iterations in
+    the estimation/prediction step, thereby making the approach scalable for large
+    MDPs. Similar to Figure [3-11](502835_2_En_3_Chapter.xhtml#Fig11), such an approach
+    will produce convergence, as shown in Figure [4-6](#Fig6).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the iterative process between two steps, such as pi equals
+    epsilon minus greedy Q and Q equals q pi. Arrows indicate optimization steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iteration between the two steps. The first step is the MC prediction/evaluation
+    for a single step to move the q-values in the direction of the current policy.
+    The second step is that of policy improvement to do a ε-greedy maximization for
+    actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Combining the two tweaks, you now have a practical algorithm for Monte Carlo–based
+    control for optimal policy learning. This is called *greedy in the limit with
+    infinite exploration* (GLIE). You will use the *every-visit* version in the *q*-value
+    prediction step. To make it first-visit, you just need a minor tweak, like the
+    one you saw in MC prediction in Figure [4-2](#Fig2). The GLIE pseudocode is given
+    in Figure [4-7](#Fig7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the policy optimization pseudocode with initialization, episode
+    sampling, and policy updates using an epsilon-greedy strategy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Every-visit (GLIE) MC control for policy optimization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Start with *q*-values *Q*(*s*, *a*) = 0 and visit counts *N*(*s*, *a*) = 0 for
+    all (*s*, *a*) pairs. Then you initialize a random policy like a policy with equal
+    probability for all actions in a state. The main thing to note is that you can
+    use any random policy as long as every action in a specific state has a non-zero
+    probability. The main loop is to carry rollouts of the policy multiple times and
+    in each iteration of the loop use the rolled out state, action, reward tuples
+    to first do one step of prediction followed by greedy maximization, as shown in
+    the pseudocode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now look at the actual implementation given in `4.b-mc-control.ipynb`.
+    Listing [4-2](#PC2) shows the Python code implementation of the main loop in GLIE.
+    The implementation follows the pseudocode. The `argmax_a()` function finds the
+    action with `max Q(s,a)` for a given state. Another function, `get_action(state)`,
+    returns an ϵ-greedy action for the current policy. As a coding exercise, you may
+    want to make tweaks and convert it into the “first-visit” variant. You can also
+    compare the result of the “first-visit” with the “every-visit” MC control.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: So far in this chapter, you have studied on-policy algorithms for prediction
+    and control. In other words, the same policy is used to generate samples as well
+    as do policy improvement. Policy improvement is done with respect to *q*-values
+    of the same ϵ-greedy policies. You need exploration to find *Q*(*s*, *a*) for
+    all state-action pairs, which is achieved by using ϵ-greedy policies. However,
+    as you progress, the *ϵ*-greedy policy in a limit is suboptimal. You need to exploit
+    more as your understanding of the environment grows with more and more episodes.
+    You have also seen that while theoretically the policy will converge to an optimal
+    policy, at times it requires careful control of the ϵ value. The other big disadvantage
+    of MC methods is that you need each episode to finish before you can update *q*-values
+    and carry out policy optimization. Therefore, MC methods can only be applied to
+    environments that are episodic and where the episodes terminate. Starting in the
+    next section, you will start looking at a different class of algorithms called
+    *temporal difference* methods that combine the advantages of DP (single time-step
+    updates) and MC (i.e., no need to know system dynamics). However, before I dive
+    deep into TD methods, let’s go through a short section to introduce and then compare
+    on-policy versus off-policy learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Off-Policy MC Control
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In GLIE, you saw that to explore enough, you needed to use ε-greedy policies
+    so that all state actions are visited often enough in limit. The policy learned
+    at the end of the loop is used to generate the episodes for the next iteration
+    of the loop. You are using the same policy to explore as the one that is being
+    maximized. Such an approach is called *on-policy,* where samples are generated
+    from the same policy that is being optimized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In many cases this is not very efficient. The episodes you have collected in
+    the past have to be thrown away and a new set of episodes must be generated. In
+    the real world or where generating episodes is expensive, the throwing away of
+    old episodes leads to inefficiency or slow process of training. The other issue
+    is that the ability to explore unexplored parts is dependent on the policy being
+    optimized. You have no separate ability to control exploration. Even the ϵ in
+    the ϵ-greedy policy needs to be reduced to zero as training progresses, making
+    exploration harder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stated differently, the optimal policy control method is seeking to learn action-values
+    conditional on optimal behavior from the starting (state, action) pair but the
+    agent also needs to behave sub-optimally in order to explore all actions in all
+    states so that it can find the maximizing actions in all the states seen in the
+    rollouts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is another approach in which the samples are generated using a policy
+    that is more exploratory with a higher ϵ, while the policy being optimized is
+    the one that may have a lower ϵ or could even be a fully deterministic one. Such
+    an approach of using a different policy to learn than the one being optimized
+    is called *off-policy* learning. The policy being used to generate the samples
+    is called the *behavior policy* usually denoted with subscript “*b*” and the one
+    being learned (maximized) is called the *target policy,* which is denoted with
+    subscript “π”. This is contrast to the on-policy approach, where the policy being
+    used to generate samples is the same as the one which is optimized. In the on-policy
+    approach, the samples are discarded after each policy update as the samples become
+    stale and are no more on-policy after the policy update.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This approach makes the process more complex and needs careful mathematical
+    handing in the form of *importance sampling**,* discussed next. You will first
+    derive a concise expression for importance sampling and then see its use for off-policy
+    approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Importance Sampling
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Mathematically, if you want to estimate the expected value of a function *f*
+    under a distribution *p*, but you have samples from distribution *q*, the importance
+    sampling estimator is given by:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {E}_p\left[f\right]\approx \frac{1}{N}{\sum}_{i=1}^N\frac{p\left({x}_i\right)}{q\left({x}_i\right)}f\left({x}_i\right)
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where *E*[*p*][ *f* ] is the expected value of *f* under distribution *p*. *x*[*i*]
+    are the samples drawn from distribution *q* and *N* is the number of samples.
+    The term ![$$ \frac{p\left({x}_i\right)}{q\left({x}_i\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq3.png)
+    is called the importance weight or importance ratio.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Imagine you’re a teacher and you want to know the average grade of all the students
+    in the school. However, you only have access to the grades of students in the
+    math club. The students in the math club might be better at math than the average
+    student, so their grades might be higher. To get an estimate of the average grade
+    of all students using only the math club’s grades, you can use importance sampling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, *p* is the distribution of grades for all students. *q* is the distribution
+    of grades for the math club students. *f* is the grade itself. You would weigh
+    each math club student’s grade by the ratio of the probability that a random student
+    gets that grade to the probability that a math club student gets that grade.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Having seen this introduction, let’s now look at importance sampling in the
+    context of Monte Carlo sampling in reinforcement learning. Consider a starting
+    state *S*[*t*] and the trajectory of action and state sequences until the end
+    of the episode, *A*[*t*], *S*[*t* + 1], *A*[*t* + 1], ⋯, *S*[*T*]. The probability
+    of observing the sequence under a policy *π* is given by the following expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\Pr}_{\uppi}\left\{\mathrm{trajectory}\right\}=\uppi \left({A}_t|{S}_t\right)\cdotp
+    p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp \uppi \left({A}_{t+1}|{S}_{t+1}\right)\cdots
+    p\left({S}_T|{S}_{T-1},{A}_{T-1}\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Similarly, the probability of observing the sequence under a behavior policy
+    *b* is given by the following expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\Pr}_b\left\{\mathrm{trajectory}\right\}=b\left({A}_t|{S}_t\right)\cdotp
+    p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp b\left({A}_{t+1}|{S}_{t+1}\right)\cdots
+    p\left({S}_T|{S}_{T-1},{A}_{T-1}\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The importance sampling ratio is the ratio of the probability of trajectory
+    under the target policy *π* and the probability of trajectory under the behavior
+    policy *b*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uprho}_{t:T-1}=\frac{\Pr_{\uppi}\left\{\mathrm{trajectory}\right\}}{\Pr_b\left\{\mathrm{trajectory}\right\}}
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Substituting the expressions for trajectory probabilities for target policy
+    π and behavior policy *b*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uprho}_{t:T-1}=\frac{\uppi \left({A}_t|{S}_t\right)\cdotp p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp
+    \uppi \left({A}_{t+1}|{S}_{t+1}\right)\cdots p\left({S}_T|{S}_{T-1},{A}_{T-1}\right)}{b\left({A}_t|{S}_t\right)\cdotp
+    p\left({S}_{t+1}|{S}_t,{A}_t\right)\cdotp b\left({A}_{t+1}|{S}_{t+1}\right)\cdots
+    p\left({S}_T|{S}_{T-1},{A}_{T-1}\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'You see that the transition probabilities *p*(*S*[*t* + 1]| *S*[*t*], *A*[*t*])
+    occur in both the numerator and denominator. Also, these are dependent on the
+    environment and have nothing to do with the policy agent follows. You can cancel
+    then from both numerator and denominator. This gives you the final form of the
+    importance sampling ratio:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uprho}_{t:T-1}=\frac{\Pr_{\uppi}\left\{\mathrm{trajectory}\right\}}{\Pr_b\left\{\mathrm{trajectory}\right\}}={\prod}_{k=t}^{T-1}\frac{\uppi
+    \left({A}_k|{S}_k\right)}{b\left({A}_k|{S}_k\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Having derived the expression for importance sampling in the context of a trajectory
+    rollout, let’s look at why you need it. What is it that you are trying to estimate
+    in MC methods? You are using average of sample rollouts from a starting state/action
+    and these rollouts are observed under a target policy π:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{\uppi}\left(s,a\right)={E}_{\uppi}\left[{G}_t|{S}_t=s,{A}_T=a\right]
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Remember that *G*[*t*] is the return of the episode starting from *S*[*t*],
+    *A*[*t*] and continuing until termination where the actions are taken based on
+    the policy *π*. But when you use a behavior policy b to do the same rollout, you
+    do not see this specific trajectory with same frequency as you would under the
+    target policy π. Taking a simple average of returns across all rollouts under
+    behavior policy *b* will give you the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{\mathrm{b}}\left(s,a\right)={E}_{\mathrm{b}}\left[{G}_t|{S}_t=s,{A}_T=a\right]
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The *q*-value you get while following policy *b* is a *q*-value applicable
+    for policy *b* and not π. The importance sampling ratio ensures that the return
+    of a trajectory observed under the behavior policy is adjusted up or down based
+    on the relative chance of observing a trajectory under the target policy versus
+    the chance of observing the same trajectory under the behavior policy. One single
+    rollout estimate of *Q*(*S*[*t*], *A*[*t*]) under π is given as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{\uppi}\left({S}_t,{A}_t\right)={\uprho}_{t:T-1}\cdotp {G}_t $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where *G*[*t*] is the return observed in a single episode when agent in state
+    *S*[*t*] takes action *A*[*t*] and then follows behavior policy *b* until termination.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You observe multiple rollouts under policy *b* from stating point (*S*[*t*],
+    *A*[*t*]), multiply each rollout return by the relevant importance sampling ratio
+    ρ[*t* : *T* − 1] to map the returns back to the target policy, and then take the
+    average of all the adjusted returns to form an estimate of state-action values
+    under that policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When taking the average, you have two options. The first option is to add all
+    the returns and divide that by the number of rollouts. This approach is called
+    *ordinary importance sampling*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{\uppi}\left({S}_t,{A}_t\right)=\frac{\sum {\uprho}_{t:T-1}{G}_t}{N}
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The second option is to divide the sum of the importance sampling ratios across
+    all the rollouts. This version is called *weighted importance sampling*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{\uppi}\left({S}_t,{A}_t\right)=\frac{\sum {\uprho}_{t:T-1}{G}_t}{\sum
+    {\uprho}_{t:T-1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Both the versions have pros and cons. Nothing comes for free, which is the case
+    with importance sampling. The importance sampling ratio can cause wide variance.
+    Plus, these are not computationally efficient. There are many advanced techniques
+    like *discount-aware importance sampling* and *per-decision importance sampling*,
+    which look at the importance sampling and rewards in various different ways to
+    reduce the variance and to make these algorithms efficient. For more details,
+    you can refer to RL book by Sutton and Barto.^([1](#Fn1))
+  prefs: []
+  type: TYPE_NORMAL
+- en: The key point to keep in mind is that the weighted-importance sampling method
+    has a much lower error when the number of episodes is smaller and the weighted
+    sampling approach has a bias that is higher initially but goes to zero as numbers
+    of episodes increase.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Similar to the *first-visit* MC prediction, you can use a formula to calculate
+    running average. Suppose you have a sequence of returns *G*[1], *G*[2], ⋯, *G*[*n* − 1]
+    all in the same starting state and action and each has a corresponding weight
+    *W*[*i*] (*W*[*i*] = ρ[*t* : *T* − 1]). The weighted average is calculated as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_n=\frac{\sum_{k=1}^{n-1}{W}_k{G}_k}{\sum_{k=1}^{n-1}{W}_k} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now define ![$$ {C}_{n-1}={\sum}_{k=1}^{n-1}{W}_k $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq4.png).
+    The revised formula for *Q*[*n*] will be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_n=\frac{\sum_{k=1}^{n-1}{W}_k{G}_k}{C_{n-1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A new return *G*[*n*] arrives. The updated estimate and running total of weights
+    will be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{n+1}=\frac{\sum_{k=1}^n{W}_k{G}_k}{{\mathrm{C}}_{\mathrm{n}}}={q}_n+\frac{W_n}{C_n}\left[{G}_n-{Q}_n\right]
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {C}_n={C}_{n-1}+{W}_n $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure [4-8](#Fig8) shows the pseudocode of the off-policy MC control employing
+    the previous idea.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of an algorithm for off-policy Monte Carlo control optimization.
+    It includes steps for initializing variables, generating episodes following a
+    behavior policy, and iteratively updating the state-action values using weighted
+    importance sampling to optimize the control policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Off-policy MC control for policy optimization
+  prefs: []
+  type: TYPE_NORMAL
+- en: This completes the topic of the MC approach. The biggest issue with the MC approach
+    is that you need to wait for an episode to terminate before you can update the
+    q-values. The next sections looks at another approach that takes care of this
+    issue.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Temporal Difference Learning Methods
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Refer to Figure [4-1](#Fig1) to study the backup diagrams of the DP and MC
+    methods. In DP, you back up the values over only one step using values from the
+    successor states to estimate the current state value. You also take an expectation
+    over action probabilities based on the policy being followed and then from the
+    (*s*, *a*) pair to all possible rewards and successor states. This is as expressed
+    in the equation for state value calculation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi }(s)={\sum}_a\pi \left(a|s\right){\sum}_{s^{\prime },r}p\left({s}^{\prime
+    },r\right|s,a\Big)\left[r+\gamma {v}_{\pi}\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The value of a state *v*[*π*](*s*) is estimated based on the current estimate
+    of the successor states *v*[*π*](*s*^′). This is known as *bootstrapping*. The
+    estimate is based on another set of estimates. The two sums are the ones that
+    are represent branch-off nodes in the DP backup diagram in Figure [4-1](#Fig1).
+    Compared to DP, MC is based on starting from a state and sampling the outcomes
+    based on the current policy the agent is following. The state-value estimates
+    are *averages over multiple runs*. In other words, the sum over model transition
+    probabilities is replaced by averages, and hence the backup diagram for MC is
+    a single long path from one state to the terminal state. The MC approach allowed
+    you to build a scalable learning approach while removing the need to know the
+    exact model dynamics. However, it created two issues: the MC approach works only
+    for episodic environments, and the updates happen only at the end of the termination
+    of an episode. DP had the advantage of using an estimate of the successor state
+    to update the current state value without waiting for an episode to finish.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Temporal difference learning is an approach that combines the benefits of both
+    DP and MC, using bootstrapping from DP and the sample-based approach from MC.
+    The update equation for TD is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ V(s)=V(s)+\alpha \left[R+\gamma \ast V\left({s}^{\prime}\right)-V(s)\right]
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The current estimate of the total return for state *S* = *s*, that is, *G*[*t*],
+    is now given by bootstrapping from the current estimate of the successor state
+    (*s*^′) shown in the sample run. In other words, *G*[*t*] in Equation [4-2](#Equ2)
+    is replaced by *R* + γ · *V*(*s*^′), an estimate. Compared to this, in the MC
+    method, *G*[*t*] was the discounted sum of rewards seen in the rollout of an episode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The TD approach described is known as *TD*(0), and it is a one-step estimate.
+    The reason for calling it *TD*(0) will become clearer toward the end of the chapter,
+    when you learn about *TD*(*λ*) and see that this one-step approach corresponds
+    to *λ* = 0\. For clarity’s sake, look at the pseudocode in Figure [4-9](#Fig9)
+    for the value estimation approach under *TD*(0).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of a pseudocode outlines the policy optimization algorithm for
+    estimating state values in a policy pi. It includes initialization of state values,
+    a loop for episodes with action sampling, reward observation, and value updates
+    using a clipped surrogate objective function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: TD(0) policy estimation
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having seen all three approaches—DP, MC, and TD—consider the backup diagrams
+    of all three approaches together, as shown in Figure [4-10](#Fig10). If you compare
+    the starting and ending nodes of DP with that of TD(0), you will notice that both
+    start at state *s* and the end at the next state *s*^′ after one transition. They
+    both use *bootstrapping*, using the estimate of the next state values to estimate
+    the current state values, which is an estimate formed by using another estimate.
+    Next if you compare the branching factor of MC and TD(0), you will notice that
+    both have no branches. MC starts from a state *s* and then rolls out a single
+    trajectory until termination, while TD(0) also starts from *s* but rolls out just
+    one step and hence stops at state *s*^′ at the next time step. TD(0) and MC both
+    sample the episodes and use the observed rewards; MC is the sum total of rewards
+    all the way to termination while TD(0) is the sum of immediate reward and estimate
+    of value of the next state *s*^′.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A set of three diagrams labeled as D P estimation, M C estimation, and T D respectively.
+    Each diagram features a series of circles connected by arrows to represent states
+    and transitions in a backup diagram.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backup diagram of DP, MC, and TD(0) compared
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'I now introduce another quantity that you are likely to see again and again
+    in reinforcement learning literature. In Equation [4-5](#Equ5), the quantity [*R* + γ · *V*(*s*^′)]
+    is the revised estimate of the total return from state *S* = *s*, and it is based
+    on a one-step bootstrapped backup from successor state *s*^′. Further, in Equation
+    [4-5](#Equ5), *V*(*s*) on the right side of assignment is the current estimate.
+    With these insights, you can interpret Equation [4-5](#Equ5) as an update that
+    is moving the estimate from *V*(*s*) to *V*(*s*) + α(Difference) where the difference
+    δ[*t*] is given by the following expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\delta}_t={R}_{t+1}+\gamma \ast V\left({S}_{t+1}\right)-V\left({S}_t\right)
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The difference *δ*[*t*] is known as a *TD* *error*. It represents the error
+    (difference) in the estimate of *V*(*s*) based on reward *R*[*t* + 1] plus the
+    discounted next time-step state value *V*(*S*[*t* + 1]) and the current estimate
+    *V*(*S*[*t*]). The value of the state is moved by a proportion (a.k.a. learning
+    rate or step rate α) of this error δ[*t*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: TD has an advantage over DP as it does not require the model knowledge (transition
+    function). Further, TD method has an advantage over MC also. TD methods can update
+    the state value at every step—that is, they can be used in an online setup through
+    which you learn as the situation unfolds without waiting for the end of episode
+    or they can also be used for continuing tasks which has no termination.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Temporal Difference Control
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section starts your journey into the realm of the real algorithms used
+    in reinforcement learning. In the remaining sections of the chapter, you will
+    learn about various methods used under TD learning. I will start with a simple
+    one-step on-policy learning method called *SARSA*. This will be followed by a
+    powerful off-policy technique called *Q-learning*. You will study some foundational
+    aspects of Q-learning in this chapter, and in the next chapter, you will integrate
+    deep learning with Q-learning, giving you a powerful approach called Deep Q Networks
+    (DQN). Using DQN, you will be able to train game-playing agents on an Atari simulator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this chapter, you will also cover a variant of Q-learning called *expected
+    SARSA*, another off-policy learning algorithm. I will then talk about the issue
+    of maximization bias in Q-learning, taking you to *double Q-learning*. The advantages
+    of *double Q-learning* is addressed in a subsequent section in this chapter. All
+    the variants of Q-learning become very powerful when combined with deep learning
+    to represent the state space, which will form the bulk of the next chapter. Toward
+    the end of this chapter, I cover additional concepts such as *experience replay*,
+    which make off-learning algorithms efficient with respect to the number of samples
+    needed to learn an optimal policy. I then talk about a powerful and a bit involved
+    approach called *TD*(*λ*) that combines MC and TD methods on a continuum controlled
+    by *λ* between 0 to 1\. Finally, you will look at an environment that has continuous
+    state space and ways to discretize the state values for TD methods. The exercise
+    will demonstrate the need for the approaches that you will take up in the next
+    chapter, covering functional approximation and deep learning for state representation.
+    After Chapters [5](502835_2_En_5_Chapter.xhtml) and [6](502835_2_En_6_Chapter.xhtml)
+    on deep learning and DQN, I will explain another approach, called *policy optimization,*
+    that revolves around directly learning the policy without needing to find the
+    optimal state/action values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You have been using the 4×4 grid world so far. You will now look at a few more
+    environments that will be used in the rest of the chapter. You will write the
+    agents in an encapsulated way so that the same agent/algorithm could be applied
+    in various environments without any changes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cliff Walking
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The first environment you will use is a variant of the grid world; it is part
+    of the Gymnasium library called the cliff-walking environment.^([2](#Fn2)) In
+    this environment, you have a 4×12 grid world, with the bottom-left cell with coordinates
+    [3,0] being the start state *S* and the bottom-right state with coordinates [3,11]
+    being the goal state *G*. The rest of the bottom row ([3,1] .... [3,10]) forms
+    a cliff; stepping on it earns a reward of -100, and the agent is put back to the
+    start state again.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The observation space represents each time a step earns a reward of -1 until
+    the agent reaches the goal state. Similar to the 4×4 grid world, the agent can
+    take a step in any direction `[0:UP, 1:RIGHT, 2:DOWN, 3:LEFT]` which is represented
+    by a tuple of shape (1,) in the range {0,3}.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are 3 x 12 + 1 possible states. The player cannot be at the cliff, nor
+    at the goal, as the latter results in the end of the episode. What remains are
+    all the positions of the first three rows plus the bottom-left cell. The observation
+    is a value representing the player’s current position as `current_row * nrows
+    + current_col` (where both the `row` and `col` start at 0). For example, the stating
+    position can be calculated as follows: 3 * 12 + 0 = 36\. The observation is returned
+    as an `int()`. The episode terminates when the agent reaches the goal state.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [4-11](#Fig11) depicts the setup.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A grid illustration represents a reinforcement learning environment with a start
+    state S and a goal G, separated by a cliff section. The reward is minus 1 for
+    all transitions, and stepping on the cliff incurs a reward of minus 100.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: A 4×10 cliff world. There is a reward of -100 for stepping on the cliff and
+    -1 for other transitions. The goal is to start from S and reach G with the best
+    possible reward
+  prefs: []
+  type: TYPE_NORMAL
+- en: Taxi
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The next environment you will look at is the “taxi problem.”^([3](#Fn3)) There
+    are four designated pick-up and drop-off locations (Red, Green, Yellow, and Blue)
+    in the 5x5 grid world. The taxi starts off at a random square and the passenger
+    at one of the designated locations. One of the four squares is chosen randomly
+    as the destination location.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The goal is to move the taxi to the passenger’s location, pick up the passenger,
+    move to the passenger’s desired destination, and drop off the passenger. Once
+    the passenger is dropped off, the episode ends.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The player receives positive rewards for successfully picking and dropping off
+    the passenger at the correct start location and end destination. Negative rewards
+    exist for incorrect attempts to pick up/drop off the passenger and for each step
+    where another reward is not received. Specifically, the rewards are -1 per time
+    step, +20 for successful pick/drop, and -10 for pick/drop from the wrong locations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are 500 discrete states since there are 25 taxi positions in the 5x5 grid,
+    five possible locations of the passenger (including the case when the passenger
+    is in the taxi), and four destination locations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An observation is returned as an `int()` that encodes the corresponding state,
+    calculated by `((taxi_row * 5 + taxi_col) * 5 + passenger_location) * 4 + destination`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that there are 400 states that can actually be reached during an episode.
+    The missing states correspond to situations in which the passenger is at the same
+    location as their destination, as this typically signals the end of an episode.
+    Four additional states can be observed right after a successful episode, when
+    both the passenger and the taxi are at the destination. This gives a total of
+    404 reachable discrete states.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are six actions that can be taken deterministically. The taxi can move
+    North, South, West, East, and then there are two actions of pick or drop passenger.
+    The action shape is (1,) in the range {0, 5}. Values 0 to 3 represent the action
+    of car moving in 4 directions, similar to the action values we saw in cliff walking
+    environment. Value of 4 is the action of picking up the passenger and 5 represents
+    the action of dropping the passenger.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The episode ends if the following happens: a) termination, whereby the taxi
+    drops off the passenger, or b) truncation (when using the `time_limit` wrapper),
+    which is when the length of the episode is 200.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [4-12](#Fig12) shows the schematic of the environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration depicts a simplified grid-based representation of a taxi problem
+    set on a 5 cross 5 grid. The grid consists of vertical and horizontal dashed lines,
+    creating distinct squares. On the right side, there is a street layout with spaces,
+    and colored squares.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: 5×5 taxi problem. There is a reward of -1 for all transitions. An episode ends
+    when the passenger is dropped off at the destination. The left figure shows the
+    schematic as used internally and the right figure shows the visual representation
+    created using the PyGame library
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cart Pole
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The third and final environment you will look at is `CartPole`^([4](#Fn4)).
+    I covered this environment in Chapter [2](502835_2_En_2_Chapter.xhtml). A pole
+    is attached by an unactuated joint to a cart, which moves along a frictionless
+    track. The pendulum is placed upright on the cart and the goal is to balance the
+    pole by applying forces in the left and right directions on the cart.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Action space* is a ndarray with shape (1,) which can take values {0, 1} indicating
+    the direction of the fixed force the cart is pushed with. 0 is the action to push
+    the cart to the left and 1 is the action to push the cart to the right.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Observation space* is an ndarray with shape (4,) with the values corresponding
+    to the following positions and velocities `[Cart position, Car velocity, Pole
+    angle, pole angular velocity]`. You can refer to the accompanying documentation
+    for the Gymnasium library to get more details on the specific ranges within which
+    each of these values operates.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The reward is +1 at every time step, and the agent wants to maximize the reward
+    by keeping the pole balanced for the longest time interval. The episode terminates
+    once the pole angle is more than 12 degrees in either direction or the cart position
+    is beyond 2.4 from the center—that is, either < -2.4 or > 2.4 or if the agent
+    is able to balance the pole for 200 time or 500 steps. Figure [4-13](#Fig13) shows
+    a snapshot of the environment in action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the cart-pole problem features a vertical pole balanced on
+    a movable cart on a track.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cart pole problem. The objective is to balance the pole vertically for the maximum
+    number of time steps with a reward of +1 for every time step
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having explained the various environments, let’s now jump into solving these
+    with various TD algorithms, starting first with SARSA, an on-policy method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: On-Policy SARSA
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Like the MC control methods, you will again leverage GPI. You will use a TD-driven
+    approach for the policy value estimation/prediction step and will continue to
+    use greedy maximization for the policy improvement. Just like with MC, you need
+    to explore enough and visit all the states an infinite number of times to find
+    an optimal policy. Therefore, similar to the MC method, you can use an ϵ-greedy
+    policy and slowly reduce the ϵ value to zero—that is, in the limit as number of
+    episodes increase, bring down the exploration to zero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TD setup is model-free—that is, you have no prior comprehensive knowledge of
+    transitions. There for a given state, to be able to maximize the return by choosing
+    the right action in that state, you need to know the state-action values *Q*(*S*,
+    *A*) for all the actions in that state. And you need to do so for all the state.
+    Therefore, the most standard way to find an optimal policy is to find all the
+    *Q* values for all state/action pairs. You can reformulate TD estimation from
+    Equation [4-5](#Equ5) to the one in Equation [4-7](#Equ7), essentially replacing
+    *V*(*s*) with *Q*(*s*, *a*). Both the setups are Markov processes, with Equation
+    [4-5](#Equ5) focusing on state-to-state transitions and Equation [4-7](#Equ7)
+    shifting the focus to being state-action to state-action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha
+    \cdotp \left[{R}_{t+1}+\upgamma \cdotp Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right]
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similar to Equation [4-6](#Equ6), the TD error is now given in context of *q*-values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\delta}_t={R}_{t+1}+\gamma \cdotp Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: To carry out an update as per Equation [4-7](#Equ7), you need all the five values
+    *S*[*t*], *A*[*t*], *R*[*t* + 1], *S*[*t* + 1], and *A*[*t* + 1]. This is the
+    reason the approach is called SARSA. It is a short form to represent the tuple
+    of five values—that is, state, action, reward, state, and action. You will follow
+    an ϵ-greedy policy to generate the samples, update the *q*-values using Equation
+    [4-7](#Equ7), and then based on the updated *q*-values create a new ϵ-greedy.
+    The policy improvement theorem guarantees that the new policy will be better than
+    the old policy unless the old policy was already optimal. Of course, for the guarantee
+    to hold, you need to bring down the exploration probability ε to zero in the limit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that for all episodic policies, the terminal states have *Q*(*S*, *A*)
+    equal to zero—that is, once in terminal state, the person cannot transition anywhere
+    and will keep getting a reward of zero. This is another way of saying that the
+    episode ends and *Q*(*S*, *A*) is zero for all terminal states. Therefore, when
+    *S*[*t* + 1] is a terminal state, Equation [4-7](#Equ7) will have *Q*(*S*[*t* + 1],
+    *A*[*t* + 1]) = 0, and the update equation will look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha
+    \cdotp \left[{R}_{t+1}-Q\left({S}_t,{A}_t\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-9)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now look at the pseudocode of the SARSA algorithm; see Figure [4-14](#Fig14).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of a reinforcement learning pseudocode for the Sarsa, Q-learning,
+    and expected Sarsa algorithms. It includes initialization, policy definition,
+    and value update rules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: SARSA, on-policy TD control
+  prefs: []
+  type: TYPE_NORMAL
+- en: The pseudocode starts with initializing all *Q* values with zero and an *ϵ*-greedy
+    policy *π*. You iterate over multiple episodes and for each step in an episode,
+    you carry out updates to state-action q-values using Equations [4-7](#Equ7) or
+    [4-9](#Equ9). You also optionally reduce the exploration by driving ϵ → 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After enough iterations or once the change in *q*-values reduces below a threshold,
+    you can return the final policy by finding the maximizing action for each state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s now walk through the code in `4.c-sarsa-on-policy.ipynb`, which implements
+    SARSA. The code has a class named `SARSAAgent`, which implements the SARSA learning
+    agent. It has two key functions—`update()`, which takes the tuple of `state`,
+    `action`, `reward`, `next_state`, `next_action`, and `done` flag. It updates the
+    q-value using the TD update Equations [4-7](#Equ7) and [4-9](#Equ9). The other
+    function is `get_action(state)`, which returns a random action with probability
+    ϵ and `argmax Q(S,A)` with probability 1 − ϵ. There is a generic function called
+    `train_agent()`, outside the class, that trains the agent in a given environment.
+    There are three helper functions: `plot_rewards()` to plot the reward per episode
+    as the training progresses, `print_policy()` to print the optimal policy learned,
+    and `record_video()` to record a video of a trained agent. Listing [4-3](#PC3)
+    shows the code for `SARSAAgent`, which implements the update inside the inner
+    loop from Figure [4-14](#Fig14). The training code, which implements the training
+    loop from Figure [4-14](#Fig14), is given in Listing [4-4](#PC4). For the rest
+    of the code, refer to the notebook.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [4-4](#PC4) contains the code for the training agent. It implements
+    the complete SARSA algorithm. The outer loop goes over `range(episode_cnt)` and
+    implements the outer loop from pseudocode to run agent over `episode_cnt` episodes.
+    In the inside loop the agent starts from the initial state by calling `env.reset()`
+    and then steps through the environment using ϵ-greedy policy, which is done via
+    the `action=agent.get_action(state)` call. The `agent.update(...)` call carries
+    out the SARSA update, as shown in Listing [4-3](#PC3). You also reduce the epsilon
+    exploration toward the end of inner loop with the help of `agent.epsilon = agent.epsilon*0.99`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [4-15](#Fig15) shows the graph of per-episode-reward as learning proceeds.
+    You can see that the reward soon gets close to the optimal value. Figure [4-15](#Fig15)
+    also shows the optimal policy learned. In the `4.c-sarsa-on-policy.ipynb` notebook,
+    there is a code to also replay the video of trained agent, which is shown in Listing
+    [4-5](#PC5). It is implemented by wrapping the environment with `DummyVecEnv`
+    and the `VecVideoRecorder` environment class provided under the `state-baseline-3`
+    library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of return per episode versus episode number. The line Sarsa fluctuates
+    and ascends. The mean reward stabilizes around minus 17.0 after initial learning.
+    A set of policies learned by the agent is listed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reward graph during learning under SARSA and policy learned by the agent
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The policy learned is to avoid the cliff by first going all the way up and then
+    taking a right turn to walk toward the goal. This is surprising, as you would
+    have expected the agent to learn the policy to skirt over the cliff and reach
+    the goal, which would have been the shortest path by four steps as compared to
+    the one learned by the agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This can be explained due to exploration in ϵ-greedy policy. As the policy continues
+    to explore using ϵ-greedy, there is always a small chance that in any state next
+    to the cliff, it could take a random action with probability of ϵ. And if this
+    random action happens to be down, the agent will fall off into the cliff. Therefore,
+    the optimal policy under any small random exploration is to completely avoid the
+    cliff by climbing all the way up and then navigating to right to reach the goal.
+    It demonstrates the issue of continued exploration even when enough has been learned
+    about the environment—that is, when the same ϵ-greedy policy is used for sampling
+    as well as for improvement. You will see how this issue is avoided in Q-learning
+    in which off-policy learning is carried out using an exploratory behavior policy
+    to generate training samples and a deterministic policy is learned as the optimal
+    target policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the `4.c-sarsa-on-policy.ipynb` notebook`,` you also have code for running
+    SARSA on Taxi environment. It also shows a video of trained agent. I think it
+    is now time for you to share your own agent on HuggingFace with your friends,
+    family, and colleagues. See if you train SARSA agent on some other simple environments
+    from the Gymnasium library and upload the video and performance statistics of
+    the trained agent to the HuggingFace hub. Refer to the `2.c-First-Agent.ipynb`
+    notebook for the relevant upload code. And if you do, please, tag me. My HuggingFace
+    ID is `nsanghi`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next section studies the first off-policy TD algorithm, called *Q-learning*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Q-Learning: An Off-Policy TD Control'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In SARSA, you used the samples with the values *S*, *A*, *R*, *S*^′, and *A*^′
+    that were generated by the following policy. Action *A*^′ from state *S*^′ was
+    produced using the ϵ-greedy policy, the same policy that was then improved in
+    the “improvement” step of GPI. However, instead of generating *A*^′ from the policy,
+    what if you looked at all the *Q*(*S*^′, *A*^′) and chose the action *A*^′, which
+    maximizes the value of *Q*(*S*^′, *A*^′) across actions *A*^′ available in state
+    *S*^′?
+  prefs: []
+  type: TYPE_NORMAL
+- en: You could continue to generate the samples (*S*, *A*, *R*, *S*^′) (notice no
+    *A*^′ as the fifth value in this tuple that we saw in SARSA) using an exploratory
+    policy like *ϵ*-greedy. You can improve the policy by choosing ![$$ {A}^{\prime
+    }=\mathit{\arg}\underset{a}{\mathit{\max}}Q\left({S}^{'},a\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq5.png).
+    This small change in the approach creates a new way to learn the optimal policy,
+    called *Q-learning*. It is no more an on-policy learning, rather an off-policy
+    control method where the samples (*S*, *A*, *R*, *S*^′) are being generated by
+    an exploratory policy, while you maximize *Q*(*S*^′, *A*^′) to find a deterministic
+    optimal target policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You are using exploration with the ϵ-greedy policy to generate the samples (*S*,
+    *A*, *R*, *S*^′). At the same time, you are exploiting the existing knowledge
+    by finding the Q maximizing action ![$$ \mathit{\arg}\underset{a}{\mathit{\max}}Q\left({S}^{'},a\right)
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq6.png) in state
+    *S*^′. This way the target for Q(S,A) the current state-action pair iterates to
+    the optimal policy value as Q values converges to its fixed point. Using greedy
+    policy for exploration and then exploiting the knowledge to find the deterministic
+    policy is optimal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The update rule for q-values is now defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha
+    \cdotp \left[{R}_{t+1}+\upgamma \cdotp \underset{A_{t+1}}{\mathit{\max}}Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right]
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ10.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing the previous equation with Equation [4-7](#Equ7), you will notice
+    the subtle difference between the two approaches and how that makes Q-learning
+    an off-policy method. The off-policy behavior of Q-learning is handy, and it makes
+    the approach sample efficient. I will touch upon this in a later section when
+    I talk about *experience replay* or *replay buffer*. Figure [4-16](#Fig16) lists
+    the pseudocode of Q-learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot depicts steps for implementing Q-learning off-policy T D control
+    algorithm. It includes initialization of variables, setting parameters like discount
+    factor gamma, learning rate alpha, epsilon-greedy policy pi with epsilon iterating
+    over episodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Q-learning, off-policy TD control
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you compare the pseudocode of SARSA from Figure [4-14](#Fig14) with the pseudocode
+    of Q-Learning from Figure [4-16](#Fig16), you will notice that there are two subtle
+    differences. First, you generate action *A* using the greedy policy and do not
+    worry that much about reducing ϵ, the exploration factor. Secondly, you do not
+    choose the successor state action *A*^′, rather you take a max over all possible
+    *A*^′ in the successor state *S*^′ to define the target in the update rule.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, let’s look at the Python implementation of the Q-learning pseudocode and
+    see how it performs on same environments as before—that is, Cliff world and Taxi.
+    Head over to the code in `4.d-qlearning.ipynb`, which shows the implementation
+    of Q-learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like SARSA, Q-learning agent code is very similar to SARSA agent code in Listings [4-3](#PC3)
+    and [4-4](#PC4). The Q-learning agent code is given in Listing [4-6](#PC6). Most
+    of the code is similar to that of the SARSA agent in Listing [4-3](#PC3), except
+    the update rule. In the SARSA update, you are given a tuple of five values (*S*,
+    *A*, *R*, *S*^′, *A*^′) and you use this to carry out the q-value update for *Q*(*S*,
+    *A*). While in Q-learning the update gets a tuple of only (*S*, *A*, *R*, *S*^′)
+    and the update is carried out by finding the best *A*^′ from the current values
+    of *Q*(*S*, *A*^′) for *A*^′ applicable in state *S*^′.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The training code implementation for the rest of the Q-learning pseudocode from
+    Figure [4-16](#Fig16) is given in Listing [4-7](#PC7). Again, the training loop
+    for Q-learning is very similar to the training loop for SARSA, as shown in Listing
+    [4-4](#PC4). Unlike SARSA, in Q-learning, you do not generate the next action
+    *A*^′ using the code `next_action = agent.get_action(next_state).` The update
+    rule for Q-Learning just requires `state, action, reward, next_state,` and `terminated`,
+    as discussed previously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s look at Q-learning being applied to the cliff world environment. The reward
+    per episode improves with training and reaches the optimal value of -13 as compared
+    to that of -17 under SARSA. As shown in Figure [4-17](#Fig17), a better policy
+    under Q-learning is evident. Under Q-learning, the agent learns to navigate to
+    the goal through the cells in the second row just above the cliff. Under Q-learning,
+    the agent is learning a deterministic policy, and the environment is also deterministic.
+    In other words, if the agent takes an action to move right, it will definitely
+    move right and has zero chance of taking any random step in any other direction.
+    There is no exploration component in the policy being learned by the agent. This
+    is the key difference between Q-learning and SARSA. Under Q-learnin,g the exploration
+    is used only in the behavior policy that is used to generate the samples but the
+    final policy learned by the agent is a deterministic policy with zero exploration.
+    Therefore, the agent learns the most optimal policy of going toward the goal by
+    just grazing over the cliff.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of return per episode versus episode number. The line Q learning
+    fluctuates and ascends. The mean reward stabilizes around minus 13.0 after initial
+    learning. A set of policies learned by the agent is listed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reward graph during learning under Q-learning and policy learned by agent
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `4.d-qlearning.ipynb` notebook also has code for running Q-learning on the
+    Taxi environment. Like before, it also shows a video of trained agent. I again
+    encourage you to apply Q-learning on some other environment form Gymnasium and
+    upload your trained agent video to HuggingFace.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I will be revisiting Q-learning in the next chapter on the deep learning approach
+    to the state value approximation. Under that setup, Q-learning is called DQN.
+    DQN with its variants will be applied to train a game-playing agent on some Atari
+    games.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To conclude the discussion on Q-learning, let’s look at a particular issue that
+    Q-learning may introduce, that of maximization bias.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Maximization Bias and Double Learning
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If you look back at Equation [4-10](#Equ10), you will notice that you are maximizing
+    over *A*^′ to get the max value *Q*(*S*^′, *A*^′). Similarly, in SARSA, you find
+    a new ϵ-greedy policy that is also maximizing over *Q* values in a state to get
+    the action in that state with highest q-value. Further, these q-values are estimates
+    themselves of the true state-action values. In summary, you are using a max over
+    the q-estimate as an “estimate” of the maximum value. Such an approach of “max
+    of estimate” as an “estimate of max” introduces a +ve bias.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To see this, consider a scenario where the reward in a transition takes three
+    values: 5, 0, and +5 with an equal probability of 1/3 for each value. The expected
+    reward is 0, but the moment you see a +5, take that as part of the maximization,
+    and then it never comes down. So, +5 becomes an estimate of the true reward that
+    otherwise in expectation is 0\. This is a positive bias introduced due to maximization
+    step.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'One of the ways to remove the +ve bias is to use a set of two *q*-values. One
+    *q*-value is used to find the action that maximizes the q-value, and the other
+    set of q-values is then used to find the q-value for that max action. Mathematically,
+    it can be represented as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Replace ![$$ \underset{A}{\mathit{\max}}Q\left(S,A\right)\ \mathrm{with}\ {Q}_1\left(S,\arg
+    \underset{A}{\max }{Q}_2\left(S,A\right)\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq7.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You are using *Q*[2] to find the maximizing action *A*, and then *Q*[1] is used
+    to find the maximum q-value for that action A chosen earlier. It can be shown
+    that such an approach removes the +ve or maximization bias. I will revisit this
+    concept when I talk about DQN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Expected SARSA Control
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'This section looks at another method that is kind of a hybrid between Q-learning
+    and SARSA; it’s called *expected SARSA*. It is similar to Q-learning except that
+    “max” in 4-10 is replaced with an expectation, as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\alpha \left[{R}_{t+1}+\gamma
+    \cdotp {\sum}_{a\in {A}_{t+1}}\pi \left(a|{S}_{t+1}\right)\cdotp Q\left({S}_{t+1},a\right)\hbox{--}
+    Q\left({S}_t,{A}_t\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ11.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-11)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Expected SARSA has a lower variance as compared to the variance seen in SARSA
+    due to the random selection of *A*[*t* + 1]. In expected SARSA, instead of sampling,
+    you take the expectation over all possible actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the cliff world problem, you have deterministic actions, and hence you can
+    set the learning rate *α* = 1 without any major impact on the learning quality.
+    The following pseudocode is for the algorithm. It mirrors Q-learning except for
+    the update logic of taking *expectation* instead of *maximization*. You can run
+    expected SARSA as on-policy, which is what you will do while testing it against
+    the cliff world and taxi environments. See Figure [4-18](#Fig18).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot depicts the expected SARSA T D control algorithm. It initializes
+    state-action values, policy, learning rate, and discount factor. It iterates over
+    episodes, updating Q values based on rewards and expected future rewards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Expected SARSA TD control
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see in Figure [4-18](#Fig18), the update rule uses the summation
+    over all actions versus the max of actions for SARSA that you saw in Figure [4-14](#Fig14).
+    The `4.e-expected_sarsa.ipynb` notebook contains the code for running the expected
+    SARSA code. The code is similar to the SARSA or Q-learning except for the change
+    in the update rule, as discussed previously. Listing [4-8](#PC8) gives the code
+    for the update rule implemented in the `update(...)` function inside the `ExpectedSARSAAgent`
+    class. Refer to the notebook for the complete code, including a video of trained
+    agents and the reward trajectories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [4-19](#Fig19) shows the result of training the expected SARSA agent
+    for the cliff world. The introduction of expectation—that is, summation over all
+    actions in successor state—increases the computational complexity of the algorithm
+    a bit but offers faster convergence than SARSA and Q-learning. This is evident
+    from the episode level returns as training progresses. For the SARSA as seen in
+    Figure [4-15](#Fig15), the return has downward spikes, indicating that training
+    has not been completed. It shows no spike only after about 425 episodes are complete.
+    For Q-Learning again the downward spikes die out around 400 episodes, as can be
+    seen in Figure [4-17](#Fig17). While expected SARSA shows stabilization almost
+    from 200 episodes, as visible in Figure [4-19](#Fig19). The convergence is clearly
+    the fastest with expected SARSA. You can experiment and see that the changing
+    learning rate α has no major impact on the convergence in the limit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig19_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of return per episode versus episode number. The line expected
+    Sarsa fluctuates and ascends. The mean reward stabilizes around minus 15.0 after
+    initial learning. A set of policies learned by the agent is listed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reward graph with expected SARSA in the cliff world and policy learned by the
+    agent
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is also interesting to note that the policy learned by the expected SARSA
+    falls between Q-learning and SARSA. The agent under this policy goes through the
+    middle row of the maze to reach the goal. In this case, you are using the expected
+    SARSA as on-policy—that is, using the same ε-greedy policy to explore and improve.
+    But possibly due to the expectation, it learns to improve from regular SARSA and
+    finds it safe enough to go through the middle row. In the same notebook (`4.e-expected_sarsa.ipynb)`,
+    you can also see the result of running this algorithm for the taxi environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Replay Buffer and Off-Policy Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Off-policy learning involves two separate policies: behavior policy *b*(*a*| *s*)
+    to explore and generate examples, and π(*a*| *s*), the target policy that the
+    agent is trying to learn as the optimal policy. Accordingly, you could use the
+    samples generated by the behavior policy again and again to train the agent. The
+    approach makes the process sample efficient as a single transition observed by
+    the agent can be used multiple times.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is called *experience replay*. The agent collects experiences from the
+    environment and replays those experiences multiple times as part of the learning
+    process. In experience replay, you store the samples `(s, a, r, s’, done)` in
+    a buffer. The samples are generated using an exploratory behavior policy while
+    you improve a deterministic target policy using *q*-values. Therefore, you can
+    always use older samples from a behavior policy and apply them again and again.
+    Keep the buffer size fixed to some predetermined size and keep deleting the older
+    samples as you collect new ones. The process makes learning sample efficient by
+    reusing a sample multiple time. The rest of the approach remains the same as an
+    off-policy agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s apply this approach to the Q-learning agent. The code for the Q-learning
+    agent remains the same. The `4.f-qlearning-exp-replay.ipynb` notebook contains
+    a complete walkthrough for Q-learning agents with experience replay. There is
+    no change in the update rule or any of the internal logic of Q-learning agent.
+    The agent training code is the one that changes. You have two changes. First,
+    you implement experience replay as shown in Listing [4-9](#PC9) to store all transitions
+    of the agent through the environment under the behavior policy. Each agent transition
+    generates a tuple of state, action, reward, next state, done, which is stored
+    in a list with fixed length as implemented by the `add(self,...)` method. Once
+    the queue is full, the addition of a new item at the end of list leads to the
+    earliest item in the queue being dropped out. Therefore, the queue holds the latest
+    transitions up to a fixed look-back period. During training, you sample a batch
+    of stored transitions to be used for Q-learning update. This is implemented by
+    the `sample(self, batch_size)` metho, where `batch_size` defines the number of
+    transitions to sample.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The other change from vanilla Q-learning is the training code. This is given
+    in Listing [4-10](#PC10). In vanilla Q-learning, the update of q-values is carried
+    out online as you step through each individual transition. However, with experience
+    replay, as an agent takes a step the transition is added to the experience replay
+    buffer. This is followed by sampling `batch_size` transitions from the buffer,
+    which are then used to update the q-values for target policy. The transition that
+    is stored in experience replay is likely to be picked up by the sample method
+    multiple times until this transition reaches the beginning of the queue and gets
+    pushed out of the buffer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: As discussed earlier, using experience replay leads to reuse of each transition
+    tuple multiple times. Therefore, Q-learning with experience replay is sample-efficient.
+    This is evident in the rewards trajectory—that is, the return per episode plotted
+    in Figure [4-20](#Fig20). The convergence of return per episode is lot faster
+    in Q-learning with experience replay. In Figure [4-20](#Fig20), you can see that
+    the optimal value is reached almost by the time training code has seen 100 episodes.
+    Compare this to Figure [4-17](#Fig17) for Q-learning, where the optimal value
+    is reached around 200 episodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig20_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of return per episode versus episode number. The line Q-learning
+    fluctuates and ascends. The mean reward stabilizes around minus 13.0 after initial
+    learning. A set of policies learned by the agent is listed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reward graph during learning under Q-learning with experience replay and policy
+    learned by agent
+  prefs: []
+  type: TYPE_NORMAL
+- en: From Figure [4-20](#Fig20), it is also evident that, though episode return reaches
+    optimal behavior faster, it shows more fluctuations. The more the exploration,
+    the higher the transitions that are not optimal actions. In vanilla Q-learning,
+    you do not see these exploratory actions too much as epsilon exploration drops
+    to zero. However, in experience replay, you land up using these exploratory actions
+    multiple times depending on the sampling logic of the replay buffer and the buffer
+    length. This could lead to updates causing delayed convergence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: And just to point out the policy learned under experience replay is the same
+    as the one learned in vanilla Q-learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As before, the `4.f-qlearning-exp-replay.ipynb` notebook contains the video
+    replay of the trained agent as well as running of the same on Taxi environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In summary, the Q-agent with the replay buffer is supposed to improve the initial
+    convergence by sampling repeatedly from the buffer. The sample efficiency will
+    become more apparent when you look at DQN. Over the long run, there won’t be any
+    significant difference between the optimal values learned with or without the
+    replay buffer. It has another advantage of breaking the correlation between samples.
+    This aspect will also become apparent when you look at deep learning with Q-learning—that
+    is, DQN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Q-Learning for Continuous State Spaces
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Until now all the examples you have looked at had discrete state spaces. All
+    the methods studied so far could be categorized as tabular methods. The state
+    action space was represented as a matrix with states along one dimension and actions
+    along the cross-axis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will soon transition to continuous state spaces and make heavy use of deep
+    learning to represent the state through a neural net. However, you can still solve
+    many of the continuous state problems with some simple approaches. In preparation
+    for the next chapter, let’s look at the simplest approach of converting continuous
+    values into discrete bins. The approach you will take is to round off continuous
+    floating-point numbers with some precision, for example, for a continuous state
+    space value between -1 to 1 being converted into -1, -0.9, -0.8, ... 0, 0.1, 0.2,
+    ... 1.0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`4.g-qlearning_continuous_env.ipynb` shows this approach in action. You will
+    continue to use the Q-learning agent, experience reply, and learning algorithm
+    from `4.f-qlearning-exp-replay.ipynb`. However, this time you will be applying
+    the learning on a continuous environment, that of `CartPole`, which was described
+    in detail at the beginning of the chapter. The key change that you need is to
+    receive the state values from environment, discretize the values, and then pass
+    these along to the agent as observations. The agent only gets to see the discrete
+    values and uses these discrete values to learn the optimal policy using Q-agent.
+    Listing [4-11](#PC11) shows the approach used for converting continuous state
+    values into discrete ones. It is done by extending the Gymnasium-provided `ObservationWrapper`
+    and implementing a function called `observation`, which takes in the continuous
+    values from the `CartPole` environment and returns the discrete observation/state
+    values.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once the `Discretizer` class is defined to discretize the observations, you
+    just need to wrap the Gymnasium environment while making the environment, as shown
+    in Listing [4-12](#PC12). The rest of the code sees no change between the two
+    Python notebooks—`4.f-qlearning_continuous_env.ipynb` and `4.f-qlearning-exp-replay.ipynb.`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Q-agent with discrete discretization of states can get about 50 rewards
+    compared to the maximum reward of 200\. This is shown in Figure [4-21](#Fig21).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig21_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of return per episode versus episode in multiples of 100\. The
+    line represents Q-learning. The line fluctuates between 20 and 140\. The data
+    are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reward graph with Q-learning on the CartPole continuous state space environment
+  prefs: []
+  type: TYPE_NORMAL
+- en: In subsequent chapters, you will study other more powerful methods to obtain
+    more rewards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: n-Step Returns
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section unifies the MC and TD approaches. MC methods sample the return
+    from a state until the end of the episode, and they do not bootstrap. Accordingly,
+    MC methods cannot be applied for continuing tasks. TD, on the other hand, uses
+    one-step return to estimate the value of the remaining rewards. TD methods take
+    a short view of the trajectory and bootstrap right after one step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: These methods are two extremes, and there are many situations when a middle-of-the-road
+    approach could produce better results. The idea in *n-step* is to use the rewards
+    from the next *n* steps and then bootstrap from *n* + 1 step to estimate the value
+    of the remaining rewards. Figure [4-22](#Fig22) shows the backup diagrams for
+    various values of *n*. On one extreme is one-step, which is the *TD*(0) method
+    that you just saw in the context of SARSA, Q-learning, and other related approaches.
+    At the other extreme is the ∞-step TD, which is nothing but an MC method. The
+    broad idea is to see that the TD and MC methods are two extremes of the same continuum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_4_Chapter/502835_2_En_4_Fig22_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram represents the comparison of backup methods in reinforcement learning
+    such as 1-step T D 0, 2-step, n-step, and infinite Monte Carlo. Each column represents
+    a sequence of nodes connected by arrows, with the number of steps increasing from
+    left to right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 4-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backup diagrams of n-step methods with TD(0) and MC at two extremes, *n* = 1
+    and *n* = ∞ (end of episode)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The approach of n-step can be used in an on-policy setting. You can have n-step
+    SARSA and n-step expected SARSA, and these are natural extensions of what you
+    have learned so far. However, using an n-step approach in off-policy learning
+    would require you to factor one more concept—the relative difference of observing
+    a specific n-step transition across states under behavior policy versus that under
+    target-policy. To use the data from behavior policy *b*(*a*| *s*) for optimizing
+    target policy π(*a*| *s*), you need to multiply the n-step returns observed under
+    the behavior policy with a ratio called *importance sampling ratio,* which was
+    derived earlier in this chapter in Equation [4-4](#Equ4). The same is reproduced
+    here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uprho}_{t:T-1}=\frac{\Pr_{\uppi}\left\{\mathrm{trajectory}\right\}}{\Pr_b\left\{\mathrm{trajectory}\right\}}={\prod}_{k=t}^{T-1}\frac{\uppi
+    \left({A}_k|{S}_k\right)}{b\left({A}_k|{S}_k\right)} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The importance sampling ratio ensures that the return of a trajectory observed
+    under the behavior policy is adjusted up or down based on the relative chance
+    of observing a trajectory under the target policy versus the chance of observing
+    the same trajectory under the behavior policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nothing comes for free, which is the case with importance sampling. The importance
+    sampling ratio can cause wide variance. Plus, these are not computationally efficient.
+    There are many advanced techniques like *discount-aware importance sampling* and
+    *per-decision importance sampling* that I talked about in the earlier section
+    on importance sampling. These approaches look at the importance sampling and rewards
+    in various ways to reduce the variance and make these algorithms efficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I will not be going into the details of implementing these algorithms in this
+    book. The key focus was to introduce these at a conceptual level and make you
+    aware of the advanced techniques.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Eligibility Traces and TD(λ)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Eligibility traces unify the MC and TD methods in an algorithmically efficient
+    way. TD methods, when combined with eligibility trace, produce *TD*(λ) where λ = 0,
+    making it equivalent to the one-step *TD* that you have studied so far. That’s
+    the reason that one-step TD is also known as TD(0). The value of λ = 1 makes it
+    similar to the regular ∞-step TD or in other words an MC method. Eligibility trace
+    makes it possible to apply MC methods to non-episodic tasks as well. I will cover
+    only high-level concepts of eligibility trace and *TD*(*λ*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the previous section, you looked at n-step returns with *n* = 1 taking you
+    to the regular TD method and *n* = ∞ taking you to MC. I also touched upon the
+    fact that neither extreme is good. MC or TD(0) has its own advantages and disadvantages.
+    An algorithm performs best with some intermediate value of n. n-step offered a
+    view on how to unify TD and MC. What eligibility offers is an efficient way to
+    combine them without keeping track of the n-step transitions at each step. Until
+    now you have looked at an approach of updating a state value based on the next
+    *n* transitions in the future. This is called the *forward view*. However, you
+    could also look backward—that is, at each time step *t*, and see the impact that
+    the reward at time step *t* would have on the preceding *n* states in past. This
+    is known as *backward view* and forms the core of *TD*(*λ*). The approach allows
+    an efficient implementation of integrating n-step returns in TD learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Look back at Figure [4-22](#Fig22). What if instead of choosing different values
+    of *n*, you combined all the n-step returns with some weight? This is known as
+    *λ*-return, and the equation is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t^{\lambda }=\left(1-\lambda \right){\sum}_{n=1}^{T-t-1}{\lambda}^{n-1}{G}_{t:t+n}+{\lambda}^{T-t-1}{G}_t
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ12.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-12)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here, *G*[*t* : *t* + *n*] is the n-step return, which uses the bootstrapped
+    value of the remaining steps at the end of the *n*^(*th*) step. It is defined
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_{t:t+n}={R}_{t+1}+\gamma {R}_{t+2}+\dots +{\gamma}^{n-1}{R}_{t+n}+{\gamma}^nV\left({S}_{t+n}\right)
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ13.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (4-13)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you put λ = 0 in Equation [4-12](#Equ12), you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t^0={G}_{t:t+1}={R}_{t+1}+\gamma V\left({S}_{t+1}\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The previous expression is similar to the target value for state-action updates
+    of TD(0) in Equation [4-6](#Equ6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'On other hand, putting λ = 1 in Equation [4-12](#Equ12) makes ![$$ {G}_t^{\uplambda}={G}_t^0
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_IEq8.png) mimic
+    MC and return *G*[*t*] as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t^1={G}_t={R}_{t+1}+\gamma {R}_{t+2}+\dots +{\gamma}^{T-t-1}{R}_T
+    $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The *TD*(*λ*) algorithm uses the previous λ-return with a trace vector, known
+    as *eligibility trace,* to have an efficient online TD method using the “backward”
+    view. Eligibility trace keeps a record of how far in the past a state was observed
+    and by how much would that state’s estimate be impacted by the current return
+    observed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'I will stop here with the basic introduction of λ-returns, eligibility trace,
+    and *TD*(*λ*). For a detailed review of the mathematical derivations as well as
+    the various algorithms based on them, refer to the book *Reinforcement Learning:
+    An Introduction* by Barto and Sutton, Second Edition.^([5](#Fn5))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationships Between DP, MC, and TD
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: At the beginning of the chapter, you learned about how the DP, MC, and TD methods
+    compare. I introduced the MC methods followed by the TD methods, and then I used
+    n-step and TD(*λ*) to combine MC and TD as two extremes of the sample-based model-free
+    learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To conclude the chapter, Table [4-1](#Tab1) summarizes the comparison of the
+    DP and TD methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparison of DP and TD Methods in the Context of Bellman Equations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | Full Backup (DP) | Sample Backup (TD) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Bellman expectation equation for *v*[*π*](*s*) | Iterative policy evaluation
+    | TD prediction |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Bellman expectation equation for *q*[*π*](*s*, *a*) | Q-policy iteration
+    | SARSA |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Bellman optimality equation for *q*[*π*](*s*, *a*) | Q-value iteration |
+    Q-learning |'
+  prefs: []
+  type: TYPE_TB
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter looked at the model-free approach to reinforcement learning. It
+    started by estimating the state value using the Monte Carlo approach. It explained
+    the “first visit” and “every visit” approaches. It then looked at the bias and
+    variance tradeoff in general and specifically in the context of the MC approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the foundation of MC estimation in place, the chapter looked at MC control
+    methods connecting it with the GPI framework for policy improvement that was introduced
+    in Chapter [3](502835_2_En_3_Chapter.xhtml). You saw how GPI could be applied
+    by swapping the estimation step of the approach from DP-based to an MC-based approach.
+    The chapter looked in detail at the exploration-exploitation dilemma that needs
+    to be balanced, especially in the model-free world where the transition probabilities
+    are not known.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I then briefly talked about the off-policy approach in the context of the MC
+    methods. And in this context, you learned about importance sampling where the
+    policy to collect samples is called behavior policy and the policy being optimized
+    is the target policy. Importance sampling allows the return from one only to be
+    cast in the context of another policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TD was the next approach the chapter investigated with respect to model-free
+    learning. It started off by establishing the basics of TD learning, starting with
+    TD-based value estimation. This was followed by a deep dive into SARSA, an on-policy
+    TD control method. The chapter then investigated Q-learning, a powerful off-policy
+    TD learning approach, and some of its variants like expected SARSA.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the context of TD learning, I also introduced the concept of state approximation
+    to convert continuous state spaces into approximate discrete state values. The
+    concept of state approximation will form the bulk of the next chapter and will
+    allow you to combine deep learning with reinforcement learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before concluding the chapter, you finally looked at n-step returns, eligibility
+    traces, and TD(*λ*) as ways to combine TD and MC into a single framework.
+  prefs: []
+  type: TYPE_NORMAL

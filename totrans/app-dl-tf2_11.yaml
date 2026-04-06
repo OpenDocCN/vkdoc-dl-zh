@@ -1,0 +1,402 @@
+- en: 11. Generative Adversarial Networks (GANs)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Generative Adversarial Networks (GANs) are, in their most basic form, two neural
+    networks that teach each other how to solve a specific task. The idea was invented
+    by Goodfellow and colleagues in 2014.^([1](#Fn1)) The two networks help each other
+    with the final goal of being able to generate new data that looks like the data
+    used for training. For example, you may want to train a network to generate human
+    faces that are as realistic as possible. In this case, one network will generate
+    human faces as good as it can, and the second network will criticize the results
+    and tell the first network how to improve upon the faces. The two networks learn
+    from each other, so to speak. This chapter looks in detail at how this works and
+    explains how to implement an easy example in Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The goal of this chapter is to give you a basic understanding of how GANs work.
+    Adversarial learning (of which GANs are a specific case) is a vast area of research
+    and starts to be an advanced topic in deep learning. This chapter investigates
+    in detail how a basic GAN system works. We discuss, albeit in a shorter way, how
+    conditional GANs function. Complete examples can be found, as usual, at [`https://adl.toelt.ai`](https://adl.toelt.ai).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction to GANs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The best way for you to understand how GANs work is to base this discussion
+    on the diagram in Figure [11-1](#Fig1). After you understand what is going on
+    under the hood, we will look at how to implement GANs in Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training Algorithm for GANs
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To build a GANs system, we need two neural networks: a *generator* and a *discriminator*
+    *.* The generator has the goal of producing a fake observation^([2](#Fn2)) *X*[*fake*],
+    while the discriminator has the goal of classifying an input *X* as fake or real.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Imagine the following classical example: the generator (let’s call him George)
+    can be an art forger who is trying to produce paintings of some known painter,
+    let’s say Vincent van Gogh. And the discriminator (let’s call her Anna) is an
+    art critic who scrutinizes the paintings that George has produced to determine
+    if they are genuine or not. They are new to this, so they decide to learn this
+    process together^([3](#Fn3)). George produces a painting. Anna examines it and
+    gives some suggestions to George. Every now and then, Anna also trains with some
+    real van Gogh paintings to get better at spotting errors in George’s work. This
+    process is repeated many times, until George is so good he can fool Anna. At this
+    point, George can paint like van Gogh, can produce many fakes, and can get rich
+    by selling his fake paintings^([4](#Fn4)). This process is depicted in Figure
+    [11-1](#Fig1). Let’s see how this story translates into the language of neural
+    networks.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_11_Chapter/463356_2_En_11_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 11-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: All the components and steps of a GAN setup
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generator gets as input a noise vector *ξ* ∈ *ℝ*^(*k*) taken from a normal
+    distribution. The size of this vector is not fixed and can be chosen based on
+    the problem at hand. In the example we discuss in this chapter, we use *k* = 100\.
+    The generator (George) takes the random vector and generates a fake observation
+    *X*[*fake*] (as you can see in Figure [11-1](#Fig1)). The output *X*[*fake*] will
+    have the same dimension of the observations contained in the training dataset
+    *X*[*real*] (in this example, van Gogh paintings). If, for example, if *X*[*real*]
+    are 1000x1000 pixels images in color, then *X*[*fake*] will also be a 1000x1000
+    color image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now it’s the discriminator’s (Anna’s) turn. It gets as input a *X*[*real*] (or
+    *X*[*fake*]) and produces a one-dimensional output ![$$ \hat{Y} $$](../images/463356_2_En_11_Chapter/463356_2_En_11_Chapter_TeX_IEq1.png)
+    (the probability of the input of being real or fake). Basically, the discriminator
+    is performing binary classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The steps of the training loop are described here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A vector *ξ* ∈ *ℝ*^(*k*) of *k* numbers is generated from a normal distribution.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Using this *ξ* the generator gives as output an *X*[*fake*].
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'The discriminator is used two times: one with real input (*X*[*real*]) and
+    one with the *X*[*fake*] generated in the previous step.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Two loss functions are calculated: *L*[*G*] = *CE*(*Y*[*fake*], 1) and *L*[*D*] = *CE*(*Y*[*real*],
+    1) + *CE*(*X*[*fake*], 0).'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Via an optimizer (Adam, Momentum, etc.), the two loss functions are minimized
+    sequentially (sometimes there is one step for the generator, and multiple steps
+    in updating the weights for the discriminator). Note that minimizing *L*[*G*]
+    will be done only with respect to the trainable parameters of the generator, while
+    minimizing *L*[*D*] will be done only with respect to the trainable parameters
+    of the discriminator.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: A Practical Example with Keras and MNIST
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'This section shows a practical example of what we discussed in the previous
+    section implemented with Keras and applied to the MNIST dataset.^([5](#Fn5)) As
+    usual you can find the complete code at [`https://adl.toelt.ai`](https://adl.toelt.ai),
+    so we will concentrate here only on the relevant parts of the code. In particular,
+    we look at the five steps described in the previous section and see how to implement
+    them. To start, we need to create two neural networks: the generator and the discriminator.
+    This can be done in the usual way. Nothing new here. For example'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The important part of this network is the input shape: `input_shape=(100,)`.
+    Remember that the generator gets as input the random vector *ξ* that is, in our
+    example, a 100-dimensional vector of random numbers generated from a normal distribution.
+    Figure [11-2](#Fig2) shows a better visualization of the network.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_11_Chapter/463356_2_En_11_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 11-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generator neural network architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Figure [11-2](#Fig2) shows how the random vector is transformed in increasingly
+    larger images, until at the end, the expected 28x28-pixel image with one channel
+    is obtained (this will be the *X*[*fake*] we discussed in the previous section).
+    The discriminator can be created analogously, with standard Keras:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: That is a rather small network. The input will be an image that’s 28x28 pixels
+    in resolution with just one channel (gray levels). The output is the probability
+    that the image is real and is achieved with one neuron called `layers.Dense(1)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [11-3](#Fig3) shows the network architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_11_Chapter/463356_2_En_11_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 11-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The discriminator neural network architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As discussed, we need to train the two networks in alternate fashion, so you
+    will realize that the standard `compile()/fit()` approach will not be enough and
+    you will need to develop a custom training loop.^([6](#Fn6)) Before doing that,
+    we need to define the loss functions. This is not difficult, and we can start
+    with the discriminator function *L*[*D*]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: After having defined
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: You will remember that we need the *X*[*fake*] (this will be the `fake_output`
+    variable) and the *X*[*real*] (the `real_output` variable) to train the discriminator.
+    The generator loss function *L*[*G*] is defined analogously
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For *L*[*G*], as you will remember from the previous section, we only need
+    *X*[*fake*]. At this point, we are almost done. We need to define the optimizers
+    (always using standard Keras functions):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: And now here is the custom training loop
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s summarize the steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We generate *X*[*fake*]: `generated_images = generator(noise, training=True)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Then ![$$ {\hat{Y}}_{real} $$](../images/463356_2_En_11_Chapter/463356_2_En_11_Chapter_TeX_IEq2.png):
+    `real_output = discriminator(images, training=True)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Then ![$$ {\hat{Y}}_{fake} $$](../images/463356_2_En_11_Chapter/463356_2_En_11_Chapter_TeX_IEq3.png):
+    `fake_output = discriminator(generated_images, training=True)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Then we define *L*[*G*]: `gen_loss = generator_loss(fake_output)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Then we define *L*[*D*]: `disc_loss = discriminator_loss(real_output, fake_output)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'At this point we can evaluate the gradients:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and then apply them to update the trainable parameters of the two networks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: At this point the only thing left is to perform those steps enough times to
+    get the network to learn. By comparing Figure [11-1](#Fig1) with this code, you
+    should be able to immediately see how this GAN is implemented. Figure [11-4](#Fig4)
+    shows examples of digits generated by the generator network. The digits do not
+    exist in the dataset and have been “created” by the neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_11_Chapter/463356_2_En_11_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 11-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Four examples of digits generated by the generator network. The digits do not
+    exist in the dataset and have been “created” by the neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: The only thing you need to do in order to generate images is feed the generator
+    with 100 random numbers. For example, with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Be aware that due to the dimensions used in the code, if you want to extract
+    the 28x28 image you need to use the code `generated_image[0, :, :, 0]`. You can
+    find the entire code at [`https://adl.toelt.ai`](https://adl.toelt.ai). Try different
+    networks, different numbers of epochs, and so on to get a feeling for how such
+    an approach can generate realistic images from a training dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this approach learns from all the classes at the same time. For example,
+    it’s not possible to ask the network to generate a specific digit. The generator
+    will simply randomly generate one digit. To be able to do this, we need to implement
+    what is called “conditional” GANs. Those GANs also get as input the class labels
+    and can generate examples from specific classes. If you want to try the code on
+    your laptop, keep in mind that training GANs is rather slow. If you do it on Google
+    Colab and you use a GPU, one epoch may take up to 30 seconds or more. Keep that
+    in mind. On a modern laptop without GPUs, one epoch may take up to 1.5-2 minutes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Note on Training
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: There is an important aspect on why the training is implemented in sequential
+    fashion that we need to discuss. You might wonder why we need to train the two
+    networks in an alternate fashion. Why can’t we train the discriminator alone for
+    example until it gets really good at distinguishing fakes and real images? The
+    reason is very simple. Imagine that the discriminator is really good. It will
+    always spot the *X*[*fake*] as fakes, and therefore the generator will never be
+    able to get better, because the discriminator will never make a mistake. Therefore,
+    training in such a situation would never be successful. In practice one of the
+    biggest challenges when training GANs is to make sure that the generator and the
+    discriminator networks remain at approximately the same skill level during the
+    training. This has been shown to be the sweet spot for the training to be efficient
+    and successful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conditional GANs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now let´s turn our attention to conditional GANs (CGANs) . CGANs work the same
+    as described in this chapter. The working idea is the same, with the difference
+    that we will be able to specify from which class we want the generator to create
+    an image. In the MNIST example, we could tell the generator that we want one fake
+    digit one, for example. Figure [11-5](#Fig5) shows an updated diagram explaining
+    the training (it’s Figure [11-1](#Fig1) updated).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_11_Chapter/463356_2_En_11_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 11-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: The training of a CGAN system. the red highlights the role of the label that
+    makes it possible for the generator to create fake examples of specific classes
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The main things that we need to change to achieve this are the architectures
+    of the two networks. Figures [11-6](#Fig6) and [11-7](#Fig7) show example architectures
+    of the two networks: a generator and a discriminator, respectively.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_11_Chapter/463356_2_En_11_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 11-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The discriminator network architecture for a CGAN
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_11_Chapter/463356_2_En_11_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 11-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generator network architecture for a CGAN
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'From Figures [11-6](#Fig6) and [11-7](#Fig7), you can immediately see that
+    they now have an additional input: a one-dimensional tensor, which will be the
+    class. The kinds of networks that you see here can be easily implemented using
+    the functional Keras API. Just to give you an idea about how to build such networks,
+    here are the first layers of the generator network, up until the merging of the
+    two branches'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can see how flexible Keras Functional APIs are. Now, when training the generator
+    network for example, you need to give as input not only a random vector *ξ* as
+    before, but also a random vector *and* a class label, which you will use to choose
+    the *X*[*real*] to train the discriminator. To generate the random noise and the
+    labels, you use this code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: And you will give the generator network the input as `[z_input, labels]`. The
+    `n_samples` variable is simply the batch size you want to use. Analyzing the complete
+    code would make this chapter really long, really difficult to follow, and really
+    boring. Implementing a CGAN starts to be really advanced, and the best way of
+    understanding it is to go through a complete example. As usual, you will find
+    one at [`https://adl.toelt.ai`](https://adl.toelt.ai) where you can check all
+    the code. In the meanwhile, your best source of knowledge about CGANs are the
+    two papers that you should study to understand what is going on with CGANs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Radford, Alec, Luke Metz, and Soumith Chintala. “Unsupervised representation
+    learning with deep convolutional generative adversarial networks.” arXiv preprint
+    arXiv:1511.06434 (2015).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Mirza, Mehdi, and Simon Osindero. “Conditional generative adversarial nets.”
+    arXiv preprint arXiv:1411.1784 (2014).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The goal of this chapter was not to go into details about advanced GAN architectures,
+    but to give you an initial understanding of how adversarial learning works. There
+    are many advanced architectures and topics about GANs that we cannot cover in
+    this book, since that would go well beyond the skill level of the average reader.
+    But with this chapter, I hope I have given you an initial understanding of how
+    GANs work and how easy it is to implement them in Keras.
+  prefs: []
+  type: TYPE_NORMAL

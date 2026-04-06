@@ -1,0 +1,1450 @@
+- en: 2. Hands-on with a Single Neuron
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: After reading about learning with neural networks in the previous chapter, you
+    are now ready to explore their most fundamental component, the neuron. In this
+    chapter, you learn the main components of the neuron. You also learn how to solve
+    two classical statistical problems (i.e., linear regression and logistic regression)
+    by using a neural network with just one neuron. To make things a bit more fun,
+    you do that using real datasets. We discuss the two models and explain how to
+    implement the two algorithms in Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, we briefly explain what a neuron is, including its typical structure
+    and its main characteristics (e.g., the activation function, weights, etc.). Then
+    we look at how you can formally express it in a matrix (this step is fundamental
+    to obtaining optimized codes and exploiting all TensorFlow and NumPy functionalities).
+    Finally, we look at some code examples in Keras. You can find the complete Jupyter
+    Notebooks discussed in this chapter at [`https://adl.toelt.ai`](https://adl.toelt.ai).
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Short Overview of a Neuron’s Structure
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Deep learning is based on large and complex networks made up of a large number
+    of simple computational units. Companies at the forefront of research are dealing
+    with networks with 160 billion parameters [1]. To put things in perspective, this
+    number is half of the number of stars in our galaxy or 1.5 times the number of
+    people that ever lived. On a basic level, neural networks are large sets of differently
+    interconnected units,^([1](#Fn1)) each performing a specific (and usually relatively
+    easy) computation. They remind me of Lego building blocks, where you can build
+    very complicated things using elementary and fundamental units.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Due to the biological parallel with the brain [2], these basic units are known
+    as *neurons* . Each neuron (at least the ones most commonly used and the ones
+    we use in this book) does a straightforward operation: it takes a certain number
+    of inputs (real numbers) and calculates an output (also a real number). Remember
+    that the inputs are indicated in this book with *x*[*i*] ∈ *ℝ* (real numbers)
+    where *i* = 1, 2, …, *n*[*x*], *i* ∈ *ℕ* is an integer, and *n*[*x*] is the number
+    of input attributes (often called features). As an example of input features,
+    you can imagine the age and weight of a person (so we would have *n*[*x*] = 2).
+    *x*[1] could be the age and *x*[2] could be the weight. In real life, the number
+    of features can be easily very large (of the order of 10² − 10³ or higher).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are several kinds of neurons that have been extensively studied. In this
+    book we concentrate on the most commonly used one. The neuron we are interested
+    in simply applies a function to a linear combination of all the inputs. In a more
+    mathematical form, given *n*[*x*] real parameters *w*[*i*] ∈ *ℝ* (with *i* = 1,
+    2, …, *n*[*x*]) and a constant *b* ∈ *ℝ* (usually called bias), the neuron will
+    first calculate what is traditionally indicated in literature with *z*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ z={w}_1{x}_1+{w}_2{x}_2+\dots +{w}_{n_x}{x}_{n_x}+b $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: It will then apply a function *f* (normally non-linear) to *z*, giving the output
+    ![$$ \hat{y} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq1.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{y}=f(z)=f\left({w}_1{x}_1+{w}_2{x}_2+\dots +{w}_{n_x}{x}_{n_x}+b\right)
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Practitioners generally use the following terminology: *w*[*i*] are called
+    *weights*, *b* is the *bias*, *x*[*i*] are the *input features****,*** and *f*
+    is the *activation function*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s summarize the neuron computational steps again.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linearly combine all inputs *x*[*i*], calculating ![$$ z={w}_1{x}_1+{w}_2{x}_2+\dots
+    +{w}_{n_x}{x}_{n_x}+b $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq2.png).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Apply *f* to *z* giving the output ![$$ \hat{y}=f(z)=f\left({w}_1{x}_1+{w}_2{x}_2+\dots
+    +{w}_{n_x}{x}_{n_x}+b\right) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq3.png).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: In the literature, you can find numerous representations for neurons. Figure
+    [2-1](#Fig1) shows a graphical representation of the mathematical operations we
+    just discussed to obtain the output ![$$ \hat{y} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq4.png)
+    from the inputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: A representation of a single neuron with the operation highlighted. This is
+    also called the computational graph of a single neuron, or in other words, a graphical
+    representation of the operations needed to calculate ![$$ \hat{y} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq5.png)
+    from the inputs
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Figure [2-1](#Fig1) must be interpreted in this way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The inputs are not placed in a bubble, simply to distinguish them from nodes
+    that perform an actual calculation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The weight’s names are typically not written. The expected behavior is that
+    before passing the inputs to the central bubble (or node), the inputs will be
+    multiplied by the relative weight. The first input *x*[1] will be multiplied by
+    *w*[1], *x*[2] by *w*[2], and so on.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The first bubble (or node) will sum the inputs multiplied by the weights (the
+    *x*[*i*]*w*[*i*] for *i* = 1, 2, …, *n*[*x*]) and then sum the result to the bias
+    *b*.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The last bubble (or node) will finally apply to the resulting value the activation
+    function *f*.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: All the neurons we deal with in this book have exactly this structure. Very
+    often an even simpler representation is used, as in Figure [2-2](#Fig2). In such
+    a case, unless otherwise stated, it’s understood that the output is as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{y}=f(z)=f\left({w}_1{x}_1+{w}_2{x}_2+\dots +{w}_{n_x}{x}_{n_x}+b\right)
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: A simplified version of Figure [2-1](#Fig1). Unless otherwise stated, it is
+    usually understood that the output is ![$$ \hat{y}=f(z)=f\left({w}_1{x}_1+{w}_2{x}_2+\dots
+    +{w}_{n_x}{x}_{n_x}+b\right) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq6.png).
+    The weights are often not explicitly reported in the neuron representation
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Short Introduction to Matrix Notation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When dealing with big datasets, the number of features is typically large (*n*[*x*]
+    will be large) and so it is better to use a vector notation for the features and
+    weights. The inputs can be indicated with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \boldsymbol{x}=\left(\begin{array}{c}{x}_1\\ {}\vdots \\ {}{x}_{n_x}\end{array}\right)
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where we have indicated the vector with a bold-faced ***x***. For the weights,
+    we use the same notation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \boldsymbol{w}=\left(\begin{array}{c}{w}_1\\ {}\vdots \\ {}{w}_{n_x}\end{array}\right)
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: For consistency with formulas that we will use later, to multiply ***x*** and
+    ***w***, we use matrix multiplication notation and therefore we write
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{w}}^T\boldsymbol{x}=\left({w}_1\dots {w}_{n_x}\right)\left(\begin{array}{c}{x}_1\\
+    {}\vdots \\ {}{x}_{n_x}\end{array}\right)={w}_1{x}_1+{w}_2{x}_2+\dots +{w}_{n_x}{x}_{n_x}
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where ***w***^(*T*) indicates the transpose of ***w***. *z* can then be written
+    with this vector notation as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ z={\boldsymbol{w}}^T\boldsymbol{x}+b $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and the neuron output ![$$ \hat{y} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq7.png)
+    as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{y}=f(z)=f\left({\boldsymbol{w}}^T\boldsymbol{x}+b\right) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Let’s now summarize the different components that define this neuron and the
+    notation we use in this book:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{y} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq8.png):
+    Neuron (and later network) output'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*f*(*z*): Activation function (sometimes called a transfer function) applied
+    to z'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '***w***: Weights (vector with *n*[*x*] components)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*b*: Bias'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An Overview of the Most Common Activation Functions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: There are many activation functions at your disposal to change the output of
+    a neuron. Remember, an activation function is simply a mathematical function that
+    transforms *z* in the output ![$$ \hat{y} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq9.png).
+    Let’s look at the most common ones.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Identity Function
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: This is the most basic function that you can use. It’s typically indicated with
+    *I*(*z*). It merely returns the input value, unchanged (see Figure [2-3](#Fig3)).
+    Mathematically we can write it as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(z)=I(z)=z $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The identity function
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This simple function will come in handy when discussing linear regression with
+    one neuron later in the chapter. Implementing it^([2](#Fn2)) in Python with NumPy
+    is incredibly trivial:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Sigmoid Function
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: This is a very commonly used function that gives only values between 0 and 1\.
+    It is usually indicated with *σ*(*z*)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(z)=\sigma (z)=\frac{1}{1+{e}^{-z}} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: It is primarily used for classification models, where we want to predict the
+    probability as an output (remember that a probability may only assume values between
+    0 and 1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The calculation can be written in this form using NumPy functions
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note It is very useful to know that if we have two NumPy arrays, `A` and `B`,
+    the following are equivalent: `A/B` is equivalent to `np.divide(A,B)`, `A+B` is
+    equivalent to `np.add(A,B)`, `A-B` is equivalent to `np.subtract(A,B)`, and `A*B`
+    is equivalent to `np.multiply(A,B)`. If you know object-oriented programming,
+    we say that in NumPy basic operations like `/`, `*`, `+` and `-` are *overloaded*.
+    Note also that these four basic operations in NumPy act element-by-element (also
+    called element-wise).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can write the sigmoid function in a more readable (at least for humans) form
+    as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: As stated, `1.0 + np.exp(-z)` is equivalent to `np.add(1.0, np.exp(-z))` and
+    `1.0 / (np.add(1.0, np.exp(-z)))` to `np.divide(1.0, np.add(1.0, np.exp(-z)))`.
+    We want to draw your attention to another point in the formula. `np.exp(-z)` will
+    have the dimensions of `z` (usually a vector that will have a length equal to
+    the number of observations), while `1.0` is a scalar (a one-dimensional entity).
+    How can Python sum the two? What happens is called *broadcasting* . Python, subject
+    to certain constraints, “broadcasts” the smaller array (in this case, the `1.0`)
+    across the larger one so that, at the end, the two have the same dimensions. In
+    this case, the `1.0` becomes an array of the same dimensions of `z`, all filled
+    with `1.0`. This is an important concept to understand, as it is very useful.
+    You do not have to transform numbers in arrays, for example. Python will take
+    care of this process for you. The rules on how broadcasting works in other cases
+    are rather complex and go beyond this book’s scope. However, it is important to
+    know that Python is doing something in the background.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sigmoid activation function is a s-shaped function that goes from 0 to 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sigmoid activation function (that you can see in Figure [2-4](#Fig4)) is
+    especially used for models where we must predict the probability as an output,
+    as logistic regression (remember that a probability may only assume values between
+    0 and 1). Note that in Python, if *z* is big enough, it can happen that the function
+    returns exactly 0 or 1 (depending on the sign of *z*) for rounding errors. In
+    classification problems we will calculate log*σ*(*z*) or log(1 − *σ*(*z*)) very
+    often, and therefore this can be a source of errors in Python since it will try
+    to calculate log0, which is not defined. For example, you can start seeing `nan`
+    appearing while calculating the cost function (more on that later).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although *σ*(*z* ) should never be exactly 0 or 1, while programming in Python
+    the reality can be quite different. It may happen that, due to a very big *z*
+    (positive or negative), Python will round the results to exactly 0 or 1\. This
+    may give you errors while calculating the cost function for classification, since
+    you need to calculate log*σ*(*z* ) and log(1 − *σ*(*z* )). Therefore, Python will
+    try to calculate log0, which is not defined. This may happen, for example, if
+    you don’t correctly normalize the input data or if you don’t correctly initialize
+    the weights. For the moment, it’s important to remember that although everything
+    seems under control mathematically, the reality while programming can be more
+    difficult. It’s good to keep this in mind while debugging models that give, for
+    example, `nan` as a result for the cost function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tanh (Hyperbolic Tangent) Activation Function
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The hyperbolic tangent is also an s-shaped curve that goes from -1 to 1, as
+    shown in Figure [2-5](#Fig5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(z)=\tanh (z)\#(1.7a) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: The tanh (or hyperbolic function) is an s-shaped curve that goes from -1 to
+    1
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Python, this can be easily implemented
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: ReLU (Rectified Linear Unit) Activation Function
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'The ReLU has the following formula (see Figure [2-6](#Fig6)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(z)=\max \left(0,z\right) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: The ReLU function
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is worth it to spend a few moments to see how to implement ReLU in a smart
+    way in Python. Note that when you start using TensorFlow, it is implemented for
+    you, but it’s still very instructive to see how different Python implementations
+    can make a difference when implementing complex deep learning models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In Python you can implement the ReLU function in several ways. Here are four
+    different ways (try to understand why they work before going on):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`np.maximum(x, 0, x)`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`np.maximum(x, 0)`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`x * (x > 0)`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`(abs(x) + x) / 2`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'The four methods have very different execution speeds. Let’s generate a NumPy
+    array with 10⁸ elements:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we measure the time needed by the four different versions of the ReLU function
+    when applied to it. Let the following code run
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The results are
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: The difference is stunning . Method 1 is four times faster than method 4\. The
+    `numpy` library is highly optimized, with many routines written in C. But knowing
+    how to code efficiently still makes a difference and can have a great impact.
+    Why is `np.maximum(x, 0, x)` faster than `np.maximum(x, 0)`? The first version
+    updates `x` in place, without creating a new array. This can save a lot of time,
+    especially when the arrays are big. If you don’t want to (or can’t) update the
+    input vector in place, you can still use the `np.maximum(x, 0) version.`
+  prefs: []
+  type: TYPE_NORMAL
+- en: An implementation could look like this
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Remember that, when optimizing your code, even small changes can make a huge
+    difference. In deep learning programs, the same chunk of code is repeated millions
+    and billions of times, so even a small improvement can have a huge impact in the
+    long run. Spending time optimizing your code is a necessary step that will pay
+    off.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Leaky ReLU
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The Leaky ReLU (also known as Parametric Rectified Linear Unit) is given by
+    the formula
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(z)=\left\{\begin{array}{ccc}\alpha z&amp; for&amp; z&lt;0\\ {}z&amp;
+    for&amp; z\ge 0\end{array}\right. $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: with *α* a parameter typically of the order of 0.01\. See Figure [2-7](#Fig7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Leaky ReLU activation function with *α* = 0.05\. This value has been chosen
+    to make the difference between *x* > 0 and *x* < 0 more marked. Smaller values
+    for *α* are typically used. Testing your model is required to find the best value
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Python, this can be implemented if the `relu(z)` function has been defined
+    as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Swish Activation Function
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Ramachandran , Zopf, and Le from Google Brain [4] recently studied a new activation
+    function that shows great promise in the deep learning world; they named it Swish.
+    It is defined as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(z)= z\sigma \left(\beta z\right) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Swish activation function for three different values of the parameter *β*
+  prefs: []
+  type: TYPE_NORMAL
+- en: where *β* is a learnable parameter (see Figure [2-8](#Fig8)). Their studies
+    have shown that simply replacing ReLU activation functions with Swish improves
+    classification accuracy on ImageNet by 0.9%, which in today’s deep learning world
+    is a lot. ImageNet is a large database of images that is often used to benchmark
+    new network architectures or algorithms, as in this case, networks with a different
+    activation functions. You can find more information about ImageNet at [`http://www.image-net.org/`](http://www.image-net.org/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Other Activation Functions
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: There are many other activation functions, but those are rarely used. As a reference,
+    here are some additional ones. The list is by no means comprehensive and should
+    serve the purposes of giving you an idea of the variety of activation functions
+    that can be used when developing neural networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ArcTan
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ f(z)={\tan}^{-1}z $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equo.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: Exponential Linear unit (ELU)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ f(z)=\left\{\begin{array}{ccc}\alpha \left({e}^z-1\right)&amp; for&amp;
+    z&lt;0\\ {}z&amp; for&amp; z\ge 0\end{array}\right. $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equp.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: Softplus
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ f(z)=\ln \left(1+{e}^z\right) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equq.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: '**Note** Practitioners almost always use only two activation functions: the
+    sigmoid and the ReLU (with probably the ReLU in the lead). With both you can achieve
+    good results. Both can, given a complex enough network architecture, approximate
+    any nonlinear function.^([3](#Fn3)) Remember that when using TensorFlow, you do
+    not have to implement them by yourself. TensorFlow offers an efficient implementation
+    for you to use. But is important to know how each activation function behaves
+    to understand when to use which one.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Now that we briefly discussed all the necessary components, you can use the
+    neuron on some real problems. Let’s first see how to implement a neuron in Keras
+    and then how to perform linear and logistic regression with it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to Implement a Neuron in Keras
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Building a network with a single neuron in Keras is straightforward and can
+    be done with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The **Sequential** class groups a linear stack of layers into a `tf.keras.Model`.
+    In this straightforward case, we need just one layer made by a single neuron,
+    defined by the **layers.Dense** command, which specifies **1** unit (neuron) inside
+    a layer and the shape of the input dataset. The `Dense` class implements densely
+    connected neural networks’ layers (more on that in the next chapters).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next paragraphs, you see two practical examples of how to use this simple
+    approach—choosing the right activation function and the proper loss function—to
+    solve two different problems, namely linear regression and logistic regression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Python Implementation Tips: Loops and NumPy'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As you have just seen, Keras does all the dirty work for you. Of course, you
+    can also implement the neuron from scratch, using Python standard functionalities
+    such as lists and loops, but those tend to become very slow as the number of variables
+    and observations grows. A good rule of thumb is to avoid loops when possible and
+    use NumPy (or TensorFlow) methods as often as possible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It is easy to understand how fast NumPy can be (and how slow loops are). Let’s
+    start by creating two standard lists of random numbers in Python with 10⁷ elements
+    in each:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: The actual values are not relevant for our purposes. We are simply interested
+    in how fast Python can multiply two lists, element by element. The time reported
+    was measured on a 2017 Microsoft Surface laptop and will vary greatly depending
+    on the hardware that the code runs on. We are not interested in the absolute values,
+    but only in how much faster NumPy is in comparison to standard Python loops. If
+    you are using a Jupyter Notebook, it is useful to know how to time Python code
+    in a cell. To do this, you can use a “magic command.” Those commands start (in
+    a Jupyter Notebook) with `%%` or with `%`. It’s a good idea to check the official
+    documentation to better understand how they work ([`http://ipython.readthedocs.io/en/stable/interactive/magics.html`](http://ipython.readthedocs.io/en/stable/interactive/magics.html)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Coming back to the test, let’s measure how much time a standard laptop takes
+    to multiply, element by element, the two lists with standard loops. Using the
+    code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'gives us the following result (note that on your computer, you will probably
+    get different numbers):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code needed roughly two seconds averaged over seven runs. Now let’s try
+    to do the same multiplication, but this time using NumPy
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: We first converted the two lists to `numpy` arrays with the following code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: This time we get the following results
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The NumPy code needed only 21ms or, in other words, it was roughly 100 times
+    faster than the code with standard loops. NumPy is faster for two reasons: the
+    underlying routines are written in C, and it uses vectorized code as much as possible
+    to speed up calculations on a large amount of data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Vectorized code refers to operations performed on multiple components of a vector
+    (or a matrix) at the same time (in one statement). Passing matrixes to NumPy functions
+    is an excellent example of *vectorized code*. NumPy will perform operations on
+    big chunks of data simultaneously, obtaining much better performance than standard
+    Python loops since the latter must operate on one element at a time. Note that
+    part of the excellent performance NumPy shows is also due to the underlying routines
+    being written in C.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While training deep learning models, you will find yourself doing this kind
+    of operation over and over. Such a speed gain will make the difference between
+    having a model that can be trained and one that will never give you a result.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linear Regression with a Single Neuron
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section explains how to build your first model in Keras and how to use
+    it to solve a basic statistical problem. You can, of course, perform linear regression
+    quickly by applying traditional math formulas or using dedicated functions such
+    as those found in Scikit-learn. For example, you can find the complete implementation
+    of linear regression from scratch with NumPy, using the analytical formulas (see
+    [`http://adl.toelt.ai/single_neuron/Linear_regression_with_numpy.html`](http://adl.toelt.ai/single_neuron/Linear_regression_with_numpy.html))
+    in the online version of the book. However, it is instructive to follow this example,
+    since it gives a practical understanding of how the building blocks of deep learning
+    architectures (i.e., neurons) work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you remember, we have said many times that NumPy is highly optimized to
+    perform several parallel operations simultaneously. To get the best performance
+    possible, it’s essential to write your equations in matrix form and feed the matrixes
+    to NumPy. In this way, the code will be as efficient as possible. Remember: avoid
+    loops at all costs whenever possible.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Dataset for the Real-World Example
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To make things a bit more interesting, let’s use an instructive dataset. We
+    will use the so-called radon dataset [3]. Radon is a radioactive gas that enters
+    homes through contact points with the ground. It is a carcinogen that is the primary
+    cause of lung cancer in non-smokers. Radon levels vary significantly from household
+    to household. The dataset contains measured radon levels in U.S. homes by county
+    and state. The `activity` label is the measured radon concentration in pCi/L (referred
+    to as the *target* variable, i.e., the one we want to predict using a linear regression
+    model). Important features are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Floor (the floor of the house in which the measurement was taken)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: County (the U.S. county in which the house is located)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: uppm (a measurement of the uranium level of the soil by county)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This dataset fits a classical regression problem well since it contains a continuous
+    variable (radon activity) to predict. The model that we will build is made of
+    one neuron and will fit a linear function to the different features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You do not need to understand or study the features. The goal here is to understand
+    how to build a linear regression model with what you have learned. Generally,
+    in a machine learning project, you would first study your input data, check its
+    distribution, quality, missing values, and so on. But we skip this part to concentrate
+    on the implementation with Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In machine learning, the variable we want to predict is usually called the *target
+    variable*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, let’s look at the data. We will skip all the import and load details for
+    simplicity and concentrate on the fundamental steps of the code, such as dataset
+    preparation, model creation, and performance evaluation. Remember that you can
+    find the complete code on the online version of the book. We start by checking
+    how many observations we have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code will give the following results
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: So, we have 919 different measurements of radon activity in 85 distinct counties.
+    The `radon_features.head()` command will give the following table as output (the
+    first five lines of the `pandas` dataframe)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have four features (`floor`, `county`, `log_uranium_ppm`, and `pcterr`) that
+    we will use as predictors of radon activity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As suggested, we have prepared the data in matrix form. Let’s briefly review
+    the notation, which will come in handy when building the neuron. Normally we have
+    many observations (919 in this case). We use an upper index to indicate the different
+    observations between parentheses. The *i*^(*th*) observation is indicated with
+    ***x***^((*i*)), and the *j*^(*th*) feature of the *i*^(*th*) observation is indicated
+    with ![$$ {\boldsymbol{x}}_j^{(i)} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq10.png).
+    We indicate the number of observations with *m*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this book, *m* is the *number of observations* and *n*[*x*] is the *number
+    of features****.*** Our *j*^(*th*) feature of the *i*^(*th*) observation is indicated
+    with ![$$ {\boldsymbol{x}}_j^{(i)} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_IEq11.png).
+    In deep learning projects, the bigger the *m*, the better. So be prepared to deal
+    with a massive number of observations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*n*[*x*] in this example is equal to 4, while *m* is equal to 919\. The entire
+    set of inputs (features and observations) can be therefore written using the following
+    notation'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ X=\left(\begin{array}{ccc}{x}_1^{(1)}&amp; \dots &amp; {x}_4^{(1)}\\ {}\vdots
+    &amp; \ddots &amp; \vdots \\ {}{x}_1^{(m)}&amp; \dots &amp; {x}_4^{(m)}\end{array}\right)
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where each row is an observation, and each column represents a feature in the
+    matrix *X* that has the dimensions *m* × 4.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dataset Splitting
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'In any machine learning project, to check how the model generalizes to unseen
+    data, you need to split the dataset into different subsets.^([4](#Fn4)) When you
+    build a machine learning model, you first need to train the model, and then you
+    have to test it (i.e., verify the model’s performances on novel data). The most
+    common way to do this is to split the dataset into two subsets: 80% of the original
+    dataset to train the model (the more data you have, the better your model will
+    perform) and the remaining 20% to test it.^([5](#Fn5))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following code splits the dataset randomly into two parts with the following
+    proportions: 80%/20%.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code will give as output the following lines
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will use 733 observations to train our linear regression model, and we will
+    then evaluate it on the remaining 186 observations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linear Regression Model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Keep in mind that using a single-neuron model is overkill for a linear regression
+    task. We could solve linear regression exactly without using gradient descent
+    or a similar optimization algorithm. As mentioned, you can find an exact regression
+    solution example, implemented with NumPy library, in the book’s online version.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Given that the dataset can be expressed as a matrix (*X*) and the label we
+    want to predict as a column vector (*y*), when we employ one neuron to perform
+    linear regression, we simply try to find the best weights (*W*) that appear in
+    the following equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{y}= WX+b $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The weights and bias need to be chosen so that that the network output is as
+    similar as possible to the expected target variable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you remember how a neuron is structured, you can easily see that, for the
+    neuron to give as output a linear combination of the inputs, we need to use the
+    *identity activation function* *.* How can we measure how close the neuron’s outputs
+    are to the target variables? The difference is measured by using the Mean Squared
+    Error (MSE) function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left(\boldsymbol{w},b\right)=\frac{1}{m}\sum \limits_{i=1}^m{\left({y}^{(i)}-{\boldsymbol{w}}^T{\boldsymbol{x}}^{(i)}-b\right)}^2
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where the sum is over all *m* observations. This is the typical loss function
+    chosen in a regression problem. By minimizing *L*(***w***, *b*) with respect to
+    the weights and bias, we can find their optimal values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Minimizing *L*(***w***, *b*) is done with an optimizer. If you remember from
+    the last chapter, gradient descent is the most basic example of an optimizer and
+    could be used to solve this problem. Since is not available out of the box in
+    TensorFlow, we use the RMSProp optimizer for practical reasons. Don’t worry if
+    you don’t know how it works. Just know that it is simply a more intelligent version
+    of the GD algorithm. You learn how it works in detail in the following chapters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keras Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If you have no experience with Keras , you can consult the appendixes of this
+    book. There you will find an introduction to Keras that will give you enough information
+    to be able to understand the following discussion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementing what we discussed with Keras is straightforward. The following
+    function builds the one-neuron model for linear regression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s analyze what this code does:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: First of all, we defined the network structure (also called network architecture)
+    with the `keras.Sequential` class, adding one layer^([6](#Fn6)) made of one neuron
+    (`layers.Dense`) and with `input dimensions` equal to the number of features used
+    to build the model. The activation function is the one set by default, i.e. the
+    identity function.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Then, we defined the optimizer (`tf.keras.optimizers.RMSprop`), setting the
+    learning rate to 0.001\. The optimizer is the algorithm that Keras will use to
+    minimize the cost function. We use the RMSprop algorithm in this example.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Finally, we compile the model (i.e., we configure the model for training), setting
+    its loss function (i.e., the cost function to be minimized), its optimizer, and
+    the metric to be calculated during performance evaluation (`model.compile`). The
+    function returns the built `model` as a single Python object.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The *learning rate* is a very important parameter for the optimizer. In fact,
+    it strongly influences the convergence of the minimization process. It is a common
+    and good behavior to try different learning rate values and observe how the model’s
+    convergence changes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, let’s apply the `build_model` function and look at the model summary
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code gives the following output
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Thus, we have five parameters to be trained—the weights associated with the
+    four features, plus the bias .
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Model’s Learning Phase
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Training our neuron means finding the weights and biases that minimize the chosen
+    cost function (the MSE in this case). The *minimization process* is iterative;
+    therefore, it is necessary to decide when to stop it. For this example, we simply
+    set a fixed number of epochs. We train the model for 1000 epochs and then look
+    at the results in terms of the MSE.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see, training the model in Keras is straightforward. It is enough
+    to apply the `fit` method to our model object. `fit` takes as inputs the training
+    data and the number of epochs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cost function clearly decreases for a while and then stays almost constant.
+    That is a good sign, indicating that the cost function has reached a minimum.
+    That does not mean that our model is good or that it will give good predictions.
+    This tells us only that learning has somehow worked. A very good way to immediately
+    visualize the loss function decrease is by plotting the cost function vs. the
+    number of epochs. This can be seen in Figure [2-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cost function behavior during the model training, applied to the radon dataset
+    with a learning rate of 0.001
+  prefs: []
+  type: TYPE_NORMAL
+- en: Looking at Figure [2-9](#Fig9), you can see that, after 400 epochs, the cost
+    function remains almost constant in its value, indicating that a minimum has been
+    reached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since we are doing a linear regression, we are interested in the coefficients
+    of the linear equation. Those are the weights of our neuron. The first four are
+    the linear regression coefficients, while the last one is the bias term. You can
+    compare these numbers with the ones obtained by performing linear regression with
+    traditional math formulas and using the NumPy library in the online version of
+    the book. To get the weights in Keras, you simply use the `get_weights()` call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: which returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Those are the weights we were expecting.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model’s Performance Evaluation on Unseen Data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To determine if the model you just trained is suited for unseen data, you must
+    check its performance over a dataset containing only unseen data (the test set).
+    Then, predicted radon activity values are compared with real values (`test_y`)
+    by simply plotting predictions vs. true values, as shown in Figure [2-10](#Fig10).
+    A perfect model will show points distributed over the black line. The less precise
+    the predictions are, the more spread out the points will be around the diagonal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: The predicted target value vs. measured target value for our model, applied
+    to our testing data
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you have followed so far, congratulations! You just built your very first
+    neural network, with just one neuron, but still a neural network!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Logistic Regression with a Single Neuron
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now let’s try to solve a classification problem with a single neuron. Logistic
+    regression is a classical algorithm and probably the simplest classification.
+    We will consider a binary classification problem: that means we will deal with
+    the problem of recognizing two classes (that we label as 0 or 1). We need an activation
+    function that’s different from the one we used for linear regression, a different
+    cost function to minimize, and a slight modification of the output of our neuron.
+    The goal is to be able to build a model that can predict if a certain new observation
+    is in one of two classes. The neuron should give as output the probability *P*(*y* = 1|
+    *x*) of the input *x* to be of class 1\. We will then classify our observation
+    as being in class 1 if *P*(*y* = 1| *x*) > 0.5 or in class 0 if *P*(*y* = 1| *x*) < 0.5.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is instructive to compare this example with the one about linear regression,
+    since they both are applications of the one-neuron model yet are used to solve
+    different tasks. You should pay attention to the similarities and differences
+    with the linear regression model discussed previously. You are going to see how
+    simple using Keras is in this case and how, by changing a few things (such as
+    the activation and loss functions), you can easily obtain a different model that
+    can solve a different problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Dataset for the Classification Problem
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As in the linear regression example, we use a dataset taken from the real world,
+    to make things more interesting. We employ the BCCD dataset, a small-scale dataset
+    for blood cell classification. The dataset can be downloaded from its GitHub repository
+    [8]. For this dataset, two Python scripts have been developed to make preparing
+    the data easier. All the code can be found in the online version of the book.
+    In the example, a slightly modified version of the two scripts is used. Remember,
+    you are not interested at this point in how the data looks or how it is cleaned.
+    You should focus on how to build the model with Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The dataset contains three kinds of labels:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Red blood cells (RBC)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: White blood cells (WBC)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Platelets
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: To make it a binary classification problem, we will consider only the RBC and
+    WBC types. The model that will be trained has one neuron and will predict if an
+    image contains an RBC or a WBC type by using the `xmin`, `xmax`, `ymin`, and `ymax`
+    variables as features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For simplicity, as in the linear regression example, we will skip all the import
+    and load details and concentrate on the fundamental steps of the code, such as
+    dataset preparation, model creation, and performance evaluation. You can find
+    the complete code on the online version of the book. Note that the greatest differences
+    between this case and the linear regression lie in the chosen activation and cost
+    function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is the data:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s display the first lines of the data
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: which prints to the screen
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: The dataset is made up of 4527 observations, one target column (`cell_type`),
+    and four features (`xmin`, `xmax`, `ymin`, and `ymax`). When working with images,
+    it is always useful to get an idea of how they look. You can see an example in
+    Figure [2-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample image from the BCCD dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that the features we employ in this example are not the pixel values of
+    the image, but the location of the edges of the bounding box of the cell. In fact,
+    for each image, we have only four values (`xmin`, `xmax`, `ymin`, and `ymax`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dataset Splitting
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As stated, in any machine learning project, you have to split the dataset in
+    different subsets. Let’s create a `train` and a `test` dataset by splitting the
+    dataset randomly into two parts with a ratio of 80/20, as we did with the radon
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code will give as output the following lines
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: So, we use 3631 observations to train our logistic regression model and then
+    evaluate it on the remaining 896 observations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now comes a particularly important point. The labels in this dataset as imported
+    will be `'WBC'` or `'RBC'` strings (they simply tell you if an image contains
+    white or red blood cells). But we will build our cost function with the assumptions
+    that our class labels are 0 and 1\. That means we need to change our `train_y`
+    and `test_y` arrays.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When doing binary classifications, remember to check the values of the labels
+    you are using for training. Sometimes using the wrong labels (not 0 and 1) may
+    cost you quite some time in understanding why the model is not learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now all images containing RBC will have a label of `0`, and all images containing
+    WBC will have a label of `1`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Logistic Regression Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This model will be made up of one neuron and its goal will be to recognize two
+    classes (labeled `0` or `1`, referring to RBC or WBC inside a cell image). This
+    is a *binary classification problem* *.*
+  prefs: []
+  type: TYPE_NORMAL
+- en: As opposed to linear regression, the activation function will be a *sigmoid
+    function* (leading to a different neuron's output) and the cost function will
+    be *cross-entropy* [7]. If you don’t remember what a sigmoid function is, reread
+    the beginning of this chapter. We use it because we want our neuron to output
+    the probability of our observation being in class 1\. Therefore, we need an activation
+    function that can assume only values between 0 and 1; otherwise we cannot regard
+    it as a probability. The cross-entropy for one observation is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left({\hat{y}}^{(i)},{y}^{(i)}\right)=-\left({y}^{(i)}\ \log {\hat{y}}^{(i)}+\left(1-{y}^{(i)}\right)\log
+    \left(1-{\hat{y}}^{(i)}\right)\right) $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In presence of more than one observation, the cost function is the sum over
+    all observations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left(\boldsymbol{w},b\right)=\frac{1}{m}\sum \limits_{i=1}^mL\left({\hat{y}}^{(i)},{y}^{(i)}\right)
+    $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Explaining the cross-entropy loss function goes beyond the scope of this book,
+    but if you are interested, you can find it described in many books and websites.
+    For example, you can check out [7].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keras Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The following function builds the one-neuron model for logistic regression.
+    The implementation is remarkably similar to that of linear regression. The differences,
+    as already mentioned, are the activation function, the cost function, and the
+    metrics (accuracy in this case, which we analyze more in detail in the testing
+    phase).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, let’s apply the `build_model` function and look at the model summary
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code gives the following output
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have five parameters to be trained in this case as well—the weights associated
+    with the four features plus the bias.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Model’s Learning Phase
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As with the linear regression example, training our neuron means finding the
+    weights and biases that minimize the cost function. The cost function we chose
+    to minimize in our logistic regression task is the cross-entropy function, as
+    discussed in the previous section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We start training our model for 500 epochs and then look at the summary in terms
+    of performances (accuracy).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [2-12](#Fig12), you can see the cost function vs. the number of iterations
+    associated with the learning phase.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_2_Chapter/463356_2_En_2_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 2-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cost function resulting in our model applied to the BCCD dataset with a
+    learning rate of 0.001
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that, after 100 epochs, the cost function remains almost constant, indicating
+    that a minimum has been reached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Model’s Performance Evaluation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now, to determine if the model you have just trained is suited for unseen data,
+    you must check its performance against the test set. Moreover, an *optimizing
+    metric* must be chosen. For a binary classification problem, a classic metric
+    is the *accuracy,* which can be understood as a measure of how well the classifier
+    correctly identified the two classes of the dataset. Mathematically it can be
+    calculated as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ accuracy=\frac{number\ of\ cases\ correctly\ identified}{total\ number\
+    of\ cases} $$](../images/463356_2_En_2_Chapter/463356_2_En_2_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where the number of cases correctly identified is the sum of all positive samples
+    and negative samples (i.e., all 0s and 1s) that were correctly classified. These
+    are usually called true positives and true negatives.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To get the accuracy, we can run this code (remember, we will classify an observation
+    *i* to be in class 0 if *P*(*y*^((*i*)) = 1| ***x***^((*i*))) < 0.5 or to be in
+    class 1 if *P*(*y*^((*i*)) = 1| ***x***^((*i*))) > 0.5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code prints this to the screen
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: With this model, we reach an accuracy of 98%. Not bad for a network with just
+    one neuron.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'This chapter looked at many things. You learned how a neuron works and what
+    its main components are. You also learned about the most common activation functions
+    and saw how to implement a model with a single neuron in Keras to solve two problems:
+    linear and logistic regression. In the next chapter, we look at how to build neural
+    networks with a large number of neurons and how to train them.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linear and logistic regression are two classical statistical models that can
+    be implemented in many ways. This chapter used the neural network language to
+    implement them and to show you how flexible neural networks are. When you understand
+    their inner components, you can use them in many ways.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Exercise 1 (Linear Regression) (Level: Easy)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Try using only one feature to predict radon activity and see how the results
+    change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Exercise 2 (Linear Regression) (Level: Medium)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Try to change the `learning_rate` parameter and then observe how the model’s
+    convergence changes. Then try to reduce the `EPOCHS` parameter and observe when
+    the model cannot reach convergence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Exercise 3 (Linear Regression) (Level: Medium)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Try to see how a model’s results change based on the training dataset’s size
+    (reduce it and use different sizes, comparing the results).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Exercise 4 (Logistic Regression) (Level: Medium)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Try to change the `learning_rate` parameter and observe how the model’s convergence
+    changes. Then try to reduce the `EPOCHS` parameter and observe when the model
+    cannot reach convergence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Exercise 5 (Logistic Regression) (Level: Medium)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Try to see how a model’s results change based on the training dataset’s size
+    (reduce it and use different sizes comparing the results).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Exercise 6 (Logistic Regression) (Level: Difficult)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Try to add to labels to `Platelets` samples and generalize the binary classification
+    model to a multiclass one (three possible classes).
+  prefs: []
+  type: TYPE_NORMAL
+- en: References
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[1] [`https://spectrum.ieee.org/tech-talk/computing/software/biggest-neural-network-ever-pushes-ai-deep-learning`](https://spectrum.ieee.org/tech-talk/computing/software/biggest-neural-network-ever-pushes-ai-deep-learning),
+    last accessed 27.12.2017.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[2] R. Rojas (1996), *Neural Networks: A Systematic Introduction,* Springer-Verlag
+    Berlin Heidelberg.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[3] [`https://www.tensorflow.org/datasets/catalog/radon`](https://www.tensorflow.org/datasets/catalog/radon),
+    last accessed 09.01.2021.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[4] Lever, Jake, Martin Krzywinski, and Naomi Altman. “Points of significance:
+    model selection and overfitting.” (2016): 703.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[5] Srivastava, Nitish, et al. “Dropout: a simple way to prevent neural networks
+    from overfitting.” The journal of machine learning research 15.1 (2014): 1929-1958.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[6] Bengio, Yoshua. “Practical recommendations for gradient-based training
+    of deep architectures.” Neural networks: Tricks of the trade. Springer, Berlin,
+    Heidelberg, 2012\. 437-478.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[7] [`https://rdipietro.github.io/friendly-intro-to-cross-entropy-loss/`](https://rdipietro.github.io/friendly-intro-to-cross-entropy-loss/),
+    last accessed 10.01.2021.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[8] [`https://www.tensorflow.org/datasets/catalog/bccd`](https://www.tensorflow.org/datasets/catalog/bccd),
+    last accessed 10.01.2021.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

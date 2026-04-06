@@ -1,0 +1,1045 @@
+- en: 9. Sentiment Analysis
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: We’ve already demonstrated how to train a character-level RNN to create original
+    text. Now, we create a *word-level* RNN to analyze sentiment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Sentiment analysis** is the interpretation and classification of polarity,
+    emotions, and intentions within text data using NLP text analysis tools. Polarity
+    can be positive, negative, or neutral. Emotions can vary across a wide range of
+    feelings such as anger, happiness, frustration, and sadness, to name a few. Intentions
+    can also vary across a wide range of motives such as interested or not interested.
+    A common application of sentiment analysis is to identify customer sentiment toward
+    products, brands, or services through online feedback. General application includes
+    social media monitoring, brand monitoring, customer service, customer feedback,
+    and market research.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For an excellent discussion of sentiment analysis, consult the following URL:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://monkeylearn.com/sentiment-analysis/#:~:text=Sentiment%20analysis%20is%20the%20interpretation,or%20services%20in%20online%20feedback`](https://monkeylearn.com/sentiment-analysis/%2523:%253F:text%253DSentiment%2520analysis%2520is%2520the%2520interpretation,or%2520services%2520in%2520online%2520feedback)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sentiment analysis is a very common NLP task. Technically, it computationally
+    identifies and categorizes opinions expressed in a text corpus to determine attitude
+    or sentiment. Typically, sentiment analysis is used to determine a positive, negative,
+    or neutral opinion toward a particular topic or product.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Notebooks for chapters are located at the following URL: [`https://github.com/paperd/tensorflow`](https://github.com/paperd/tensorflow).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: IMDb Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A popular dataset used to practice NLP is the IMDb reviews dataset. **IMDb**
+    is a benchmark dataset for binary sentiment classification. The dataset contains
+    50,000 movie reviews labeled as either positive (1) or negative (0). Reviews are
+    preprocessed with each encoded as a sequence of word indexes in the form of integers.
+    Words within the reviews are indexed by their overall frequency within the dataset.
+    The 50,000 reviews are split into 25,000 for training and 25,000 for testing.
+    So we can predict the number of positive and negative reviews using either classification
+    or other deep learning algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: IMDb is popular because it is simple to use, relatively easy to process, and
+    challenging enough for machine learning aficionados. We enjoy working with IMDb
+    because it’s just plain fun to work with movie data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Enable the GPU (if not already enabled):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click *Runtime* in the top-left menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Click *Change runtime type* from the drop-down menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Choose *GPU* from the *Hardware accelerator* drop-down menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Click *SAVE*.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Test if GPU is active:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Import the *tensorflow* library. If ‘/device:GPU:0’ is displayed, the GPU is
+    active. If ‘..’ is displayed, the regular CPU is active.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Load IMDb as a TFDS
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The recommended way to load IMDb is as a TFDS:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: We use the *imdb_reviews/subwords8k* TFDS so we train the model on a smaller
+    vocabulary. The *subwords8k* subset has a vocabulary size of 8,000, which means
+    that we are training the model on the 8,000 most commonly used words in the reviews.
+    It also means that we don’t have to build our own vocabulary dictionary! We can
+    get good performance with this subset and substantially reduce training time.
+    Loading the TFDS also gives us access to the *tfds.features.text.SubwordTextEncoder*,
+    which is the TFDS text encoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We set *with_info=True* to enable access to information about the dataset and
+    the encoder. We set *as_supervised=True* so that the returned TFDS has a two-tuple
+    structure (input, label) in accordance with *builder.info.supervised_keys*. If
+    set to *False* (the default), the returned TFDS will have a dictionary with all
+    features included. We set *shuffle_files=True* because shuffling typically improves
+    performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Display the Keys
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'By loading the dataset as a TFDS, we have access to its keys:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: We see that the dataset is split into test, train, and unsupervised samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Split into Train and Test Sets
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Since we are building a supervised model, we only have interest in the train
+    and test samples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Display the First Sample
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'It’s always a good idea to explore a sample from the dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first training example contains an encoded review and a label. The review
+    is already encoded as a tensor of integers with datatype *int64*. The label is
+    a scalar value of either 0 (negative) or 1 (positive) with datatype *int64*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The shape of the review tensor indicates the number of words it contains. For
+    readability, we convert the target tensor to values with the *numpy* method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Display Information About the TFDS
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The *info* object gives us access to metadata:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Peruse Metadata
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'See the number of examples in train and test splits:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'See supervised keys:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'See feature information:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'See the TFDS name and a slice of its description:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can even slice the citation string to get the title:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create the Encoder
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: An encoder is built into the TFDS *SubwordTextEncoder*. With the encoder, we
+    can easily decode (integer to text) and encode (text to integer). We access the
+    encoder from the dataset’s *info* object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Create an encoder based on the IMDb dataset we loaded into memory:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now that the encoder is built, we can use it to vectorize strings and decode
+    vectorized strings back into text strings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Test the encoder:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Use the Encoder on Samples
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Create a function that returns the label rating in readable form:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Display the first review as shown in Listing [9-1](#PC15).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Display multiple reviews as shown in Listing [9-2](#PC16).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: We skip the first review because we’ve already seen it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display vocabulary size:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finish the Input Pipeline
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Create batches of the encoded strings (or reviews) to greatly enhance performance.
+    Since machine learning algorithms expect batches of the same size, use the *padded_batch*
+    method to zero-pad the sequences so that each review is the same length as the
+    longest string in the batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Initialize variables:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Shuffle (where appropriate), batch, cache, and prefetch train and test sets
+    as shown in Listing [9-3](#PC19).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Inspect tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Consult the following URL for updates on padding character tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`www.tensorflow.org/tutorials/text/text_classification_rnn`](http://www.tensorflow.org/tutorials/text/text_classification_rnn)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Plant seeds, import libraries, clear previous models, and create the model as
+    shown in Listing [9-4](#PC21).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first layer is an embedding layer. The *embedding* layer is used to create
+    word vectors for incoming words. During training, representations of word categories
+    (or word vectors) are learned in a way where similar categories are closer to
+    one another. So word vectors can store relationships between words like *good*
+    and *great*. Word vectors are dense because our model learns word relationships.
+    As a result, word vectors aren’t padded with a huge number of zeros like what
+    we do with one-hot encodings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The embedding layer accepts vocabulary size, embedding size, and input shape.
+    We set *mask_zero=True* to inform the model to ignore padding tokens by all downstream
+    layers. Ignoring padding tokens improves performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next two layers are GRU layers, and the final layer is a single-neuron dense
+    output layer. The output layer uses sigmoid activation to output the estimated
+    probability that the review expresses a positive or negative sentiment regarding
+    the movie.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model Summary
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Inspect the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first layer is an embedding. So calculate the number of learnable parameters
+    by multiplying vocabulary size of 8185 by embedding dimension (embed_size) of
+    128 for a total of 1,047,680.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second layer is a GRU. The number of learnable parameters is thereby based
+    on the formula *3* `×` *(n*^(*2*) `×` *mn + 2n)* where *m* is the input dimension
+    and *n* is the output dimension. Multiply by *3* because there are three sets
+    of operations for a GRU that requires weight matrices of these sizes. Multiply
+    *n* by *2* because of the feedback loops of a RNN. So we get 99,072 learnable
+    parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here’s how we break down the result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '* 3 `×` (128² + 128 `×` 128 + 2 `×` 128)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '* 3 `×` (16384 + 16384 + 256)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '* 3 `×` 33024'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '* 99,072'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: As we can see, calculating learnable parameters for the second layer is pretty
+    complex. So let’s break it down logically. A GRU layer is a feedforward layer
+    with feedback loops. Learnable parameters for a feedforward network are calculated
+    by multiplying output from the previous layer (128 neurons) with neurons at the
+    current layer (128 neurons). With a feedforward network, we also have to account
+    for the 128 neurons at this layer. But we multiply the 128 neurons at this layer
+    by 2 because of the feedback mechanism of a RNN. Finally, the current layer’s
+    128 neurons are fed back resulting in 128² learnable parameters. A GRU uses three
+    sets of operations (hidden state, reset gate, and update gate) requiring weight
+    matrices, so we multiply the learnable parameters by 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third layer is a GRU. We get 99,072 learnable parameters because *n* and
+    *m* are exactly the same as the second layer. So the calculations are the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The final layer is dense. So calculate the number of learnable parameters by
+    multiplying output dimension of 1 by input dimension of 128 and adding 1 to account
+    for the number of neurons at this layer for a total of 129.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compile the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Compile :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We found that two epochs provide pretty good accuracy without tuning. However,
+    your results may differ. So you can experiment to your heart’s content. But keep
+    in mind that training text models requires a lot of training time!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generalize on Test Data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Although model fit information provides validation loss and accuracy values
+    during training, it is always a good idea to explicitly evaluate a model on test
+    data because accuracy and loss values may differ:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualize Training Performance
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Visualize as shown in Listing [9-5](#PC26).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Make Predictions from Fabricated Reviews
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s make predictions from reviews that we fabricate. Begin by creating a function
+    that returns the predictions. Since we create our own reviews, the function must
+    convert the text review for TensorFlow consumption.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Create the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function accepts a text review. It begins by encoding the review. It then
+    converts the encoded review to float32\. The function ends by making the prediction
+    and returning it to the calling environment. We add the *1* dimension to the encoded
+    text so it can be consumed by the TensorFlow model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Test the function with a fabricated review:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have a prediction. Predictions greater than 0.5 mean that the review is positive.
+    Otherwise, the review is negative.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s make the prediction more palatable by creating another function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function converts the prediction to a numpy scalar.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Invoke the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function removes the *1* dimension from the prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s go a step further by creating a function that returns the review in plain
+    English:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Invoke the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: As expected, the review is positive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s try another one:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: As expected, the review is negative.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Make Predictions on a Test Data Batch
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We can also predict from the test set. Let’s make predictions on the *first*
+    test batch with the *predict* method. Since test data is already in tensor form,
+    we don’t need to encode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Predict from the test set batch and display the first review as shown in Listing
+    [9-6](#PC34).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: We take the first batch from *test_ds*. We make predictions with the *predict*
+    method and place them in y_pred_64\. Variable *y_pred_64* holds 64 predictions
+    because batch size is 64\. We then display the first review and its associated
+    label from this batch. Remember that label *1* means the review is positive and
+    label *0* means it is negative. We end by displaying the size of the sample and
+    target to verify that we have 64 examples in our first batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get the first prediction:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Make it palatable:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Compare the prediction to the actual label:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: If the prediction matches the actual label, it was correct.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [9-7](#PC38) displays prediction efficacy for the first five predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: Prediction Accuracy for the First Batch
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Create a function to convert an impression back to a label of either 1 or 0:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return prediction accuracy for the entire first batch as shown in Listing [9-8](#PC40).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: We begin by traversing the first batch and comparing labels to predictions.
+    If a prediction is correct, we add this information to a list. We continue by
+    counting the number of correct predictions. We end by dividing correct predictions
+    by the batch size to get overall prediction accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Leverage Pretrained Embeddings
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Amazingly, we can reuse modules from pretrained models on the IMDb dataset.
+    The *TensorFlow Hub project* is a library with hundreds of reusable machine learning
+    modules. A **module** is a self-contained piece of a TensorFlow graph, along with
+    its weights and assets, that can be reused across different tasks in a process
+    known as transfer learning. **Transfer learning** is a machine learning method
+    where a model developed for a task is reused as the starting point for a model
+    on a different task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can browse the library by perusing the following URL:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`http://tfhub.dev`](http://tfhub.dev)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once you locate a module, copy the URL into your model. The module is automatically
+    downloaded along with its pretrained weights. A huge advantage of using pretrained
+    models is that we don’t have to create and train our own models from scratch!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Load the IMDb Dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Since we are using a pretrained model, we can load the IMDb dataset with the
+    full vocabulary:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: We use the full vocabulary because we don’t have to worry about training with
+    it!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display metadata:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build the Input Pipeline
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Create train and test sets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Batch and prefetch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Inspect tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create the Pretrained Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Import the TF Hub library and create a skeleton model to house the pretrained
+    module as shown in Listing [9-9](#PC46).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: The *hub.KerasLayer* downloads the sentence encoder module. Each string input
+    into this layer is automatically encoded as a 50D vector. So each vector represents
+    50 words. Each word is embedded based on an embedding matrix pretrained on the
+    7 billion–word Google News corpus. The next two dense layers are added to provide
+    a basic model for sentiment analysis. Using TF Hub is convenient and efficient
+    because we can use what was already learned from the pretrained model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compile the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Compile the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Train the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training time is substantially reduced!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Make Predictions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Make predictions based on the first *test_set* batch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since batch size is 32, we have 32 predictions for each batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Display misclassifications in test_set by index as shown in Listing [9-10](#PC50).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calculate Prediction Accuracy for the First Batch
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Listing [9-11](#PC51) shows the code to calculate prediction accuracy for the
+    first batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: Instead of finding misclassifications, the code finds correct predictions. The
+    code begins by comparing an actual label to a predicted one. If the actual label
+    is predicted correctly, a Boolean *True* is appended to a list. Once the first
+    batch is traversed, the number of elements in the list is counted. This count
+    is divided by batch size of 32 to determine accuracy, which is displayed as a
+    percentage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Explore IMDb with Keras
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Since Keras is very popular in industry, we demonstrate how to train IMDb with
+    keras.datasets. We use the *keras.datasets.imdb.load_data* function to load the
+    dataset in a format-ready fashion for use in neural network and deep learning
+    models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Loading the Keras IMDb has some advantages. First, words have already been encoded
+    with integers. Second, encoded words are arranged by their absolute popularity
+    in the dataset. So sentences in each review are comprised of a sequence of integers.
+    Third, calling *imdb.load_data* the first time downloads IMDb to your computer
+    and stores it in your home directory under *~/.keras/datasets/imdb.pkl* as a 32-megabyte
+    file. The imdb.load_data function also provides additional arguments including
+    number of top words to load (where words with a lower integer are marked as zero
+    in the returned data), number of top words to skip (to avoid words like *the*),
+    and the maximum length of reviews to support.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Load the Keras IMDb:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function loads data into train and test tuples. So *train[0]* contains training
+    reviews and *train[1]* contains training labels. And *test[0]* contains test reviews
+    and *test[1]* contains test labels. Each review is represented as a numpy array
+    of integers with each integer representing a word. The labels contain lists of
+    integer labels (0 is a negative review and 1 is positive).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For readability, create variables to represent reviews and labels:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the shape of train and test review samples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: As expected, we have 25,000 train and 25,000 test reviews.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display the shape of train and test labels:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: As expected, we have 25,000 train and 25,000 test labels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Explore the Train Sample
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Display label categories and number of unique words:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: The dataset is labeled by two categories that represent sentiment of each review.
+    And the train sample contains 88,585 unique words.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s see how many words are in the longest training review:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: We create a list containing the number of words in each review and then find
+    the length of the review with the maximum number of words.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get the index of the longest review:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: We use the *np.where* function to find the index. We used double indexing because
+    the function returns a tuple containing a list that holds the index we desire.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a Decoding Function
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Create a function that decodes a review into English readable form as shown
+    in Listing [9-12](#PC59).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function uses the *tf.keras.datasets.imdb.get_word_index* utility to obtain
+    a dictionary of words and their uniquely assigned integers. The function then
+    creates another dictionary containing key-value groupings as value and key groupings
+    from the first dictionary. Finally, it returns the words based on their IDs (or
+    keys). The indices are offset by 3 because 0, 1, and 2 are reserved indices for
+    *padding*, *start of sequence*, and *unknown*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Invoke the Decoding Function
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s see what the longest review looks like as shown in Listing [9-13](#PC60).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we already know the index of the longest review, we can easily retrieve
+    it from *train_reviews*. Display a slice of it since the review is pretty long.
+    We can also easily retrieve the label from *train_labels*. Make the label readable
+    and display it. Finally, display the length of the longest review.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s see what the shortest review looks like. But we can’t do this directly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We must first find the minimum number of words:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we don’t know which review is the shortest, we use the *amin* method to
+    return the minimum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can now get the index of the shortest review in the train sample:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: We use the *where* method to return the index we seek. Since the method returns
+    all reviews that meet the criterion, we grab the first one and display its index.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [9-14](#PC63) displays the review, its label in readable form, and its
+    length.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: Continue Exploring the Training Sample
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Return the average review length:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: Display the first label and its review encoded as integers as shown in Listing
+    [9-15](#PC65).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the first review in readable form:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train Keras IMDb Data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Limit vocabulary size to improve performance:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Cut text size to 80 words to improve performance:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load Data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Load data with the limited vocabulary:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display information about train and test data:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: Pad Samples
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Convert train and test sets to numpy:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Import the appropriate library:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Pad samples to ensure that all sequences are of the same length:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build the Input Pipeline
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Initialize pipeline variables:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Prepare train data for TensorFlow consumption:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Prepare test data for TensorFlow consumption:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Clear any previous models:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Create the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compile the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Compile:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Suppress error messages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Train:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: Predict
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Get predictions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the first prediction:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display a slice of the review:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the impression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE

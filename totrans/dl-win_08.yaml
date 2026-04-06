@@ -1,0 +1,665 @@
+- en: 8. Starting, Stopping, and Resuming Learning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 'As you have probably learned by now, training deep learning models can take
+    long times: hours and maybe days, based on how complex the model and how large
+    your dataset.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sometimes it may not be practical to perform the training in one session.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Power failures, machine becoming unresponsive, OS errors, unplanned reboots,
+    or Windows updates may lead you to lose hours if not days of effort.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How can we mitigate that risk?
+  prefs: []
+  type: TYPE_NORMAL
+- en: One way is to increase the speed of the model training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using Multithreading to Increase the Training Speed
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: When we used the data generators with the `model.fit()` function for training,
+    by default we were working on a single-threaded mode for the preparation of the
+    data batches. Basically, in this mode, only a single CPU thread is preparing and
+    queuing the batches of data to be sent to the model for training. By default the
+    queue size is set to 10, which may result in the GPU having to wait for more batches
+    to be queued.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While this single-threaded batch preparation mode provides more predictable
+    behavior and is easier to debug, most of the time it slows down the training process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is why the `model.fit()` functions support a multithreaded mode. We can
+    enable it by using the `workers` parameter to specify the number of worker threads
+    to use, as well as increasing the `max_queue_size` parameters to increase the
+    number of batches that are queued.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us see how much of a speed increase we can achieve by tweaking these parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We’ll begin with our bird classification system using the InceptionV3 model
+    from the last chapter, and add few code lines to measure the time taken for training.
+    We will import the time package for this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will mark the start time at the beginning of the script just after we defined
+    the utility functions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'At the very end of the script we will mark the end time, and calculate the
+    time it took for the training:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let us see how much time it takes to run the training (both with bottleneck
+    features and fine-tuning) on our InceptionV3 model in the single-threaded batch
+    mode (Figure [8-1](#Fig1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig1_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Time taken for training in single-threaded batch mode
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is taking around 1,101 seconds (or 18 minutes 21 seconds) for the full training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let us see whether we can improve it using multithreading.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For both of our `model.fit()` functions , we will add two more parameters:
+    `workers` and `max_queue_size`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `workers` parameter defines how many CPU threads are working in parallel
+    to generate the data batches. The default is 1, so here we have increased it to
+    8.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `max_queue_size` parameters defines how many batches are kept ready in the
+    queue until consumed by the training. The default is 10, and here we have increased
+    it to 15.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us see how these parameter values affect our training time (Figure [8-2](#Fig2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig2_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Time taken for training in multithreaded batch mode
+  prefs: []
+  type: TYPE_NORMAL
+- en: The training time is now decreased to 364 seconds, or just over 6 minutes and
+    3 seconds. That is about a 300% improvement in the training time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, there are few things that you should keep in mind when using this method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, the actual increase in speed you will get will depend on the model structure,
+    as well as the dataset you are using.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Secondly, when allocating the number of workers, you should think about the
+    number of threads your CPU supports in parallel. Setting the number of workers
+    to a value too high might lock up or freeze your machine. A good rule of thumb
+    to follow on Windows is to set the number of workers few numbers below the maximum
+    thread count of the CPU. For example, if your CPU supports 12 threads, keep the
+    number of workers at 8\. This would allow the OS, background tasks, and the other
+    tasks of the training to run without locking up.
+  prefs: []
+  type: TYPE_NORMAL
+- en: And lastly, in rare situations, you may experience nonstandard behaviors in
+    training. This can be either due to bugs in the version you are using, or in the
+    Windows build of that version. If you are experiencing problems, try disabling
+    the multithreading first before changing anything else in the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In some Windows builds of TensorFlow 2.x you may experience an error message
+    such as “tensorflow/core/kernels/data/generator_dataset_op.cc:103] Error occurred
+    when finalizing GeneratorDataset iterator: Cancelled: Operation was cancelled”
+    when running training with multithreading (Figure [8-3](#Fig3)). This can be safely
+    ignored and will hopefully be fixed in future builds.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig3_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Error message with multithreading
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using Model Checkpoints
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Looking back at our original problem—mitigating potential interruptions to the
+    training—we can see that speeding up the training process solves only part of
+    the problem. Even with the speed-up provided by multithreading, interruptions
+    can still happen and you may lose your progress.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is where the concept of model checkpoints comes in: saving the state of
+    your model at certain points in the training process so that you can resume or
+    recover the model as at that point later.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We talked about how to save the entire model, including its weights, compilation,
+    and optimizer status, to a file using the `model.save()` function .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model checkpoints works with the same principle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: But rather than having to save the model manually, you can ask the TensorFlow/Keras
+    framework to save them for you.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In TensorFlow/Keras, the training process supports callback functions. Callbacks
+    allow you to execute functions at certain stages in the training. There are several
+    built-in callbacks in TensorFlow/Keras, while also allowing you to define custom
+    callbacks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of these built-in callbacks is ModelCheckpoint.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The ModelCheckpoint callback class allows you to automatically save your model
+    being trained at a given frequency or after a given condition. For example, you
+    can tell ModelCheckpoint to save the model after each training epoch, or after
+    every 5 epochs, or save only if the validation accuracy increases, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The parameters of ModelCheckpoint are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**checkpoint_filepath:** the file path to save the checkpoint. This can take
+    some parameters from the training epoch as formatting options, so that you can
+    inject those values into the filename. We will discuss these options later.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**monitor:** what training parameter to monitor if save_best_only is set to
+    true.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**verbose:** the verbosity level, 0 or 1.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**save_best_only:** whether to only save the checkpoint if the parameter being
+    monitored (specified by the monitor parameter) improves.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**save_weights_only:** whether to just save the weights (similar to `model.save_weights()`),
+    or the entire model (similar to `model.save()`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**mode:** how to monitor the improvement in the parameter being monitored.
+    For example, if monitor is val_acc the mode should be max; if it is val_loss,
+    the mode should be min. If the mode is set to auto, it will try to derive the
+    mode using the name of the parameter being monitored.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**save_freq:** at what point the checkpoint should be saved. If set to epoch,
+    the checkpoint would be saved after each epoch. If set to a number, the checkpoint
+    would be saved every time that many epochs pass.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: On TensorFlow v2.1 or before, use the period parameter instead of save_freq.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us add model checkpoints to our bird classification model. We will add a
+    new directory, checkpoints/training, to save the checkpoints. (And potentially
+    a checkpoints/finetune directory, to save the checkpoints in fine-tuning).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will get a copy of our InceptionV3 fine-tuning code like before, and name
+    it `bird_classify_inceptionV3_checkpoint.py`. We will add the import to the ModelCheckpoint
+    callback in it. We will also make a change to the `model.compile()` call, from
+    `metrics=[''accuracy'']` to `metrics=[''acc'']`. This is important to align with
+    some naming conventions that we will be using with ModelCheckpoints:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When specifying `metrics=[''accuracy'']`, the accuracy metrices will be reported
+    as accuracy and val_accuracy. When specifying them as `metrics=[''acc'']` they
+    will be reported as acc and val_acc, which is the naming convention expected by
+    many of the callback functions. Make sure you also update the `graph_training_history()`
+    function to update all references of accuracy to acc, and val_accuracy to val_acc.
+    If not updated, you may receive errors such as “KeyError: ''acc.”'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, we have specified the checkpoint to be saved at each epoch. We are not
+    monitoring any parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since we have specified the file name pattern as model-{epoch:02d}-{val_acc:.2f}-{val_loss:.2f}.h5,
+    the epoch number, validation accuracy values, and validation loss values will
+    be injected into the file name being saved (Figure [8-4](#Fig4)). For example,
+    the filename model-01-0.80-12.06.h5 would indicate that the epoch was 01, validation
+    accuracy was 0.80, and validation loss was 12.06\. These values allow you to easily
+    select the best checkpoints just by checking the file name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig4_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model checkpoints being saved at each epoch
+  prefs: []
+  type: TYPE_NORMAL
+- en: While there may be situations where you would need to save every training epoch
+    (such as when training generative adversarial networks, where we cannot rely on
+    the accuracy metrics directly to identify model improvements), in most cases,
+    it is best to only save the checkpoint if the training improves.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let us now update our code to only save the checkpoints when the validation
+    loss improves (when validation loss minimizes):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here, we are setting the save_best_only parameter to True, and setting the monitor
+    to val_loss and the mode to min to only save the checkpoint if validation loss
+    gets lower than the previous epoch (Figure [8-5](#Fig5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig5_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saving only the best checkpoints
+  prefs: []
+  type: TYPE_NORMAL
+- en: This will reduce the number of checkpoint files being saved, making it easier
+    to pick out the best states of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Based on the requirement of your model, you can do the same for any of the
+    other matrices of the model: acc, loss, val_acc, val_loss.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let us imagine that your model training was interrupted, but you have some
+    model checkpoints saved. How can you restart your training from one of those checkpoints?
+  prefs: []
+  type: TYPE_NORMAL
+- en: As an example, let us say that we have the following checkpoints saved (Figure
+    [8-6](#Fig6)) and our training was interrupted sometime after epoch 33.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig6_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saved checkpoints
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us start a new code file that will allow us to continue the training from
+    a checkpoint. We will name it `bird_classify_continue_from_checkpoint.py`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will start by importing the packages. These will be the same imports as
+    we did before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will then define our usual utility functions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will then add a new function that will return the epoch number of a given
+    checkpoint:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Our training parameters will be as same as before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then we define the checkpoint to load and get the epoch number of it using
+    the function we defined earlier:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Our data generators and parameters will be defined exactly as same as the initial
+    training script:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then we use the `load_model()` function to load the checkpoint. Once loaded
+    it will be our model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The checkpoint definitions will be same as before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In the `model.fit()` function we add an additional parameter `initial_epoch`
+    with the value we derived earlier to specify from which epoch to start the training
+    from:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The remaining steps of the training will remain same:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Running this code, we will see that the training now starts at epoch 34 (Figure
+    [8-7](#Fig7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig7_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training continuing from a checkpoint
+  prefs: []
+  type: TYPE_NORMAL
+- en: With model checkpoints, we can be sure that hours or days of our effort in training
+    a model will not be lost in an event of a failure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Knowing When to Stop Training
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In all the previous models we trained, we specified the number of epochs to
+    train as a fixed number. We used a number that have worked well in similar models
+    in the past.
+  prefs: []
+  type: TYPE_NORMAL
+- en: But how do we determine the best number of epochs to train a model?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training too much may lead to overfitting. But training too little would not
+    give you the best results. We need to find the best point at which to stop the
+    training for optimal results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One way we can determine that is to train for different number of epochs and
+    comparing the results. But with deep learning models, each training session can
+    take hours, if not days. Therefore, it may not be practical always to run several
+    training sessions to determine the best.
+  prefs: []
+  type: TYPE_NORMAL
+- en: But what if there is a way to automatically stop the training when it reaches
+    an optimal point?
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is where model early stopping comes in. EarlyStopping is another one of
+    the built-in callbacks in TensorFlow/Keras which can be used with `model.fit()`
+    functions .
+  prefs: []
+  type: TYPE_NORMAL
+- en: The way EarlyStopping works, similar to the way the metric monitoring in model
+    checkpointing worked, is to keep monitoring a given metric and stop the training
+    if it does not improve for a given number of epochs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When implementing early stopping it is also best to implement model checkpointing.
+    When early stopping stops the training at a point, you can use the saved checkpoints
+    to get the model at its best point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The parameters for EarlyStopping is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**monitor:** what metric to monitor, like in model checkpointing.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**min_delta:** the minimum change in the monitored metric that will be considered
+    as an improvement.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**patience:** how many epochs to wait for an improvement before stopping the
+    training.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**verbose:** the verbosity level'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**mode:** min, max, or auto, as with model checkpoints.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**baseline:** what the baseline is for the training. The training will stop
+    if it does not improve over this baseline.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**restore_best_weights:** whether to restore the model back to its bast point
+    based on the parameter being monitored. If you set this to False, then the model
+    will use the weights from the last step that was completed before stopping, which
+    may or may not be the best.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let us add early stopping to our model. We will take a copy of our code from
+    `bird_classify_inceptionV3_checkpoint.py` and name it `bird_classify_inceptionV3_early_stopping.py`.
+    We will then make the following modifications to it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here, we are specifying EarlyStopping to monitor the validation accuracy, and
+    stop the training if it does not improve for three consecutive epochs. We also
+    specify that once stopped it should restore the model to the last best state (which
+    would be three epochs before in this case).
+  prefs: []
+  type: TYPE_NORMAL
+- en: When running the model with these configurations, you will see that the training
+    will automatically stop when the training is not improving the model (Figure [8-8](#Fig8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig8_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Early stopping the model training
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building a Robust Training Script
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: With model checkpoints, we were able to recover our model training state in
+    case of an interruption. With early stopping we were able to automatically stop
+    the training of a model at the right point in training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let us see how we can combine those to build a robust training script—one
+    that you can stop and start any time without losing your progress.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When building a robust training script, we will need to consider the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Training of our module consists of two steps: training the initial model, and
+    fine-tuning the model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For each of those steps, we will need to determine whether that step has been
+    completed already, and run the remaining step.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For each step that needs to run, we will need to determine where the last training
+    stopped, and continue from that epoch.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: When training we need to save checkpoints, so that training of that step can
+    be resumed later from those points.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: With these in mind, let us build our robust training script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will name our new code file `bird_classify_robust_training.py`, and start
+    by importing the packages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then we will add our utility function definitions. What is new here is that
+    our `graph_training_history()` function now take two extra parameters to save
+    the figure to a file rather than displaying it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We then check for the existence of the saved model files to determine which
+    step of the training (initial training or fine-tuning) needs to run:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For each of the steps that need running, we then determine which checkpoint
+    to start from:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then, our data generators and training parameters are defined as usual:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Based on the conditions we checked earlier, we either start training from beginning,
+    start from a checkpoint if checkpoints are already there, or skip the training
+    step if the trained model file is already there:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will then do the same for our fine-tuning step:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: This script now allows you to resume from any step in the training process (Figures
+    [8-9](#Fig9) and [8-10](#Fig10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig10_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Skipping the already completed training step, and continuing from a fine-tuning
+    checkpoint
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig9_HTML.jpg](../images/502073_1_En_8_Chapter/502073_1_En_8_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Resuming the training step from a checkpoint
+  prefs: []
+  type: TYPE_NORMAL
+- en: With a training script such as this, you can start, stop, and resume training
+    at any time without fear of losing your progress due to an interruption.
+  prefs: []
+  type: TYPE_NORMAL

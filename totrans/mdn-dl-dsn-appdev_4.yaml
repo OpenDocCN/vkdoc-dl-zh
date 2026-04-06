@@ -1,0 +1,1883 @@
+- en: 4. Model Compression for Practical Deployment
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*It is my ambition to say in 10 sentences what everyone else says in a book.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Friedrich Nietzsche, Philosopher and Writer^([1](#Fn1))
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Over the course of deep learning’s flurried development in these recent decades,
+    model compression has relatively recently become of prominent importance. Make
+    no mistake – model compression methods have existed and have been documented for
+    decades, but the focus for much of deep learning’s recent evolution was on expanding
+    and increasing the size of deep learning models to increase their predictive power.
+    Many modern convolutional networks today contain hundreds of millions of parameters,
+    and Natural Language Processing models have reached hundreds of *billions* of
+    parameters (and counting).
+  prefs: []
+  type: TYPE_NORMAL
+- en: While these massive architectures push forward the boundaries of what deep learning
+    can do, often their availability and feasibility are restricted to the realm of
+    research laboratories and other high-powered departments within organizations
+    that have the hardware and computational power to support such large operations.
+    *Model compression* is concerned with pushing forward the “cost” of the model
+    while retaining its performance as much as possible. Because model compression
+    aims primarily at maximizing efficiency rather than performance, it is key to
+    transferring deep learning advances from the research laboratory to practical
+    applications like satellites and mobile phones.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model compression is often a missing chapter in many deep learning guides, but
+    it’s important to remember that deep learning models are increasingly being used
+    in practical applications that impose limits on how wildly one can design the
+    deep learning model. By studying model compression, you can ground the art of
+    deep learning design in a practical framework for deployment and beyond.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction to Model Compression
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'When we perform model compression, we attempt to decrease the “cost” a model
+    incurs while maintaining its performance as much as possible. The term “cost”
+    used here is deliberately vague because it encompasses many attributes. The most
+    immediate cost of storing and manipulating a neural network is the number of parameters
+    it holds. If a neural network contains hundreds of billions of parameters, it
+    will take more storage than a network that contains tens of thousands of parameters.
+    It will be unlikely that applications with lower storage capability, like mobile
+    phones, can even feasibly store and run models on the larger end of modern deep
+    learning designs. However, there are many other factors – all related to one another
+    – that factor into the cost of running a deep learning model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Since model compression is largely a concern of deployment, we’ll use the corresponding
+    language: “server side” and “client side.” Roughly speaking, for the purposes
+    of this book, “server side” refers to the computations performed on the servers
+    servicing the client, whereas “client side” refers to the computations performed
+    on the client’s local resources.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig1_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Privacy requires a small model. While it may not be completely quantifiable,
+    it’s an important aspect of a model’s cost
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Latency*: The latency of a deep learning model is the time taken to process
+    one unit of data. Latency usually concerns the time it takes for a deployed deep
+    learning model to make a prediction. For instance, if you’re using a deep learning
+    algorithm to recommend search results or other items, a high latency means slow
+    results. Slow results turn away users. Latency is usually correlated with the
+    size of the model, since a larger model requires more time. However, the latency
+    of a model can also be complicated by other factors, like the complexity of a
+    computation (say a certain layer does not have many parameters but performs a
+    complex, intensive computation or a heavily nonlinear topology).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Server-side computation and power cost* : Computation is money! In many cases,
+    the deep learning model is stored on the server end, which is continually calculating
+    predictions and sending those predictions to the client. If your model is computationally
+    expensive, it will incur heavy literal costs on the server side.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Privacy* : This is an abstract but increasingly important factor in today’s
+    technological landscape. Services that follow the preceding model of sending all
+    user information to a centralized server for predictions (for instance, your video
+    browsing history sent to a central server to recommend new videos, which are sent
+    back to and displayed on your device) are increasingly subject to privacy concerns,
+    since all user information is being stored at one point in a centralized location.
+    New, distributed systems are increasingly being used (e.g., federated learning),
+    in which a version of the model is sent to each user’s individual device and yields
+    predictions for the user’s data without ever sending the user’s data to a centralized
+    location. Of course, this requires the model to be sufficiently small to operate
+    reasonably on a user’s device. Thus, a large model that cannot be used in distributed
+    deployment can be considered to incur the cost of lack of privacy (Figure [4-1](#Fig1)).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'These are all factors of a model’s cost that must be considered during deployment,
+    alongside the actual performance of the model. A model that incurs a low cost
+    but performs poorly cannot be deployed any more in practical applications than
+    a model that performs well but incurs a high cost. Research into neural networks
+    has demonstrated that neural networks contain a certain amount of redundancy –
+    additional space that is not needed at all for the particular problem. This makes
+    sense: a small set of architectural designs can accommodate the vast majority
+    of deep learning problems, but not all deep learning problems are the same in
+    difficulty, and thus we should not expect each problem to “use” each architecture
+    to the same amount. Removing the redundancy comes at no or negligible cost to
+    the performance. Past this redundancy, though, we face a trade-off between performance
+    and cost. As we decrease the cost a model incurs, we also decrease the performance
+    of the model (Figure [4-2](#Fig2)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig2_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: A hypothetical relationship between model performance and model compression,
+    with a redundancy threshold – the threshold before continual model compression
+    leads to a dramatic decrease in model performance – marked. The actual relationship
+    may vary by context and model compression type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Which combination is optimal depends on your particular task and resource availability.
+    Sometimes, performance is not a high priority compared to cost attributes. For
+    instance, consider a deep learning model on a mobile application tasked with recommending
+    apps or other items to open – here, it is much less important that the model be
+    perfect than it is for the model to not consume much of the mobile phone’s storage
+    and computation. It is likely that a user would be unsatisfied net-wise if such
+    an application consumed much of their phone’s resources, even if such an application
+    performed well. (In fact, deep learning may not even be the right approach in
+    this situation – a simpler machine learning or statistical model may suffice.)
+    On the other hand, consider a deep learning model built into a medical device
+    designed to quickly diagnose and recommend medical action. It is likely more important
+    for the model to be perfectly accurate than it is to be a few seconds faster.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model compression is fascinating because it demonstrates the true breadth of
+    problem-solving required to fully tackle a deep learning problem. Deep learning
+    is not concerned only with improving model performance by the metrics but also
+    about developing practical deep learning that can be used in real-life applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It also is valuable in advancing theoretical understandings of deep learning
+    because it forces us to ask key questions about the nature of neural networks
+    and deep learning: if model compression can so effectively remove much of the
+    information from a network with a marginal decrease in performance, what purpose
+    did the original component of the network that was compressed “away” serve in
+    the first place? Is neural network training fundamentally a process of *improving*
+    solutions by tuning weights or a process of *discovery* – finding a good solution
+    in a sea of bad solutions? How fundamentally robust are networks to small variations?
+    We’ll explore these questions along with a discussion on their benefits to practical
+    deployment.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this chapter, we will discuss three key deep learning model compression
+    algorithms: pruning, quantization, and weight clustering. Other deep learning
+    model compression/downsizing methods exist – notably, Neural Architecture Search
+    (NAS). However, it is not discussed in this chapter because it is more appropriate
+    in the next chapter.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'When you think of the number of parameters in a neural network, you likely
+    associate parameters with the connections between nodes of each layer in a fully
+    connected Dense network or perhaps the filter values in a convolutional neural
+    network. When you call `model.summary()` and see the eight- or nine-figure parameter
+    counts, you may ask: are all of those parameters necessary to the prediction problem?'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As mentioned earlier, you can reasonably expect from simple reasoning that it
+    is very likely you did not build a neural network architecture with the “perfect”
+    number of parameters to succeed at its task, and thus if the network doesn’t underperform,
+    it likely is using more parameters than it truly needs. Pruning is a direct way
+    to address these “superfluous” parameters by explicitly removing them. Its success
+    in all sorts of architectures, moreover, poses important questions in theoretical
+    deep learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning Theory and Intuition
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Imagine that you want to cut down on comforts in your living space – you think
+    that there might be more than you need to work and that keeping all the comforts
+    is increasing your cost of living beyond what it could be. You’ve made changes
+    in your living space with an eye toward minimally reducing the impact on your
+    ability to work – you still keep your computer, good Wi-Fi, steady electricity.
+    However, you’ve cut down on comforts that may aid your work but that are fundamentally
+    auxiliary by removing or donating items like a television subscription, a nice
+    couch, or tickets to the local symphony.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This change in living space shouldn’t theoretically impact your work, provided
+    you are reasonably resilient – your mental facilities have not been explicitly
+    damaged in a way that would impair your ability to perform the functions of work
+    (perhaps it affects your comfort, but that’s not a factor in this discussion).
+    Meanwhile, you’ve managed to cut down on general costs of living.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, you’re a bit disoriented: you reach instinctively for a lamp in the
+    corner that has been removed. You find yourself disappointed that you can’t watch
+    unlimited television anymore. Making these changes to this space requires *reorienting*
+    yourself to it. It takes a few hours (or even days) of exploration and orientation
+    to acclimate toward these new changes. Once you have completed acclimating, you
+    should be ready to work in this newly modified space just as well as you did in
+    your prior living space.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It should be noted, though, that if the disparity in your prior living space
+    and your current living space is too large, you may never be able to recover –
+    for instance, removing your exercise equipment, all sources of entertainment,
+    and other items very close to but still not directly impacting your work. If you
+    cut further into your living costs by cutting down on running water and electricity,
+    your work ability would be directly impaired.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s rewind: you step back and take a look around your living space and decide
+    that it has too many unnecessary comforts, and you want to cut these comforts
+    down. You could take away all the comforts at once, but you decide instead that
+    the immediate, absolute difference might be too stark for you to handle. Instead,
+    you decide to embark on an *iterative* journey, in which you remove one or two
+    things of the least significance every week, and stop whenever you feel that removing
+    any more items would result in damage to your core working facilities. This way,
+    you have time to acclimate to a series of small differences.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The logic of cutting down comforts in living spaces applies in parallel to the
+    logic of pruning – it provides a useful intuitive model when feeling out how to
+    perform pruning campaigns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning was initially conceived in Yann LeCun’s 1990 work in “Optimal Brain
+    Damage” – not all parameters contribute significantly to the output, so those
+    parameters can be pruned away in the most optimal form of “brain” (neural network)
+    damage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning is generally performed after the network has been substantially trained,
+    such that evaluation of parameter importance is meaningful and not based only
+    on random initialization or values in the early stages of training. In order to
+    determine which neural network entities (nodes, connections, layers, etc.) contribute
+    the most or least significantly to the output, each entity must be evaluated according
+    to some importance criterion. The least important entities are removed (Figure
+    [4-3](#Fig3)). In practice, removal simply means setting a parameter to zero,
+    which is much cheaper to store.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig3_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of unstructured pruning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This action of pruning away entire connections, nodes, and other neural network
+    entities can be thought of as a form of architecture modification. For optimal
+    performance, the model needs to be reoriented toward its new architecture via
+    fine-tuning. This fine-tuning can be performed simply by training the new architecture
+    on more data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thus, pruning follows the following general iterative process (Figure [4-4](#Fig4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig4_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning process
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this sense, you can think of pruning as a “directed” dropout, in which connections
+    are not randomly dropped but instead pruned by the importance criterion. Because
+    pruning is directed rather than random, a more extreme percentage of weights can
+    be pruned with reasonable performance compared to the reasonable percentage of
+    weights dropped in dropout.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When implementing pruning, you can specify the initial percent of parameters
+    to be pruned and the end percent of parameters to be pruned; TensorFlow will figure
+    out how much to remove at each step for you.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There have been many proposed methods of evaluating the importance of a parameter:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Magnitude pruning* : This is the simplest form of pruning: a weight is considered
+    more important if it has a higher weight. Smaller weights are less significant
+    and can be pruned with little effect on the model performance, given enough fine-tuning.
+    Although many more complex methods have been proposed, they have usually failed
+    to achieve performance of a significant margin higher than that of magnitude pruning.
+    We will be using magnitude-based pruning methods in this book.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Filter pruning* : Pruning convolutional neural networks requires additional
+    considerations, since pruning a filter requires removing all the following input
+    channels that don’t exist anymore. Using a magnitude-based pruning approach (average
+    weight value in a filter) works well in convolutional networks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Least effect on performance*: A more sophisticated compression method is to
+    choose weights or other network entities that reduce the neural network cost change
+    the most.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The operation of pruning only connections is known as unstructured pruning.
+    Unstructured pruning can lead to sparse matrices, which can in many cases lead
+    to computational difficulty and inefficiency. By pruning other larger neural network
+    entities, you may be able to achieve even better compression at the cost of decreased
+    precision (and potentially lower performance).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Pruning* *neurons* : Take the average of a neuron’s incoming and outgoing
+    weights and use a magnitude-based method to entirely remove redundant neurons.
+    Other more sophisticated criteria can be used to prune entire neurons. These allow
+    for groups of weights to be more quickly removed, which can be helpful in large
+    architectures.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Pruning* *blocks* : Block-sparse formats store blocks contiguously in memory
+    to reduce irregular memory access. Pruning entire memory blocks is similar to
+    pruning neurons as clumps of network parts but is more mindful of performance
+    and energy efficiency in hardware.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Pruning* *layers* : Layers can be pruned via a rule-based method – for instance,
+    every third layer is pruned during training such that the model is slowly shrunk
+    during training but adapts and compresses the information. The importance of a
+    layer can also be determined by other analyses determining its impact on the model’s
+    output.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Each neural network and each task require a differently ambitious pruning campaign;
+    some neural networks are built relatively lightweight already, and further pruning
+    could severely damage the network’s key processing facilities. On the other hand,
+    a large network trained on a simple task may not need the vast majority of its
+    parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using pruning, 90% to 95% of the network’s parameters can reliably be pruned
+    away with little damage to performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To implement pruning (as well as other model compression methods), we’re going
+    to require the help of other libraries. The TensorFlow Model Optimization library
+    works with Keras/TensorFlow models but is installed separately (`pip install tensorflow-model-optimization`).
+    It should be noted that the TensorFlow Model Optimization library is relatively
+    recent and therefore less developed than larger libraries; you may encounter a
+    comparatively smaller forum community to address warnings and errors. However,
+    the TensorFlow Model Optimization documentation is well written and contains additional
+    examples, which can be consulted if necessary. We will also need the `os`, `zipfile`,
+    and `tempfile` libraries (should be included in Python by default), which allow
+    us to understand the cost of running a deep learning model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although TensorFlow Model Optimization significantly aids in the code required
+    to implement pruning, it involves several steps and needs to be approached methodically.
+    Moreover, note that because intensive work in pruning and model compression broadly
+    has been relatively recent, at the time of this book’s writing, TensorFlow Model
+    Optimization does not support a wide array of pruning criterion and scheduling.
+    However, its current offerings should satisfy the pruning needs of most compression
+    needs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setting Up Data and Benchmark Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: For the purposes of this section, we’ll train (and prune) a feed-forward model
+    on a tabular version of MNIST data for the sake of simplicity. The logic applies
+    to other more complex architectures, though, like convolutional or recurrent neural
+    networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can directly load the MNIST data from `keras.datasets` and make necessary
+    adjustments with numpy and `keras.utils` (Listing [4-1](#PC1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The MNIST dataset is notably a relatively simpler dataset, but for our benchmark
+    model, we’ll build a deliberately redundant model with many more neurons and layers
+    than are needed. This model (Listing [4-2](#PC2)) will contain ten hidden layers,
+    with groups of two layers containing the same successively decreasing power of
+    2 (from 512 to 32), such that the number of neurons in the hidden layer goes 512-512-256-256-128-128-….
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can correspondingly compile and fit the model with appropriate parameters
+    (Listing [4-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Creating Cost Metrics
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: As mentioned in the introduction, model compression is a trade-off. In order
+    to understand the benefits of compression, we will need to create a few cost metrics
+    for comparison to better understand factors like storage space, parameter count,
+    and latency. These metrics can be applied not only to pruned models but compressed
+    models in general; they serve as a North Star in navigating the compression trade-off.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Storage Size
+  prefs:
+  - PREF_H5
+  type: TYPE_NORMAL
+- en: 'To get the size of the file used to store the compressed model, we’ll need
+    to follow the following process:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a temporary file to store the model weights in.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Store the model weights in the created temporary file.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Create a temporary file to store the zipped model weight files in.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Obtain and return the size of the zipped file.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Let’s begin by importing necessary libraries (Listing [4-4](#PC4)) – `zipfile`
+    provides zipping functionality, `tempfile` allows for creating temporary files,
+    and `os` allows for obtaining the size of a particular file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `tempfile.mkstemp('.ending')` function allows us to create a temporary file
+    with a certain file ending. The function returns a tuple, in which the first element
+    is an OS-level handle for the open file and the second is the pathname of the
+    file. Because we are concerned only with the path of the file, we disregard the
+    first element.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After we have obtained the created path, we can save the model’s weights to
+    that path. Keras/TensorFlow provides many other methods of saving a model that
+    you may want to use depending on the application, though. Using `model.save_weights()`
+    only saves the model’s weights, but not other attributes like a reloadable architecture.
+    You can save the entire model such that it is entirely reloadable for inference
+    or further training with `keras.models.save_weights(model, path)`. Set `include_optimizer`
+    to `False` if the optimizer is not needed (the model is reloaded only for inference,
+    not for further training).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The function can be defined using these components as follows (Listing [4-5](#PC5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: To obtain the storage required for a model, we simply pass the model object
+    as a parameter into the `get_size` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can compare the megabytes of storage required for the zipped unpruned model
+    to the storage required for the zipped pruned model. Because of fixed storage
+    requirements and variations in how different model architectures and other attributes
+    can be stored, the outcome of pruning on storage requirements can vary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Latency
+  prefs:
+  - PREF_H5
+  type: TYPE_NORMAL
+- en: Although latency can be calculated in many ways with many adaptations for particular
+    applications, in this case the latency of a network simply refers to the average
+    quantity of time the network takes to predict on a previously unseen sample (Listing
+    [4-6](#PC6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Although in some cases it may not matter, it’s good practice to make conscious
+    decisions about the separation of training and deployment. In this case, latency
+    is a metric that aims to understand how quickly the model can inference in a deployed
+    environment, meaning it will inference on data it has not seen before. These decisions
+    allow for mental clarity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameter Metrics
+  prefs:
+  - PREF_H5
+  type: TYPE_NORMAL
+- en: The number of parameters isn’t really an ends-oriented metric, meaning that
+    the number of parameters cannot be used to precisely indicate the practical costs
+    of storing or running a model. However, it’s useful in that it is a direct measurement
+    of pruning’s effects on the number of parameters in a model. Note that while storage
+    and latency are applicable across all compression methods, counting the number
+    of pruned parameters compared to the number of parameters in the original model
+    applies only to pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can obtain a list of a model’s weights with `model.get_weights()`. For Sequential
+    models, indexing the *i*th layer corresponds to the weights in the *i*th layer.
+    Calling `np.count_nonzero()` on a layer’s weights returns the number of nonzero
+    parameters in that layer. It’s important to count the number of nonzero parameters
+    rather than the number of parameters; recall that in practice a pruned weight
+    is simply set to 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can thus find the total number of parameters in a model using list comprehension:
+    `sum([np.count_nonzero(l) for l in orig_model.get_weights()])`. Using the parameter
+    counts for the original and the pruned model, we can obtain a pruned-to-original
+    weights ratio, indicating what fraction of original weights were retained in pruning,
+    as well as the compression ratio, indicating what fraction of the original weights
+    were pruned away (Listing [4-7](#PC7)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: This function offers a simple and quick way to compare the number of parameters
+    before and after pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning an Entire Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Let’s begin by importing the TensorFlow Model Optimization library as its commonly
+    used abbreviation, `tfmot` (Listing [4-8](#PC8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To begin, we need to provide several parameters for pruning:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Initial sparsity* : The initial sparsity to begin with. For instance, an initial
+    sparsity `0.50` indicates that the network begins with 50% of its parameters pruned.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Final sparsity*: The final sparsity to be reached after pruning is completed.
+    For instance, a final sparsity of `0.95` indicates that when pruning is completed,
+    95% of the network is pruned.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Begin step*: The step to begin with. This is usually 0 to prune with the entire
+    data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*End step*: The number of steps to train the data on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Frequency*: The frequency with which to perform pruning (i.e., the network
+    is pruned every `[frequency]` steps).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Here, a step indicates a batch, since the network generally performs an update
+    after every batch. Given that the beginning step is 0, the end step indicates
+    the total number of batches the network should run through during training. We
+    can calculate it as ![$$ end\ step= ceil\left(\frac{training\ data\ length}{batch\
+    size}\right)\cdotp epochs $$](../images/516104_1_En_4_Chapter/516104_1_En_4_Chapter_TeX_IEq1.png).
+    (Note that the default batch size in Keras is 32.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: These parameters will be passed into a pruning schedule (Listing [4-9](#PC9)).
+    In this case, we use polynomial decay, in which weights are successively pruned
+    in polynomial fashion such that the percent of weights pruned increases from the
+    initial sparsity to the final sparsity. The update frequency should be small enough
+    such that each increase in sparsity during pruning is not too large, but large
+    enough such that the network has time to adapt to the pruning operation. In this
+    case, we begin with 50% sparsity and work toward pruning away 95% of the parameters
+    in the network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: TensorFlow Model Optimization also offers the `ConstantSparsity` schedule (`tfmot.sparsity.keras.ConstantSparsity`),
+    which maintains constant sparsity throughout training. Rather than slowly increasing
+    the percent of pruned parameters, constant sparsity keeps the same sparsity throughout
+    training. This may be more optimal for simpler tasks, although polynomial decay
+    is generally preferred, since it allows the network to adapt to the pruned parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This schedule can be passed into a parameter dictionary (Listing [4-10](#PC10)).
+    This parameter dictionary is unpacked and used, along with the model to be pruned,
+    as a parameter in the `sparsity.prune_low_magnitude function`, which automatically
+    prunes weights of low magnitude.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Recall that, in pruning, the model should be substantially trained on the data
+    before pruning begins. However, we are basing our pruned model on the original
+    unpruned model, which we have already pretrained. The weights are transferred.
+    If you do not perform pretraining, you will likely see worse results from pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This model can be treated like a standard Keras model. Before training, it needs
+    to be compiled, like any Keras model (Listing [4-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: To perform the pruning step, we need to use the `UpdatePruningStep()` callback.
+    This callback can be used in fitting (Listing [4-12](#PC12)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: During the process of pruning, TensorFlow Model Optimization automatically adds
+    parameters to assist in pruning – each parameter is masked. If you count the number
+    of parameters for a model at this stage, you’ll notice it is significantly more
+    than the original number of parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To reap the fruits of pruning, use `tfmot.keras.sparsity.strip_pruning` to
+    remove artifacts of the pruning training process: `pruned_model = tfmot.keras.sparsity.strip_pruning(pruned_model)`.
+    This is necessary, along with a standard compression algorithm, to materialize
+    the compression benefits.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: After pruning is completed, it’s best to fine-tune the model by recompiling
+    and fitting it on the data again (Listing [4-13](#PC13)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: After fine-tuning, you can evaluate the performance of the `pruned_model` to
+    understand the decrease in performance and improvement in compression and cost.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you want to save the model, call `pruned_model.save(filepath)`. When reloading,
+    make sure you reload the model under the `tfmot.sparsity.keras.prune_scope` scope,
+    which allows for deserialization of the saved model (Listing [4-14](#PC14)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you only save weights (`model.save_weights()`), read a model pruned via the
+    model checkpoint callback, or use Saved Model (`tf.saved_model.save(model, filepath)`),
+    deserialization under the pruning scope is not necessary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning Individual Layers
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Recall that when pruning the entire model, we called tfmot.keras.`sparsity.prune_low_magnitude()`
+    on the entire model. One approach to prune individual layers is to call tfmot.keras.`sparsity.prune_low_magnitude()`
+    on individual layers as they are being compiled. This is compatible with layer
+    objects in both the Functional and Sequential API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this example neural network, we prune all layers other than the first and
+    last Dense layers after the Input layer and before the output layer (Listing [4-15](#PC15)).
+    When choosing which layers to prune, avoid ambitiously pruning initial layers
+    responsible for feature extraction and layers critical to the knowledge-building
+    abilities of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: The benefit of pruning layers independently is that you can use different pruning
+    schedules for different layers, for instance, by less ambitiously pruning layers
+    that have less parameters to begin with. The model can then be compiled and fitted
+    with the `UpdatePruningStep()` callback as discussed earlier and fine-tuned afterward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, the disadvantage of this method of selecting layers to prune is that
+    you can’t do any pretraining before pruning, since layers are wrapped in the pruning
+    wrapper from they are defined. This results in a worse outcome than if the model
+    was pretrained on data before pruning. To select specific layers for pruning on
+    a model that has already been trained, we need to *clone* the model using `keras.models.clone_model(model)`
+    with a cloning function. The cloning function maps each layer to another layer;
+    in this case, we can map layers that we want to prune with a pruned version of
+    that layer (Figure [4-5](#Fig5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig5_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cloning function method of selecting layers to prune
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s construct a cloning function that either maps a layer to a pruned version
+    of itself or returns the original layer if we do not desire to perform pruning
+    on it (Listing [4-16](#PC16)). There are many ways you can select which layers
+    to quantize; you can prune certain types of layers, layers by name, their position
+    in the network, and so on. If a layer satisfies a condition for pruning, we return
+    the layer wrapped in a pruning wrapper. Otherwise, we return the layer as is,
+    untouched.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using this function, we can annotate the model by passing it as a cloning function
+    when cloning the original model (Listing [4-17](#PC17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then, compile and fit (with the Update Pruning Step callback) as usual.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Pruning in Theoretical Deep Learning: The Lottery Ticket Hypothesis'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Pruning is an especially important method not only for the purposes of model
+    compression but also in advancing theoretical understandings of deep learning.
+    Jonathan Frankle and Michael Carbin’s 2019 paper “The Lottery Ticket Hypothesis:
+    Finding Sparse, Trainable Neural Networks”^([2](#Fn2)) builds upon the empirical
+    success of pruning to formulate the Lottery Ticket Hypothesis, a theoretical hypothesis
+    that reframes how we look at neural network knowledge representation and learning.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning has demonstrated that the number of parameters in neural networks can
+    be decreased by upward of 90% with little damage to performance metrics. However,
+    a prerequisite of pruning is that pruning must be performed on a large model;
+    a small, trained network the same size as a pruned network still will not perform
+    as well as the pruned network. A key component of pruning, it has been observed,
+    is the element of *reduction*; the knowledge must first be learned by a large
+    model, which is then iteratively reduced into fewer parameters. One cannot begin
+    with an architecture mimicking that of a pruned model and expect to yield results
+    comparable to the pruned model. These findings are the empirical motivation for
+    the Lottery Ticket Hypothesis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Lottery Ticket Hypothesis states that initialized networks contain subnetworks
+    that, when trained in isolation, reach performance comparable to the original
+    network with a similar quantity of training. These winning subnetworks are referred
+    to as “winning tickets.” It is formally presented in Frankle and Carbin’s paper
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*A randomly-initialized, dense neural network contains a subnetwork that is
+    initialized such that—when trained in isolation—it can match the test accuracy
+    of the original network after training for at most the same number of iterations.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'The primary contribution of the Lottery Ticket Hypothesis is in explaining
+    the role of weight initialization in neural network development: weights that
+    begin with convenient initialization values are “picked” up by optimizers and
+    “developed” into playing meaningful roles in the final, trained network. As the
+    optimizer determines how to update certain weights, certain subnetworks within
+    the neural network are delegated to carry most of the information flow simply
+    because their initialized weights were the right values to spark growth. On the
+    other hand, weights that begin with poor initialization values are dimmed down
+    as inconveniences and superfluous weights; these are the “losing tickets” that
+    are pruned away in pruning. Pruning reveals the architecture containing the “winning
+    tickets.” Neural networks are running giant lotteries; the “winners” are amplified
+    and the “losers” are attenuated.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can think of a neural network from this perspective as a massive delivery
+    package with a tiny valuable product inside and lots of stuffing. The vast majority
+    of value is in a small minority of the actual package, but you need the package
+    in the first place to find the product inside. Once you have the product, though,
+    there’s no need for the box anymore. Correspondingly, given that the initialization
+    values are key to a network’s success, you can retrain the pruned model architecture
+    with the same corresponding initialization values and obtain similar performance
+    to that of the original network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This hypothesis reframes how we look at the training process of neural networks.
+    The conventional perspective of machine learning models has always been that models
+    begin with a set of “bad” parameters (the “initial guess”) that are iteratively
+    improved by finding updates that make the largest decrease to the loss function.
+    With the largeness and even possible “overparameterization” of modern neural networks,
+    though, the Lottery Ticket Hypothesis hints at a new logic of understanding training:
+    learning is primarily a process not only of *improving* but also of *searching*.
+    Promising subnetworks are developed via an alternating pattern of searching for
+    promising subnetworks and improving promising subnetworks to become more promising.
+    This new perspective toward understanding parameter updates in the large context
+    of modern deep learning may fuel further innovation in theoretical understandings
+    and in practical developments. For instance, we understand now that the initialization
+    of weights plays a key role in the success of a subnetwork, which may direct further
+    research toward understanding how weight initialization operates with respect
+    to trained subnetwork performance.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Lottery Ticket Hypothesis explains many observed phenomena in deep learning
+    beyond the success and dynamics of pruning:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It has been observed often that increasing the parametrization of neural networks
+    leads to increased performance. The Lottery Ticket Hypothesis tells us that overparameterization
+    is not necessarily inherently tied to greater predictive power, but that networks
+    with larger quantities of parameters are able to run larger lotteries that yield
+    better and more winning tickets. If the Lottery Ticket Hypothesis is true, it
+    may provide a North Star for how to improve the quality of winning tickets rather
+    than brute-force increasing the size of the lottery operation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: It has been observed that initializing all weights to 0 performs much worse
+    than other initialization methods that randomize weights. The Lottery Ticket Hypothesis
+    tells us that networks rely upon a diversity of initial randomized weights in
+    order to select for certain winning tickets. If all the weights are 0, the network
+    cannot differentiate promising subnetworks from the start.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Because pruning strips away “losing tickets,” Frankle and Carbin propose a
+    pruning-based method to identify winning tickets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Randomly initialize a neural network.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Train the neural network until convergence.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Prune away *p*% of the parameters in the trained neural network.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Reset the unpruned parameters to their original initialization values.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The Lottery Ticket Hypothesis and undoubtedly further theoretical advances in
+    our understanding of neural networks guided by empirically observed phenomena
+    in model compression will continue to serve as stepping stones to accelerating
+    the improvement of our model-building methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: While pruning decreases the number of parameters, quantization decreases the
+    precision of each one. Because each parameter that has been quantized is less
+    precise, the model as a whole requires less storage and has decreased latency.
+    The process of implementing quantization with TensorFlow Model Optimization is
+    very similar to that of implementing pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Theory and Intuition
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Traditionally , neural networks use 32 bits to represent parameters; while this
+    is fine for training in modern deep learning environments that have the computing
+    power to use such a precision, it is not feasible in applications that require
+    lower storage and faster predictions. In quantization, parameters are reduced
+    from their 32-bit representations to 8-bit integer representations, leading to
+    a fourfold decrease in memory requirements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In mathematics, quantization is the mapping of a continuous set of values to
+    a smaller set of discrete values (Figure [4-6](#Fig6)). In deep learning, quantization
+    refers to a wide set of methods that can be used to reduce the precision of a
+    parameter via a similar method. Generally, this is performed by separating values
+    into information buckets. In binary quantization, values are quantized into two
+    buckets; in ternary quantization, values are quantized into three buckets. However,
+    binary and ternary quantization may be too extreme, which is why most deployed
+    models employ a multiple-bit-to-multiple-bit quantization approach. How these
+    bins are placed, how large each bin is, and other parameters to perform this mapping
+    are dependent on which quantization strategy is being used.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig6_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Continuous vs. binned, discrete representation
+  prefs: []
+  type: TYPE_NORMAL
+- en: (You could view magnitude-based pruning as a selective form of quantization,
+    in which weights smaller in magnitude than a certain threshold are “quantized
+    to 0” and other weights are binned to themselves.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall the living space analogy for pruning. Instead of outright removing certain
+    items from your living space, imagine reducing the cost to keep each one by a
+    little bit. You decide to downgrade your television subscription to a lower tier,
+    decrease the electricity consumption of your light, order takeout once a week
+    instead of twice or thrice a week, and other amends that “round” the cost of your
+    experience down.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Post-processing quantization is a quantization procedure performed on the model
+    after it is trained. While this method achieves a good compression rate with the
+    advantage of decreased latency, the errors in the small approximations performed
+    in each of the weights via quantization accumulate and lead to a significant decrease
+    in performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like the iterative approach to pruning, quantization is generally not performed
+    on the entire network at once – this is too jarring a change, just as pruning
+    away 95% of a network’s parameters all at once is not conducive to recovery. Rather,
+    after a model is pretrained – ideally, pretraining develops meaningful and robust
+    representations that can be used to help the model recover from the compression
+    – the model undergoes Quantization Aware Training, or QAT (Figure [4-7](#Fig7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Throughout Quantization Aware Training, the model itself remains unquantized,
+    representing all of its parameters with the standard 32 bits. However, a quantization
+    error is introduced for consideration: in the network’s feed-forward stage, the
+    output of the network is the same as if the network had been quantized. That is,
+    before any prediction, the network undergoes “simulated quantization” – for the
+    purposes of prediction, its parameters are quantized. This simulated quantization
+    output is used to update the model parameters, which are still unquantized. Thus,
+    while the model itself remains unquantized throughout Quantization Aware Training,
+    it learns to develop parameters that will succeed *when the model becomes quantized*.
+    The model is left unquantized because it is significantly easier to update model
+    parameters with more precise parameters.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig7_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Aware Training
+  prefs: []
+  type: TYPE_NORMAL
+- en: After Quantization Aware Training, the model is formally quantized – its parameters
+    are binned and it uses the 8-bit integer representation (or some other representation,
+    depending on the implementation). Because of Quantization Aware Training’s preparation,
+    the model should have developed parameters that are robust and successful when
+    quantized (Figure [4-8](#Fig8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig8_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization process
+  prefs: []
+  type: TYPE_NORMAL
+- en: With quantization, a model’s storage requirements and latency can be dramatically
+    decreased with little effect on performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Like in pruning, you can quantize an entire model or quantize layers independently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantizing an Entire Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Quantization requires pretraining for optimal performance. Let’s begin by fitting
+    a large base model on MNIST data for 15 epochs (Listing [4-18](#PC18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: This particular model obtains a training loss of 0.0387 and a training accuracy
+    of 0.9918\. In evaluation, it scores a loss of 0.1513 and an accuracy of 0.9720\.
+    This sort of disparity between training and testing performance indicates that
+    some sort of compression method would be apt to apply here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To perform Quantization Aware Training on an entire model, import the `quantize_model`
+    function from `tfmot.quantization.keras` and apply it to the model (Listing [4-19](#PC19));
+    this performs a “quantization annotation” on each layer that allows for Quantization
+    Aware Training. Because this removes the optimizer from the model, we’ll need
+    to recompile it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Call `quantized_model.evaluate(x_test, y_test)`, and you’ll notice that the
+    model performs poorly. Like adapting to a new living space, we will need to perform
+    some additional training on the quantized model. When performing this additional
+    fine-tuning, make sure you have a high batch size and train for a small number
+    of epochs (Listing [4-20](#PC20)). In low-precision training, small batch sizes
+    cause aggressive weight updates that blow up the loss without recovery. A few
+    epochs of large batch training should be enough to orient the model toward good
+    performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, the model is *quantization aware*, meaning that it possesses the necessary
+    facilities for quantization, but it’s not technically quantized. To reap the benefits
+    of quantization, we will need to convert the model into a TFLite model, which
+    is TensorFlow’s solution for lightweight applications (Listing [4-21](#PC21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can then save and zip our TFLite model to see storage benefits (Listing [4-22](#PC22)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Like the pruned model, you can store the model to a file path via a variety
+    of model saving and weight saving methods. If you load the weights by saving the
+    entire model directly, make sure to reload the model under the scope `tfmot.quantization.keras.quantize_scope`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantizing Individual Layers
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Like in pruning, quantizing individual layers gives the advantage of specificity
+    and hence smaller performance degradation, with the cost of a likely smaller compression
+    than a fully quantized model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When selecting which layers can be quantized, you can use `tfmot.quantization.keras.quantize_annotate_layer`,
+    which you can wrap around a layer as you’re using it either in the Sequential
+    or Functional API, much like `prune_low_magnitude()`. When quantizing individual
+    layers, try to quantize later layers rather than the initial layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you are deploying quantized models, keep in mind that some backends may support
+    only fully quantized models. In this case, you would want to quantize the entire
+    model rather than choosing certain layers to quantize (Listing [4-23](#PC23)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that, at this point, the layers you applied the `quantize_annotate_layer`
+    are only annotated. To convert them into actually quantized layers, we need to
+    use `quantize_apply` (Listing [4-24](#PC24)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `quantize_apply` function was not needed when quantizing the entire model
+    using `quantize_model` because the `quantize_model` function acts as a “shortcut”
+    that annotated and applies quantization automatically for general cases in which
+    the “default” parameters can be applied (i.e., there is no need for customization
+    by quantizing specific layers).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model can then be compiled and fitted using the same training principles
+    as discussed prior – low number of epochs, high batch size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like in pruning, the preferred method of selecting layers to quantize is to
+    define a cloning function and use `keras.models.clone_model(model)` (Listing [4-25](#PC25)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using this function, we can annotate the model by passing it as a cloning function
+    when cloning the original model (Listing [4-26](#PC26)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then, apply the `quantize_apply` function to the annotated model and compile
+    and fit like normal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight Clustering
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Weight clustering is a certainly less popular but still incredibly valuable
+    and simple model compression method (Figure [4-9](#Fig9)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight Clustering Theory and Intuition
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Weight clustering is a combination of pruning and quantization in character
+    – it reduces the number of *unique* weights by slightly adjusting each weight
+    value. Given a user-specified quantity of clusters *n*, the weight clustering
+    algorithm assigns each weight value a cluster and sets the weight value to the
+    centroid of that weight value (Figure [4-9](#Fig9)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig9_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight clustering
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weights that are part of one cluster all share the same value, thus allowing
+    for more efficient means of storage. Similarly to quantization, the decrease in
+    storage requirement is a matter of precision; each parameter’s precise value can
+    be replaced by the index of the associated centroid value. These precise values
+    can be stored once in an indexable list of centroid values (Figure [4-10](#Fig10)).
+    (Note that even if this method of centroid indexing is not used, compression algorithms
+    will be able to take advantage of repeated values.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig10_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight clustering via indexing
+  prefs: []
+  type: TYPE_NORMAL
+- en: The key parameter in weight clustering is determining the number of clusters.
+    Like the percent of parameters to prune, this is a trade-off between performance
+    and compression. If the number of clusters is very high, the change each parameter
+    makes from its original value to the value of the centroid it was assigned is
+    very small, allowing for more precision and easier recovery from the compression
+    operation. However, it diminishes the compression result by increasing storage
+    requirements both for storing the centroid values and potentially the indexes
+    themselves. On the other hand, if the number of clusters is too small, the performance
+    of the model may be so impaired that it cannot recover – it may simply not be
+    possible for a model to function reasonably with a certain set of fixed parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight Clustering Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Like with pruning and quantization, you can either cluster the weights of an
+    entire model or of individual layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight Clustering on an Entire Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Like pruning and quantization, weight clustering requires a pretrained `model`.
+    In order to perform weight clustering on the model, we first need to provide clustering
+    parameters. There are two key parameters to provide: the number of clusters and
+    the method of centroid initialization. Although in this example the chosen method
+    of initialization is density-based sampling, you can also use `CentroidInit.LINEAR`,
+    in which cluster centroids are evenly spaced between minimum and maximum values;
+    `CentroidInit.RANDOM`, in which centroids are randomly sampled from a uniform
+    distribution between the minimum and maximum values; and `CentroidInit.KMEANS_PLUS_PLUS`,
+    which uses the K-means++ algorithm (Listing [4-27](#PC27)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: To perform clustering on an entire model, use the `cluster_weights()` function
+    within `tfmot.clustering.keras` with the specified parameters (Listing [4-28](#PC28)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: The weight-clustered model can then be compiled and fitted on the original data
+    for fine-tuning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to realize the compression benefits of clustering, use `strip_clustering()`
+    to clear the model of any artifacts from weight clustering (Listing [4-29](#PC29)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: After this, convert the code into a TFLite model and evaluate the size of the
+    zipped TFLite model to see the decrease in storage size. You can also evaluate
+    the latency of the model by using the function we defined prior in the pruning
+    section, but make sure to re-attach an optimizer by compiling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like a pruned and quantized model, you can store the weight-clustered model
+    to a file path via a variety of model saving and weight saving methods. If you
+    load the weights by saving the entire model directly, make sure to reload the
+    model under the scope `tfmot.clustering.keras.cluster_scope`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight Clustering on Individual Layers
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Weight clustering on individual layers follows the same syntax as pruning and
+    quantization on individual layers, but use `tfmot.clustering.keras.cluster_weights`
+    instead of `tfmot.quantization.keras.quantize_apply` or `tfmot.sparsity.prune_low_magnitude`.
+    Like these other compression methods, you can either apply weight clustering to
+    each layer as it is being constructed in the architecture or as a cloning function
+    when cloning an existing model. The latter procedure of applying a compression
+    method to individual layers is preferred because it allows for convenient pretraining
+    and fine-tuning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Collaborative Optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Generally , you can obtain good results using compression methods individually.
+    When these compression methods are combined, though, you can achieve increased
+    compression with better performance: the fundamental idea behind *collaborative
+    optimization* is that compression methods can be chained together such that each
+    acts to compress the model in its own unique method to achieve a more successful
+    net compression than if just one (proportionally scaled) compression method had
+    been applied (Figure [4-11](#Fig11)). Practical deployment of deep learning almost
+    always employs collaborative optimization rather than one compression method in
+    isolation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig11_HTML.png](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig11_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationship between model size ratio after compression and the loss in accuracy
+    by compression method. For a certain accuracy loss, pruning + quantization is
+    able to achieve a much smaller model size ratio after compression than pruning
+    only or quantization only. SVD is another model compression technique that has
+    not seen as much success as pruning and quantization
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Given the three compression methods that have been discussed, there are three
+    two-method combinations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization and weight clustering, or clustering preserving quantization
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Quantization and pruning, or sparsity preserving quantization
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Pruning and weight clustering, or sparsity preserving clustering
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The naming of these methods is significant, because it implies a certain order
+    in which these operations are applied. For instance, if we were to apply weight
+    clustering and quantization, it would be optimal to apply weight clustering first
+    and then quantization rather than vice versa. When using collaborative optimization,
+    there is generally an “order of operations”:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: These are ordered such that each compression method interferes as little as
+    possible with other compression methods. Pruning and weight clustering, for instance,
+    require relatively high-precision information and would be severely disrupted
+    if quantization were performed first. Pruning relies upon the existence of a wide,
+    diverse array of parameters to rank and choose from; if weight clustering were
+    performed before pruning, it would significantly decrease the diversity of values
+    and therefore disrupt the efficacy of pruning (Figure [4-12](#Fig12)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig12_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: The effect of the order in which model compression methods are applied on the
+    performance of the collaboratively optimized model. Performing quantization before
+    pruning or weight clustering and weight clustering before pruning undermines the
+    effect of the second compression method and therefore is an inefficient process
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, when applying collaborative optimization, you cannot simply apply one
+    method after another. Even given our “order of operations” to optimize the performance
+    of chained methods, in practice adding an additional compression method severely
+    dampens the effect of the previous one (Figure [4-13](#Fig13)). For instance,
+    consider weight clustering and pruning – pruning sets pruned parameters to zero,
+    but weight clustering sets parameters to whatever their centroid value is. Thus,
+    if weight clustering were performed after pruning, many of the pruned parameters
+    would be “unpruned” because they were set to a nonzero centroid value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig13_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: The undoing effect of performing weight clustering after pruning without using
+    sparsity preserving clustering. Even though the difference in this case is small,
+    it can be compounded significantly across each of the weight matrices for tremendous
+    damage to the effects of pruning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thus, specialized versions of quantization and clustering are needed to perform
+    their respective compression methods while maintaining the compression effect
+    of the previous method (Figure [4-14](#Fig14)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig14_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: The importance of model compression preservation in collaborative optimization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparsity Preserving Quantization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In sparsity preserving quantization , pruning is followed by quantization (Figure
+    [4-15](#Fig15)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using code and methods discussed earlier in the pruning section, obtain a `pruned_model`.
+    You can use the measurement metrics defined prior to verify that the pruning procedure
+    was successful. Use the `strip_pruning` function (`tfmot.sparsity.keras.strip_pruning`)
+    to remove artifacts from the pruning procedure; this is necessary in order to
+    perform quantization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall that to induce Quantization Aware Training for a model, you used the
+    `quantize_model()` function and then compiled and fitted the model. Performing
+    pruning-preserving Quantization Aware Training, however, requires an additional
+    step. The `quantize_annotate_model()` function is used not to actually quantize
+    the model, but to provide annotations indicating that the entire model should
+    be quantized. `quantize_annotate_model()` is used for more specific customizations
+    of the quantization procedure, whereas `quantize_model()` can be thought of as
+    the “default” quantization method. (You may similarly recall that `quantize_annotate_layer()`
+    was used for another specific customization – layer-specific quantization.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the entire model has been annotated, we use the `quantize_apply()` function
+    to actually quantize the annotated model. In this function, we can specify the
+    preservation of another compression method – in this case, pruning. This is specified
+    by passing a `tfmot.experimental.combine` object, which indicates a compression
+    method to be preserved when “combining” or “collaborating.” The pruning-preserving
+    Quantization Aware Training model can then be compiled and fitted as usual.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig15_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Collaborative optimization with sparsity preserving quantization
+  prefs: []
+  type: TYPE_NORMAL
+- en: The complete code is as follows (Listing [4-30](#PC30)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Cluster Preserving Quantization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In cluster preserving quantization , weight clustering is followed by quantization
+    (Figure [4-16](#Fig16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using code and methods discussed earlier in the “Weight Clustering” section,
+    obtain a `clustered_model`. From here, the process is almost the same as sparsity
+    preserving quantization: after stripping clustering artifacts from the `clustered_model`,
+    annotate the model and use `quantize_apply` to quantize the annotated layers.
+    When specifying which compression method to preserve in `quantize_apply`, use
+    `Default8BitClusterPreserveQuantizeScheme` rather than `Default8BitPrunePreserveQuantizeScheme`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig16_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Collaborative optimization with cluster preserving quantization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparsity Preserving Clustering
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In sparsity preserving clustering , pruning is followed by weight clustering
+    (Figure [4-17](#Fig17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparsity preserving clustering follows a slightly different process than cluster
+    preserving quantization and sparsity preserving quantization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using code and methods discussed earlier in the pruning section, obtain a `pruned_model`.
+    Strip away pruning artifacts with `strip_pruning`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We need to import the `cluster_weights` function to perform weight clustering;
+    prior, we imported it from `tfmot.clustering.keras.cluster_weights`. However,
+    to use sparsity preserving clustering, we need to import the function from a different
+    place: from tensorflow_model_optimization.python.core.clustering.keras.experimental.cluster
+    import cluster_weights.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, we can provide weight clustering parameters, as before, with one additional
+    “`preserve_sparsity`” argument (Listing [4-31](#PC31)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then, apply the `cluster_weights` function to the stripped pruned model with
+    the clustering parameters , and compile and fit (Listing [4-32](#PC33)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig17_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Collaborative optimization with sparsity preserving clustering
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Case Studies
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In these case studies, we will present research that has experimented with these
+    compression methods and other variations on the presented methods to provide further
+    concrete exploration into model compression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Extreme Collaborative Optimization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The 2016 paper “Deep Compression: Compressing Deep Neural Networks with Pruning,
+    Trained Quantization, and Huffman Coding”^([3](#Fn3)) by Song Han, Huizi Mao,
+    and William J. Dally was an instrumental leap forward in collaborative optimization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The paper proposed a three-stage compression pipeline: pruning, weight clustering
+    and quantization (grouped together as one method), and Huffman coding (Figure
+    [4-18](#Fig18)). This compression pipeline progressively compresses large models
+    like AlexNet and VGG-16 on the ImageNet dataset between 35 times and 49 times
+    without incurring any loss in accuracy. Moreover, the latency is decreased by
+    three to four times with three to seven times improved energy efficiency. By chaining
+    compression methods in this order, the compression methods minimally interfered
+    with one another, leading to surprisingly large compression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig18_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Collaborative optimization between pruning, weight clustering, quantization,
+    and Huffman encoding
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall that pruning is best performed as an iterative process in which connections
+    are pruned and the network is fine-tuned on those pruned connections. In this
+    paper, pruning reduces the model size by 9 to 13 times with no decrease in accuracy.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Recall that weight clustering is performed by clustering weights that have similar
+    values and setting the weights to their respective centroid values and that quantization
+    is performed by training the model to adapt toward lower-precision weights. Weight
+    clustering combined with quantization, after pruning, reduces the original model
+    size by 27 to 31 times.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Huffman coding is a compression technique that was proposed by computer scientist
+    David A. Huffman in 1952\. It allows for lossless data compression that represents
+    more common symbols with fewer bits. Huffman coding is different from the previously
+    discussed model compression methods because it is a post-training compression
+    scheme; that is, there is no model fine-tuning required for the scheme to work
+    successfully. Huffman encoding allows for even further compression – the final
+    model is compressed with a reduction 35 to 49 times its original size.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: This compression pipeline successfully compresses large architectures by several
+    dozen times with little effect on error, an incredible feat (Table [4-1](#Tab1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of this collaborative optimization compressed model on MNIST for
+    LeNet and AlexNet and on ImageNet for VGG-16 model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Network | Top 1 Error | Top 5 Error | Parameters | Compression Rate |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| LeNet-300-100Compressed | 1.64%1.58% | – | 1070 KB27 KB | 40 times |'
+  prefs: []
+  type: TYPE_TB
+- en: '| LeNet-5Compressed | 0.80%0.74% | – | 1720 KB44 KB | 39 times |'
+  prefs: []
+  type: TYPE_TB
+- en: '| AlexNetCompressed | 42.78%42.78% | 19.73%19.70% | 240 MB6.9 MB | 35 times
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| VGG-16Compressed | 31.50%31.17% | 11.32%10.91% | 552 MB11.3 MB | 49 times
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Han, Mao, and Dally provide important insights into the dynamics of collaborative
+    optimization. Pruning before quantization doesn’t hurt quantization, for instance
+    – the performance of a model both pruned and quantized is almost identical to
+    that of a model that has only undergone quantization (of course, the pruned and
+    quantized model has fewer parameters) (Figure [4-19](#Fig19)). This demonstrates
+    a key property of ideal collaborative optimization: strength is found in a diverse
+    array of compression attacks. By chaining a diverse set of compression methods
+    that each attack different representation redundancies, the model is stripped
+    of inefficient representations from all “angles” and therefore results in higher
+    compression while still maintaining the necessary essential facilities for good
+    performance.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig19_HTML.png](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of models with various compression methods applied
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rethinking Quantization for Deeper Compression
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Recall that when performing quantization, Quantization Aware Training is used
+    to orient the model toward learning weights that are robust to quantization. This
+    is performed by simulating a quantized environment when the model is making predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, Quantization Aware Training raises a key problem: because quantization
+    effectively “discretizes” or “bins” a functionally “continuous” weight value,
+    the derivative with respect to the input is zero at almost everywhere, posing
+    problems for the gradient update calculations. In order to work around this, in
+    practice a Straight Through Estimator is used. As implied by its name, a Straight
+    Through Estimator estimates the output gradients of the discretized layer as its
+    input gradients without regard for the actual derivative of the actual discretized
+    layer. A Straight Through Estimator works with relatively less aggressive quantization
+    (i.e., the 8-bit integer quantization implemented earlier) but fails to provide
+    sufficient estimation for more severe compressions (e.g., 4-bit integer).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To address this problem, Angela Fan and Pierre Stock, along with Benjamin Graham,
+    Edouard Grave, Remi Gribonval, Herve Jegou, and Armand Joulin, propose quantization
+    noise in their paper “Training with Quantization Noise for Extreme Model Compression,”^([4](#Fn4))
+    a novel approach toward orienting a compressed model to developing quantization
+    robust weights.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rather than simulating the quantization of the entire model, like in Quantization
+    Aware Training, quantization noise instead simulated the quantization of *part
+    of a model* – a randomly selected subset of weights are simulated quantized during
+    each forward pass (Figure [4-20](#Fig20)). This means that most of the weights
+    are updated with cleaner gradients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig20_HTML.png](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Demonstration of training without quantization noise vs. with quantization noise
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization noise significantly improves the performance of low-precision compression
+    methods over Quantization Aware Training, both in the domains of language modeling
+    and image classification (Table [4-2](#Tab2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Language modeling task: 16-layer transformer on WikiText-103\. Image classification:
+    EfficientNetB3 on ImageNet 1k. “Comp.” refers to “Compression.” “PPL” refers to
+    perplexity, a metric for NLP tasks (lower is better). QAT refers to Quantization
+    Aware Training; QN refers to quantization noise.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Quantization Method | Language Modeling | Image Classification |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Size | Comp. | PPL | Size | Comp. | Top 1 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Uncompressed method | 942 | 1x | 18.3 | 46.7 | 1x | 81.5 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 4-bit integer quantization– Trained with QAT– Trained with QN | 118118118
+    | 8x8x8x | 39.434.121.8 | 5.85.85.8 | 8x8x8x | 45.359.467.8 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 8-bit integer quantization– Trained with QAT– Trained with QN | 236236236
+    | 4x4x4x | 19.621.018.7 | 11.711.711.7 | 4x4x4x | 80.780.880.9 |'
+  prefs: []
+  type: TYPE_TB
+- en: While fixed-point scalar quantization methods introduced in this chapter like
+    `int8` quantization reduce the precision of parameter values via “rounding,” there
+    exist other quantization methods. Fan and Stock also explore quantization noise
+    on *product quantization* , a method in which a high-dimensional vector space
+    is decomposed into several subspaces that are quantized separately. Like the rationale
+    for Quantization Aware Training and Iterative Pruning, product quantization is
+    best performed iteratively. This iterative product quantization (iPQ) method generally
+    obtains higher compression rates than rounding to some bit-level precision (Table
+    [4-3](#Tab3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: iPQ with quantization noise compared to the performance of an uncompressed model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Quantization Method | Language Modeling | Image Classification |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Size | Comp. | PPL | Size | Comp. | Top 1 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Uncompressed method | 942 | 1x | 18.3 | 46.7 | 1x | 81.5 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| iPQ– Trained with QAT– Trained with QN | 383838 | 25x25x25x | 25.241.220.7
+    | 3.33.33.3 | 14x14x14x | 79.055.780.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Responsible Compression: What Do Compressed Models Forget?'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When we talk about compression, the two key figures we consider are the model
+    performance and the compression factor. These two figures are often balanced and
+    used to determine the success of a model compression operation. We often see an
+    increase in compression accompanied by a decrease in performance – but do you
+    wonder what *types* of data inputs are being sacrificed by the compression procedure?
+    What is lying beneath the generalized performance metrics?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In “What Do Compressed Deep Neural Networks Forget?”,^([5](#Fn5)) Sara Hooker,
+    along with Aaron Courville, Gregory Clark, Yann Dauphin, and Andrea Frome, investigates
+    just this question: how do compression methods affect what knowledge a compressed
+    model is forced to “forget” by the compression? Hooker et al.’s findings suggest
+    that looking merely at standard performance metrics like test set accuracy may
+    not be enough to reveal the impact of compression on the model’s true generalization
+    capabilities.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning Identified Exemplars (PIEs) are defined inputs to a model in which there
+    is a high level of disagreement between the predictions of pruned and unpruned
+    models. Hooker et al. find that general metrics like test set accuracy hide important
+    information regarding the effect of pruning on the model’s generalization capabilities;
+    model compression methods like pruning *do not uniformly affect the model’s data
+    to process instances across the distribution of the dataset*. Rather, a small
+    subset of data is disproportionately impacted (Figure [4-21](#Fig21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig21_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig21_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Increase or decrease in a compressed model’s recall for certain ImageNet classes.
+    Colored bars indicate the classes in which the impact of compression is statistically
+    significant. As a higher percent of weights are pruned, there are more classes
+    that are statistically significantly affected by compression. Note that, interestingly,
+    quantization suffers less from these generalization vulnerabilities than pruning
+    does
+  prefs: []
+  type: TYPE_NORMAL
+- en: Data instances from the long tail of the dataset distribution – that is, less
+    commonly represented or more complex data instances – are more often “sacrificed”
+    in model compression. Hooker at al. asked human subjects to label components of
+    Pruning Identified Exemplars and found that PIEs were more difficult both for
+    humans and models to classify; PIEs are generally more complex, consisting of
+    multiple objects, lower quality, or ambiguity (Figure [4-22](#Fig22)). Pruning
+    forces compressed models to sacrifice understanding of these particular instances,
+    exposing vulnerabilities in compressed model generalization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig22_HTML.jpg](../images/516104_1_En_4_Chapter/516104_1_En_4_Fig22_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning Identified Exemplars are more difficult to classify and are less represented
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compressed models, moreover, are more prone to small changes that humans would
+    be robust to. The higher the compression, the less robust the model becomes to
+    variations like changing brightness, contrast, blurring, zooming, and JPEG noise.
+    This also increases the vulnerability of compressed models used in deployment
+    to adversarial attacks, or attacks designed to subvert the model’s output by making
+    small, cumulative changes undetectable to humans (see Chapter [2](516104_1_En_2_Chapter.xhtml),
+    Case Study 1, on adversarial attacks exploiting properties of transfer learning).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition to posing concerns for model robustness and security, these findings
+    raise questions for the role of model compression in increasing discussion on
+    fairness. Given that model compression disproportionately affects the model’s
+    capacity to process less represented items in categories, model compression can
+    amplify existing disparities in dataset representation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hooker et al.’s work reminds us that neural networks are complex entities that
+    often may require more exploration and consideration than wide-reaching metrics
+    may suggest and leaves important questions to be answered in future work on model
+    compression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this chapter, we discussed the intuition and implementation of three key
+    model compression methods – pruning, quantization, and weight clustering – as
+    well as collaborative optimization techniques by which these compression methods
+    can be chained together – sparsity preserving quantization, cluster preserving
+    quantization, and sparsity preserving clustering:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The goal of model compression is to decrease the “cost” a model incurs while
+    maintaining model performance as much as possible. The “cost” of a model encompasses
+    many factors, including storage, latency, server-side computation and power cost,
+    and privacy. Model compression is a core element both of practical deployment
+    and key to advancing theoretical understandings of deep learning.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In pruning, unimportant parameters or other more structured network elements
+    are “removed” by being set to 0\. This allows for much more efficient storage
+    of the network. Pruning follows an iterative process – firstly, the importance
+    of network elements is evaluated and the least important network elements are
+    pruned away. Then, the model is fine-tuned on data to adapt to the pruned elements.
+    This process repeats until the desired percentage of parameters are pruned away.
+    A popular parameter importance criterion is by magnitude (magnitude-based pruning),
+    in which parameters with smaller magnitudes are considered less substantial to
+    the model’s output and set to zero.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In quantization, parameters are stored at a lower precision (usually, 8-bit
+    integer form). This significantly decreases the storage and latency of a quantized
+    model. However, performing post-processing quantization leads to accumulated inaccuracies
+    that result in a large decrease in model performance. To address this, quantized
+    models first undergo Quantization Aware Training, in which the model is in a simulated
+    quantized environment and learns weights that are robust to quantization.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In weight clustering, weights assigned to a cluster and set to the centroid
+    value of that cluster, such that weights similar in value to one another (i.e.,
+    part of the same cluster) make slight adjustments to be the same. This redundancy
+    in values allows for more efficient storage. The outcome of weight clustering
+    is heavily dependent on the number of clusters chosen.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In collaborative optimization, several model compression methods are chained
+    together. By attaching model compression methods together, we can take advantage
+    of each method’s unique compression strengths. However, these methods must be
+    attached in an order and implemented with special consideration to preserve the
+    compression effect of the previous method.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Model compression methods can be implemented using the TensorFlow Model Optimization
+    library. To implement model compression methods, use appropriate TensorFlow Model
+    Optimization functions to wrap an existing Keras model in “prunable,” “quantizable,”
+    or “clusterable” layers. After the model compression is performed, remove the
+    compression wrappers from these layers. Often, you will need to apply a compression
+    algorithm (e.g., GZIP) and convert the model into TFLite to see the rest of compression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model compression (primarily pruning) forces models to sacrifice understanding
+    of the long tail end of the data distribution, shrinking model generalization
+    capability. It also increases compressed models’ vulnerability to adversarial
+    attacks and poses questions of fairness.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the next chapter, we will discuss the automation of deep learning design
+    with meta-optimization.
+  prefs: []
+  type: TYPE_NORMAL

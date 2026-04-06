@@ -1,0 +1,1892 @@
+- en: Part III
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: AI Networks in Practice
+  prefs: []
+  type: TYPE_NORMAL
+- en: 6. Convolutional Neural Networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: CNNs are a prime example of neuroscience influencing deep learning (LeCun, Bottou,
+    Bengio, & Haffner, 1998). These neural networks are based on the seminal work
+    done by Hubel and Wiesel (1962). They discovered that individual neuronal cells
+    in the visual cortex responded only to the presence of visual features such as
+    edges of certain orientations. From their experiments they deduced that the visual
+    cortex contains a hierarchical arrangement of neuronal cells. These neurons are
+    sensitive to specific subregions in the visual field, with these subregions being
+    tiled to cover the entire visual field. They in fact act as localized filters
+    over the input space, making them well suited to exploiting the strong spatial
+    correlation found in natural images. CNNs have been immensely successful in many
+    computer vision tasks not just because of the inspiration drawn from neuroscience,
+    but also due to the clever engineering principles employed. Although they have
+    traditionally been used for applications in the field of computer vision such
+    as face recognition and image classification, CNNs have also been used in other
+    areas such as speech recognition and natural language processing for certain tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter briefly describes what convolution is and how it relates to neural
+    networks. It then explains the various elements that make up the CNN architecture
+    and what effects they have, and why CNNs do so well. Finally, it covers the usual
+    steps to training CNNs before diving into a number of practical examples, using
+    the CIFAR10 data set to train a CNN using Jupyter notebooks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the first successful applications of CNNs was in the 1990s, reading zip
+    codes using the LeNet architecture from Yann LeCun and colleagues (LeCun, Boser,
+    et al., 1989). However, CNNs were widely popularized in 2012 with the AlexNet
+    (Krizhevsky, Sutskever, & Hinton, 2012) architecture, which won the ImageNet Large
+    Scale Visual Recognition Competition (ILSVRC) as mentioned in Chapter [1](A463582_1_En_1_Chapter.html)
+    and led to a breakthrough in the computer vision field. Since then, there have
+    been many useful developments and recommended architectures from researchers such
+    as VGGNet (Simonyan & Zisserman, 2014) and ResNet (He, Zhang, Ren, & Sun, 2016).
+    We do not recommend a specific neural network architecture because this is still
+    a fast-moving field with new breakthroughs happening frequently. Instead, we recommend
+    that practitioners pick out an architecture already available that has been developed
+    and tested by researchers, and if necessary tweak it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Convolution in Convolution Neural Networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To keep things simple when talking about convolution we will be talking about
+    discrete convolution. Mathematically, convolution is the simple summation of the
+    pointwise multiplication of two functions. The summations can take place in one
+    or more dimensions, so for grayscale images the summation would take place over
+    two dimensions and over three dimensions in color images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convolution is similar to cross-correlation and in many deep learning libraries
+    the implementation is actually cross-correlation even though it is referred to
+    as convolution. For all practical purposes in the CNNs this is just an implementation
+    detail and does not really affect the resulting behavior of the model. To get
+    an intuitive feeling of how convolution behaves, there is a simple example illustrated
+    in Figure [6-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_6_Fig1_HTML.jpg](A463582_1_En_6_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convolution in CNNs
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this example the image is represented by a 5 `×` 5 matrix and each pixel
+    can only take on two values, 1 or 0\. We have a convolution kernel that detects
+    diagonal lines. Convolution kernels are sometimes referred to as filters or feature
+    detectors. By convolving our kernel with the image we get our feature and activation
+    map. The top left value of our feature map is created by multiplying all the values
+    in the overlapping matrices and then summing the result. In the bottom row of
+    the image we can see that applying the kernel to our image we get a value of three.
+    The kernel is applied to the nine pixels in the top left area of our image. If
+    we were to flatten out the values row wise we would have the vector [1,1,1,0,1,1,0,1,1].
+    The kernel would correspond to the vector [1,0,0,0,1,0,0,0,1]. If we multiply
+    the two vectors element wise as so [ 1*1, 1*0, 1*0, 0*0 …] we will end up with
+    the vector [1,0,0,0,1,0,0,0,1], which we sum to get the value 3\. In essence we
+    are computing the dot product of the two vectors to end up with a scalar value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We then shift the kernel right by one—this is often referred to as the stride—and
+    do the same thing again. Notice that the feature map is smaller than the original
+    image. To mitigate this, CNNs often employ padding of the input image so that
+    the resulting feature map does not reduce in size, as this constant reduction
+    would limit the number of successive convolutions that could be applied. This
+    is just a simple example, as real color images have three color channels—red,
+    green, and blue—and the pixel value of each channel is represented by an integer
+    between 0 and 255\. For a single image, our input would be a three-dimensional
+    matrix with the width, height, and number of channels. Depending on the deep learning
+    framework you use, some expect the channels to be first CHW or channels to be
+    last HWC.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convolution Layer
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: CNNs employ convolution in what are referred to as convolution layers , which
+    are simply a number of convolution kernels represented by the weights of each
+    convolution layer. The dimensions and stride of the convolution are usually predefined,
+    but the weights are learned as the network is trained. A CNN will typically have
+    many convolution layers and each convolution layer will have its own set of learned
+    kernels or filters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [6-2](#Fig2) is a selection of convolution filters taken from a pretrained
+    CNN. The top row is of six filters from the first convolution layer. The bottom
+    row is from the last convolution layer in the CNN. Going from the top to the bottom,
+    it looks like the convolution layers are looking at ever more complex patterns.
+    The first layer is encoding direction and color. The second layer seems to be
+    more interested in spot and grid textures. The final layer looks like a complex
+    combination of various textures. From this we can see that as we go through the
+    network the patterns become more intricate, so the deeper the network the more
+    complex patterns the convolution layers will learn to extract.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_6_Fig2_HTML.jpg](A463582_1_En_6_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of convolution layers . For more detailed visualizations take
+    a look at Zeiler and Fergus (2013).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Another interesting thing to note is that if we look at the first and last
+    filter on the middle row it seems like they could be slightly rotated variations
+    of the same filter. This highlights one of the deficiencies of CNNs: They are
+    not rotation invariant. This is something Hinton has tried to overcome with capsule
+    networks, as discussed in Chapter [3](A463582_1_En_3_Chapter.html).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pooling Layer
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Convolution is not equivariant, meaning that on their own they do not deal well
+    with scaling and rotation of the input (Sabour, Frosst, & Hinton, 2017). A common
+    type of layer in modern CNNs to help deal with this is a pooling layer , with
+    the most popular pooling layer being the max pooling layer. Max pooling replaces
+    the output of spatially adjacent outputs with the max of those values. Generally
+    pooling layers replace the outputs with some form of summary statistic based on
+    those outputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generally, the pooling layer’s purpose is to make neural networks locally invariant
+    to small translations of the input, and its essence to care more about whether
+    a feature is detected rather than where exactly it is in the input. This does,
+    in turn, reduce the spatial acuity of the model and is considered a limitation
+    of CNNs ; however, pooling layers have proven to be extremely useful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Activation Functions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Activation functions are very important in CNNs and artificial neural networks
+    in general. Without them CNNs would simply be a series of linear operations and
+    would not be able to do the amazing things they do today. Activation functions
+    are simply nonlinear transformations of the output of a neuron in a layer. They
+    are referred to as activation functions because they draw their inspiration from
+    the threshold and fire activation of biological neurons. There are a number of
+    different activation functions with different properties and specialization, but
+    we go over only the most common types here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sigmoid
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Sigmoid or logistic is a nonlinear function , which squashes the input between
+    the values of 0 and 1 (Figure [6-3](#Fig3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(x)=\frac{1}{1+{e}^{-x}} $$](A463582_1_En_6_Chapter_Equa.gif)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![A463582_1_En_6_Fig3_HTML.jpg](A463582_1_En_6_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sigmoid function
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In recent years it has fallen out of favor due to a number of drawbacks :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It suffers from the vanishing gradient problem. Near the extreme values of 1
+    and 0 the gradient is flat, meaning as values approach those extremes the neurons
+    saturate, and the weights do not update during backpropagation. Furthermore, neurons
+    connected to this neuron get very tiny weight updates, in essence starving them
+    of the much-needed information.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The output is not zero centered.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Tanh
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Tanh or hyperbolic tangent functions are very similar to sigmoid functions;
+    in fact, they are a simply scaled version of sigmoid functions so that they are
+    centered around 0\. Tanh squashes the output between the values of -1 and 1 (Figure
+    [6-4](#Fig4)). In practice Tanh is often preferred to sigmoid, but it still suffers
+    from the vanishing gradient problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(x)=\frac{1-{e}^{-2x}}{1+{e}^{-2x}} $$](A463582_1_En_6_Chapter_Equb.gif)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![A463582_1_En_6_Fig4_HTML.jpg](A463582_1_En_6_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tanh
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rectified Linear Unit
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The rectified linear unit (ReLU; see Figure [6-5](#Fig5)) is probably the most
+    used activation function nowadays (LeCun, Bengio, & Hinton, 2015).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(x)=\max \left(0,\kern0.5em x\right) $$](A463582_1_En_6_Chapter_Equc.gif)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![A463582_1_En_6_Fig5_HTML.jpg](A463582_1_En_6_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rectified linear unit (ReLU)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With the ReLU activation function, when the input is greater than zero, then
+    output is the same as the input; when it is less than zero, the output is zero.
+    Its popularity is mainly due to a couple of facts. First, it does not saturate
+    or suffer from the vanishing gradient problem in the positive region. Second,
+    it is a computationally efficient function and it also leads to sparse activations
+    that also confer computational benefits. It does still suffer from a couple of
+    drawbacks though:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the output of the function is less than zero during the forward pass, no
+    gradient is propagated backward during the backward pass. This means that weights
+    do not get updated. If neurons in the CNN exhibit this behavior consistently,
+    the neurons are said to be dead, which means they no longer contribute to the
+    network and are in essence useless. If this happens to a significant portion of
+    your CNN , it will stall and fail to learn.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For classification tasks, it cannot be used in the output layer because its
+    output isn’t constrained between well-defined boundaries.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: CNN Architecture
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'CNNs are typically constructed by stacking multiple layers on top of each other
+    (Figure [6-6](#Fig6)). A common configuration is the following: First, there is
+    a convolution layer where multiple kernels convolve the input and produce a number
+    of feature maps. These then pass through a nonlinear activation function such
+    as ReLU, which is then followed by a pooling layer. These three stages are often
+    combined in various ways to create the first few layers of a CNN. The output of
+    the final layer is flattened and then fed through one or more fully connected
+    layers. The activation function of the final layer is usually a softmax or sigmoid
+    that squashes the output between 0 and 1.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_6_Fig6_HTML.jpg](A463582_1_En_6_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: CNN architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training Classification CNN
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'So far we have defined what a CNN looks like and how the information is propagated
+    forward, but we have not described how it learns. The process of training a CNN
+    is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We have a predefined architecture with a number of convolution and polling layers,
+    plus our final fully connected layers. The weights of the CNN are initialized
+    randomly based on some distribution.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We present the training images as a minibatch to our CNN, a four-dimensional
+    matrix (batch size, width, height, and channels).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We complete a forward pass through the networks with the images being passed
+    through the convolution, pooling layers, and activation functions, and finally
+    we get the output probabilities for each class for each image in the minibatch.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We compare the probabilities to the true labels and calculate the error.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We use backpropagation to calculate the gradients of the error with respect
+    to the weights of the CNN and we use gradient descent to update the weights.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: This process is repeated either for a set of epochs[¹](#Fn1) or until other
+    conditions are met.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: This is a simplified view of what happens, but it captures the core of what
+    it takes to train a CNN, an objective function, a method to calculate the gradients,
+    and an optimization method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The objective or loss function determines how we will calculate the difference
+    between what we expected the network to do and what it did. In essence it will
+    calculate the error for our model. Common loss functions are mean squared error
+    (MSE) and cross-entropy. Now once we have the error, we need to update the weights
+    of the network in the right direction so that our predictions become a little
+    better next time. This is done by a method called backpropagation .
+  prefs: []
+  type: TYPE_NORMAL
+- en: The optimization method most commonly used by CNNs is minibatch gradient descent,
+    often referred to as stochastic gradient descent (SGD), even though SGD is slightly
+    different from minibatch gradient descent. Minibatch gradient descent seeks to
+    optimize the objective function by iteratively updating the weights of the CNN
+    based on the gradients in each minibatch. Due to the nonlinearities in CNNs, the
+    solution space is often nonconvex and therefore there are no guarantees of convergence.
+    For practitioners this can be quite frustrating, but CNNs work surprisingly well
+    even without this guarantee. The main parameter in all variants of gradient descent
+    is the learning rate, which determines the magnitude of the updates applied to
+    the weight of the network. A variant of SGD also includes a momentum term that
+    tries to accelerate learning by preserving the direction of travel through the
+    parameter space. It does this by adding a fraction of the weight update of the
+    previous time step to the current update. Other optimization algorithms include
+    Adam, RMSProp, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why CNNs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As mentioned earlier, CNNs were inspired by neuroscience but they also make
+    use of sound engineering principles that also confer advantages. These are sparse
+    connectivity and parameter sharing. Current research indicates neurons also share
+    these features. A typical human neuron has 7,000 connections (cf. 10^(11) neurons
+    in the brain). Similarly, each neuronal cell type shares specific functional parameters.
+    A great example of the latter are retinal ganglion cells, which all implement
+    effectively the same type of convolutional kernel (opposing center-surround).
+    The weights of these kernels were “learned” through evolution of gene expression
+    patterns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In traditional neural networks such as multilayer perceptrons (MLPs), every
+    layer is fully connected to every single node of the next layer. As you increase
+    the number of layers and the number of nodes, the number of parameters explodes.
+    In CNNs the connections are usually much smaller than the input because the kernel
+    is convolved over the input, which is represented by the previous layer. Therefore
+    in an image that is made of thousands of pixels, the convolution kernel can be
+    just a few tens of pixels. This reduction in parameters improves the efficiency
+    of the model both in terms of memory and also in terms of computation due to the
+    reduction in the amount of computation required.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second benefit is parameter sharing. In standard neural networks, the input
+    weights for each node in the next layer are only used for that node, whereas in
+    CNNs the same kernel is used many times. Therefore, instead of learning different
+    parameters for each node, we learn a set of kernels for all the nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training CNN on CIFAR10
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this next section, we go step by step in training a CNN on the CIFAR10 data
+    set (Krizhevsky 2009; Krizhevsky, Nair, & Hinton, n.d.). We use TensorFlow as
+    the deep learning library to build our CNN with. The CIFAR10[²](#Fn2) data set
+    is an often used data set that in total contains 60,000 32 `×` 32 color images
+    across 10 classes (see Figure [6-7](#Fig7)). These are split into 50,000 training
+    and 10,000 test. The code for this section can also be found in the notebook `Chapter_06_01.ipynb`
+    ( [`http://bit.ly/Nbook_ch06_01`](http://bit.ly/Nbook_ch06_01) ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: More Info
+  prefs: []
+  type: TYPE_NORMAL
+- en: We recommend provisioning an Azure DLVM to run the code examples in this chapter.
+    Please see the Chapter [4](A463582_1_En_4_Chapter.html) for more information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_6_Fig7_HTML.jpg](A463582_1_En_6_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: CIFAR10 data set
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first thing we will do is define our CNN (see Listing [6-1](#PC1)). It isn’t
+    very deep and only has two convolutional layers. The first convolution layer has
+    50 filters and the second 25, each with a dimension of 3 `×` 3\. The first convolution
+    layer uses ReLU activation and the second convolution layer carries out ReLU activation
+    before using max pooling. After that we need to reshape our Tensor into a 2D matrix
+    with the first dimension being the size of our batch. After that we pass it into
+    a fully connected layer of 512 nodes with ReLU activation. Finally, we introduce
+    our final dense layer, which has 10 outputs, one for each of our classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: An important element in training neural networks is defining the loss function
+    and optimization to use (see Listing [6-2](#PC2)). Here we are using cross-entropy
+    as our loss function and SGD with momentum as our optimization function. SGD is
+    the standard optimization method for deep learning. The two parameters we have
+    to define are the learning rate and momentum .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we have the functions to create and train our CNN, so we need the methods
+    to prepare the data and feed it to our CNN in batches, shown in Listing [6-3](#PC3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `prepare_cifar` function accepts the training images and test images as
+    arrays and the labels as vectors. Before we can use the images with our CNN we
+    need to do some preprocessing. First we scale the pixel values between 0 and 1,
+    then we reshape it so that the matrix is in the channels last configuration. This
+    means that the image data will be shaped (examples, height, width, channels).
+    Channels refers to the RGB channels in the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next we define the minibatch function that will return a matrix of shape (`BATCHSIZE`,
+    32, 32, 3) if we have defined our data to be channel last (see Listing [6-4](#PC4)).
+    We also need to shuffle the data, as we do not want to feed the CNN the training
+    samples in any meaningful order as this might bias the optimization algorithm
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we load the data , as shown in Listing [6-5](#PC5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then we create placeholders for our data and labels , as shown in Listing [6-6](#PC6),
+    and create the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: We then initialize the model and start the TensorFlow session .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next we train the model for the desired number of epochs. During this process
+    we execute the forward pass, calculate the loss, and then propagate the error
+    backward and update the weights. This can take a considerable amount of time depending
+    on the computational resources you have at your disposal. Azure notebooks run
+    the deep learning training on CPU and have limited computational resources. One
+    of the preferred environments to train these neural networks on is the DSVM or
+    DLVM, which come in multiple configurations , including with GPUs. See Listing
+    [6-8](#PC8).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now that we have the trained model, we want to evaluate it on our test data
+    , as shown in Listing [6-9](#PC9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: This piece of code feeds minibatches to the CNN and appends them to a list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, we evaluate the performance of the model against the true labels ,
+    as shown in Listing [6-10](#PC10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Depending on how long you trained the network, you will get differing error
+    rates. After three epochs the network achieved an accuracy of 64 percent on the
+    test set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This was just a simple exercise to illustrate how you can create and train your
+    own neural network. Feel free to play around with the layers and see how it affects
+    performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating your own architecture is fun but optimizing these structures can be
+    laborious and frustrating. For an ML practitioner, a more fruitful strategy is
+    to use state-of-the-art architectures that researchers have published and cut
+    out the laborious process of trying to generate your own network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training a Deep CNN on GPU
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section we are going to build on what we learned in the previous section
+    and construct a deeper CNN. For this you almost definitely need a GPU-enabled
+    machine whether this is your own or in the cloud. We are going to be using the
+    CIFAR10 data set, but this time we will be basing our CNN architecture on the
+    VGG architecture (Simonyan & Zisserman, 2014). We slowly build up the network
+    using the standard building blocks used in CNNs and see how adding these to our
+    network affects performance. All the steps can been found in the notebook `Chapter_06_03.ipynb`
+    ( [`http://bit.ly/Nbook_ch06_03`](http://bit.ly/Nbook_ch06_03) ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you feel that this is a bit of a leap, there is another notebook that we
+    do not cover here that goes into how the outputs of each layer are affected by
+    the properties set for that layer (see [`http://bit.ly/Nbook_ch06_02`](http://bit.ly/Nbook_ch06_02)
+    ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model 1
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As mentioned earlier, we will be using the CIFAR10 data set, so our inputs will
+    be 32 `×` 32 color images and the task is to classify them into one of ten classes.
+    We will be basing our model on the VGG architecture (Simonyan & Zisserman, 2014).
+    With this in mind, our first network is shown in Listing [6-11](#PC11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have two convolution layers followed by a max pooling layer, which makes
+    up the featurizing portion of our CNN. The classification part of our CNN is made
+    up of two fully connected dense layers and our final output is the same size as
+    the number of classes we expect.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Our model gets an accuracy of 72.1 percent on the test set after training for
+    20 epochs. We can also see that it achieves 100 percent on the training set a
+    few epochs before we stop training. It would usually be prudent to stop the model
+    earlier, and there are usually callbacks that can be used in any of the frameworks
+    to do this. We are simply not using these here to try and keep things simple.
+    By running the notebook you should get similar results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model 2
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: With the second model we add a second convolution block. In keeping with the
+    VGG architecture, we add two convolution layers each with 128 filters as well
+    as a max pooling layer (see Listing [6-12](#PC12)). This time we will train it
+    for 10 epochs .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: After training it for 10 epochs you should find the performance of your model
+    has improved slightly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model 3
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s add another convolution block. This time, though, we increase the number
+    of filters to 256, again in keeping with the VGG architecture. See Listing [6-13](#PC13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once you have trained the model for 10 epochs you should find that the performance
+    has increased again, albeit by a smaller margin. You should notice that with each
+    additional layer we get better results, but the returns diminish with each successive
+    block.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model 4
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Due to the large number of free parameters CNNs can benefit from regularization.
+    One way to regularize is to use dropout (see Listing [6-14](#PC14)), which we
+    talked about in Chapter [2](A463582_1_En_2_Chapter.html). The dropout layer will
+    randomly during the forward pass zero a certain proportion of its outputs. This
+    means it will not participate in the forward calculations but also not receive
+    any weight updates (Srivastava, Hinton, Krizhevsky, Sutskever, & Salakhutdinov,
+    2014). Dropout can reduce the dependence of the CNN or any deep learning on one
+    or a small number of neurons. This in turn can make the model robust to absence
+    of information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: When we ran this model we saw our accuracy increase further to 80 percent. Dropout
+    is a very effective regularization technique and almost all CNN architectures
+    make use of it, including VGG.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The VGG architecture actually has even more layers than our final model, but
+    it was designed to tackle the ImageNet data set, which contains a lot more data
+    than the CIFAR10 data set. Adding further layers with the limited data available
+    would quickly prove untenable. We would have to spend a lot of effort to try and
+    ensure that our model does not overfit the data.[³](#Fn3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transfer Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Training a CNN from scratch often requires a large amount of data. One strategy
+    to overcome this limitation is to use transfer learning, as mentioned in Chapter
+    [2](A463582_1_En_2_Chapter.html). This means that we use a predefined network
+    that has been trained on a much larger but similar data set. We then use that
+    network for our problem; in other words, transferring the learning that the network
+    has from other data onto our problem. The simplest approach is to simply remove
+    the topmost layers and use the output from these penultimate layers as features
+    in our own ML model. This can be another neural network such as MLP or a classical
+    ML model such as Support Vector Machines or Random Forest.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another approach is to replace the topmost fully connected layers and then freeze
+    certain layers and retrain it. Freezing layers means that the weights of these
+    layers are not updated during training. Which layers to freeze depends on a number
+    of factors, including the similarity between the data sets used and so on. Retraining
+    more layers can often improve the accuracy of the model, but also increases the
+    possibility of overfitting.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Almost all network topologies published have pretrained weights for the ImageNet
+    data set, one of the largest image classification data sets and more or less the
+    standard for image classification problems. This data set consists of millions
+    of images spanning multiple classes (ImageNet, n.d.). Using pretrained CNNs trained
+    on ImageNet is an easy way to get very good results for image classification tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter briefly described what constitutes a CNN. We have explained why
+    convolution is useful in computer vision tasks, as well as what the shortcomings
+    of CNNs are. We went through a simple example of creating a CNN in TensorFlow
+    and then expanded on it through a series of steps and observed the effect it had
+    on the performance of the model. This chapter has only scratched the surface of
+    the vast information on CNNs, with many great books covering the theory behind
+    them. The next chapter goes over a different deep learning architecture, RNNs,
+    which are well suited to the tasks of sequence modeling such as language translation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Footnotes[1](#Fn1_source)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Epoch refers to the CNN having seen the whole training set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[2](#Fn2_source)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: CIFAR stands for the Canadian Institute for Advanced Research. They are partly
+    responsible for funding Hinton and LeCun during the neural network winter, leading
+    to the eventual resurgence of neural networks as deep learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[3](#Fn3_source)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We also implemented the same notebooks using Keras, which can be found at [`http://bit.ly/Ch06Keras`](http://bit.ly/Ch06Keras)
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: 7. Recurrent Neural Networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: The previous chapter showed how a deep learning model—specifically CNNs—could
+    be applied to images. The process could be decoupled into a feature extractor
+    that figures out the optimal hidden-state representation of the input (in this
+    case a vector of feature maps) and a classifier (typically a fully connected layer).
+    This chapter focuses on the hidden-state representation of other forms of data
+    and explores RNNs. RNNs are especially useful for analyzing sequences, which is
+    particularly helpful for natural language processing and time series analysis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Even images can be thought of as a subset of sequence data; if we shuffle the
+    rows and columns (or channels) then the image becomes unrecognizable. This is
+    not the case for spreadsheet data, for example. However, CNNs have a very weak
+    notion of order and typically the kernel size for a convolution is in the single
+    digits. As these convolutions are stacked on top of each other, the receptive
+    field increases, but the signal also gets dampened. This means that CNNs typically
+    only care about temporary spatial relationships, such as a nose or eye. In Figure
+    [7-1](#Fig1), we can imagine that we have shuffled a sequence, preserving order
+    only within local groups, but most CNNs will still classify it the same, even
+    though it makes no sense overall.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig1_HTML.jpg](A463582_1_En_7_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: CNNs have a weak concept of order, as can be seen by applying ResNet-121 trained
+    on ImageNet to a shuffled image
+  prefs: []
+  type: TYPE_NORMAL
+- en: For some other forms of data, the relationship between members of the sequence
+    becomes even more important. Music, text, time series data, and more all depend
+    heavily on a clear representation of history. For example the sentence, “I did
+    not watch this movie yesterday but I did really like it,” differs from “I did
+    watch this movie yesterday but I did not really like it,” or even “This is a lie—I
+    really did not like the movie I watched yesterday.” Not surprisingly, word order
+    is key. For a CNN to capture a relationship across so many words, the kernel size
+    has to be much larger than the number of hidden units required for an RNN to capture
+    the same relationship (and at some point, it will no longer be possible).
+  prefs: []
+  type: TYPE_NORMAL
+- en: To see why we need a new deep learning structure for these kinds of sequences,
+    let’s first examine what happens if we try to hack together a basic neural network
+    to predict the last digit of a sequence. If we imagine that we have a sequence
+    of numbers (from 0–9) such as [0, 1, 2, 3, 4] and [9, 8, 7, 6, 5], we can represent
+    each number as a 10-dimensional vector that is one-hot encoded. For example, the
+    number 2 could be encoded as [0, 0, 1, 0, 0, 0, 0, 0, 0, 0] and 6 as [0, 0, 0,
+    0, 0, 0, 1, 0, 0, 0]. To train a network to predict the last digit of the sequence
+    we can attempt two different approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, we can concatenate the four one-hot encoded vectors and thus create a
+    hidden state that exists in 40-dimensional space. The neural network then adjusts
+    a weights matrix (size 40 `×` 10) and a bias matrix (size 10 `×` 1) to map this
+    to the label (the last number), which exists in a 10-dimensional space. Second,
+    we can sum the input vectors together and create a hidden state that exists in
+    10-dimensional space and train the network to map this to the label instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The issue with the second approach is that by summing the one-hot encoded vector
+    for 2 and 3, for example, we get [0, 0, 1, 1, 0, 0, 0, 0, 0, 0] and with this
+    hidden state it is not possible to know whether the input sequence was [2, 3]
+    or [3, 2] and thus whether the next number should be 4 or 1\. The first approach
+    does not have this issue because we can clearly see that [0, 0, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0] corresponds to [2, 3]. However, another
+    issue arises when we see that we have learned a weights matrix that is of size
+    (40 `×` 10). Our neural network can only work with an input of four numbers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hence, by summing inputs we can work with variable-length sequences, but we
+    cannot preserve order. In contrast, by concatenating inputs we can preserve order,
+    but we have to work with a sequence of a fixed size. RNNs solve this by representing
+    history as a fixed-dimension vector that handles inputs that are variable-length
+    sequences (and as we will see in the sequences-to-sequence section, also variable-length
+    outputs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The operation of an RNN can be represented as the second neural network in
+    the preceding example: summing input vectors, but with the modification that after
+    every summation we multiply the hidden state by some number. This number remains
+    the same for all time steps and thus RNNs make use of weight sharing, in a similar
+    manner to CNNs. If we imagine this number to be 0.5 then we can represent [2]
+    as [0, 0, 1*0.5, 0, 0, 0, 0, 0, 0, 0] and [2, 3] as [0, 0, 1*0.5*0.5, 1*0.5, 0,
+    0, 0, 0, 0, 0], which is now a fixed-size hidden state and different from [3,
+    2], which is represented as [0, 0, 1*0.5, 1*0.5*0.5, 0, 0, 0, 0, 0, 0]. In practice,
+    we also apply a nonlinearity (add a bias term, and use a different weights matrix
+    for input X and hidden); however, as seen earlier, those are not necessary to
+    understand the fundamental concept behind RNNs .'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can see that the hidden state in any given time period is a function of all
+    previous hidden states. This means if we have a very long sequence (perhaps 100
+    entries) then we will end up with an entry that gets multiplied by the weights
+    matrix 100 times. If we imagine this matrix to be scalar (like earlier), if it
+    is less than 1 then the entry will tend to 0, and if it is above 1 then it will
+    explode toward infinity. We cover this later as the vanishing/exploding gradient
+    problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RNN Architectures
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One of the most exciting features of RNNs is their ability to work in different
+    design patterns. In contrast with CNNs, which are constrained to operate with
+    fixed input and output structures like images, RNNs offer more flexibility due
+    their ability to manage variable sequences of inputs and outputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [7-2](#Fig2) shows different design patterns for RNNs. Figure [7-2(a)](#Fig2)
+    shows the typical structure of a vanilla neural network (no RNN) with a fixed-size
+    input and output sequence; one example of this is image classification. Figure
+    [7-2(b)](#Fig2) shows the one-to-many pattern, which is the typical structure
+    used in image captioning, where the input is an image, and the output is a sequence
+    of words describing the image. Figure [7-2(c)](#Fig2) shows the many-to-one pattern.
+    One application of this pattern is sentiment analysis, where the input is a text
+    and the output is a boolean (positive or negative). Figure [7-2(d)](#Fig2) shows
+    the synchronous many-to-many pattern. An example of this could be video captioning,
+    where we want to set a tag to each video frame. Finally, Figure [7-2(e)](#Fig2)
+    shows the asynchronous many-to-many representation , which is the typical case
+    of machine translation, where the input could be text in English and the output
+    text in Spanish .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig2_HTML.jpg](A463582_1_En_7_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bottom layer is the inputs, in the middle are the hidden states, and the top
+    layer is the outputs. (a) Vanilla network (no RNN) with single input, hidden state,
+    and single output. (b) One-to-many pattern. (c) Many-to-one pattern. (d) Synchronous
+    many-to-many pattern. (e) Asynchronous many-to-many pattern, also referred as
+    encoder–decoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Apart from the previous design patterns, RNNs vary depending on how the interconnection
+    between the different layers is performed. The standard case is where the RNN
+    has recurrent connections between hidden units, as depicted in Figure [7-3](#Fig3).
+    In this case, the RNN is Turing-complete (Siegelmann, 1995), and therefore can
+    simulate any arbitrary program. In essence, an RNN repeatedly applies a nonlinear
+    function, with trainable parameters to a hidden state, which make them suitable
+    for sequence modeling tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig3_HTML.jpg](A463582_1_En_7_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: (a) RNN with recurrent connection between hidden states. (b) Unrolled RNN ,
+    showing the connection between hidden states.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, their recurrent structure constrains each step computation to depend
+    on completing the previous step, making the network difficult to parallelize and
+    scale. Similar to CNNs, training an RNN involves computing the gradient of the
+    loss function with respect to the weights. This operation involves computing a
+    forward propagation, moving from left to right through in Figure [7-3(b)](#Fig3),
+    followed by a backward propagation, moving from right to left, to update the weights.
+    This training process is expensive because the forward propagation is inherently
+    sequential, and thus cannot be parallelized. The backpropagation algorithm applied
+    in RNNs is called backpropagation through time (BPTT), and is discussed in detail
+    later in this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A solution to the slow training limitation can be found in the output recurrent
+    structure shown in Figure [7-4](#Fig4). The RNNs from this family connect each
+    output with the future hidden state, eliminating the hidden-to-hidden connections.
+    In this scenario, any loss function comparing the prediction and target at a specific
+    time step can be decoupled; therefore, the gradient for each step is computed
+    independently and parallelized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig4_HTML.jpg](A463582_1_En_7_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: (a) RNN with output recurrent connection. (b) Unrolled structure of an RNN with
+    output recurrence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unfortunately, RNNs with output recurrent connections are less powerful than
+    their counterparts containing hidden-to-hidden connections (Goodfellow et al.,
+    2016). For example, they cannot simulate a universal Turing machine. Due to the
+    lack of hidden-to-hidden connections, the only signal that is transferred to the
+    next step is the output, which unless it is very high dimensional and rich, could
+    miss important information from the past.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The structures seen until now share the idea that all sequences are forward
+    sequences, meaning that the network captures information of the present state
+    based on past states. However, there are some cases where the relationships in
+    the opposite direction are also valuable. Such is the case of speech recognition
+    or text understanding. In some languages, the linguistic relationships between
+    the different words can be dependent on the future or the past. In English, for
+    example, the verb is usually located in the middle of the sentence, whereas in
+    German, the verb tends to be at the end of the sentence. To address this phenomenon,
+    bidirectional recurrent neural networks were proposed (Schuster & Paliwal, 1997).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bidirectional recurrent neural networks (BiRNNs) have a layer of hidden connections
+    that moves forward through time and a layer that moves backward (see Figure [7-5](#Fig5)).
+    This structure allows the output to learn representations of its near future and
+    past states, at the price of making the training process computationally more
+    expensive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig5_HTML.jpg](A463582_1_En_7_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bidirectional RNN. BiRNNs contain a layer of forward connections to encode future
+    dependencies, h, and a layer of backward connections to encode past dependencies,
+    g. In the presented structure, each hidden unit is connected to another hidden
+    unit and to the output .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training RNNs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'RNN training shares some similarities with the CNN training method that we
+    saw in the previous chapter, but in the RNN case, the algorithm used is called
+    BPTT (Werbos, 1990). The underlying idea behind BPTT is simply to apply the same
+    generalized backpropagation algorithm to the unrolled computational graph. The
+    steps of training an RNN are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We have an RNN architecture like the ones shown in Figure [7-3](#Fig3), Figure
+    [7-4](#Fig4), and Figure [7-5](#Fig5). The weights are initialized based on some
+    distribution.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We input the sequences as minibatches to the RNN as (batch size, sequence size).
+    The sequence size can have a variable length depending on the framework you are
+    using.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We compute the forward propagation by unrolling the graph and obtaining the
+    predicted output at each time step.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We compare the predicted output with the true labels and accumulate the error
+    (or loss) across each time step.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We apply backpropagation by computing the gradient of the loss with respect
+    to the weights and use gradient descent to update the weights.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: This process is repeated for a number of epochs or until some exit criteria
+    are met.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For long sequences, there is a high cost of updating the weights. For instance,
+    the gradient of an RNN with sequences of length 1,000 is equivalent to a forward
+    and a backward pass in a neural network with 1,000 layers (Sutskever, 2013).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Therefore, a practical approach for training RNNs is to compute BPTT in a sliding
+    window of the unrolled graph, which is referred as truncated BPTT (Williams &
+    Peng, 1990). The idea is simple: Each complete sequence is sliced into a number
+    of smaller subsequences and BPTT is applied to each of these parts. This approach
+    works well in practice, especially in word modeling problems (Mikolov, Karafiát,
+    Burget, Černocký, & Khudanpur, 2010), but the algorithm is blind to dependencies
+    between different windows.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gated RNNs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Due to the iterative nature of the propagation error in RNNs, in some cases,
+    the loss gradients can vanish as they get backpropagated in time. This is referred
+    to as vanishing gradients (Bengio, Simard, & Frasconi, 1994). A vanishing gradient
+    means in practice that the loss gradient is a small quantity, therefore the process
+    of updating the weights can take too long. More rarely, the gradient can explode,
+    producing gradients exponentially large, referred to as exploding gradients .
+    This also makes RNNs difficult to train on sequences with long temporal dependencies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A solution to the vanishing and exploding gradient problem is the LSTM RNN (Gers,
+    Schmidhuber, & Cummins, 2000; Hochreiter & Schmidhuber, 1997), which is a network
+    type specially designed to learn long-term relationships. For it, they substitute
+    the hidden units of standard RNNs with a new block called the LSTM cell. The intuition
+    behind these cells is that they allow control of the amount of information that
+    is going to be passed to the next state and use a forgetting mechanism to stop
+    the information that is not useful anymore.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The LSTM block (see Figure [7-6](#Fig6)) is composed of a state unit and three
+    gating units: forget gate, input gate, and output gate. At a high level, the state
+    unit handles the information transfer between the input and the output, and contains
+    a self-loop. The gating units, which simply set their weights to a value between
+    0 and 1 via a sigmoid function, control the amount of information that is going
+    to come from the input, go to the output, and be forgotten from the state unit.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig6_HTML.jpg](A463582_1_En_7_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Schema of an LSTM. It has three units: input x, state s, and output y, which
+    are controlled by three gates: input gate g[i], forget gate g[f], and output gate
+    g[o]. The state unit contains a self-loop.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Empirical work has shown that the key components of the LSTM are the forget
+    gate and the output activation functions, and that there is no significant difference
+    in terms of accuracy when comparing an LSTM with its other variants (Greff, Srivastava,
+    Koutník, Steunebrink, & Schmidhuber, 2017).
+  prefs: []
+  type: TYPE_NORMAL
+- en: A variant of the LSTM is the gated recurrent unit (GRU; Cho et al., 2014), which
+    simplifies the structure of the LSTM using a slightly different combination of
+    gating units. Specifically, they lack the output gate, which exposes the full
+    hidden content to the output. In contrast, the LSTM unit uses the output gate
+    to control the amount of memory that is seen. This lack of the output gate in
+    GRUs makes them computationally less expensive, but it could lead to a suboptimal
+    memory representation, which might be the reason an LSTM tends to remember longer
+    sequences. For a more detailed comparison between LSTMs and GRUs, please refer
+    to Chung, Gulcehre, Cho, & Bengio, 2014).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sequence-to-Sequence Models and Attention Mechanism
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Sequence-to-sequence models (Cho et al., 2014; Sutskever, Vinyals, & Le, 2014)
+    are a relatively recent architecture that have created many exciting possibilities
+    for machine translation, speech recognition, and text summarization. The basic
+    principle is to map an input sequence to an output sequence, which can be of a
+    different length, a variant of Figure [7-2(e)](#Fig2) This is accomplished by
+    combining an input RNN (or an encoder) that maps a variable-length sequence to
+    a fixed-length vector with an output RNN (or a decoder) that maps a fixed-length
+    vector to a variable-length sequence. As an example, see the blog post with associated
+    tutorial for generating music using an LSTM sequence-to-sequence model with Azure
+    Machine Learning from Erika Menezes available at [`http://bit.ly/MusicGenAzure`](http://bit.ly/MusicGenAzure)
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Sequence-to-sequence models in the realm of machine translation (called neural
+    machine translation [NMT]) have largely replaced phrase-based machine translation
+    because they do not require lots of manual tuning for each subcomponent (and for
+    each language). NMT (shown in Figure [7-7](#Fig7)) models might have different
+    RNN structures for the encoder and the decoder component; the structure of the
+    RNNs can vary in several ways: cell type such as GRU or LSTM, number of layers,
+    and directionality (unidirectional or bidirectional).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig7_HTML.jpg](A463582_1_En_7_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example of a simple NMT architecture during training for English–French
+  prefs: []
+  type: TYPE_NORMAL
+- en: It has been empirically observed (Cho et al., 2014) that NMT models struggle
+    to translate long sentences. This is because the network must compress all the
+    information from the input sentence into a single fixed-length vector, irrespective
+    of the length of the sentence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider this sentence: “I went to the park yesterday to play badminton and
+    my dog jumped into the pond.” We can see there are (at least) two components:
+    “I went to the park yesterday to play badminton” and “my dog jumped into the pond.”
+    We might not care about the first component when attempting to translate the second
+    component (and vice versa). However, an NMT model has no choice but to use the
+    hidden vector that would contain both components to produce an input. Ideally,
+    we would have a model that assigns importance to the input words for each output
+    word. In that case the relative importance of the words in the first component
+    would be very low when parts of the second component are being translated. Not
+    everything is required in a sentence to translate some words.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The attention mechanism (Bahdanau, Cho, & Bengio, 2014; Yang et al., 2016)
+    attempts to do just that: It tries to create a weighted average that aligns the
+    important components from the input sentence for each word in the output sentence.
+    The main difference from a standard NMT model is that instead of encoding the
+    whole input sentence into a single fixed-length vector, the input sequence is
+    encoded into a sequence of fixed-length vectors, a “random access memory,” and
+    different vectors are weighted differently for each word in the translation. This
+    means that the model is now free to create longer sequences of hidden vectors
+    for longer sentences and learn which of those to focus on during the decoder stage.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Putting these components together, the mechanism might look like Figure [7-8](#Fig8).
+    The network first encodes each unit of the input sentence (usually a word) into
+    a distributed feature vector. The hidden state becomes the collection of these
+    feature vectors . Then during the decoder stage, the model predicts each word
+    iteratively using all previously generated predictions along with the sequence
+    of feature vectors, where it has learned how much attention to place on each feature
+    vector (input word) for each of target words it predicts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig8_HTML.jpg](A463582_1_En_7_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example of attention being applied. Note that “student” has the highest weighting
+    (represented by line thickness) during prediction of “étudiant.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: This approach of jointly aligning words (which words from input are needed to
+    predict output) and translating has empirically achieved state-of-the-art results
+    over hand-crafted methods and basic sequence-to-sequence models and is the core
+    component behind most of the online translation services (Klein, Kim, Deng, Senellart,
+    & Rush, 2017).
+  prefs: []
+  type: TYPE_NORMAL
+- en: RNN Examples
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, we are going to study two examples of RNNs implemented in TensorFlow.
+    The code is available at [`http://bit.ly/AzureRNNCode`](http://bit.ly/AzureRNNCode)
+    . The first example runs sentiment analysis in TensorFlow as well as several other
+    frameworks. The second example builds off the example in Chapter [6](A463582_1_En_6_Chapter.html)
+    to illustrate the differences between CNNs and RNNs on image classification. The
+    third example uses RNNs for time series analysis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: More Info
+  prefs: []
+  type: TYPE_NORMAL
+- en: We recommend provisioning an Azure DLVM to run the code examples in this chapter.
+    Please see Chapter [4](A463582_1_En_4_Chapter.html) for more information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example 1: Sentiment Analysis'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We first highly recommend the examples available at [`http://bit.ly/DLComparisons`](http://bit.ly/DLComparisons)
+    , which at the time of this writing include six different Python deep learning
+    framework implementations for an RNN (GRU) to predict sentiment on the IMDB movie
+    review data set, as well as an implementation in R (Keras with TensorFlow back
+    end) as well as Julia (Knet). These examples include training times for an NC
+    series DLVM (NVIDIA Tesla K80 GPU) as well as an NC_v2 series DLVM (NDIVIA Tesla
+    P100 GPU) so one can follow along and also compare timings to make sure the setup
+    is correct.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example 2: Image Classification'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In Chapter [6](A463582_1_En_6_Chapter.html), we saw how a CNN is typically used
+    to classify an image. Here, we examine how to do the same but with an RNN. Although
+    this is not a traditional application of RNNs, it illustrates that it is often
+    possible to decouple the neural network architecture to the problem type and to
+    illustrate some differences between CNNs and RNNs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The data for a CNN is loaded as [number of examples, height, width, channels].
+    For an RNN we simply reshape this to [number of examples, height, width*channels]
+    (see Listing [7-1](#PC1)).[¹](#Fn1) This means that for the CIFAR data we will
+    have 32 time steps (rows of pixels) where each row contains 32*3 (number of columns
+    * number of channels) variables. For example, the first time step will contain
+    [row1_column1_red_pixel, row1_column1_green_pixel, row1_column1_blue_pixel, row1_column2_red_pixel,
+    … , row1_column32_bue_pixel].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can then create a network architecture consisting of 64 basic RNN cells and
+    apply that to each time step of our input tensor, as shown in Listing [7-2](#PC2).
+    We will collect the output from the last time step and apply a fully connected
+    layer with 10 neurons .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: To train a model, we need to create a training operator that is an optimizer
+    (in this example, Adam) that works on a loss (and the loss is a function of the
+    prediction and ground-truth labels), as shown in Listing [7-3](#PC3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: To start training we need to create our placeholders and initialize the variables
+    in the graph, as displayed in Listing [7-4](#PC4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can then train our model as shown in Listing [7-5](#PC5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: The generator to supply our data is created as shown in Listing [7-6](#PC6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: To get a prediction on our test data we apply an `argmax()` operation on the
+    model’s predictions to pick the most likely class (see Listing [7-7](#PC7)). If
+    we wanted class probabilities , we would first apply a softmax transformation;
+    however, this is only needed for training and comes bundled with the loss function
+    for computational efficiency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that creating generators, creating placeholders, initializing variables,
+    and training with `feed_dict` is a rather low-level API and useful only to help
+    show how everything works. In practice, all of these can be abstracted away by
+    using TensorFlow’s Estimator API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example 3: Time Series'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In the next example we are going to predict Microsoft stock using an LSTM. We
+    will start by getting the data into a data frame, as shown in Listing [7-8](#PC8).
+    The data are the stock value of Microsoft from 2012 to 2017, obtained from [`http://bit.ly/MSFThist`](http://bit.ly/MSFThist)
+    . The `.csv` file contains a first column with the date, four columns with the
+    price of the share (open, high, low, and close) and some other information that
+    we are not going to use. From the four price values, we are going to take the
+    mean for simplicity. We are going to predict just one step into the future because
+    the longer we predict, the less accurate the prediction will be. You can also
+    play with different hyperparameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: The next step is to normalize the data and generate the train and test sets,
+    as shown in Listing [7-9](#PC9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then we need to perform a reshaping , so the data can be added to the model,
+    as shown in Listing [7-10](#PC10). We also define the time ahead that we are going
+    to predict; normally, the smaller this value is, the more accurate the prediction
+    will be.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: The next step is to define and train the model, as displayed in Listing [7-11](#PC11).
+    In this case we use a basic LSTM cell, but you can try to use a GRU or a BiLSTM.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, we are going to calculate the root mean squared error (RMSE) of the
+    test set prediction, as shown in Listing [7-12](#PC12).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Looking at Figure [7-9](#Fig9), it seems that the LSTM is predicting the stocks
+    well. Now you can play with different time horizons or LSTM parameters. This was
+    a simple example of using LSTMs for time series analysis to illustrate the concept
+    of using LSTMs in forecasting.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_7_Fig9_HTML.jpg](A463582_1_En_7_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stock forecasting using an LSTM
+  prefs: []
+  type: TYPE_NORMAL
+- en: For another example of using LSTMs for time series analysis, we recommend the
+    tutorial for predictive maintenance using Azure Machine Learning services available
+    at [`http://bit.ly/DLforPM`](http://bit.ly/DLforPM) . We also recommend the blog
+    post by Andrej Karpathy on the Unreasonable Effectiveness of Recurrent Neural
+    Networks available at [`http://bit.ly/RNNEffective`](http://bit.ly/RNNEffective)
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter introduced RNNs and different variants that are useful for building
+    applications on top of sequence data. These models are especially useful for natural
+    language processing and time series analysis, although the application of RNNs
+    can be quite broad. The chapter finished with two practical “how-to” examples,
+    and a reference to a recommended resource for trying different deep learning frameworks
+    for an RNN (GRU) example for sentiment analysis on the Azure DLVM. In the chapter
+    that follows, we next dive into a completely different type of deep learning network
+    that is a more recent development and shows promise for many applications as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RNNs have become increasingly popular in the last few years, but recently we
+    have seen a trend back to CNN architectures for sequence data, perhaps partly
+    owing to CNN being easier to train (both from a bare-metal and parameter-tuning
+    perspective).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stacking attention-encoded vectors in a hierarchical tree can also preserve
+    order within a sequence and capture long-term dependencies. These types of networks
+    are called hierarchical neural attention and are similar to WaveNet, which has
+    been used to synthesize speech.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Temporal convolutional networks that (1) have no information leakage from future
+    to past (i.e., casual), and (2) can take variable-length sequences just like RNNs,
+    have become increasingly popular for pure-sequence tasks that have been previously
+    commonly regarded as RNN territory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Footnotes[1](#Fn1_source)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This might be different between CPU and GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 8. Generative Adversarial Networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: For many AI projects, deep learning techniques are increasingly being used as
+    the building blocks for innovative solutions ranging from image classification
+    to object detection, image segmentation, image similarity, and text analytics
+    (e.g., sentiment analysis, key phrase extraction). GANs, first introduced by Goodfellow
+    et al. (2014), are emerging as a powerful new approach toward teaching computers
+    how to do complex tasks through a generative process. As noted by Yann LeCun (at
+    [`http://bit.ly/LeCunGANs`](http://bit.ly/LeCunGANs) ), GANs are truly the “coolest
+    idea in machine learning in the last 20 years.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: In recent years, GANs have shown tremendous potential and have been applied
+    in various scenarios, ranging from image synthesis to enhancing the quality of
+    images (superresolution), image-to-image translations, text-to-image generation,
+    and more. In addition, GANs are the building blocks for advancements in the use
+    of AI for art, music, and creativity (e.g., music generation, music accompaniment,
+    poetry generation, etc.).
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter describes the secrets behind GANs. We first walk through how GANs
+    are used in various AI applications and scenarios. We then step through code samples
+    for one of the novel GANs, called CycleGAN, to understand how GANs work. For this,
+    we use an Azure DLVM as the computing environment. For details on setting up the
+    DLVM to run the code sample, please see Chapter [4](A463582_1_En_4_Chapter.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: What Are Generative Adversarial Networks?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'GANs are emerging as powerful techniques for both unsupervised and semisupervised
+    learning. A basic GAN consists of the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A generative model (i.e., generator) generates an object. The generator does
+    not know anything about the real objects and learns by interacting with the discriminator.
+    For example, a generator can generate an image.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A discriminative model (i.e., discriminator) determines whether an object is
+    real (usually represented by a value close to 1) or fake (represented by a value
+    close to 0).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An adversarial loss (or error signal) is provided by the discriminator to the
+    generator such that it enables the generator to generate objects that are as close
+    as possible to the real objects.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [8-1](#Fig1) shows the interaction between the generator and the discriminator.
+    The discriminator is a classifier that determines whether the image given to it
+    is a real or fake image. The generator uses the noise vector and feedback from
+    the discriminator to try its best to generate images that are as close to real
+    images as possible. This continues until the GAN algorithm converges. In many
+    GANs, the generator and discriminator usually consist of common network architectures
+    modeled after DenseNet, U-Net, and ResNet. Some example network architectures
+    were discussed in Chapter [3](A463582_1_En_3_Chapter.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_8_Fig1_HTML.jpg](A463582_1_En_8_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basic GAN to show the interaction between the generator and discriminator
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [8-2](#Fig2) (inspired by work by Goodfellow et al., 2014) describes
+    the theoretical basis for how a GAN works . The generator (G) and discriminator
+    (D) are represented by the solid line and the dashed lines, respectively. The
+    data generating distribution is denoted by the dotted lines. The two horizontal
+    lines in Figure [8-2](#Fig2) denote the domain from which z is sampled uniformly
+    (lower line), and the domain of x (upper line). The arrows from the lower to the
+    upper line denote the mapping x = G(z). From Figure [8-2](#Fig2), you will notice
+    that over time, as the GAN converges, the solid line and the dotted lines are
+    close to each other (or almost similar). At that point the discriminator D can
+    no longer distinguish between the real and the fake objects generated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_8_Fig2_HTML.jpg](A463582_1_En_8_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'How GANs work: The generator is generating objects that are so real that the
+    discriminator can no longer tell the difference between real and fake. Source:
+    Goodfellow et al. (2014).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the early version of GANs, the generator and the discriminator are implemented
+    as fully connected neural networks (Goodfellow et al., 2014). These GANs are used
+    for generating images from various data sets commonly used in deep learning: CIFAR10,
+    MNIST (handwritten digits), and the Toronto Face Dataset, for example. As the
+    architecture of GANs has evolved, CNNs are increasingly being used. An example
+    of a GAN that uses deep CNNs is DCGANs (Radford, Metz, & Chintala, 2016). A comprehensive
+    overview of different types of GANs can be found in Creswell et al. (2017).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since 2014, very innovative approaches to using GANs have emerged. GANs have
+    shown promise in the use of AI for creativity, such as art and music generation
+    and computer-aided design (CAD). One of these approaches is to automate the generation
+    of images using text descriptions. InfoGAN (Chen et al., 2016) is an unsupervised
+    approach that can distill the semantic and hidden representations from several
+    well-known data sets (e.g., Digits [MNIST], CelebA Faces, and House Numbers [SVHN]).
+    The secret behind InfoGAN is maximizing the mutual information between latent
+    variables and the observations. The stacked Generative Adversarial Networks (StackGAN;
+    Zhang et al., 2016) was proposed to generate photorealistic images using text
+    descriptions. For example, given the text “This bird has a yellow belly and tarsus,
+    grey back, wings, and brown throat, nape with a black face,” StackGAN will generate
+    the picture of a bird using two stages. In Stage 1, a low-resolution image is
+    computed, which consists of basic shapes and colors. In Stage 2, the results from
+    Stage 1 and the text descriptions are used to create photorealistic high-resolution
+    images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [8-3](#Fig3) shows the two stages of the StackGAN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_8_Fig3_HTML.jpg](A463582_1_En_8_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'StackGAN: Generation of image from text. Source: Zhang et al. (2016).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like StackGAN, Attentional Generative Adversarial Network (AttnGAN) uses a multistage
+    approach. In addition, AttnGan introduced a novel attention-driven approach that
+    focuses (or pays attention) to the different words in the text description and
+    uses this to synthesize fine-grained details for each of the subregions of an
+    image. Figure [8-4](#Fig4) shows how AttnGAN works , and the different parts of
+    the image that it is focusing on for the different words. The first row shows
+    the image generated by different generators, each producing images of different
+    dimension (from 64 `×` 64, to 128 `×` 128, to 256 `×` 256). The second and third
+    row show the top five most attended words (i.e., words with the highest values
+    as defined by each attention model).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_8_Fig4_HTML.jpg](A463582_1_En_8_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: How an AttnGAN uses different parts of the text description to generate details
+    for each region of the image
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before we dive into the implementation of some of these GANs, it is important
+    to note that many of today’s GAN implementations are designed for generating data
+    (e.g., images) from a real-valued continuous data distribution. When trying to
+    apply GANs to generate discrete sequences of data (e.g., text, poetry, music),
+    many existing GAN implementations will not be able to handle it well. In addition,
+    GANs are designed to determine the loss (or adversarial loss) only when the entire
+    sequence of data (e.g., the image) has been generated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another interesting type of GAN is SeqGAN (Yu, Zhang, Wang, & Yu, n.d.). SeqGAN
+    is a novel approach toward integrating reinforcement learning concepts into GANs
+    to overcome the various challenges faced by existing GANs when used to generate
+    discrete sequences of data. In a SeqGAN, the generator is designed to be an agent
+    of reinforcement learning, where its current state is the generated discrete tokens
+    so far, and the action is the next token to be generated. The discriminator evaluates
+    the generated tokens and provides feedback to help the generator to learn. SeqGAN
+    is shown to be effective in poetry generation, music generation, and application
+    to language and speech tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Today, GANs work well for several types of problems, but they are notoriously
+    difficult to train, as they are not guaranteed to converge on a solution that
+    is optimal, or even stable. Another common issue with GANs is known as mode collapse,
+    where the generator creates samples that have extremely low variety. They require
+    very careful selection of the hyperparameters and parameter initialization among
+    other factors to work well. At the 2016 NIPS workshop on adversarial training,
+    for example, how to explain and fix the issues in training GANs was a main topic
+    (video recordings can be watched at [`http://bit.ly/NIPS2016`](http://bit.ly/NIPS2016)
+    `)`. Fortunately, though, many tricks have been used to stabilize the training
+    of GANs. One such trick is to include additional information either in the input
+    space (e.g., adding continuous noise to the input of the discriminator) or adding
+    the information to the output space (e.g., different classes of true examples).
+    Other tricks look at introducing a regularization scheme during training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Learn about the evolution of GANs at [`http://bit.ly/GANsEvolve`](http://bit.ly/GANsEvolve)
+    `.`
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter walks through one of the GANs, known as Cycle-Consistent Adversarial
+    Networks (CycleGANs). We learn how CycleGANs can be used for image-to-image translation.
+    By walking through the code, we will jump start our understanding of GANs and
+    the innovative applications of GANs in your AI projects. You can leverage the
+    Microsoft AI Platform to train and deploy these GANs to the cloud, mobile, and
+    edge devices.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cycle-Consistent Adversarial Networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'CycleGANs are a novel approach for translating an image from a source domain
+    X to a target domain Y. One of the strengths of CycleGANs is that the training
+    of the GAN does not require the training data to have matching image pairs. As
+    noted in Zhu, Park, Isola, and Efros (2017), CycleGANs have been successfully
+    applied in the following use cases :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_8_Fig5_HTML.jpg](A463582_1_En_8_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Object transfiguration (horse to zebra, apple to orange). Source: Zhu, Park,
+    Isola, and Efros (2017).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Translating Monet paintings to photos.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Style transfer for photos using styles from various famous artists (Monet, Van
+    Gogh, Cezanne, and Ukiyo-e).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Object transfiguration, where it is used for changing the type of objects found
+    in photos. Figure [8-5](#Fig5) shows how CycleGANs are used in object transfiguration
+    (horse to zebra, zebra to horse, apple to orange, orange to apple, etc.).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Translating a photo from one season (e.g., summer) to another (e.g., winter).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Photo enhancement by narrowing the depth of field, and more .
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The goal of CycleGANs is to learn how to map images from one domain X to another
+    domain Y. Figure [8-6](#Fig6) shows the use of two mapping functions G and F,
+    and two discriminators D[X] and D[Y]. The discriminator D[X] is used to verify
+    the images from X and the translated images F(y). Similarly, the discriminator
+    D[Y] is used to verify the images from Y and the translated images G(x). The secret
+    behind the effectiveness of using CycleGANs for image translation is the use of
+    a cycle consistency loss. Intuitively, the cycle consistency loss is used to determine
+    whether images from the domain X can be recovered from the translated image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_8_Fig6_HTML.jpg](A463582_1_En_8_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: CycleGANs model with two mapping functions G and F, and two adversarial discriminators
+    D[X] and D[Y]Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: CycleGANs were first introduced in Zhu et al. (2017). The original implementation
+    of CycleGANs (in PyTorch) is available at [`http://bit.ly/CycleGAN`](http://bit.ly/CycleGAN)
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: The CycleGAN Code
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let us first walk through the overall CycleGAN code that will be used for training
+    the CycleGANs and then testing it by translating images from a source domain A
+    to a target domain B. For example, the trained CycleGAN will perform object transfiguration
+    and translate a photo consisting of a horse to a zebra (and vice versa). The results
+    are then visualized as an HTML file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us first import the Python libraries that we will use in this code. From
+    Listing [8-1](#PC1), you will see that we are using TensorFlow, and importing
+    the definition of the CycleGAN from a `model.py` file. We will dive into the details
+    of the `model.py` fie in the later parts of this section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We recommend provisioning an Azure DLVM to run the code examples in this chapter.
+    Please see Chapter [4](A463582_1_En_4_Chapter.html) for more information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we define the argument that will be used for training and testing the
+    CycleGAN. From Listing [8-2](#PC2), you will see that we specified a learning
+    rate of 0.0002 for 200 epochs (denoted by `lr` and `epoch_step`). In addition,
+    we also specified the locations of the directories that we will be using to load
+    the training data, output the test images, and storing the checkpoint files. To
+    enable the value of phase (i.e., train or test) to be modified, we also specified
+    it as a property called `phase` , and defined the relevant getter or setter for
+    it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we create the relevant directories on the local file system that will
+    be used to load the training data, store the output images, and the checkpoint
+    files (shown in Listing [8-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: We are now ready to train the CycleGAN (shown in Listing [8-4](#PC4)). As a
+    machine might have multiple devices (CPU or GPU) that can be used for training,
+    we specify `allow_soft_placement` to be `True`. The setting `allow_soft_placement`
+    specifies that if an operation does not have a GPU implementation, it will be
+    run on the CPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, we specify `gpu_options.allow_growth` to be `True`. TensorFlow defaults
+    to mapping all the GPU memory that is available to the process. This helps in
+    reducing GPU memory fragmentation. By setting `gpu_options.allow_growth` to `True`,
+    the process will start with only the required memory needed, and grow the memory
+    allocated as needed during training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We are now ready to start training the CycleGAN. After creating the TensorFlow
+    session, we invoke the `train method` of the CycleGAN object, and pass it the
+    arguments that we defined earlier, as shown in Listing [8-4](#PC4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using a single Tesla K80 GPU, the training of the CycleGAN with 200 epochs will
+    take a while. If you want to test the code, you should reduce the number of epochs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Later in this chapter, we describe the architecture of the CycleGAN. Before
+    that, let us first look at the training code. Once the training of CycleGAN completes,
+    you are ready to test the CycleGAN. Listing [8-5](#PC5) shows how we invoke the
+    `test` method of the CycleGAN object. From the arguments shown in Listing [8-2](#PC2),
+    we are performing a translation of images from Domain A to Domain B. The resulting
+    images are stored in the `test` folder. In addition, an HTML file, `AtoB_index.html`,
+    is written to the `test` folder to enable you to see the image before and after
+    the CycleGAN has performed the translation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Network Architecture for the Generator and Discriminator
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To build any type of GAN, it is important to first define the discriminator
+    and generator. Let us explore the network architecture for the generator and discriminator.
+    The role of the generator in any GAN is to generate images that will fool the
+    discriminator. The network architecture for the CycleGAN generator is adapted
+    from the Fast-Neural Style transfer work (Justin, Alexandre, & Li, 2016).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generator code is shown in Listing [8-6](#PC6). The generator consists of
+    nine residual blocks that will be used for training with 256 `×` 256 images (from
+    g_r1 to g_r9). Each residual block has two 3 `×` 3 layers with convolution, instance
+    normalization, and ReLU applied.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Zhu et al. (2017) noted the use of instance normalization in the residual block
+    improves image quality.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: The discriminator for the CycleGAN (shown in Listing [8-7](#PC7)) takes an input
+    image and predicts whether it is an original image or an image that is generated
+    by the generator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: The discriminator consists of a first layer that applies a LeakyRelu and convolution
+    to the image. For the subsequent three layers, convolution, instance normalization,
+    and ReLU are applied. A final convolution is applied in the final layer (denoted
+    by h4), which produces a one-dimensional output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: More Info
+  prefs: []
+  type: TYPE_NORMAL
+- en: The code for this chapter is based on the work by Xiaowei Hu, and available
+    on Github at [`http://bit.ly/GANsCode1`](http://bit.ly/GANsCode1) . A Jupyter
+    notebook is created to enable you to get started with running the CycleGAN code
+    quickly. The notebook is available on Github at [`http://bit.ly/GANsCode2`](http://bit.ly/GANsCode2)
+    . We tested the code on an Azure DLVM, with a single Tesla K80 GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the CycleGAN Class
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Next, let us look into the CycleGAN class. In the `Train` method found in the
+    `model.py` file, we use the Adam optimizer with a batch size of 1\. Listing [8-8](#PC8)
+    shows how we specify the optimizer that will be used by the discriminator and
+    generator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: A CycleGAN consists of two generators (XtoY and YtoX) and two discriminators
+    (D[X] and D[Y]), as shown earlier in Figure [8-6](#Fig6). You will see this defined
+    in the `_build_model` method in `model.py`. From the code in Listing [8-9](#PC9),
+    you will see how we set the value of the `reuse` argument to be `False` during
+    the initial definition of `generatorA2B` and `generatorB2A`, and uses the variables
+    `real_A` and `fake_B`, respectively. This determines whether variables are reused.
+    In the subsequent definition of `generatorB2A` and `generatorA2B`, the value of
+    `reuse` is set to `True`, and uses the variables `real_B` and `fake_A`. The two
+    discriminators are defined in `model.py`, as shown in Listing [8-10](#PC10). The
+    interested reader should deep dive into the code provided to understand the details
+    of the generator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: Adversarial and Cyclic Loss
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: During the training of the GAN, the generator G generates images G(x) that are
+    like the images found in Domain Y. At the same time, the discriminator D[Y] needs
+    to differentiate between generated images G(x) and the real samples from y. Hence,
+    G is always trying to minimize its adversarial loss, whereas the discriminator
+    D is trying to maximize its loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As noted in Zhu et al. (2017), if the capacity of the network is large, the
+    mappings G and F can potentially map input images from the source domain X to
+    any random permutation of images in Domain Y. Hence, it is important to reduce
+    the space of possible mapping functions. One of the secrets of a CycleGAN is the
+    use of a cycle consistency loss . The intuition behind the use of a cycle consistency
+    loss is that the learned mapping function should be able to bring a translated
+    image back to its original image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Results
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: After we ran the CycleGAN training for 150 epochs, we ran the testing code shown
+    in Listing [8-5](#PC5). This applies the CycleGAN model to the images found in
+    the `dataset` directory and output the translated image to the `test` directory.
+    An HTML file is also generated. This allows you to visualize the original and
+    the translated image side by side. In the Jupyter notebook provided, the code
+    (shown in Listing [8-11](#PC11)) enables the HTML file to be viewed in a notebook
+    cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [8-7](#Fig7), we show a subset of the images generated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A463582_1_En_8_Fig7_HTML.jpg](A463582_1_En_8_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Output from CycleGAN test (after 150 epochs)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: GANs have tremendous potential to be used in AI for creativity, music, and the
+    arts. Since it was first proposed in 2014, GANs innovations are happening at a
+    breathtaking pace. This chapter described how GANs can be applied to various use
+    cases. We showed the use of the generator and the discriminator in the GAN architecture,
+    and how they are used.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, we discussed how CycleGAN works, and showed how it can be used for translation
+    of objects from one domain to another. In the code example given in this chapter,
+    we focus on how to train and test a novel type of GAN, called CycleGAN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All the code in this chapter is run on a Linux DLVM, available on Azure. More
+    details on choices for training AI models (e.g., GANs), such as the computing
+    environments and how to do training at scale, are discussed in the next chapter.
+  prefs: []
+  type: TYPE_NORMAL

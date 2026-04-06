@@ -1,0 +1,1836 @@
+- en: 10. Integrated Planning and Learning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Studying topics separately followed by learning about them together has been
+    a recurring theme in this book. We first looked at model-based algorithms in Chapter
+    [3](502835_2_En_3_Chapter.xhtml). In this setup, we knew the model dynamics of
+    the world the agent was operating in. The agent used the knowledge of model dynamics
+    along with Bellman equations to first carry out the evaluation/prediction task
+    to learn the state or state-action values. It then followed this up by improving
+    the policy to get the optimal behavior, which was called *policy improvement/policy
+    iteration*. Once you know the model, you can plan ahead to carry out the evaluation/improvement
+    steps. This is called the *planning phase*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [4](502835_2_En_4_Chapter.xhtml) started exploring a model-free regime.
+    *Model-free* means you do not know the model. You learn the model by interacting
+    with it. This is called *learning*. In the model-free setup, you learned about
+    the Monte Carlo (*MC*) and temporal difference (*TD*) methods. I compared the
+    merits and demerits of using both approaches. Next, you combined *MC* and *TD*
+    into a single unified approach using *n-step* and *eligibility traces*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapters [5](502835_2_En_5_Chapter.xhtml) through [7](502835_2_En_7_Chapter.xhtml)
+    extended the MC and TD methods from Chapter [4](502835_2_En_4_Chapter.xhtml) to
+    non-tabular, continuous space, large-scale problems using function approximation
+    and deep learning. All the methods covered in Chapters [3](502835_2_En_3_Chapter.xhtml)
+    through [7](502835_2_En_7_Chapter.xhtml) are called *value-based methods,* wherein
+    the state or state-action values are learned, followed by policy improvement using
+    these learned state/state-action values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [8](502835_2_En_8_Chapter.xhtml) focused on an alternate approach, namely,
+    *policy-based methods*. This method involves learning the optimal policy directly
+    without going through the intermediary step of learning the state/action values.
+    You learned about Reinforce, Actor-Critic, as well as TRPO and PPO. Initially,
+    this gave the impression that the value-based and policy-based methods were distinct.
+    However, just like combining *MC* and *TD* into one under eligibility traces,
+    Chapter [9](502835_2_En_9_Chapter.xhtml) combined value-based Q-learning and policy
+    learning to get the best of both worlds under actor-critic (AC) methods like DDPG,
+    TD3, and SAC.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter continues recombining different approaches. Specifically, the chapter
+    combines the model-based approaches and model-free approaches to make the algorithms
+    more powerful and sample efficient. This approach leverages the best of both of
+    them and is the main emphasis of this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will also study the exploration-exploitation dilemma in more detail to go
+    beyond just blindly following e-greedy policies. You will look at simpler setups
+    to gain a stronger understanding of the exploration-exploitation dilemma. This
+    will be followed by a deep dive into a “guided forward looking tree search approach,”
+    called *Monte Carlo tree search* (MCTS).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, you will look at the AlphaGo and AlphaZero approaches as examples of
+    MCTS application.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model-Based Reinforcement Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: What is model-free RL? In model-free RL, you do not know the model. Rather,
+    you learn the value function and/or policy by having the agent interact with the
+    environment, that is, learning by experience. This is what you saw in Chapters
+    [4](502835_2_En_4_Chapter.xhtml) through [9](502835_2_En_9_Chapter.xhtml) of this
+    book. In comparison, the model-based RL here is the one under which you learn
+    the model by having the agent interact with the environment, again learning by
+    experience. The learned model is used to plan the value function and policy—something
+    similar to what you saw in Chapter [3](502835_2_En_3_Chapter.xhtml). Chapter [3](502835_2_En_3_Chapter.xhtml)
+    assumed prior knowledge of the model and assumed it to be perfect. However, in
+    model-based RL, you learn the model and then use that knowledge. However, the
+    knowledge may be incomplete; in other words, you may not know the exact transition
+    probabilities or complete distribution of rewards. You learn parts of the system
+    dynamics that you experience as the agent interacts with the environment. You
+    base this knowledge on limited interactions, and hence without an exhaustive interaction
+    covering all the possibilities, the knowledge of the model is incomplete.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What do I mean by *model* here? This means to have estimates of the transition
+    probabilities *P*(*s*[*t* + 1]| *s*[*t*], *a*[*t*]) and the reward *R*(*s*[*t*],
+    *a*[*t*]). The agent interacts with the world/environment and forms an impression
+    of the world. Pictorially it can be represented as shown in Figure [10-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the model-based reinforcement learning. The parts are
+    as follows. Model. Experience. Value or policy. Model learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model-based reinforcement learning. The agent learns the model based on its
+    interaction with the environment, and that model is used for planning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The advantages are that learning becomes sample efficient. You can use the learned
+    model to plan effectively, as compared to the model-free approach. Further, the
+    model interaction is all about taking an action *a*[*t*] while in state *s*[*t*]
+    and observing the outcome of the next state *s*[*t* + 1] and the reward *r*[*t* + 1].
+    You can use supervised learning machinery to learn from the interactions with
+    the real world, where a given (*s*[*t*], *a*[*t*]) is the sample input and *s*[*t* + 1]
+    and/or *r*[*t* + 1]are the sample targets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {s}_1,{a}_1\to {r}_2,{s}_2 $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {s}_2,{a}_2\to {r}_3,{s}_3 $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: ':     :         :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {s}_{T-1},{a}_{T-1}\to {r}_T,{s}_T $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: As with any other regular supervised machine learning setup, you can learn from
+    the previous samples that the agent gathers from its interaction with the environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Learning *s*[*t*], *a*[*t*] → *r*[*t* + 1] is a regression problem with a loss
+    like mean squared loss.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Learning the transition dynamics *s*[*t*], *a*[*t*] → *s*[*t* + 1]is a density
+    estimation problem. You could learn a discrete categorical distribution, a Gaussian,
+    or a mixture of Gaussian model parameters. The loss could be a KL-divergence loss.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If you extend the learning to Bayesian learning, you can also reason about the
+    model uncertainties—how sure or unsure you are about the learned model transitions
+    and reward functions. The Bayesian approach to learning produces not just a point
+    estimate but a whole distribution of the estimate that gives you the capability
+    to reason about the strength of the estimation. A narrow probability distribution
+    for the estimate means that a large part of the probability is centered around
+    the peak; that is, you have strong confidence in the estimate. Conversely, a broad
+    distribution for the estimate reflects a higher uncertainty about the estimate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, nothing comes free in life. This two-step approach of first learning
+    an imperfect representation of the model followed by using this imperfect representation
+    to plan or find the optimal policy introduces two sources of error. First, the
+    learned representation of the model dynamics may be inaccurate. Second, learning
+    a value function from an imperfect model may have its own inaccuracies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The learned model can be represented as a “table lookup” (similar to what you
+    saw in Chapters [2](502835_2_En_2_Chapter.xhtml) and [3](502835_2_En_3_Chapter.xhtml)),
+    linear expectation model, or linear Gaussian model. There can be even more complex
+    model representations like the Gaussian process model or deep belief network models.
+    It depends on the nature of the problem, ease of data collection, and so on. Deciding
+    on the right representation requires domain expertise. Let’s look at a simple
+    example of learning a table lookup model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, look at the expressions that you will use to learn the reward and transition
+    dynamics. It is a simple averaging method that you will use here. To estimate
+    the transition probability, you take the average of the number of times the transition
+    *s*[*t*], *a*[*t*] → *s*[*t* + 1] was seen and divide it by the total number of
+    times the agent saw itself in *s*[*t*], *a*[*t*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{p}\left(s,a\right)=\frac{1}{N\left(s,a\right)}{\sum}_{t=1}^T\mathbbm{1}\left(S+t=s,{A}_t=a,{S}_{t+1}={s}^{''}\right)
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (10-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, ![$$ \mathbbm{1}\left(S+t=s,{A}_t=a,{S}_{t+1}={s}^{'}\right) $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq1.png)
+    is an indicator function. Indicator functions take a value of 1 when their condition
+    inside the brackets is true and a value of 0 otherwise. In summary, this indicator
+    function is counting the number of times (*s*, *a*) leads to a transition to the
+    next state, *S*[*t* + 1] = *s*^’.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly, you can define the reward learning as an average.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{r}\left(s,a\right)=\frac{1}{N\left(s,a\right)}{\sum}_{t=1}^T\mathbbm{1}\left({S}_t=s,{A}_t=a\right){R}_t
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (10-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s look at a simple environment, shown in Figure [10-2](#Fig2), in which
+    there are only two states, and you observe a set (eight) of the agent’s interaction
+    with the environment. Assume no discounting—that is, *γ* = 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Suppose you see (*A*, 0, *B*, 0). This means that the agent starts in state
+    *A*, observes a reward of 0, followed by state *B*, and a reward of 0, and finally
+    followed by a transition to the terminal state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s say the eight transitions/interactions collected by the agent are as
+    follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A, 0, B, 0
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: B, 1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: B, 1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: B, 1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: B, 1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: B, 1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: B, 1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: B, 0
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Apply Equations [10-1](#Equ1) and [10-2](#Equ2) to construct the model as follows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You saw only one transition from *A* to *B*, and you got a reward of 0\. So,
+    you conclude that *P*(*B*| *A*) is 1 and *R*(*state* = *A*) = 0\. Note that, in
+    the previous example, I am not explicitly showing actions to keep things simple.
+    You could think of this as taking a random action in each state or you could think
+    of this as a Markov reward process (MRP) instead of a full-blown MDP.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You saw eight transitions from *B*, all of them leading to the terminal state.
+    In two instances, the reward was 0 while in the remaining six cases it was 1\.
+    This can be modeled as saying that *P*(Terminal | *B*) = 1\. The reward *R*(*B*) = 1
+    with 0.75 (6/8) probability and *R*(*B*) = 0 with 0.25 probability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [10-2](#Fig2) shows the model you learned from these eight interactions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the look up model. A links with B and then split into
+    2 Ts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table lookup model learned from the environment interaction
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is one of the many parameterized model representations where you explicitly
+    learn the model dynamics and then discard the sample interactions with the real
+    world. However, there is another approach that was used in DQN: the nonparameterized
+    model. In the nonparameterized model, you store the interactions in a buffer and
+    then sample from the buffer. An example from the previous eight interactions would
+    be to store tuples of `(state, reward, next_state)` in a list (remember in this
+    example, you do not have actions, as it is an MRP).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ D=\left[\left(A,0,B\right),\left(B,0,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,0,T\right)\right]
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The first two values in buffer *D* come from one transition, that is, *A*, 0,
+    *B*, 0\. The rest of the seven entries in the buffer are the remaining seven transitions
+    from the previous example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A broad categorization of model learning is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Parameterized*:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Table lookup model
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Linear expectation model
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Linear Gaussian model
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Gaussian process model
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Deep belief network model
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Nonparameterized*: Store all interactions (*s*, *a*, *r*, *s*^’) in a buffer
+    and then later do sampling from this buffer to generate example transitions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Planning with a Learned Model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Once you know the model, you can use it to carry out planning using the value
+    or policy iteration in Chapter [3](502835_2_En_3_Chapter.xhtml). In these methods,
+    you do one-step rollouts using Bellman equations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, there is another way the learned model can be used. You can sample
+    from it and use these samples under the *MC* or *TD* approach of learning. While
+    carrying out the *MC* or *TD* style of learning in this case, the agent does not
+    interact with the real environment. Rather, it interacts with the *model of the
+    environment* that it has approximated from past experiences. To an extent, it
+    is still called *planning*. You are using the model learned to plan and not planning
+    from direct interaction with the real world.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keep in mind that the model you learn is not exact. It is based on a partial
+    interaction the agent has with the environment. It is usually not complete or
+    thorough. I talked about this in the previous section. The errors in the learned
+    model would affect the quality of learning. The algorithms optimize learning with
+    respect to the model you have formed and not the real-world model. This can limit
+    the quality of learning. If your confidence in the learned model is not too high,
+    you could go back to the model-free RL methods that you saw before. Or you could
+    use the Bayesian approach to reason about the model uncertainties. The Bayesian
+    approach is not something I cover more in this book. Interested readers can refer
+    to various advanced RL texts and papers to learn more about it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Until now, you have seen that model-based RL offers the benefit of learning
+    the model and thereby making learning more sample efficient. However, it comes
+    at a cost of the model estimates not being accurate, which in turn limits the
+    quality of learning. Is there a way to combine model-based and model-free learning
+    into a single unified framework and take advantage of both approaches? This is
+    what you will look at next.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Integrating Learning and Planning (Dyna)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'There are two kinds of experiences that you can have: a real experience where
+    the agent gets the next state and reward by interacting with the real environment,
+    and a simulated experience where the agent uses the model it learned to create
+    more simulated experiences. A simulated experience is easier and cheaper to create,
+    especially in robotics. Fast robot simulators can produce samples that may not
+    match the real world completely, but that allow you to simulate and generate agent
+    behavior faster than the real-world interaction of robots. However, the simulations
+    may not be precise, which is why learning from real-world experiences can help.
+    We can change the diagram from Figure [10-1](#Fig1) to include this step, as shown
+    in Figure [10-3](#Fig3).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A dyna architecture of learning and planning. They include model, experience,
+    model learning, and value or policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dyna architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Dyna, the agent interacts with the environment (acting) to produce real experiences.
+    These real experiences are used to learn the model of the world and directly improve
+    the value/policy like a model-free RL setup. This is the same as what you saw
+    in Chapters [4](http://dx.doi.org/10.1007/978-1-4842-6809-4_4) through [8](http://dx.doi.org/10.1007/978-1-4842-6809-4_8).
+    The model learned from real-world interactions is used to generate simulated transitions.
+    These simulated transitions are used to improve the value/policy. This is called
+    step planning, as you are using the model of the world to generate experiences.
+    You can carry out the planning step by using the simulated experience multiple
+    times for each step of “acting” and generate the new samples from the real world.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s look at a concrete implementation of Dyna—Tabular Dyna Q. In this, you
+    assume that the state and actions are discrete and form a small set so that you
+    can use a tabular representation for the *Q*(*s*, *a*), which are the q-values.
+    You use the q-learning approach under *TD* to learn and improve policies. This
+    is similar to the approach we used in Chapter [4](502835_2_En_4_Chapter.xhtml)
+    of Q-learning, the off-policy *TD* control. You will have some additional steps
+    to learn from the simulated experience as well. In Chapter [4](502835_2_En_4_Chapter.xhtml),
+    you only used the real experiences to learn q-values, but you will now learn the
+    model and use that to generate additional simulated experiences to learn from.
+    Figure [10-4](#Fig4) gives the complete algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table illustrates the dyna Q. It includes initialization, loop for each episode,
+    and then return policy
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tabular Dyna Q
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see from the pseudocode in Figure [10-4](#Fig4) that tabular Dyna Q
+    is similar to the tabular Q-learning of Figure [4-16](502835_2_En_4_Chapter.xhtml#Fig16),
+    except that in Dyna Q, for every step in the real environment, you also carry
+    out additional *n* steps using a simulated experience. In this case, it samples
+    from the previous transitions seen in the real world. As you increase *n*, the
+    number of episodes required to converge and learn an optimal value will decrease.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider a case where the maze has zero rewards for every transition, except
+    for the last terminal/goal state transition with a reward value of 1\. An example
+    of such a maze would be the maze on the left side of Figure [10-5](#Fig5). Let’s
+    also assume that the initial q-values are 0 for every (*s*, *a*) pair. In regular
+    Q-learning, you learn the goal value of 1 when the first episode terminates. Then
+    the value of 1 will propagate slowly—one cell/level per episode—to eventually
+    reach start state. The q-values and optimal policy will start to converge over
+    additional episodes after that. However, in the case of Dyna Q, you generate *n*
+    additional examples per the real step in the environment. This will speed up the
+    convergence. You will see policy convergence much before the vanilla q-learning
+    approach. Refer to Chapter [8](http://dx.doi.org/10.1007/978-1-4842-6809-4_8)
+    of the book *Reinforcement Learning: An Introduction*^([1](#Fn1)) for a more theoretical
+    and detailed explanation of this faster convergence.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A grid with obstruction in the middle. The letters include G and S.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Maze with obstruction in the middle. The reward is given only when the agent
+    reaches the goal state, G. All other transitions have a reward of 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s apply the previous tabular Dyna Q pseudocode to the environment you saw
+    in Chapter [4](502835_2_En_4_Chapter.xhtml). You will modify code from `4.d-qlearning.ipynb`
+    to incorporate model learning and then *n* steps of planning (*learning from a
+    simulated experience*) for each step of direct RL-based learning from actual experience.
+    The complete code is given in `10.a-dynaQ.ipynb`. In the walkthrough, I highlight
+    the key differences between Dyna Q code and Q-learning code from Chapter [4](502835_2_En_4_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, rename the agent from `QLearningAgent` to `DynaQAgent`. It’s just a name
+    change, and the code remains the same except for an additional dictionary to store
+    the real-world transitions. Add the two lines of code to the `__init__` function
+    shown in bold in Listing [10-1](#PC1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Second, add logic to follow the planning part of the pseudocode from Figure
+    [10-4](#Fig4), shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The loop repeats *n* times:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*S*←A random previously seen state'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*A*←Random action previously taken in *S*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ R,{S}^{''}\leftarrow Model\left(S,A\right) $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ Q\left(S,A\right)\to Q\left(S,A\right)+\upalpha \cdotp \left[R+\upgamma
+    \cdotp \max {1}_{a\prime }Q\left({S}^{\prime },{a}^{\prime}\right)\hbox{--} Q\left(S,A\right)\right]
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is added to the `train_agent` function, where you train the agent. Listing
+    [9-2](502835_2_En_4_Chapter.xhtml#PC2) shows the revised implementation of the
+    function. The new addition to the code is toward the end of the function. The
+    first one is to add the transition to the agent’s buffer so that the agent can
+    use the prior experience buffer to estimate the model transition dynamics. The
+    second change is that of an *n* step of planning using these simulated experiences
+    that the agent collected from prior interactions with the real environment. These
+    changes are highlighted in bold in Listing [10-2](#PC2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, run Dyna Q against the maze as well as the taxi world environment from
+    Gymnasium. Looking at the training curves in the Python notebook, note that convergence
+    takes fewer episodes under Dyna Q when compared to vanilla Q-learning. In the
+    Q-learning training curves given in `4.d-qlearning.ipynb`, you can see that the
+    agent takes about 100-150 steps before it reaches the optimal policy. While the
+    Dyna Q agent in `10.a-dynaQ.ipynb` takes about 20 steps or so. This establishes
+    the claim that Dyna Q (or in general, any Dyna architecture) is sample-efficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dyna Q and Changing Environments
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s now consider the case where you first learn the optimal policy for a maze
+    using Dyna Q. After some steps, you change the environment and make it harder,
+    as shown in Figure [10-6](#Fig6). The left figure shows the original grid for
+    which the agent learns to navigate from start S to goal G through the opening
+    on the right side of the gray brick wall. After the agent has learned the optimal
+    behavior, the grid changes. The opening on the right side closes, and a new opening
+    appears on the left side. The agent, when trying to navigate to the goal through
+    the earlier path, now sees that the original path is blocked. The opening on right
+    side of the original maze is now closed. This is due to the change you just made.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Two grids illustrate the navigation. The opening is difficult and the agent
+    navigate through the opening on the right side.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dyna Q with grid made more difficult midway after the agent learns to navigate
+    through the opening on the right side. The agent learns to navigate the grid through
+    the new opening on the left side of the brick wall
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Sutton and Barto, in their book *Reinforcement Learning: An Introduction,*
+    show that Dyna Q will take a while to learn the changed environment. Once the
+    environment is changed midway, there are a number of episodes in which the agent
+    keeps going to the right but finds the path blocked, and hence it needs lots of
+    additional steps under the *ε*-greedy policy to learn the alternate route of taking
+    the opening on the left side to reach the goal.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s consider the second case that they show in their book. In the second case,
+    the environment is changed midway and made simpler, that is, a new opening is
+    introduced to the right without closing the original opening on the left. Figure
+    [10-7](#Fig7) shows the maze before and after the change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Two grids with dyna Q illustrate the navigation. The agent fails to discover
+    the shorter path via the new right gap.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dyna Q with grid made simpler after the agent has learned the optimal policy
+    for the left grid. The Dyna Q agent fails to discover the shorter path through
+    the new right gap
+  prefs: []
+  type: TYPE_NORMAL
+- en: By running a Dyna Q-learning algorithm on this setup, you can see that Dyna
+    Q does not learn the new opening on the right side of the brick wall. The new
+    path through the right of the brick wall offers a shorter path to the goal state.
+    Dyna Q has already learned the optimal policy, and it has no incentive to explore
+    for a changed environment. A random/chance exploration of the new opening depends
+    on the exploratory policy, which in turn depends on the *ε* exploration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is a revised algorithm known as Dyna Q+ to fix this problem, as explained
+    in the following section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dyna Q+
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Dyna Q+ is a typical example of the exploration/exploitation dilemma that needs
+    to be well thought out in all reinforcement learning setups. If you start to exploit
+    the knowledge (i.e., the model or the policy) early, you risk the chance of not
+    getting to know better paths. The agent greedily becomes happy with whatever it
+    has managed to learn. On the other hand, if the agent explores too much, it is
+    wasting time looking at suboptimal paths/options even when it already has the
+    most optimal solution. Unfortunately, the agent has no direct way of knowing that
+    it has reached the optimal policy, and hence it needs to use other heuristics/ways
+    to balance the exploration-exploitation dilemma.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Dyna Q+, you encourage the exploration of unseen states by adding a reward
+    to the states over and above what you observed. This additional reward term encourages
+    exploration for the states that have not been visited in the real world in a while.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the simulated planning part, you add ![$$ \upkappa \sqrt{\uptau} $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq2.png)
+    to the reward; that is, the reward *r* becomes ![$$ r+\upkappa \sqrt{\uptau} $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq3.png)
+    where κ is a small constant and τ is the time since the transition under question
+    was seen in the real-world exploration. It encourages the agent to try these transitions
+    and discover the changes in the environment effectively, with some lag as controlled
+    by κ. In Figure [10-7](#Fig7), the agent initially learns to go through the left
+    opening. It carries out the exploration as per the revised term, but finds that
+    the only way to the goal is through the left opening. However, after the environment
+    is changed by making a new opening on the right side, the agent on the subsequent
+    exploration of this part of maze will discover the new opening and eventually
+    the fact that it is a shorter path to the goal. The agent will revise its optimal
+    behavior to follow the opening on the right side. As the time of the last visit
+    to a part of grid increases, the ![$$ \upkappa \sqrt{\uptau} $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq4.png)
+    term in the reward grows. At some stage, it may grow so much that it overshadows
+    the reward from the current optimal behavior, forcing the agent to explore the
+    unvisited part once more.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Expected vs. Sample Updates
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: You have seen various ways to combine learning and planning. You can see that
+    learning and planning are both about the way the value functions are updated.
+    The first dimension is about what is being updated, whether a state value (*v*)
+    or an action value (*q*). The other dimension is the width of the update. In other
+    words, does the update happen based on a single sample seen (sample update), or
+    is the update based on all possible transitions (expected update) using the transition
+    probabilities for the next state given the current state and action, that is,
+    *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*])? The third and last dimension is whether
+    the update is carried out for any arbitrary policy *v*[*π*], *q*[*π*] or for the
+    optimal policy *v*^∗, *q*^∗. Let’s look at various combinations and map them back
+    to what you have seen so far in the book. You will look at seven different types
+    of updates you have seen so far.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first one is *v*[π](*s*) being updated using the expected update. The update
+    is for a value function. It is an expected update covering all the possible transitions
+    from a given state using the transition probability distribution *p*(*s*^′, *r*|
+    *s*, *a*). The action is carried out using the current policy agent. This is policy
+    evaluation using dynamic programming, which you saw in Equation [3-6](502835_2_En_3_Chapter.xhtml#Equ5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{k+1}(s)\leftarrow \sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime
+    },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The second one is the update of *v*[*π*](*s*) using the sample update. The update
+    is for the value function and is based on the sample the agent sees following
+    a policy *π*. This is policy evaluation under *TD*(0) that you saw in Equation
+    [4-5](502835_2_En_4_Chapter.xhtml#Equ5). The value of state (*s*) is updated based
+    on the action taken by the agent, as per policy *π*, the subsequent reward (*r*),
+    and the next state (*s*^’) seen by the agent. I expressed the Equation [4-5](502835_2_En_4_Chapter.xhtml#Equ5) in
+    an iterative form to highlight the update from step *k* to step *k* + 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{k+1}(s)\leftarrow {v}_k(s)+\alpha \left[r+\gamma {v}_k\left({s}^{''}\right)\hbox{--}
+    {v}_k(s)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The third one is *v*^∗(*s*) being updated using max over all the possible actions.
+    The value of state (*s*) is updated based on the expectation of all the possible
+    next states and rewards. The update is done by taking the max over all the possible
+    actions, that is, the optimal action at a given point in time. It is not based
+    on the current policy the agent is following. This is an approach of value iteration
+    using dynamic programming as per Equation [3-8](502835_2_En_3_Chapter.xhtml#Equ7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{k+1}(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The following ones are about changes to Q values. The fourth approach is that
+    of *q*[π](*s*, *a*) being updated using expected update. The value being updated
+    is q-value and is updated in the expectation based on all the next states and
+    rewards possible from a given state-action pair. The update is based on the current
+    policy the agent is following. This is q-policy evaluation using dynamic programming
+    as shown in Equation [3-2](502835_2_En_3_Chapter.xhtml#Equ2). Here Equation [3-2](502835_2_En_3_Chapter.xhtml#Equ2)
+    is expressed in iterative form.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{k+1}\left(s,a\right)\leftarrow \sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ \sum \limits_{a^{\prime }}\pi \left({a}^{\prime
+    }|{s}^{\prime}\right){q}_k\left({s}^{\prime },{a}^{\prime}\right)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The fifth one is that of *q*[π](*s*, *a*) being updated using the samples. The
+    update for the q-value is based on the samples and on the current policy the agent
+    is following—in other words, an on-policy update. This is q-value iteration using
+    dynamic programming. Here is the iterative version of Equation [3-4](502835_2_En_3_Chapter.xhtml#Equ4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\mathrm{q}}_{\mathrm{k}+1}\left(\mathrm{s},\mathrm{a}\right)\leftarrow
+    {\sum}_{s'',r}p\left({s}^{''},r|s,a\right)\left[r+\gamma \underset{a^{\prime }}{\mathit{\max}}{q}_k\left({s}^{''},{a}^{''}\right)\right]
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The sixth one is *q*^∗(*s*, *a*) being updated using all the possible states
+    and max over all the possible actions in the next state. This is an update for
+    the q-value and based on the expectation of all possible following state and action
+    pairs. It is carried out by taking a max over actions and hence updating for an
+    optimal policy and not the policy the agent is currently following. This is SARSA
+    using a model-free setup, as shown in Equation [4-7](502835_2_En_4_Chapter.xhtml#Equ7).
+    The following equation is a rewrite of the same equation to match the notations
+    in this section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{k+1}\left(s,a\right)\leftarrow {q}_k\left(s,a\right)+\alpha \left[r+\gamma
+    {q}_k\left({s}^{''},{a}^{''}\right)-{q}_k\left(s,a\right)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The seventh approach is about *q*^∗(*s*, *a*) being updated using the sample
+    action and then taking the max over all the possible actions from the next state.
+    The update is of the q-value using a sample. The update is based on a *max* over
+    all possible actions, that is, an off-policy update. It is not the update for
+    the current policy the agent is following. This is the Q-learning you studied
+    in Chapter [4](502835_2_En_4_Chapter.xhtml) and then extended to deep networks
+    under DQN in Chapter [6](502835_2_En_6_Chapter.xhtml). Here is Equation [4-10](502835_2_En_4_Chapter.xhtml#Equ10)
+    rewritten to match the notations in this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{k+1}\left(s,a\right)\leftarrow {q}_k\left(s,a\right)+\alpha \left[r+\gamma
+    ma{x}_{a''}\ {q}_k\left({s}^{''},{a}^{''}\right)-{q}_k\left(s,a\right)\right]
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: All these updates show how DP and model-free worlds are linked. In DP, since
+    you know the model dynamics, you do a wide sweep over all the possible transitions
+    *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*]). In the model-free world, you do not know
+    the model, and hence you do sample-based MC or TD updates. The difference between
+    DP and model-free is all about the update being done over the expectation or done
+    over samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It also goes to show that once you start learning model dynamics, you can mix
+    and match any of the previous approaches under the Dyna setup. Just like earlier,
+    you can combine the model-free and model-based approaches in a unified single
+    setup. This is similar to what you did by combining value-based DQN and policy
+    gradient into a unified approach under actor-critic as well as the way you combined
+    a one-step sample (TD) and a multistep sample (MC) into a single framework using
+    eligibility traces.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another way to organize the RL algorithms is to look at a two-dimensional world
+    where the vertical axis is the length/depth of update, with TD(0) being at one
+    end and MC at other end. The second/horizontal dimension can be visualized as
+    the width of the update with the dynamic programming based on the expected updates
+    at one end and the sample-based MC/TD updates at the other end. Figure [10-8](#Fig8)
+    shows this distinction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A square shape illustrates the reinforcement learning approaches. It includes
+    dynamic programming, exhaustive search, Monte Carlo, and then ends with temporal
+    difference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reinforcement learning approaches in a nutshell
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can further refine this unification by adding more dimensions. A third possible
+    dimension, orthogonal to the width and depth of the update, would be off-policy
+    versus on-policy updates. You could also add a fourth dimension, which is the
+    purely value-based approach or purely policy-learning approach, or a mix of both,
+    that is, actor-critic.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Up to now, you have looked at combining learning and planning in what is called
+    the *backward view*. You used planning (e.g., Dyna Q) to update the value functions,
+    but there is no planning involved while choosing an action in the real world.
+    It is kind of a passive planning approach, where planning was used to generate
+    additional steps/synthetic examples to train and improve the model/policy/value
+    functions. In a following section, you will look at *forward planning,* which
+    you carry out planning at decision time. In other words, you use the model knowledge
+    (learned or given) to look ahead and then take action based on what you think
+    is the best action. You will look at this approach in the context of the Monte
+    Carlo tree search algorithm (MCTS). However, before you do that, the next section
+    revisits the exploration versus exploitation issue.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exploration vs. Exploitation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In reinforcement learning, you always need to balance between using current
+    knowledge and exploring more to gain new knowledge. Initially you have no or very
+    little knowledge about the world (environment). You explore a lot and start improving
+    your belief about the world. As your belief improves and strengthens, the agent
+    starts exploiting that belief along with gradually reducing its exploration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Up until now you have looked at exploration in different forms. The first encounter
+    with exploration was in the form of ϵ-greedy strategies, where the agent took
+    the best action based on its current belief with probability (1 − *ε*), and it
+    explored randomly with probability *ε*. You gradually reduced *ε* as learning
+    you progressed. You saw this in all the DQN approaches. If you look at the Chapter
+    [6](502835_2_En_6_Chapter.xhtml) and [7](502835_2_En_7_Chapter.xhtml) notebooks,
+    you will notice a `epsilon_schedule` function, as shown in Listing [10-3](#PC3).
+    At the start of learning, you start with ϵ = 1 and over a period reduce it to
+    0.05 to have a small amount of exploration toward the end of training. This is
+    called an *epsilon reduction schedule*. The reduction can be linear or follow
+    any other curve, similar to what you do for α, the learning rate. In supervised
+    learning, as part of stochastic gradient descent, you vary α as per a schedule
+    called the *learning rate schedule*. There are various approaches to varying α.
+    You can use most of those approaches for varying ϵ if you have ϵ-greedy strategies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The second approach toward exploration was in the form of learning stochastic
+    policies in policy gradient methods where you always learned a policy distribution
+    *π*[*θ*](*a*| *s*). Unlike with DQN, you did not take any “max*”* over actions
+    to learn a single optimal action. This ensures that you are not learning the deterministic
+    action. Accordingly, different non-zero probabilities for all the actions ensured
+    exploration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another approach you saw was the use of entropy regularization in policy gradient
+    and actor-critic methods that forced enough exploration to ensure that the agent
+    did not prematurely commit to exploitation without doing enough exploration of
+    unknown parts of the policy/action space. Refer to Chapter [8](502835_2_En_8_Chapter.xhtml)
+    for details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next section, you look at a simple setup to study the tradeoffs between
+    exploration versus exploitation more formally and the various strategies for efficient
+    exploration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multi-Arm Bandit
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This section considers an environment that is known as a *multi-arm bandit*.
+    It’s based on the concept of multiple casino slot machines stacked together. The
+    agent does not know the individual reward (success rate) for each slot machine.
+    The agent’s job is to choose a machine and pull the slot machine lever to receive
+    a reward. This cycle repeats for as long as you want. The agent needs to explore
+    to try all the machines and form a belief about the individual reward distribution
+    for each of the machines. As its belief gets stronger, it must start exploiting
+    its knowledge/belief more to pull the best machine’s lever and reduce exploration.
+    Figure [10-9](#Fig9) shows the setup.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration depicts the multi-arm band. An octopus works with all of its
+    tentacles.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Noncontextual multi-arm bandit
+  prefs: []
+  type: TYPE_NORMAL
+- en: The reason we study multi-arm bandit is that it is a simple setup. Further,
+    it can be extended to contextual multi-arm bandit, in which the distribution of
+    rewards for each slot machine is not fixed. Rather, it depends on the context
+    at a given point in time, for example, the “current state” of the agent. The contextual
+    multi-arm bandit has many practical use cases. You will look at one such example
+    here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assume you are an entrepreneur and have decided to build a competing business
+    to Google AdWords. As part of the design, suppose you have ten advertisements,
+    and you want to show one advertisement to the user in the browser window based
+    on the context (e.g., content) of the page. The current page is the context and
+    it shows one of the ten advertisements is the action. When the user clicks the
+    advertisement, the user gets a reward of 1; otherwise, the reward is 0\. The agent
+    has the history of how many times a user clicked a shown advertisement within
+    the same context, that is, clicking the shown advertisement on a web page with
+    similar content. The agent wants to take a series of actions with the goal to
+    increase/maximize the chances of users clicking the shown advertisement. This
+    is an example of a contextual multi-arm bandit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another example is an online store showing other product recommendations based
+    on what the user is currently viewing. The online store hopes that the user will
+    find some of the recommendations interesting and may click them. Yet another example
+    is choosing a drug out of *K* possible options, administering the drug to a patient
+    to choose the best one, and reaching that conclusion over a maximum of *T* tries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can further extend the bandit framework to consider full-scale MDPs. But
+    each extension makes the formal analysis even more laborious and cumbersome. Accordingly,
+    this chapter studies the simplest setup of non-contextual bandit to help you appreciate
+    the basics. Interested readers can study this further with many good resources
+    available on the web.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Regret: Measure the Quality of Exploration'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Here, you define the quality of exploration. Consider that the system is in
+    state *S*. In non-contextual bandit, it is a frozen initial state that remains
+    the same every time. For contextual bandit, the state *S* may change over time.
+    Further, suppose you follow a policy *π*[*t*](*s*) at time *t* to choose an action.
+    Also consider that you know the optimal policy π^∗(*s*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The regret at time *t*, that is, the regret of choosing an action from the nonoptimal
+    policy, is defined in Equation [10-3](#Equ3). It is the expected reward from following
+    an optimal policy minus the reward from following a specific policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ regret=\upeta ={E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{E}_{a\sim
+    {\pi}_t(s)}\left[r\left(s,a\right)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (10-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can sum it over all timesteps to get the total regret over *T* steps to
+    obtain the expression given in Equation [10-4](#Equ4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \eta ={\sum}_{t=1}^T\left({E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{E}_{a\sim
+    {\pi}_t(s)}\left[r\left(s,a\right)\right]\right) $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (10-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is non-contextual bandit, where the state (*s*) remains the same at every
+    time step—it remains fixed as the initial state. Therefore, you can simplify Equation
+    [10-4](#Equ4) as shown in Equation [10-5](#Equ5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \eta =T.\kern0.5em {E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{\sum}_{t=1}^T\left({E}_{a\sim
+    {\pi}_t(s)}\left[r\left(s,a\right)\right]\right) $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (10-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This example uses Equation [10-5](#Equ5) to compare various sampling strategies.
+    You will see three commonly used exploration strategies in the following sections,
+    with the help of code examples. You can find the complete code in `10.b-explore-vs-exploit.ipynb`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s first describe the setup you will use. Consider that the multi-arm bandit
+    has *K* actions. Each action has a fixed probability θ[*k*], *k* ∈ [1\. . *K*]
+    of producing a reward of 1 and a (1 − θ[*k*]) probability of producing a reward
+    of 0\. The optimal action is the value of *k* (lowercase *k*), which has a maximum
+    probability of success.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\theta}^{\ast }={\theta}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Listing [10-4](#PC4) shows the code for the bandit. You store *K* as `self.n_actions`
+    and all the θ[*k*], as `self._probs.` The `pull` function takes as input the *k*
+    action, returning a reward of 1 or 0 based on the probability distribution of
+    the action, that is, θ[*k*]. The `optimal_reward` function returns the `max` of
+    `self._probs.`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we will look at three exploration strategies starting with the *ε*-greedy
+    exploration strategy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Epsilon Greedy Exploration
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This is similar to the *ϵ*-greedy strategy you saw in previous chapters. The
+    agent tries different actions and forms an estimate ![$$ {\hat{\uptheta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq5.png)
+    of the unknown actual success probabilities θ[*k*] for the bandit environment’s
+    different actions. It takes the action *k* with ![$$ {\hat{\uptheta}}^{\ast }=\underset{k}{\max
+    }{\hat{\uptheta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq6.png)
+    with the (1 − *ϵ*) probability. In other words, it exploits the knowledge gained
+    so far to take the action that it considers best based on ![$$ {\hat{\theta}}_k
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq7.png) estimates.
+    Further, it takes a random action with the probability *ϵ* to explore.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s keep *ϵ* = 0.01 as the exploration probability and keep it constant throughout
+    the experiment. Listing [10-5](#PC5) shows the code implementing this strategy.
+    First, you define `RandomAgent` as the base class. There are two arrays to store
+    the cumulative count of success and failure outcomes of each action. You store
+    these counts in arrays: `self.success_cnt` and `self.failure_cnt`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `update(action, reward)` function updates these counts based on which action
+    was taken and the outcome. The `reset()` function resets these counts. It does
+    so to run the same experiment multiple times and plot the average values to smoothen
+    out the variance. The `get_action()` function is where the exploration strategy
+    is implemented. It will use different approaches to balance the explore versus
+    exploit based on the type of strategy. For `RandomAgent`, the actions are always
+    selected at random from the set of possible actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you implement the *ε*-exploration agent in the `EGreedyAgent` class. This
+    is implemented by extending `RandomAgent` and overriding the `get_action()` function.
+    As explained, the action with the highest probability is chosen with the probability
+    (1 − *ϵ*), and a random action is chosen with the probability *ϵ*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this setup, you are not changing the ϵ value, and hence the agent never learns
+    to execute a perfect optimal policy. It continues to explore with the ϵ probability
+    forever. Therefore, the regret will never go down to 0, and you expect the cumulative
+    regret as given by Equation [10-5](#Equ5) to grow linearly with the slope of growth
+    defined by the value of ϵ. The bigger the ϵ value, the steeper the slope of growth.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Upper Confidence Bound Exploration
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This section looks at the strategy called *upper confidence bound* (UCB). In
+    this approach, the agent tries different actions and records the number of successes
+    (α[*k*]) or failures (β[*k*]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: It calculates the estimates of success probabilities ![$$ {\hat{\theta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq8.png)
+    that will be used to choose the action with the highest success estimate ![$$
+    {\theta}^{\ast }={\hat{\uptheta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq9.png).
+    This is the “exploit” part for action *k*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ exploi{t}_k={\hat{\theta}}_k=\frac{\alpha_k}{\alpha_k+{\beta}_k} $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'It also calculates the exploration needed that favors the least visited actions,
+    as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ explor{e}_k=\sqrt{\frac{2.\log t}{\upalpha_k+{\upbeta}_k}} $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *t* is the total number of steps taken so far. The explore and exploit
+    are added to define the score for each action *k*, as shown in Equation [10-6](#Equ6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ scor{e}_k= explor{e}_k+ explo{t}_k=\frac{\alpha_k}{\alpha_k+{\beta}_k}+\uplambda
+    \sqrt{\frac{2.\log t}{\alpha_k+{\beta}_k}} $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (10-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The agent then picks the action *k* with the maximum value of *score*[*k*].
+    In Equation [10-6](#Equ6), λ controls the relative importance of explore versus
+    exploit. You will use λ = 1 in the code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The approach in UCB is to compute an upper confidence bound (upper confidence
+    interval) to ensure that you have a 0.95 (or any other confidence level) probability
+    that the actual estimate is within the UCB value. As the number of trials increases,
+    and as you take a particular action again and again, the uncertainty in the estimate
+    goes down and the score in Equation [10-6](#Equ6) will approach the estimate ![$$
+    {\hat{\theta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq10.png).
+    The actions that have not been visited at all will have *score* = ∞ because α[*k*] + β[*k*] = 0
+    in Equation [10-6](#Equ6), making score infinite. The UCB is shown to have a close
+    to optimal growth bound. I do not go into the mathematical proof of this. You
+    can refer to advanced texts on bandit problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, you’ll walk through the implementation of a UCB agent. Listing [10-6](#PC6)
+    gives the code. As explained, you again extend the `RandomAgent` class shown in
+    Listing [10-5](#PC5) and override the `get_action` function to choose the action
+    as per the UCB Equation [10-6](#Equ6). Note that to avoid dividing by zero, a
+    small constant `1e-12` is added to the denominators where `self.success_cnt+self.failure_cnt
+    (`*α*[*k*] + *β*[*k*]) appears.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Thompson Sampling Exploration
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This section looks at the final strategy, that of Thompson sampling. This is
+    based on the idea of choosing an action based on the probability of it being the
+    one that maximizes the expected reward. While UCB is based on the frequentist
+    notion of probability, Thompson sampling is based on the Bayesian idea.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initially, you have no prior knowledge of which is a better action, that is,
+    which action has the highest success probability θ[*k*]. Accordingly, you form
+    an initial belief that all the *θ*[*k*] values are uniformly distributed in range
+    (0, 1). This is called *prior* in Bayesian terminology. You express this with
+    a beta distribution^([2](#Fn2)) of ![$$ {\hat{\uptheta}}_k\sim \mathrm{Beta}\left(\upalpha
+    =1,\upbeta =1\right) $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq11.png).
+    In the first iteration, the agent samples a value for each action *k* using the
+    Beta distribution ![$$ {\hat{\uptheta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq12.png)
+    and chooses the action *k* that has with the maximum sampled value ![$$ {\hat{\uptheta}}_k
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq13.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, it plays out that action (i.e., calls the `pull` function to perform the
+    chosen action) and observes the outcome (success or failure). Based on the outcome,
+    it updates the posterior distribution of ![$$ {\hat{\theta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq14.png)
+    for the action *k* that was chosen. As the success and failure counts are updated
+    for the different action *k* in each step, the agent continues to update its belief
+    of the specific ![$$ {\hat{\theta}}_k $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq15.png)
+    in each step *k*. This is the posterior distribution of the unknown value θ[*k*]
+    for all the actions *k* ∈ *K* under the Bayesian framework.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{\theta}}_k\sim Beta\left(\alpha ={\alpha}_k+1,\beta ={\beta}_k+1\right)\kern0.75em
+    \forall k\in \left[1..K\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (10-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cycle goes on. As you go through multiple steps, α[*k*] and β[*k*], the
+    count of success and failure for action *k*, increase. The *Beta* distribution
+    becomes narrower with a peak around the mean value of α[*k*]/(α[*k*] + β[*k*]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now look at the implementation of Thompson sampling in code, shown in Listing
+    [10-7](#PC7). As before, you extend the `RandomAgent` class and override the `get_action`
+    method to implement the *Beta* distribution Equation [10-7](#Equ7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Comparing Different Exploration Strategies
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Having implemented the various exploration strategies, you will now evaluate
+    the regret of each of these strategies and plot these regrets as *t* – the number
+    of steps increase. You implement a `get_regret` function to take `n_steps=10000`
+    steps using the bandit environment and a chosen exploration strategy. You then
+    carry out the experiment `n_trials=50` times to reduce the variance and store
+    the average cumulative regret as a function of the step count. Listing [10-8](#PC8)
+    shows the code that implements `get_regret`, which acts on a single agent/strategy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Having defined all the machinery, you run the experiment for the three exploration-exploitation
+    agents—ϵ-greedy, UCB, and Thompson exploration. The regret values for these three
+    agents as a function of step count are plotted. The plotting code and the code
+    to run the experiment is shown in Listing [10-9](#PC9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Running the experiment in Listing [10-9](#PC9) produces the regret graph shown
+    in Figure [10-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of regret versus the steps. The line of epsilon begin at around
+    0 and then increases vertically. It then remains horizontal after 2000\. The line
+    of U C B and Thompson follow horizontal direction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Regret curve for different exploration strategies
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see that UCB and Thompson have sublinear growth, while the *ε*-greedy
+    regret continues to grow at a faster pace (at a linear growth with a rate of growth
+    determined by the value of ϵ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now you’ll move forward to the discussion of Monte Carlo tree search, where
+    you will use UCB to carry out explore versus exploit decisions. The choice of
+    UCB in MCTS is based on the current trends shown in popular MCTS implementations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Planning at Decision Time and Monte Carlo Tree Search
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The way Dyna uses planning is called *background planning*. The model is used
+    to generate simulated samples that are then fed to the algorithm, just like with
+    real samples. These additional simulated samples help improve the value estimates
+    further over and above the estimates done using real-world interactions. When
+    an action has to be selected in, say, state *S*[*t*], there is no planning at
+    this decision time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The other way to plan is to begin and end the plan while in state *S*[*t*] to
+    look ahead, kind of like playing out the various scenarios in your head using
+    the model learned so far and using this plan to decide on action *A*[*t*] to be
+    taken at time *t*. Once the action *A*[*t*] is taken, the agent finds itself in
+    a new state *S*[*t* + 1]. The agent again looks ahead, plans, and takes a step.
+    This cycle goes on. This is called *decision-time planning*. Depending on the
+    time available, the further/deeper the agent can plan from the current state,
+    the more powerful and helpful the plan will be in making a decision about what
+    action to take at time *t*. Hence, decision-time planning is most helpful when
+    fast responses are not required. In board games like Chess and Go, the decision-time
+    plan can look, for instance, a dozen moves ahead before deciding on which action
+    to take. However, if a fast response is required, then background planning is
+    most suitable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: These forward search algorithms select the best possible action by looking ahead.
+    They build a search tree of possible options starting from the current state *S*[*t*]
+    that the agent is in. The possible options in a given state-action pair may depend
+    on the model of the MDP the agent has learned from prior interactions, or it may
+    be based on the model of MDP given to the agent in the beginning. For example,
+    in the case of board games like Chess and Go, there are clearly defined the rules
+    of the game, and therefore you know the environment in complete, exact detail.
+    Figure [10-11](#Fig11) shows an example of a search tree.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram illustrates the current state S i.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Search tree starting from current state *S*[*t*]
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, if the branching factor is high, you cannot build an exhaustive search
+    tree. In the game of Go, the average branching factor is around 250\. Even if
+    you build a three-level deep exhaustive tree, the third level will have 250³ = 15,625,000
+    nodes (15 million nodes). And to take possible advantage of looking far ahead,
+    you’ll want to go a lot deeper than two or three levels. That is where a *simulation-based
+    search tree* is formed instead of an exhaustive one. You use a *rollout policy*
+    to simulate multiple trajectories and form an MC estimate of action values. These
+    estimates are used to choose the best action at root state *S*[*t*]. This helps
+    improve the policy. After the best action is taken, the agent finds itself in
+    a new state, and it starts all over again to roll out the simulation tree from
+    that new state. This cycle goes on. The number of rollout trajectories tried depends
+    on the time constraint within which the agent needs to decide on an action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: MCTS is an example of decision time planning. MCTS is exactly as described earlier
+    with some additional enhancements to accumulate value estimates and direct the
+    search to the most rewarding part of the tree. The basic version of MCTS consists
+    of four steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Selection/tree traversal*: Starting from the root node, use a tree policy
+    to traverse the tree and reach a leaf node, that is, a node that’s not fully expanded.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Expansion*: Add child nodes (actions) to the leaf node and choose one of them.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Simulation/rollout*: Play the game until termination, starting from the previously
+    selected child node. Use a fixed rollout policy to play this out, and it could
+    be a random rollout policy as well.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Back propagation*: Use the results of playout to update all the nodes from
+    termination to all the way up to the root node by following (backtracking) the
+    path that was traversed.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The cycle is repeated multiple times, always starting from the current root
+    node until you run out of time allotted for search or you run it for a fixed number
+    of iterations. This is called the MCTS “anytime algorithm” as it can be stopped
+    anytime, and it will always return a valid search answer. The quality of the search
+    returned by MCTS will improve more if the time allotted is increased. At this
+    point, an action with the highest value is selected based on the accumulated statistics.
+    Figure [10-12](#Fig12) shows a schematic of MCTS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram consists of the following iterations. It includes selection,
+    expansion, simulation, and then ends with back propagation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: One iteration of MCTS consisting of four steps
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, the agent performs the chosen action in a real environment. This moves
+    the agent to a new state, and the previous MCTS cycle starts once more, this time
+    with the new state being the root state from which the simulated based tree is
+    built.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look at a simple, made-up example. You will use the UCB to measure the
+    following form:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ UCB1\left({S}_i\right)={V}_i+C\sqrt{\frac{lnN}{n_i}}, where\ C=2 $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {V}_i=\frac{Score\left({S}_{n_i}\right)}{n_i} $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '*UCB*1 will be used to decide which node to choose in the expansion phase.
+    You start with the root node *S*[0], and for each node you keep two statistics—the
+    total score (*S*) and the number of visits (*n*) to that node. The initial setup
+    is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figa_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A mathematical expression is as follows. S = 0\. n = 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You expand the tree at the root node by adding all the available actions from
+    *S*[0], let’s say *a*[1] and *a*[2]. These actions lead to two new states, *S*[1]
+    and *S*[2], respectively. You initialize the score and count statistics for these
+    two nodes. The tree at this point looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figb_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram with the data illustrates the S 1 and S 2 new states. The values
+    are as follows. S = 0\. n = 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is the initial tree. You now start executing the steps of MCTS. The first
+    step is tree traversal using *UCB*1 values. You are at *S*[0] and you need to
+    choose a child node with the highest *UCB*1 value. Let’s calculate the *UCB*1
+    for *S*[1]. As *n* = 0, the exploration term in *UCB*1, that is, ![$$ \sqrt{\frac{lnN}{n}}
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_IEq16.png), is
+    infinite. This is the case with *S*[2]. As part of the tree policy, let’s choose
+    the node with a smaller subindex in the case of ties, which leads to a selection
+    of *S*[1]. As *S*[1] has not been visited before, that is, as *n* = 0 for *S*[1],
+    you do not expand and instead move on to Step 3 of rollout. You use a rollout
+    policy to simulate random actions from *S*[1] until termination. Let’s assume
+    that you observe a value of 20 at termination, as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figc_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram illustrates the value of 20 at termination. S = 0\. n = 0\. V
+    = 20.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next step is the fourth one, that is, to back propagate the value from the
+    terminal state all the way up to the root node. You update the visit count and
+    the total score for all the nodes falling in the path from the terminal state
+    to the root node. And then you erase the rollout part from *S*[1]. At this point,
+    the tree looks like the one shown. Note the updated statistics for nodes *S*[1]
+    and *S*[0].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figd_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram illustrates the following S values. S 1\. S = 20 n = 1\. S 2
+    S = 0 n = 0\. S 0 S = 20 n = 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This brings you to the end of the first iteration of MCTS steps. You will now
+    run one more iteration of MCTS steps, again starting from *S*[0]. The first step
+    is a tree traversal starting from *S*[0]. You need to select one of the two nodes,
+    that is, *S*[1] or *S*[2] based on which has a higher *UCB*1 value. For *S*[1],
+    the *UCB*1 value is given by the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ UCB\left({S}_1\right)=20+2.\sqrt{\frac{\mathit{\ln}1}{1}}=20 $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The 1 in *ln* 1 comes from the value of *n* at the root node, which tells you
+    the total number of trials so far. And the 1 in the denominator inside the square
+    root comes from the value of *n* for node *S*[1]. The *UCB*(*S*[2]) continues
+    to be ∞ as the *n* for *S*[2] is still 0\. So, you choose node *S*[2]. That ends
+    the tree traversal step since *S*[2] is a leaf node. You carry out a rollout from
+    *S*[2]. Let’s assume that the rollout from *S*[2] produces a terminal value of
+    10\. That completes the rollout phase. The tree at this point looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fige_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the S 0, S 1, and S 2 values. S = 20\. n = 1 and 0\. V
+    = 10.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next step is to backpropagate the terminal value of 10 all the way back
+    to the root state and in the process update the statistics of all the nodes in
+    the path—*S*[2] and *S*[0] in this case. You then erase the rollout part. At the
+    end of backpropagation step, the updated tree looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figf_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram illustrates the updated values. S = 30, 20, and 10\. n = 2 and
+    1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s carry out one more iteration of MCTS, and this will be the final iteration.
+    Again start from *S*[0] and recalculate the *UCB*1 values of child nodes. As a
+    reminder, you calculate *V*[*i*] = (score of node *i*)\*n*[*i*]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ UCB\left({S}_1\right)=\frac{20}{1}+2.\sqrt{\frac{\mathit{\ln}2}{1}}=21.67
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ UCB\left({S}_2\right)=\frac{10}{1}+2.\sqrt{\frac{\mathit{\ln}2}{1}}=11.67
+    $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The UCB value of *S*[1] is higher, you choose that. You have reached a leaf
+    node, and that ends the tree traversal part step of MCTS. You are at *S*[1], and
+    it has been visited before, so you now expand *S*[1] by simulating all possible
+    actions from *S*[1] and the resulting states due to these actions. The tree at
+    this point looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figg_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the following S values. S 0, S 1, S 2, S 3, and S 4\.
+    S = 30, 20, 10, and 0\. n = 2, 1, and 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You need to choose one leaf node between *S*[3] and *S*[4] followed by rollout
+    from that chosen node. As before, the *UCB*1 for both *S*[3] and *S*[4] is ∞ since
+    these nodes have not been visited yet, resulting in *n* = 0 for each of these
+    two nodes. As per the tree policy, you choose the node with a lower subindex in
+    the case of a tie. This means you choose *S*[3] and do a rollout from *S*[3].
+    Assume that the terminal state at the end of the rollout produces a terminal value
+    of 0\. This completes the rollout step of MCTS. The tree looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figh_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the following S values and V value. S = 30, 20, 10, 0,
+    and 1\. V = 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The final step is to backpropagate the value of *V* = 0 all the way back to
+    the root node. You update the statistics of the nodes in the path—nodes *S*[3],
+    *S*[1], and *S*[0]. The tree looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Figi_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the following node values. S 3\. S 2\. S 1\. S = 30, 20,
+    10, 0, and 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: At this point, let’s say you have run out of time. The algorithm now needs to
+    choose the best action at *S*[0] and take that step in the real world. At this
+    point, you will only compare the state values (score/n) values, and for *S*[1]
+    and *S*[2], both the average values are 10\. It is a tie. You can have additional
+    rules to break the tie. However, let’s say you always choose a random action to
+    break a tie while making the final choice of the best action. And let’s say you
+    randomly selected *S*[1]. The agent takes action *a*[1] and lands at *S*[1], assuming
+    a deterministic setup. You now make *S*[1] the new root node and carry out multiple
+    iterations of MCTS from *S*[1], eventually choosing the best action to take at
+    *S*[1]. This way, you step through the real world.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is the essence of MCTS. There are many variations of MCTS that I do not
+    go into. The main objective was to familiarize you with a simple and basic MCTS
+    setup as well as walk you through the computations to solidify your understanding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example Uses of MCTS
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before I conclude this chapter, this section briefly talks about a recent and
+    famous use case of MCTS—AlphaGo and AlphaZero, which helped design an algorithm
+    whereby a computer beat human experts in the game of Go. The section also looks
+    at AlphaFold with MCTS, which helps predict the structure of large protein complexes.
+    It also briefly touches upon the various domains in which MCTS has recently been
+    used.
+  prefs: []
+  type: TYPE_NORMAL
+- en: AlphaGo
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: AlphaGo was architected by Deep Mind in 2016^([3](#Fn3)) to beat human experts
+    in the game of Go. A standard search tree would test everything possible from
+    a given position. However, games with high branching factors cannot use this approach.
+    If a game has a branching factor of *b* (i.e., the number of legal moves at any
+    position is *b*) and the total game length (i.e., depth or number of sequential
+    moves until the end) is *d*, then there are *b*^(*d*) possible sequences of moves.
+    Evaluating all the options is not feasible for any moderate board game. Considering
+    the game of chess with(*b* ≈ 35, *d* ≈ 50) or the game of Go with (*b* ≈ 250,
+    *d* ≈ 150), an exhaustive search is impossible. But the effective search space
+    can be reduced with two general approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**You can reduce the depth with position evaluation.** After expanding the
+    search tree for some depth, replace the state at a leaf node with an approximate
+    evaluation function *v*(*s*) ≈ *v*^∗(*s*). This approach worked for board games
+    such as chess, checkers, and Othello, but did not work for Go due to Go’s complexity.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**You can reduce the breadth of the tree from full expansion at a node with
+    sampling actions from a policy** ***p***(***s***)**.** Monte Carlo rollouts do
+    not branch at all; they play out an episode from a leaf node and then use the
+    average return as an estimate of *v*(*s*). You saw this approach in MCTS in which
+    the rollout values were used to estimate the *v*(*s*) of the leaf node and the
+    policy was further improved by using the revised estimate of *v*(*s*).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In this academic paper on AlphaGo, the authors combined MCTS with deep neural
+    networks to achieve super-human performance. They passed the board image as a
+    19×19-pixel image to a convolutional neural network (CNN) and used this to construct
+    the representation of the board position, that is, the *state*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: They used expert human moves to carry out supervised learning and learn two
+    policies, that is, *p*(*s*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**SL Policy Network** (*p*[*σ*]): The authors used supervised learning to learn
+    the policy network *p*[*σ*]. This was trained using the CNN style network with
+    19x19 board positions as input state (*s*) with board positions being based on
+    expert human moves.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Rollout Policy** (*p*[*π*]): The same data was used to train another network,
+    called fast policy *p*[*π*], which acted as the rollout policy in the “rollout”
+    phase of MCTS. The original MCTS used a random rollout policy. However, as noted
+    earlier, you can use a policy model if it is very fast.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Next, the authors trained a reinforcement learning (RL) network *p*[*ρ*], initialized
+    from the SL policy network, which tries to improve the SL policy network to have
+    more winnings, that is, using policy optimization to improve with the objective
+    of more wins. It is similar to what you learned in Chapter [8](502835_2_En_8_Chapter.xhtml)
+    about policy optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lastly, another network *v*[*θ*] is trained to predict the value of a state
+    *v*(*s*) for self-plays by the RL policy network *p*[*ρ*]. Figure [10-13](#Fig13)
+    shows a high-level diagram of the neural network training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A neural network diagram illustrates the following components. Rollout policy,
+    S L policy network. R L policy network. Value network. Human expert positions.
+    Self-play positions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural network training pipeline (reproduced from Figure 1 of AlphaGo paper)⁴
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Finally, the policy network and value network are combined to implement^([4](#Fn4))
+    MCTS and to carry out forward search. The authors used a UCB-like approach to
+    traverse the expanded part of the tree. Once a leaf node (*S*[*L*]) was reached,
+    they used one sample from the SL policy network *p*[*σ*] to expand the leaf node
+    (step 2 of MCTS). The leaf node was evaluated in two ways: one by using value
+    network *v*[*θ*](*S*[*L*]) and another by a fast rollout until termination using
+    the rollout network *p*[*π*] to get outcome *z*[*L*]. These two values were combined
+    using a mixing parameter *λ*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ V\left({S}_L\right)=\left(1-\lambda \right){v}_{\theta}\left({s}_L\right)+\lambda
+    {z}_L $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The fourth step of MCTS is carried out to update the score and the visit counts
+    at each node, as you saw in the example in the previous section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once the search is complete, the algorithm chooses the best action from the
+    root node, and then the cycle of MCTS goes on from the new state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: AlphaGo Zero and AlphaZero
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A year later, in 2017 the authors came out with a further refinement in a paper
+    titled “Mastering the Game of Go Without Human Knowledge.”^([5](#Fn5))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There were a few enhancements to introduce an algorithm based solely on reinforcement
+    learning, without human data, guidance, or domain knowledge beyond game rules.
+    AlphaGo became its own teacher: a neural network was trained to predict AlphaGo’s
+    own move selections and the winner of AlphaGo’s games. This neural network improved
+    the strength of tree search, resulting in higher quality move selection and stronger
+    self-play in the next iteration. Figure [10-14](#Fig14) shows a high-level schematic
+    of the setup under AlphaGo Zero. The program plays a game *s*[1], …, *s*[*T*]
+    against itself. In each position *s*[*t*], a Monte-Carlo tree search (MCTS) *α*[*θ*]
+    is executed using the latest neural network *f*[*θ*]. Moves are selected according
+    to the search probabilities computed by the MCTS,*a*[*t*] ∼ *π*[*t*]. The terminal
+    position *s*[*T*] is scored according to the rules of the game to compute the
+    game winner *z*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the self-play and neural network training in Alpha Go
+    Zero. pi 1, pi 2, and pi 3 are values are present.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Self-play RL in AlphaGo Zero (Figure 1 of the reference paper)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you look at neural network training in AlphaGo Zero. The neural network
+    takes the raw board position *s*[*t*] as its input, passes it through many convolutional
+    layers with parameters *θ*, and outputs both a vector *p*[*t*], representing a
+    probability distribution over moves, and a scalar value *v*[*t*], representing
+    the probability of the current player winning in position *s*[*t*]. The neural
+    network parameters *θ* are updated to maximize the similarity of the policy vector
+    *p*[*t*] to the search probabilities *π*[*t*] , and to minimize the error between
+    the predicted winner *v*[*t*] and the game winner *z*. The new parameters are
+    used in the next iteration of self-play.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now turn your attention to the MCTS part, as shown in Figure [10-15](#Fig15).
+    In Step a, each simulation traverses the tree by selecting the edge with maximum
+    action-value Q, plus an upper confidence bound U that depends on a stored prior
+    probability P and visit count N for that edge (which is incremented once traversed).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_10_Chapter/502835_2_En_10_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram illustrates the Monte-Carlo tree search in Alpha Go Zero. It includes
+    select, expand and evaluate, backup, and then the play.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 10-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Monte-Carlo tree search in AlphaGo Zero (Figure 2 of the reference paper)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Step b, the leaf node is expanded and the associated position *s* is evaluated
+    by the neural network (*P*(*s*, ·), *V*(*s*)) = *f*[*θ*](*s*); the vector of P
+    values is stored in the outgoing edges from *s*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Step c, action-values Q are updated to track the mean of all evaluations
+    V in the subtree below that action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once the search is complete, search probabilities *π* are returned, proportional
+    to *N*^(1/τ) , where N is the visit count of each move from the root state and
+    τ is a parameter controlling temperature.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Soon after this paper, the authors generalized the approach in a paper titled
+    “Mastering Chess and Shogi by Self-Play with a General Reinforcement Learning
+    Algorithm.”^([6](#Fn6)) Starting from random play, and given no domain knowledge
+    except the game rules, within 24 hours AlphaZero achieved a superhuman level of
+    play in the games of chess and shogi (Japanese chess) as well as Go, and convincingly
+    defeated a world-champion program in each case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: About two years later in 2019, the DeepMind team came up with another variation
+    to the same approach in a paper titled “Mastering Atari, Go, Chess and Shogi by
+    Planning with a Learned Model,”^([7](#Fn7)) which extended the capabilities of
+    AlphaZero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: AlphaFold with MCTS
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: AlphaFold^([8](#Fn8)) is an AI system developed by DeepMind that predicts a
+    protein’s 3D structure from its amino acid sequence. It regularly achieves accuracy
+    competitive with experiment. AlphaFold can predict the structure of single- and
+    multiple-chain proteins with very high accuracy. However, the accuracy decreases
+    with the number of chains, and the available GPU memory limits the size of protein
+    complexes that can be predicted.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In a paper titled “Predicting the Structure of Large Protein Complexes Using
+    AlphaFold and Monte Carlo Tree Search,”^([9](#Fn9)) the authors search for an
+    optimal path using MCTS, as shown in Figure [10-15](#Fig15). Starting from a randomly
+    selected chain (node), chains are added randomly to expand the path, thereby creating
+    new nodes. From these expansions, complete assemblies are simulated. Simulations
+    are stopped when no additional subunits can be added. The simulated assemblies
+    are scored by their cumulative mpDockQ (multiple-interface predicted DockQ; average
+    interface plDDT times the logarithm of the number of interface contacts) score,
+    and the scores are backpropagated to yield support for the previous selections.
+    The path with the most support is selected, creating a complex that is the most
+    likely to be correct. Refer to Figure 2 of the paper for the schematics of the
+    MCTS in this context.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use of MCTS in Other Domains
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Some other uses of MCTS are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chemical synthesis, as you saw in previous subsection on AlphaFold.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Planning: For optimal planning in logistics and robotics, automated planning
+    is one of the major domains of application of the MCTS algorithm outside games.
+    The planning problem is typically formulated as MDP. MCTS has also been used for
+    planning in robotics. A decentralized variant of MCTS has been suggested for multi-robot
+    scenarios. The trees in compressed forms are periodically sent to other robots,
+    which results in an update of joint distribution over the policy space.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Security: Identifying the best patrolling schedules for security forces in
+    attacker-defender scenarios. A recent application of the Monte Carlo Tree Search
+    (MCTS) is in Security Games (SG). In essence, SG uses game theory methods to find
+    the most efficient patrolling schedules for security forces, such as the police,
+    secret service, and security guards. They do this while protecting a set of potential
+    targets from attackers, like criminals, terrorists, and smugglers. The importance
+    and use of SGs has increased recently due to a rise in terrorist threats worldwide.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Scheduling: The combination of MCTS (Monte Carlo Tree Search) with additional
+    heuristics is a common approach to large computational problems. MCTS has been
+    proposed for generating initial solutions for a multimode resource-constrained
+    multi-project scheduling problem. These solutions are then modified through a
+    local search, guided by carefully crafted hyper-heuristics.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Vehicle routing: Transport problems such as Capacitated VRP (CVRP) are a special
+    class of problems that often involve planning and scheduling.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This brings you to the end of this chapter. The AlphaGo explanation was at a
+    conceptual level. Interested readers may want to refer to the original paper.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter carried out the last unification, that of combining model-based
+    planning with model-free learning. Under integrated planning and learning, you
+    learned how to combine model-based and model-free approaches to reinforcement
+    learning, and how to balance exploration and exploitation. The chapter also talked
+    about how different value-based and policy-based methods can be unified by varying
+    the width and depth of the updates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You studied the concept of learning a model of the environment dynamics and
+    rewards from interaction and using the model for planning and policy improvement
+    covering different types of model representations, such as table lookup, linear,
+    and Gaussian models, and the sources of error in model learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you looked at a specific algorithm, Dyna Q, which combines Q-learning
+    with model learning and planning, and its extension, Dyna Q+, which encourages
+    exploration of states that have not been visited for a long time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Throughout the book you have seen the balance between exploitation and exploitation
+    that is needed, and it becomes even more important for integrated planning when
+    applied to problems with very large state spaces. Under the topic of a multi-arm
+    bandit, you saw a simple setup of multiple slot machines with unknown reward probabilities
+    to study the tradeoffs between exploration and exploitation, and compared different
+    strategies such as epsilon greedy, UCB, and Thompson sampling. You also learned
+    about the notion of regret as a measure of quality of exploration, and saw how
+    different strategies perform on the cumulative regret.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having understood the various strategies for balancing exploration versus exploitation,
+    you studied Monte Carlo Tree Search (MCTS). MCTS is a simulation-based search
+    algorithm that uses a tree policy to guide the exploration and a rollout policy
+    to estimate the value of leaf nodes. You looked at a simple synthetic example
+    to understand the details of the steps involved in MCTS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, you looked at the application of MCTS and showed how it can be applied
+    to games like Go and Chess. The chapter also touched upon AlphaGo and AlphaZero
+    approaches, which combine MCTS with deep neural networks to achieve superhuman
+    performance in various games.
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,2118 @@
+- en: 3. Feed-Forward Neural Networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 'In the last chapter we did some amazing things with one neuron, but that is
+    hardly flexible enough to tackle more complex cases. The real power of neural
+    networks comes into light when several (thousands, even millions) neurons interact
+    with each other to solve a specific problem. The network architecture (how neurons
+    are connected to each other, how they behave, and so on) plays a crucial role
+    in how efficient the learning of a network is, how good its predictions are, and
+    what kind of problems it can solve. There are many kinds of architectures that
+    have been extensively studied and that are very complex, but from a learning perspective,
+    it is important to start from the simplest kind of neural network with multiple
+    neurons. It makes sense to start with a *feed-forward neural network*, where data
+    enters at the input layer and passes through the network, layer by layer, until
+    it arrives at the output layer (this gives the networks their name: feed-forward
+    neural networks).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter discusses networks where each neuron in a layer gets its input
+    from all neurons from the preceding layer and feeds its output into each neuron
+    of the next layer. As it is easy to imagine, with more complexity come more challenges.
+    It is more difficult to get quick learning and good accuracy, since the number
+    of hyper-parameters that are available grows due to the increase in network complexity.
+    A simple gradient descent algorithm is not as efficient when dealing with big
+    datasets. When developing models with many neurons, we need to have at our disposal
+    an expanded set of tools that allow us to deal with all the challenges that those
+    networks present.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter starts looking at some more advanced methods and algorithms that
+    will allow you to work efficiently with big datasets and big networks. These complex
+    networks can do some interesting multiclass classifications, one of the tasks
+    that big networks are most often required to do (for example, handwriting recognition,
+    face recognition, image recognition, and so on), so we will use a dataset that
+    will allow us to perform multiclass classification and study its difficulties.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We start the chapter with the network architecture and the needed matrix formalism.
+    Next is a short overview of the new hyper-parameters that come with this new type
+    of networks. You learn how to do multiclass classifications using the softmax
+    function and what kind of output layer is needed. Then, before starting with the
+    Python code, we will go into a brief digression to explain what exactly overfitting
+    is with a simple example, and how to do a basic error analysis with complex networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Then we will start using Keras to construct bigger networks, applying them to
+    a MNIST-similar dataset based on images of clothing items (the Fashion-MNIST dataset,
+    from Zalando). Then we will look at how to add many layers in an efficient way
+    and how to initialize the weights and the biases in the best way possible to make
+    training fast and stable. We will look at Xavier and He initialization for the
+    sigmoid and ReLU activation functions, respectively. Finally, we describe a rule
+    of thumb for comparing the complexity of networks going beyond only the number
+    of neurons. This chapter concludes with some tips on how to choose the right networks
+    and a method to estimate the memory footprint depending on the architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Short Review of Network’s Architecture and Matrix Notation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The network architecture is quite easy to understand. It consists of an *input
+    layer* (the inputs *x*[*i*, *j*]), several layers (called *hidden* because they
+    are sandwiched between the input and the output layers, so they are “invisible”
+    from the outside so to speak), and then an *output layer*. In each layer you may
+    have one to several neurons. The main property of such a network is that each
+    neuron gets input from each neuron in the preceding layer and feeds its output
+    to every neuron in the next layer. Figure [3-1](#Fig1) shows a graphical representation
+    of such a network (in the inputs, we omitted the first index indicating the observation
+    index for clarity).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The schematic representation of a deep feed-forward neural network with many
+    hidden layers, where each neuron gets input from each neuron in the preceding
+    layer and feeds its output to every neuron in the next layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To jump from one neuron to this is quite a big step. To build the model, we
+    need to work with matrix formalism and therefore we need to get all the matrix
+    dimension right. Let’s first discuss some new notation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*L* is the number of hidden layers, excluding the input layer but including
+    the output layer'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*n*[*l*] is the number of neurons in layer *l*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In a network such as the one in Figure [3-1](#Fig1), we indicate the total number
+    of neurons with *N*[*neurons*], which can be written as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {N}_{neurons}={n}_x+\sum \limits_{i=1}^L{n}_i=\sum \limits_{i=0}^L{n}_i
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where, by convention, we define *n*[0] = *n*[*x*]. Each connection between two
+    neurons will have its own weight. Let’s indicate the weight between neuron *i*
+    in layer *l* and neuron *j* in layer *l* − 1 with ![$$ {w}_{ij}^{\left[l\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq1.png). Figure
+    [3-2](#Fig2) shows only the first two layers (input and layer 1) of the generic
+    network from Figure [3-1](#Fig1), with the weights between the first neuron in
+    the input layer and all the others in layer 1\. All other neurons are grayed out
+    for clarity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first two layers of a generic neural network, with the weights of the connections
+    between the first neuron in the input layers and the others in the second layer.
+    All other neurons and connections are drawn in light gray to make the diagram
+    clearer
+  prefs: []
+  type: TYPE_NORMAL
+- en: The weights between the input layer and layer 1 can be written as a matrix as
+    follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {W}^{\left[1\right]}=\left(\begin{array}{ccc}{w}_{11}^{\left[1\right]}&amp;
+    \dots &amp; {w}_{1{n}_x}^{\left[1\right]}\ \\ {}\vdots &amp; \ddots &amp; \vdots
+    \\ {}{w}_{n_11}^{\left[1\right]}&amp; \dots &amp; {w^{\left[1\right]}}_{n_1{n}_x}\end{array}\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: That means that the matrix *W*^([1]) has dimensions *n*[1] × *n*[*x*]. This
+    of course can be generalized between any two layers *l* and *l* − 1\. Meaning
+    that the weight matrix between two adjacent layers *l* and *l* − 1, which we indicate
+    with *W*^([*l*]), will have dimensions *n*[*l*] × *n*[*l* − 1]. By convention,
+    *n*[0] = *n*[*x*] is the number of input features (not the number of observations,
+    which we indicate with *m*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The weight matrix between two adjacent layers *l* and *l* − 1, which we indicate
+    with *W*^([*l*]), will have dimensions *n*[*l*] × *n*[*l* − 1], where, by convention,
+    *n*[0] = *n*[*x*] is the number of input features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The bias (indicated with *b*) will be a matrix this time. Remember that each
+    neuron that receives inputs will have its own bias, so when considering our two
+    layers *l* and *l* − 1 we will need *n*[*l*] different values of *b*. We indicate
+    this matrix with *b*^([*l*]) and it will have dimensions *n*[*l*] × 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The bias matrix for two adjacent layers *l* and *l* − 1, which we indicate with
+    *b*^([*l*]), will have dimensions *n*[*l*] × 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Output of Neurons
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now let’s consider the output of our neurons. To begin, we will consider the
+    *i*^(*th*) neuron of the first layer (remember our input layer is by definition
+    layer 0). Let’s indicate its output with ![$$ {\hat{y}}_i^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq2.png)
+    and let’s assume that all neurons in layer *l* use the same activation function
+    that we indicate with *g*^([*l*]). Then we will have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{y}}_i^{\left[1\right]}={g}^{\left[1\right]}\left({z}_i^{\left[1\right]}\right)={g}^{\left[i\right]}\kern0.75em
+    \left(\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right)\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where we have indicated *z*[*i*] as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {z}_i^{\left[1\right]}=\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\
+    {x}_{i,j}+{b}_i^{\left[1\right]}\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: As you can imagine, we want to have a matrix for all the output of layer 1,
+    so we will use this notation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Z}^{\left[1\right]}={W}^{\left[1\right]}X+{b}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where *Z*^([1]) will have dimensions *n*[1] × 1, and where with *X* we have
+    indicated our matrix with all our observations (rows for the features and columns
+    for observations). We assume that all neurons in layer *l* will use the same activation
+    function, which we will indicate with *g*^([*l*]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can easily generalize the previous equation for a layer *l*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Z}^{\left[l\right]}={W}^{\left[l\right]}{Z}^{\left[l-1\right]}+{b}^{\left[l\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Since layer *l* will get its input from layer *l* − 1, we just need to substitute
+    *X* with *Z*^([*l* − 1]). *Z*^([*l*]) will have dimensions *n*[*l*] × 1\. Our
+    output in matrix form will then be
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Y}^{\left[l\right]}={g}^{\left[l\right]}\left({Z}^{\left[l\right]}\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where the activation function acts, as usual, element by element.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Short Summary of Matrix Dimensions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s summarize the dimensions of all the matrixes we have described so far
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*W*^([*l*]) has dimensions *n*[*l*] × *n*[*l* − 1] (where we have *n*[0] = *n*[*x*]
+    by definition)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*b*^([*l*]) has dimensions *n*[*l*] × 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Z*^([*l* − 1]) has dimensions *n*[*l* − 1] × 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Z*^([*l*]) has dimensions *n*[*l*] × 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Y*^([*l*]) has dimensions *n*[*l*] × 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In each case, *l* goes from 1 to *L*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example: Equations for a Network with Three Layers'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: To make all this discussion a bit more concrete, let’s consider an example of
+    a network with three layers (so *L* = 3) with *n*[1] = 3, *n*[2] = 2, and *n*[3] = 1,
+    as depicted in Figure [3-3](#Fig3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: A practical example of a feed-forward neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this case, we need to calculate the following quantities
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{Y}}^{\left[1\right]}={g}^{\left[1\right]}\left({W}^{\left[1\right]}X+{b}^{\left[1\right]}\right),
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq3.png) whereby
+    *W*^([1]) has dimensions 3 × *n*[*x*], *b* has dimensions 3 × 1, and *X* has dimensions
+    *n*[*x*] × *m*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{Y}}^{\left[2\right]}={g}^{\left[2\right]}\left({W}^{\left[2\right]}{\hat{Y}}^{\left[1\right]}+{b}^{\left[2\right]}\right),
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq4.png) whereby
+    *W*^([2]) has dimensions 2 × 3, *b* has dimensions 2 × 1, and ![$$ {\hat{Y}}^{\left[1\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq5.png) has dimensions
+    3 × *m*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{Y}}^{\left[3\right]}={g}^{\left[3\right]}\left({W}^{\left[3\right]}{\hat{Y}}^{\left[2\right]}+{b}^{\left[3\right]}\right),
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq6.png) whereby
+    *W*^([3]) has dimensions 1 × 2, *b* has dimensions 1 × 1, and ![$$ {\hat{Y}}^{\left[2\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq7.png) has dimensions
+    2 × *m*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The network output ![$$ {\hat{Y}}^{\left[3\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq8.png)
+    will have, as expected, dimensions 1 × *m*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All this may seem rather abstract (and in fact it is). You will see later in
+    the chapter how easy it is to implement in Keras simply building the right architecture,
+    based on the steps just discussed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hyper-Parameters in Fully Connected Networks
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In networks as the ones just discussed, there are quite a few parameters that
+    you can tune to find the best model for your problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters that you fix at the beginning and then do not change during the training
+    phase are called hyper-parameters (like the number of epochs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You need to tune the additional following hyper-parameters for feed-forward
+    networks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of layers, *L*
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The number of neurons in each layer *n*[*i*] for *i*, from 1 to L
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The choice of activation function for each layer *g*^([*l*])
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Then of course you still have the following hyper-parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of iterations (or epochs)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The learning rate
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A Short Review of the Softmax Activation Function for Multiclass Classifications
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You still need to suffer a bit more theory before getting to some TensorFlow
+    code. These kinds of networks start to be complex enough to be able to perform
+    multiclass classifications with reasonable results. To do this, we must introduce
+    the softmax function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mathematically speaking, the softmax function *S* transforms a *k* dimensional
+    vector into another *k* dimensional vector of real values, each between 0 and
+    1, that sum up to 1\. Given *k* real values *z*[*i*] for *i* = 1, …, *k* we define
+    the vector ***z =*** (*z*[1], …, *z*[*k*]) and we define the softmax vector function
+    ***S***(***z***) = (*S*(***z***)[1] *S*(***z***)[2]… *S*(***z***)[*k*]) as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ S{\left(\boldsymbol{z}\right)}_i=\frac{e^{z_i}}{\sum_{j=1}^k{e}^{z_j}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Since the denominator is always bigger than the nominator *S*(***z***)[*i*] < 1\.
+    Additionally, we have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \sum \limits_{i=1}^kS{\left(\boldsymbol{z}\right)}_i=\sum \limits_{i=1}^k\frac{e^{z_i}}{\sum_{j=1}^k{e}^{z_j}}=\frac{\sum_{i=1}^k{e}^{z_i}}{\sum_{j=1}^k{e}^{z_j}}=1
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'So *S*(***z***)[*i*] behaves like a probability since its sum over *i* is 1
+    and its elements are all less than 1\. We will look at *S*(***z***)[*i*] as a
+    probability distribution over *k* possible outcomes. For this example, *S*(***z***)[*i*]
+    will simply be the probability of our input observation of being of class *i*.
+    Let’s suppose we are trying to classify an observation into three classes. We
+    may get the following output: *S*(***z***)[1] = 0.1, *S*(***z***)[2] = 0.6, and
+    *S*(***z***)[3] = 0.3\. That means that the observation has a 10% probability
+    of being in class 1, a 60% probability of being in class 2, and a 30% probability
+    of being in class 3\. Normally, you would choose to classify the input observation
+    into the class with the higher probability—in this example, class 2 with 60% probability.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will look at *S*(***z***)[*i*] with *i* = 1, …, *k* as a probability distribution
+    over *k* possible outcomes. For this example, *S*(***z***)[*i*] will simply be
+    the probability of our input observation being in class *i*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To be able to use the softmax function for classification, we need to use a
+    specific output layer. We need to use ten neurons (in the case of a ten-class
+    multiclass classification problem, like the one we see later in the chapter),
+    where each will give ***z***[*i*] as its output and then one neuron that will
+    output ***S***(***z***). This neuron will have the softmax function as the activation
+    function and will have as inputs the ten outputs ***z***[*i*] of the last layer
+    with ten neurons. In Keras, you use the `tf.keras.activations.softmax` function
+    applied to the last layer with ten neurons. Remember that this Keras function
+    will act element by element. You will a concrete example from start to finish
+    on how to implement this practically later in this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A Brief Digression: Overfitting'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One of the most common problems that you will encounter when training deep neural
+    networks is *overfitting*. Your network may, due to its flexibility, learn patterns
+    that are due to noise, errors, or simply wrong data. It is very important to understand
+    what overfitting is, so now we will go through a practical example of what can
+    happen, to get an decent understanding of it. To make it easier to visualize,
+    we will work with a simple two-dimensional dataset created for this purpose.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Practical Example of Overfitting
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To understand overfitting, consider the following problem: find the best polynomial
+    that approximates a given dataset. Given a set of two-dimensional points (*x*[*i*],
+    *y*[*i*]), we want to find the best polynomial of degree *K* in the form^([1](#Fn1))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f\left({x}_i\right)=\sum \limits_{j=0}^K{a}_j{x}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: That minimizes the mean square error
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{1}{m}\sum \limits_{i=1}^m{\left({y}_i-f\left({x}_i\right)\right)}^2
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where, as usual, *m* indicates the number of data points we have. We do not
+    only want to determine all the parameters *a*[*j*] but also the value of *K* that
+    best approximates the data. *K* in this case measures our model complexity. For
+    example, for *K* = 0 we simply have *f*(*x*[*i*]) = *a*[0] (a constant), the simplest
+    polynomial we can think of. For higher *K*, we have higher order polynomials,
+    meaning our function is more complex and has more parameters available for training.
+    Here is an example of the function for *K* = 3
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f\left({x}_i\right)=\sum \limits_{j=0}^3{a}_j{x}_i^j={a}_0+{a}_1{x}_i+{a}_2{x}_i^2+{a}_3{x}_i^3
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where we have four parameters that can be tuned during the model’s training.
+    Let’s generate some data, starting from a second-order polynomial (*K* = 2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ 1+2{x}_i+3{x}_i^2 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We are adding some random error (this will make overfitting visible). Let’s
+    first import our standard libraries with the addition of the `curve_fit` function,
+    which will automatically minimize the standard error and find the best parameters.
+    Do not worry too much about this function; the goal here is to show you what can
+    happen when you use a model that is too complex.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s define a function for a second-degree polynomial
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then let’s generate the dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: To add some random noise to the function, we used the `np.random.normal(0, 1,
+    size = len(x))` function, which generates a NumPy array of random values from
+    a normal distribution of length `len(x)` with average 0 and standard deviation
+    1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-4](#Fig4) shows the data for *a* = 1, *b* = 2, and *c* = 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: The data we generated with *a* = 1, *b* = 2, and *c* = 3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s consider a model that is too simple to capture the feature of the
+    data, meaning we will see what a model with high bias^([2](#Fn2)) can do. Consider
+    a linear model (*K* = 1). The code will be
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: That will give the best values for *a* and *b* that minimize the standard error.
+    In Figure [3-5](#Fig5), it’s clear how this model completely misses the main feature
+    of the data, being too simple.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: The linear model misses the main feature of the data being too simple. In this
+    case, the model has high bias
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s try to fit a two-degree polynomial (*K* = 2). The results are shown in
+    Figure [3-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: The result (red line) for a two-degree polynomial
+  prefs: []
+  type: TYPE_NORMAL
+- en: That is better. This model seems to capture the main features of the data, ignoring
+    the random noise. Now let’s try a very complex model, a 21-degree polynomial (*K* = 21).
+    The results are shown in Figure [3-7](#Fig7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The results for a 21-degree polynomial model
+  prefs: []
+  type: TYPE_NORMAL
+- en: This model shows features that we know are wrong (since we created our data).
+    Those features are not present, but the model is so flexible that it captures
+    the random variability that we introduced with noise. The oscillations that have
+    appeared using this high-ordered polynomial are wrong and do not describe the
+    data correctly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this case, we talk about *overfitting*, meaning we start capturing with our
+    model features that are due to random error, for example. It is easy to understand
+    that this generalizes quite badly. If we applied this 21-degree polynomial model
+    to new data it would not work well, since the random noise would be different
+    in the new data and so the oscillations (the ones represented in Figure [3-7](#Fig7))
+    would make no sense.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-8](#Fig8) shows the best 21-degree polynomial models obtained by fitting
+    data generated with ten different random noise values . You can clearly see how
+    much it varies. It is not stable and is strongly dependent on the random noise.
+    The oscillations are always different! In this case, we talk about high variance*.*
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: The result of our model with a 21-degree polynomial fitted to ten different
+    datasets generated with different random noise values
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s run the same plot with this linear model, while varying the random
+    noise as we did in Figure [3-8](#Fig8). You can see the results in Figure [3-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: The result of the linear model applied to data where we have randomly changed
+    the random noise. For easier comparison with Figure [3-8](#Fig8), we used the
+    same scale
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see that the model is much more stable. The linear model does not capture
+    features that are dependent from the noise, but it misses the main features of
+    the data (the concave nature). We talk here of high bias*.*
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-10](#Fig10) illustrates the concepts of bias and variance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bias is a measure of how close the measurements are to the true values (the
+    center in the figure) and variance is a measure of how spread the measurements
+    are around the average (not necessarily the true value, as you can see on the
+    left)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the case of neural networks, we have many hyper-parameters (number of layers,
+    number of neurons in each layer, activation function, and so on) and it is very
+    difficult to know in which regime we are. How can we tell if our model has a high
+    variance or a high bias, for example? An entire chapter is dedicated to this subject,
+    but the first step to performing this error analysis is to split the dataset in
+    two different subsets. Let’s see what that means and why we have to do it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The essence of *overfitting* is to have unknowingly extracted some of the residual
+    variation (i.e., the noise) as if that variation represented underlying model
+    structure [1]. The opposite is called *underfitting,* when the model cannot capture
+    the structure of the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The problem with overfitting and deep neural networks is that there is no way
+    of easily visualizing the results. Therefore we need a different approach to determine
+    if our model is overfitting, underfitting, or is just right. This can be achieved
+    by splitting the dataset into different parts and comparing the metrics of the
+    parts. You learn about the basic idea in the next section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basic Error Analysis
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To check how your model is doing and to perform a proper error analysis, you
+    need to split your dataset in two parts^([3](#Fn3)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Training dataset: The model is trained on this dataset using the inputs and
+    the relative labels and using an optimizer algorithm like gradient descent. Often
+    this is called the training set.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Development (or validation) set: The trained model will then be used on this
+    dataset to check how it is doing. On this dataset we will test different hyper-parameters.
+    For example, we can train two different models with a different number of layers
+    on the training dataset and test them on this dataset to check how they are doing.
+    Often this is called the dev set.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: There is an entire chapter dedicated to error analysis, but it is a good idea
+    to read an overview of why it is important to split the dataset. Let’s suppose
+    we are dealing with classification and the metric we use to judge how good our
+    model is the accuracy minus one, or in other words the percentage of the cases
+    that are wrongly classified.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples of the Difference Between Models with High Bias and Models with High
+    Variance
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Error | Case A | Case B | Case C | Case D |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Train set error | 1% | 15% | 14% | 0.3% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Dev set error | 11% | 16% | 32% | 1.1% |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Let’s consider the three cases reported in Table [3-1](#Tab1):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Case A**: We are overfitting (high variance), because we are doing very well
+    on the training set, but our model generalizes very badly to our dev set (see
+    Figure [3-8](#Fig8) again).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Case B**: We see a problem with high bias, meaning that our model is not
+    doing very well generally, on both datasets (see Figure [3-9](#Fig9) again).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Case C**: We have a high bias (the model cannot predict the training set
+    very well) and high variance (the model does not generalize on the dev set very
+    well).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Case D**: Everything seems okay. There is good error on the training set
+    and good data on the dev set. It is a good candidate for our best model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We will explain much better all those concepts later in the book, where we provide
+    recipes on how to solve problems of high bias, high variances, both, and even
+    more complex cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To recap, to do a very basic error analysis, you need to split your dataset
+    into at least two sets: train and dev. You should then calculate your metric on
+    both sets and compare them. You want to have a model that has low error on the
+    train set, low error on the dev set (as with Case D in the previous example),
+    and the two values should be comparable.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Your main take away from this section should be two-fold: **1)** you need a
+    set of recipes and guidelines for understanding how your model is doing: is it
+    overfitting, underfitting, or is it just right? **2)** to answer question 1 and
+    perform the analysis, you need to split the dataset into two parts (later in the
+    book, you will also see what you can do with the dataset split in three or even
+    four parts).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementing a Feed-Forward Neural Network in Keras
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Building a feed-forward neural network in Keras is straightforward and is simply
+    a generalization of the one neuron model you built in last chapter. Let’s compare
+    the two cases. Here you have the schematic one-neuron model Keras implementation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following is a feed-forward network model with one hidden layer made of
+    15 neurons (the first model we will use for our multiclass classification task
+    on the Zalando dataset):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see, we added more neurons (15) to the hidden layer (that in the
+    one-neuron model was already the output one) and we added the output layer, made
+    of ten neurons, since we have ten classes. As you can notice, you can easily create
+    very complex models by simply adding to the stack one layer after another.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next paragraphs, you will see a practical example about how you use this
+    model, choosing the right activation function and the right loss function (given
+    as additional parameters) to solve a multiclass classification task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multiclass Classification with Feed-Forward Neural Networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The task we are going to solve together is a multiclass classification problem
+    on the Zalando dataset. It consists of predicting the corresponding label among
+    ten possible cases (ten different types of clothing). To solve it, we will use
+    a feed-forward network architecture and try different configurations (different
+    optimizers and architectures), performing some error analysis to see which situation
+    is better. Let’s start by looking at the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Zalando Dataset for the Real-World Example
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Zalando SE is a German commerce company based in Berlin . The company maintains
+    a cross-platform store that sells shoes, clothing, and other fashion items [2].
+    For a Kaggle competition, they prepared a MNIST-similar dataset of Zalando’s clothing
+    article images [4], where they provided 60000 training images and 10000 test images.
+    (If you do not know what Kaggle is, check out their website [3], where you can
+    participate in many competitions where the goal is to solve problems with data
+    science.) As in MNIST, each image is 28x28 pixels in grayscale. They classified
+    all images in ten different classes and provided the labels for each image. The
+    dataset has 785 columns, where the first column is the class label (an integer
+    going from 0 to 9) and the remaining 784 contain the pixel gray value of the image
+    (you can calculate that 28x28=784).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Each training and test example is assigned to one of the following labels (as
+    from the documentation):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0: T-shirt/top'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '1: Trouser'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '2: Pullover'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '3: Dress'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '4: Coat'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '5: Sandal'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '6: Shirt'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '7: Sneaker'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '8: Bag'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '9: Ankle boot'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [3-11](#Fig11) shows an example of each class chosen randomly from the
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig11_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: One example from each of the ten classes in the Zalando dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: The dataset has been provided under the MIT License^([4](#Fn4)). The datafile
+    can be downloaded from Kaggle ([`https://www.kaggle.com/zalando-research/fashionmnist/data`](https://www.kaggle.com/zalando-research/fashionmnist/data))
+    or directly from GitHub ([`https://github.com/zalandoresearch/fashion-mnist`](https://github.com/zalandoresearch/fashion-mnist)).
+    If you choose the second option, you need to prepare the data a bit (you can convert
+    it to CSV with the script located at [`https://pjreddie.com/projects/mnist-in-csv/`](https://pjreddie.com/projects/mnist-in-csv/)).
+    If you download it from Kaggle, you have all the data in the right format. You
+    will find two CSV files zipped on the Kaggle website. The ZIP file contains `fashion-mnist_train.csv`,
+    with 60000 images (roughly 130 MB) and `fashion-mnist_test.csv`, with 10000 (roughly
+    21 MB).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In our example, we will retrieve the dataset in a third way: from the TensorFlow
+    datasets catalog ([`https://www.tensorflow.org/datasets/catalog/fashion_mnist`](https://www.tensorflow.org/datasets/catalog/fashion_mnist)),
+    since in this way we will not have to perform any preprocessing steps and we will
+    automatically import the data inside our notebook. Now, let’s code!'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will need the following imports in our code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then, to retrieve the dataset, we can simply run the following command
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Incredibly easy! Now we have two numpy matrices (`trainX` and `testX`) containing
+    all the pixel values describing each of the training and test images and two NumPy
+    arrays (`trainY` and `testY`) containing the associated labels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s print the datasets’ dimensions
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: which will return as output
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: Remember that you should not focus on the Python implementation. Focus on the
+    model, on the concepts behind the implementation. You can achieve the same results
+    using pandas, NumPy, or even C. Try to concentrate on how to prepare the data,
+    how to normalize it, how to check the training, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, we have a training dataset made of 60000 items, stored as images
+    of 28x28 pixels each, and a test dataset made of 10000 items, stored in the same
+    way. Then, an array of corresponding labels is associated with each dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now we need to modify our data to obtain a “flattened” version of image, meaning
+    an array of 754 pixels, instead of a matrix of 28x28 pixels. This step is necessary,
+    because, as we saw when we discussed the feed-forward network architecture, it
+    receives as inputs all the features as separate values. Therefore, we need to
+    have all the pixels stored in the same array. On the contrary, Convolutional Neural
+    Networks (CNNs) do not work with flattened versions of the images, but that’s
+    a topic for Chapter [7](463356_2_En_7_Chapter.xhtml). For now, keep this in mind.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following lines reshape the matrix dimensions
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s summarize our data so far
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`labels`: Has dimensions (60000) and contains the class labels (integers from
+    0 to 9)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`train`: Has dimensions *m* × *n*[*x*] (60000x784) and contains the features,
+    where each column contains the grayscale value of a single pixel in the image
+    (remember 28x28=784)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: See Figure [3-11](#Fig11) again to get an idea of how the images look. Finally
+    let’s normalize the input so that instead of having values from 0 to 255 (the
+    grayscale values), it has only values between 0 and 1\. This is very easy to do
+    with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Before developing the network, we need to solve another problem. Labels must
+    be provided in a different form when performing a multiclass classification task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Modifying Labels for the Softmax Function: One-Hot Encoding'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In classification , we use the following cost function (called cross-entropy)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left({\hat{y}}_i,{y}_i\right)=-\left({y}_i\ \log {\hat{y}}_i+\left(1-{y}_i\right)\log
+    \left(1-{\hat{y}}_i\right)\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *y*[*i*] contains our labels and ![$$ {\hat{y}}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq9.png)is
+    the result of our network. So, the two elements must have the same dimensions.
+    In our case we saw that our network will give as output a vector with ten elements,
+    while a label in our dataset is simply a scalar. So, we have ![$$ {\hat{y}}_i
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq10.png) that
+    has dimensions (10,1) and *y*[*i*] that has dimensions (1,1). This will not work
+    if we do not do something smart. We need to transform our labels in a vector that
+    have dimensions (10,1). A vector with a value for each class, but what value should
+    we use?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'What we need to do is what is called one-hot encoding^([5](#Fn5)). Meaning
+    we will transform our labels (integers from 0 to 9) to vectors with dimensions
+    (1,10) with this algorithm: our one-hot encoded vector will have all zeros, except
+    at the index of the label. For example, for a label 2 our 1x10 vector will have
+    all zeros except at position with index 2, or in other words, it will be (0,0,1,0,0,0,0,0,0,0).
+    Let’s look at some other examples (see Table [3-2](#Tab2)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples of How One-Hot Encoding Works. Remember that Labels Go from 0 to 9,
+    as Indexes
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Label | One-Hot Encoded Label |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 0 | (1,0,0,0,0,0,0,0,0,0) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 2 | (0,0,1,0,0,0,0,0,0,0) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 5 | (0,0,0,0,0,1,0,0,0,0) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 7 | (0,0,0,0,0,0,0,1,0,0) |'
+  prefs: []
+  type: TYPE_TB
+- en: Figure [3-12](#Fig12) shows a graphical representation of the process of one-hot
+    encoding a label.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: A graphical representation of the process of one-hot encoding a label. Two labels
+    (2 and 5) are one-hot encoded in two vectors. The grayed element of the vector
+    is the one the becomes 1, while the white marked ones remain 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Sklearn has several ways of doing this automatically (check for example the
+    function `OneHotEncoder()`). But I think it’s instructive to do it manually to
+    really see how it’s done. Once you understand why you need it, and in which format
+    you need it, you can use the function you like best. The Python code to do this
+    is very simple:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'First you create a new array with the right dimensions: (60000,10), and then
+    you fill it with zeros with the NumPy function `np.zeros((60000,10))`. Then you
+    set to 1 only the columns related to the label itself, using pandas functionalities
+    to slice dataframes with the line `labels_train[np.arange(60000), trainY] = 1`
+    (the same of course is also performed in the case of the test dataset). In the
+    end, you obtain the dimensions (60000,10), where each row indicates a different
+    observation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now we can compare *y*[*i*] and ![$$ {\hat{y}}_i, $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq11.png)since
+    both have the dimensions (10,1) for one observation, or when considering the entire
+    test dataset of (10000,10). The same can of course be asserted for the training
+    dataset. Each column in ![$$ {\hat{y}}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq12.png)
+    will represent the probability of our observation being of a specific class. At
+    the very end when calculating the accuracy of our model, we will assign the class
+    with the highest probability to each observation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Our network will give us the ten probabilities for the observation of being
+    of each of the ten classes. At the end, we will assign to the observation the
+    class that has the highest probability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Feed-Forward Network Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We will start with a network with just one hidden layer. We will have an input
+    layer with 784 features, then a hidden layer (where we will vary the number of
+    neurons), then an output layer of ten neurons that will feed their output into
+    a neuron that will have as an activation function the softmax function. Figure
+    [3-13](#Fig13) shows a graphical representation of the network. We will spend
+    some time looking at the various parts, especially the output layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: The network architecture with a single hidden layer. We will vary the number
+    of neurons *n*[1] in the hidden layer during our analysis
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look at why this strange output layer has ten neurons and why we need
+    an additional neuron for the softmax function. Remember, we want to be able to
+    tell which class each image belongs to. To do this, as explained when discussing
+    the softmax function, we need to get ten outputs for each observation: each being
+    the probability of the image being in each of the classes. So given input ***x***^((*i*)),
+    we need ten values: *P*(*y*[*i*] = 1| *x*[*i*]), *P*(*y*[*i*] = 2| *x*[*i*]),
+    …, *P*(*y*[*i*] = 10| *x*[*i*]) (the probability of the observation class *y*^((*i*))
+    being one of the ten possibilities given the input *x*[*i*]). Or, in other words,
+    our output should be a vector of dimensions 1x10 in this form'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{\boldsymbol{y}}=\left(P\left({y}_i=1|{x}_i\right)\kern1em P\left({y}_i=2|{x}_i\right)\kern0.75em
+    \dots \kern1.25em P\left({y}_i=10|{x}_i\right)\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: And since the observation must be of one single class, this condition must be
+    satisfied
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \sum \limits_{j=1}^{10}P\left({y}_i=j|{x}_i\right)=1 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'This can be understood as: the observation has a 100% probability of being
+    one of the ten classes. Or, in other words, all the probabilities must add up
+    to 1\. We solve this problem in two steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We create an output layer with ten neurons, in this way we will have our ten
+    values as output.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Then we feed the ten values into a new neuron (let’s call it “softmax” neuron)
+    that will take the ten inputs and give as output ten values that are all less
+    than one, which adds to 1.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Calling *z*[*i*] the output of the *i*^(*th*) neuron in the last layer (with
+    *i* going from 1 to 10), we will have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ P\left({y}_i=j|{x}_i\right)=\frac{e^{z_i}}{\sum_{j=1}^{10}{e}^{z_j}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In Keras, this is straightforward. But it is instructive to know exactly what
+    each line of code does. That is what the Keras function `model.add(Dense(10, activation
+    = '`**softmax**`'))` does. It takes a vector as the input and returns a vector
+    with the same dimensions as the input, but “normalized,” as discussed above. In
+    other words, if we feed ***z =*** (*z*[1]  *z*[2] …  *z*[10]) into the function,
+    it will return a vector with the same dimensions as ***z***, meaning 1x10, where
+    each element added to the others gives 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keras Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Now is time to build our model with Keras. The following code will do the job
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now we will not go through each line of code, since you should understand by
+    now how a basic Keras model is built (remember our simple one-neuron model in
+    Chapter [2](463356_2_En_2_Chapter.xhtml)). But there are a few details of the
+    code that need to be stressed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Our last layer will use the softmax function: `model.add(Dense(10, activation
+    = ''softmax''))`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The two parameters—15 (*n*[1]) and 10 (*n*[2])—define the number of neurons
+    in the different layers. Remember the second (output) layer must have ten neurons
+    to be able to use the softmax function. But we will play with the value of *n*[1].
+    Increasing *n*[1] will increase the complexity of the network.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We set the categorical cross-entropy (`loss = 'categorical_crossentropy'`) as
+    the loss function and the categorical accuracy (`metrics = ['categorical_accuracy']`)
+    as the metrics. The reason for this choice is that we have hot-encoded the labels
+    and therefore the categorical versions of these functions are needed.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Now let’s try to perform the training as we did in last chapter for the single-neuron
+    model. The code structure is always the same. Try to run the following code on
+    your laptop:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have set as the optimizer the standard version of the gradient descent .
+    The biggest problem is that the model, as we coded it, will create a huge matrix
+    for all observations (that are 60,000) and then will modify the weights and bias
+    only after a complete sweep over all observations. This requires a lot of resources,
+    memory, and CPU. If that was the only choice we have, we would have been doomed.
+    Keep in mind that in the deep learning world, 60,000 examples of 784 features
+    is not a big dataset at all. We need to find a way of letting this model learn
+    faster.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moreover, notice that, when training the model, we have set `batch_size = data_train_norm.shape[0]`
+    inside the Keras `fit` method. Keras by default sets the batch size to 32 observations
+    [5], but the batch gradient descent updates weights and biases after all training
+    observations have been seen by the network. Therefore, we need to change this
+    parameter to obtain the basic version of gradient descent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the same way, we need to set the `momentum = 0.0` inside the method `tf.keras.optimizers.SGD`.
+    To summarize, since Keras does not include a function to perform the standard
+    gradient descent, we used the stochastic gradient descent function, setting the
+    momentum to zero and the batch size to the entire number of observations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To do some basic error analysis, you also need the dev dataset, which we loaded
+    and prepared in the previous paragraphs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Do not get confused by the fact that the filename contains the word test. Sometimes
+    the dev dataset is called the test dataset. When we discuss error analysis later
+    in the book, we use three datasets: train, dev, and test. To remain consistent
+    in the book, we use the name *dev* here as well, not to confuse you with different
+    names in different chapters.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To calculate accuracy on the dev dataset, we use the `model.evaluate()` function
+    and apply the built model on the dev dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: which returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: To recap, we applied the model trained on the 60,000 observations to the dev
+    test (made up of 10,000 observations) and then calculated the accuracy on both
+    datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A good exercise is to include this calculation in your model so that your `build_model()`
+    function automatically returns the two values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gradient Descent Variations Performances
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In Chapter [2](463356_2_En_2_Chapter.xhtml), we looked at the different GD variations
+    and discussed their advantages and disadvantages. Let’s know see how they differ
+    in a practical case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing the Variations
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Let’s summarize the findings for the three variations of gradient descent for
+    100 epochs (see Table [3-3](#Tab3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing the Performances of Three Variations of Gradient Descent
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Gradient Descent Variation | Running Time | Final Value of Cost Function
+    | Accuracy |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Batch gradient descent | 0.35 min | 1.86 | 43% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Stochastic gradient descent | 60.23 min | 0.26 | 91% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Mini-batch gradient descent (mini-batch size = 50) | 1.70 min | 0.26 | 90%
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: Now you can see that mini-batch gradient descent is definitely the best compromise
+    in terms of execution time and classification performance. Now you should be convinced
+    that it is currently the preferred method to be used as an optimizer in deep neural
+    networks, among the different gradient descent types, since it can reach high
+    performance, maintaining a good trade-off between performance and execution time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-14](#Fig14) shows how the cost function decreases with different mini-batch
+    sizes. Note how, with respect to number of epochs, a smaller mini-batch size means
+    a faster (not in time) decrease.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: A comparison of speed of convergence of the mini-batch gradient descent algorithm
+    with different mini-batch sizes. The learning rate used for this figure was *γ* = 0.0001\.
+    Note that the time needed by each case is not the same. The smaller the mini-batch
+    size, the more time the algorithm needs
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: The best compromise between running time and convergence speed (with respect
+    to the number of epochs) is achieved using the mini-batch gradient descent. The
+    optimal size of the mini-batches is dependent on your problem, but small numbers
+    like 30 or 50 are a good place to start. You will find a compromise between running
+    time and convergence speed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To get an idea of how the running time depends on what value the cost function
+    can reach after 100 epochs, see Figure [3-15](#Fig15) (in comparison to Chapter
+    [2](463356_2_En_2_Chapter.xhtml), the times are evaluated with a real dataset).
+    Each point is labeled with the size of the mini-batch used in that run. You can
+    see that decreasing the mini-batch size decreases the value of *J* after 100 epochs.
+    This happens quickly, without increasing the running time significantly, until
+    you arrive at a value for the mini-batch size that is around 20\. At that point,
+    the time starts to increase quickly and the value of *J* after 100 epochs does
+    not decrease and flattens out.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The best compromise is to choose a value for the mini-batch size where the curve
+    is closer to zero (a small running time and a small cost function value), and
+    that is at a mini-batch size value of 20 in this specific case. This is the reason
+    that those are the most common values. After that point, the increase in running
+    time becomes very quick and is not helpful. Note that for other datasets, the
+    optimal value may be very different. So it’s worth trying different values to
+    see which one works best. In very big datasets you may want to try bigger values,
+    such as 200, 300, or 500\. In this case, we have 60,000 observations and a mini-batch
+    size of 50, which means 1200 batches. If you have much more data, for example
+    1e6 observations, a mini-batch size of 50 would give 20,000 batches. So, keep
+    that in mind and try different values to see which one works best.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: The plot shows the value of the cost function after 100 epochs for the Zalando
+    dataset vs. the running time needed to run through 100 epochs. Note that the points
+    are single runs, and the plot is only indicative of the dependency. Running time
+    and cost function have a small variance when evaluated over several runs. This
+    variance is not shown in the plot
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As a tip, it is good programming practice to write a function that runs your
+    evaluations. This way, you can tune your hyper-parameters (like the mini-batch
+    size) without copy and pasting the same chunk of code over and over. The following
+    function is one that you can use to train our model with different mini-batch
+    sizes (of course, you can add more parameters to be optimized, such as the number
+    of epochs, the learning rate, etc.):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: Writing a function with the hyper-parameters as inputs is common practice. This
+    allows you to test different models with different values for the hyper-parameters
+    and check which ones are better.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples of Wrong Predictions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Running the model with batch gradient descent—with one hidden layer with 15
+    neurons for 1000 epochs and at a learning rate of 0.0001—will give us an accuracy
+    on the training set of 86%. You can increase the accuracy by using more neurons
+    in your hidden layer. For example, using 50 neurons, 1000 epochs, and a learning
+    rate of 0.0001 will allow you to reach 87% on the training set and 85% on the
+    test set. It is interesting to check a few examples of incorrectly classified
+    images, to see if you can learn something from these errors. Figure [3-16](#Fig16)
+    shows an example of incorrectly classified images for each class.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig16_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: One example of incorrectly classified images for each class. Over each image,
+    the True class (labeled with “True”) and the predicted (labeled with “Pred”) class
+    are reported. This model has one hidden layer with 15 neurons, has been run for
+    1000 epochs with a learning rate of 0.0001
+  prefs: []
+  type: TYPE_NORMAL
+- en: Some errors are understandable, such as where a coat was wrongly classified
+    as a pullover. We could easily make the same mistake. The wrongly classified dress
+    is, on the other hand, easy for a human to get right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight Initialization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If you tried to run the code, you will have realized that the convergence of
+    the algorithm is strongly variable, and it depends on the way you initialize your
+    weights. In the previous sections, we focused on understanding how such a network
+    works to not get distracted by additional information, but it is time to look
+    at this problem a bit more closely, since it plays a fundamental role in many
+    layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Basically, we want to avoid the gradient descent algorithm to explode and start
+    returning nan. For example, in the first layer for the *i*^(*th*) neuron, we need
+    to calculate the ReLU activation function of the quantity (see the beginning of
+    this chapter for an explanation if you forget why):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {z}_i=\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Normally, in a deep network, the number of weights is quite big, so you can
+    easily imagine that if the ![$$ {w}_{ij}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq13.png)
+    are big, the quantity *z*[*i*] can be quite big, and then the ReLU activation
+    function can return a nan value since the argument is too big for Python to calculate
+    it properly (remember that in a classification problems, you have a log() function
+    and therefore values of the argument as zero for example are not acceptable).
+    So, you want the *z*[*i*] to be small enough to avoid an explosion of the output
+    of the neurons, and big enough to avoid having the outputs die out and making
+    the convergence a very slow process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The problem has been researched extensively [6], and there are different initialization
+    strategies depending on the activation function you are using. Let’s outline a
+    few of them in Table [3-4](#Tab4), where we assume that the weights will be initialized
+    with a normal distribution with a mean of 0 and a standard deviation as given
+    in the table (note that the standard deviation will depend on the activation function
+    you want to use).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Some Examples of Weight Initialization for Deep Neural Networks
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Activation Function | Standard Deviation σ for a Given Layer |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Sigmoid | ![$$ \sigma =\sqrt{\frac{2}{n_{inputs}+{n}_{outputs}}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq14.png)
+    Usually called Xavier initialization |'
+  prefs: []
+  type: TYPE_TB
+- en: '| ReLU | ![$$ \sigma =\sqrt{\frac{4}{n_{inputs}+{n}_{outputs}}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq15.png)
+    Usually called He initialization |'
+  prefs: []
+  type: TYPE_TB
+- en: In a layer *l* the number of inputs will be the number of neurons of the preceding
+    layer *l* − 1 and the number of outputs will be the number of neurons in the layer
+    coming next *l* + 1\. So, we will have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {n}_{inputs}={n}_{l-1} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: And
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {n}_{outputs}={n}_{l+1} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Very often, deep networks, as the one we discussed before, will have several
+    layers all with the same number of neurons. Therefore you have for most of the
+    layers *n*[*l* − 1] = *n*[*l* + 1] and therefore you will have for Xavier initialization
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\sigma}_{Xavier}=\sqrt{1/{n}_{l+1}}\kern1.25em or\kern1em \sqrt{1/{n}_{l-1}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: And for ReLU activation functions the He initialization will be
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\sigma}_{He}=\sqrt{2/{n}_{l+1}}\kern1.25em or\kern1em \sqrt{2/{n}_{l-1}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Let’s consider the ReLU activation function (the one we used in this chapter).
+    Every layer, as we have discussed, will have *n*[*l*] neurons. A way of initializing
+    the weights for our single hidden layer for example would then be
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Typically, to more easily evaluate and construct the networks, the most typical
+    initialization form used is for ReLU activation function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\sigma}_{He}=\sqrt{2/{n}_{l-1}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: And
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\sigma}_{Xavier}=\sqrt{1/{n}_{l-1}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: For Sigmoid activation function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using this initialization can speed up training considerably and is the standard
+    way that many libraries initialize weights (for example, the Caffe library).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Keras, weight initialization is straightforward by means of the `tf.keras.initializers`
+    function. Look at the Keras documentation to see which initialization strategies
+    are available [7].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adding Many Layers Efficiently
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Typing all this code each time is a bit tedious and error prone. You can instead
+    define a function that creates a layer. That can be done easily with this code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s go through the code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: First we define the dimensions of the input layer.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Then we define the first hidden layer (the number of neurons is given as the
+    function’s input).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Then we add the other hidden layers one at a time. The number of layers is given
+    as the function’s input.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We then add the output layer and we stack all the layers together inside the
+    model.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We then compile and train the model, returning its performance.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Notice that in the previous code, we used Keras functional API (see Appendix
+    A if you are not sure how it works), a functionality that provides a more flexible
+    way to create models with respect to the `tf.keras.Sequential` API. With this
+    functionality, we easily created a model with a customizable number of layers
+    and neurons per layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To create the networks, we can simply apply the function with a different number
+    of neurons and layers as inputs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code is now much easier to understand, and you can use it to create networks
+    as big as you want.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With the function defined, it’s easy to run several models and compare them,
+    as we have done in Figure [3-17](#Fig17), where we tested five different models:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cost function vs. epochs for five models
+  prefs: []
+  type: TYPE_NORMAL
+- en: One layer and ten neurons each layer
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Two layers and ten neurons each layer
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Three layers and ten neurons each layer
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Four layers and ten neurons each layer
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Four layer and 100 neurons each layer
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In case you are wondering, the model with four layers, each with 100 neurons,
+    which seems much better than the others, is starting to go in the overfitting
+    regime, with a train set accuracy of 91% and of 87% on the dev set (after only
+    200 epochs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Advantages of Additional Hidden Layers
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: It is instructive to play with the models. Try varying the number of layers,
+    the number of neurons, how you initialize the weights, and so on. If you invest
+    some time you can reach an accuracy of over 90% in a few minutes of running time,
+    but that requires some work. If you try several models you may realize that in
+    this case using several layers does not seem to bring benefits versus a network
+    with just one. This is often the case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theoretically speaking, a one-layer network can approximate every function you
+    can imagine, but the number of neurons needed may be very large and therefore
+    the model becomes less useful. Now the catch is that the ability of approximating
+    a function does not mean that the network can do it, due for example to the sheer
+    number of neurons involved or the time needed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Empirically it has been shown that networks with more layers require a much
+    smaller number of neurons to reach the same results and usually generalize better
+    to unknown data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theoretically speaking, you do not need to have multiple layers in your networks,
+    but often in practice you should. It is almost always a good idea to try a network
+    with several layers and a few neurons in each instead of a network with one layer
+    populated by a huge number of neurons. There is no set rule on how many neurons
+    or layers are best. You should try starting with low numbers of layers and neurons
+    and then increase them until your results stop getting better.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition, having more layers may allow your network to learn different aspects
+    of your inputs. For example, one layer may learn to recognize vertical edges of
+    an image, and another horizontal ones. Remember that in this chapter we discussed
+    networks where each layer is identical (up to the number of neurons) to all the
+    others. You will learn in Chapter [7](463356_2_En_7_Chapter.xhtml) how to build
+    networks whereby the layers perform very different tasks and are structured very
+    differently from each other, making this kind of network much more powerful for
+    certain tasks with respect to the models we discussed in this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As a simple example, imagine predicting the selling prices of houses. In this
+    case a network with several layers may learn more information on how the features
+    relate to the price. For example, the first layer may learn basic relationships,
+    such as bigger houses mean higher prices. But the second layer may learn more
+    complex features, such as a big house with a small number of bathrooms means a
+    lower selling price.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing Different Networks
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now you should know how to build neural networks with a huge number of layers
+    or neurons. But it is relatively easy to lose yourself in a forest of possible
+    models without knowing which ones are worth trying. Suppose you start with a network
+    (as we have done in the previous sections) with one hidden layer with five neurons,
+    one layer with ten neurons (for our softmax function), and our softmax neuron.
+    Now suppose you have reached some accuracy and you would like to try different
+    models. At first you should try increasing the number of neurons in your hidden
+    layers to see what you can achieve. Figure [3-18](#Fig18) shows the cost function
+    plotted as it decreases for different numbers of neurons. The calculations have
+    been performed with a mini-batch gradient descent with a batch size of 50, one
+    hidden layer with 1, 5, 15, and 30 neurons, and a learning rate of 0.0001\. You
+    can see how moving from one neuron to five immediately makes the convergence faster.
+    But further increasing the number of neurons does not bring as much improvement.
+    For example, increasing from 15 to 30 brings no improvement at all.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cost functionis decreasing vs. epochs for a neural network, with one hidden
+    layer and 1, 5, 15, and 30 neurons. The calculations have been performed with
+    mini-batch gradient descent with a batch size of 50 and a learning rate of 0.0001
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s first try to find a way of comparing those networks. Only comparing the
+    number of neurons can be very misleading, as you will see shortly. Remember that
+    your algorithm is trying to find the best combinations of weights and biases to
+    minimize your cost function. But how many learnable parameters do we have in our
+    model? We have the weights and the biases. You will remember from the theoretical
+    discussion that we can associate a certain number of weights to each layer, and
+    the number of learnable parameters in our layer *l* that we will indicate with
+    *Q*^([*l*]) is given by the total number of elements in the matrix *W*^([*l*]),
+    that is *n*[*l*]*n*[*l* − 1] (where we have *n*[0] = *n*[*x*] by definition) plus
+    the number of biases we have (in each layer we will have *n*[*l*] biases). The
+    number *Q*^([*l*]) can then be written as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}^{\left[l\right]}={n}_l{n}_{l-1}+{n}_l={n}_l\left({n}_{l-1}+1\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: So that the total number of learnable parameters in our network (indicated here
+    with *Q*) can be written as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q=\sum \limits_{j=1}^L{n}_l\left({n}_{l-1}+1\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where by definition *n*[0] = *n*[*x*]. Note that the *Q* parameter of our network
+    is strongly architecture dependent. Let’s calculate it with some practical examples
+    (see Table [3-5](#Tab5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples of Different Network Architectures and Their Corresponding *Q* Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Network Architecture | Parameter ***Q*** (Number of Learnable Parameters)
+    | Number of Neurons |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Network A**: 784 features, 2 layers: *n*[1] = 15, *n*[2] = 10 | *Q*[*A*] = 15(784 + 1) + 10 ∗ (15 + 1) = 11935
+    | 25 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Network B**: 784 features, 16 layers: *n*[1] = *n*[2] = … = *n*[15] = 1,
+    *n*[16] = 10 | *Q*[*B*] = 1 ∗ (784 + 1) + 1 ∗ (1 + 1) + … + 10 ∗ (1 + 1) = 923
+    | 25 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Network C**: 784 features, 3 layers: *n*[1] = 10, *n*[2] = 10, *n*[3] = 10
+    | *Q*[*C*] = 10 ∗ (784 + 1) + 10 ∗ (10 + 1) + 10 ∗ (10 + 1) = 8070 | 30 |'
+  prefs: []
+  type: TYPE_TB
+- en: Draw your attention to networks A and B. Both have 25 neurons, but the *Q*[*A*]
+    parameter is much bigger (more than a factor of ten) than *Q*[*B*]. You can imagine
+    how network A will be much more flexible in learning than network B, even if the
+    number of neurons is the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Q* in practice is not a measure of how complex or how good a network is. It
+    may well happen that, of all the neurons, only a few will play a role, therefore
+    calculating *Q* in this way does not tell the entire story. There is a vast amount
+    of research on the so-called effective degrees of freedom of deep neural networks
+    but that would go way beyond the scope of this book. But this parameter gives
+    a good rule of thumb for deciding if the set of models you want to test are in
+    a reasonable complexity progression.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nonetheless, checking *Q* for the model you want to test may give you some hints
+    about what you should neglect and what you should try. For example, let’s consider
+    the cases we have tested in Figure [3-18](#Fig18) and calculate the *Q* parameter
+    for each network (see Table [3-6](#Tab6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Network Architectures Tested in Figure [3-18](#Fig18) with their Corresponding
+    *Q* Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Network Architecture | Parameter ***Q*** (Number of Learnable Parameters)
+    | Number of Neurons |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 784 features, 1 layer with 1 neuron, 1 layer with ten neurons | *Q* = 1 ∗ (784 + 1) + 10 ∗ (1 + 1) = 895
+    | 11 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 784 features, 1 layer with 5 neuron, 1 layer with ten neurons | *Q* = 5 ∗ (784 + 1) + 10 ∗ (5 + 1) = 3985
+    | 15 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 784 features, 1 layer with 15 neuron, 1 layer with ten neurons | *Q* = 15 ∗ (784 + 1) + 10 ∗ (15 + 1) = 11935
+    | 25 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 784 features, 1 layer with 30 neuron, 1 layer with ten neurons | *Q* = 30 ∗ (784 + 1) + 10 ∗ (30 + 1) = 23860
+    | 40 |'
+  prefs: []
+  type: TYPE_TB
+- en: From Figure [3-18](#Fig18), let’s suppose we choose the model with 15 neurons
+    as the candidate for the best model. Now let’s suppose we want to try a model
+    with three layers, all with the same number of neurons that should compete (and
+    possibly be better) than our (for the moment) candidate model, with one layer
+    and 15 neurons. What should we choose as a starting point for the number of neurons
+    in the three layers? Let’s indicate as model A the one with one layer and 15 neurons
+    and model B as the model with three layers and an unknown number of neurons in
+    each layer indicated with *n*[*B*]. We can easily calculate the *Q* parameter
+    for both networks
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_A=15\ast \left(784+1\right)+10\ast \left(15+1\right)=11935 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: And
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_B={n}_B\ast \left(784+1\right)+{n}_B\ast \left({n}_B+1\right)+{n}_B\ast
+    \left({n}_B+1\right)+10\ast \left({n}_B+1\right)=2\ {n}_B^2+797\ {n}_B+10 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equab.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: What value for *n*[*B*] will give *Q*[*B*] ≈ *Q*[*A*]? We can solve the equation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ 2\ {n}_B^2+797\ {n}_B+10=11935 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equac.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You should be able to solve a quadratic equation, so we will only look at the
+    solution here. This equation is solved for a value of *n*[*B*] = 14.4, but since
+    we cannot have 14.4 neurons, we will need to use the closest integer, *n*[*B*] = 14\.
+    For *n*[*B*] = 14, we will have *Q*[*B*] = 11560, a value very close to 11935.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The fact that the two networks have the same number of learnable parameters
+    does not mean that they can reach the same accuracy and does not even mean that
+    if one learns very quickly the second will learn at all!
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model with three layers, each with 14 neurons, could be a good starting
+    point for further testing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s discuss another point that is important when dealing with a complex dataset.
+    Consider the first layer. Let’s suppose we consider the Zalando dataset and we
+    create a network with two layers: the first with one neuron and the second with
+    many. All the complex features that your dataset has may well be lost in your
+    single first neuron, since it will combine all features into a single value and
+    pass the same value to all the other neurons of the second layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tips for Choosing the Right Network
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: You have discussed a lot of cases, you have seen a lot of formulas, but how
+    can you decide how to design your network?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Unfortunately, there is no fixed set of rules. But you may consider the following
+    tips:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: When considering a set of models (or network architectures) you want to test,
+    a good rule of thumb is to start with a less complex one and move to more complex
+    ones. A rule of thumb to estimate the relative complexity (to make sure that you
+    are moving in the right direction) is the *Q* parameter .
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If you cannot reach good accuracy if any of your layers has a particular low
+    number of neurons. This layer may kill the effective capacity of learning from
+    a complex dataset of your network. Consider for example the case with one neuron
+    in Figure [3-18](#Fig18). The model cannot reach low values for the cost function
+    because the network is too simple to learn from a complex dataset like the Zalando
+    one.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Remember that a low or high number of neurons is always relative to the number
+    of features you have. If you have only two features in your dataset, one neuron
+    may well be enough, but if you have a few hundred (like in the Zalando dataset,
+    where *n*[*x*] = 784), you should not expect one neuron to be enough.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Which architecture you need is also dependent on what you want to do. It’s always
+    worth checking the online literature to see what others have already discovered
+    about specific problems. For example, it’s well known that for image recognition,
+    convolutional networks are very good, so they would be a good choice.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Final Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: When moving from a model with *L* layers to one with *L* + 1 layers, it’s always
+    a good idea to start with the new model and use a slightly smaller number of neurons
+    in each layer and then increase it step by step. Remember that more layers have
+    a chance of learning complex features more effectively, so if you are lucky fewer
+    neurons may be enough. It is something worth trying. Always keep track of your
+    optimizing metric for all your models. When you are not getting much improvement
+    anymore, it may be worth trying completely different architectures (maybe convolutional
+    neuronal networks, etc.).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Estimating the Memory Requirements of Models
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: For the calculation, let’s consider a feed-forward neural network with *N*[*L*]
+    hidden layers, each having *n* neurons. Let’s consider a concrete case to make
+    things clearer. Suppose we are working with the MNIST dataset. In this case, the
+    input data is composed of a vector of the 784 gray values of the images (each
+    image is 28 × 28 pixels in gray values). The output layer of a network for classification
+    will be composed of ten neurons (the ten classes in which the model tries to classify
+    the images). The total number of weights *N*[*W*] can be easily calculated and
+    can be written as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {N}_W=\underset{\mathrm{Weights}}{\underbrace{784n+{N}_L{n}^2+10n}}+\underset{\mathrm{Biases}}{\underbrace{N_Ln}}\underset{\mathrm{large}\
+    n}{\sim }{N}_L{n}^2 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equad.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where the second part of the equation mean that, for large *n*, *N*[*W*] will
+    asymptotically grow quadratically in *n*, which is the number of neurons in each
+    layer. In general, there are three components that need to be taken into account.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Parameters**: In memory, you need to keep the parameters, their gradients
+    during backpropagation, and also additional information if the optimization is
+    using momentum, Adagrad, Adam, or RMSProp optimizers. A good rule of thumb in
+    order to account for all these factors^([6](#Fn6)) is to multiply the memory taken
+    by the weights alone by roughly 3\. With the notation we have used so far, the
+    memory used from parameters (indicated with *M*[*W*]) in Gb would be'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ {M}_W=\underset{\mathrm{Correction}\ \mathrm{Factor}}{\underbrace{3}}+\underset{\mathrm{Conversion}\
+    \mathrm{to}\ \mathrm{byets}\ \mathrm{for}\ \mathrm{Floating}\ \mathrm{point}\
+    64}{\underbrace{64/8}}+\underset{\mathrm{Conversion}\ \mathrm{to}\  Gb}{\underbrace{\frac{N_W}{1024^3}}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equae.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: '**Activations**: Each neuron output must be stored, normally with their gradient
+    for backpropagation. Conservatively only a mini-batch will need to be kept in
+    memory. Calling *S*[*MB*] the mini-batch size the memory needed for activations
+    *M*[*A*] in Gb can be written as'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ {M}_A=2{S}_{MB}\left(2n+10\right)\frac{8}{1024^3} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaf.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: '**Miscellaneous**: This part includes the data that must be loaded into memory
+    and so on. For the purposes of a rough estimate, the memory taken here *M*[*M*]
+    will be estimated only with the dataset size. In the case of MNIST, that will
+    be (in Gb) given by the following equation. Each pixel value, although originally
+    an INT8, must be converted to floating-point 64-data type to perform the training'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ {M}_M=6000\times 784\frac{8}{1024^3} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equag.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: For example, to find out if a model will run on a limited memory device that
+    will have *M*[*D*] GB free, it is enough to check if the following equation has
+    solutions in *n* or *N*[*L*]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {M}_W+{M}_A+{M}_M={M}_D $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equah.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that this is just a rough indication and will not be precise since the
+    amount of memory taken by a model may depend on software versions, the operating
+    system, and many more factors. If we solve the last equation for *n* for example,
+    we can get a very good estimate of the biggest FFNN network that could be run
+    on such a device when applied to MNIST. For example, consider the case of a Raspberry
+    Pi 4 with 2 GB of memory. Typically, such a system has roughly *M*[*D*] = 1.7
+    GB free at any moment. So for a network with *N*[*L*] = 2 and *S*[*MB*] = 128,
+    the last equation will give a solution of *n* ≈ 8200\. Indeed, trying to train
+    a network with more than 8200 neurons on such a device will give a memory error
+    on the device, since there is not enough memory to keep everything available in
+    RAM. (If you test it, your results may vary, depending as mentioned on which version
+    of the Raspberry Pi you have, which version of TensorFlow you are using, and so
+    on.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: For practical purposes to get a rougher estimate, you can neglect the linear
+    terms in *n* in the last equation and still get a usable guideline. For example,
+    in the example discussed previously, neglecting the linear term would give an
+    estimate of *n* ≈ 8700\. Higher than the actual one, but one that will give useful
+    rough information about the maximum number of usable neurons. Finally, remember
+    that only a practical test will guarantee that a specific model can run on a low-memory
+    device.
+  prefs: []
+  type: TYPE_NORMAL
+- en: General Formula for the Memory Footprint
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In general , when working with a dataset of size *n*[*x*] the formula for the
+    number of parameters can be written as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {N}_W=\underset{\mathrm{Weights}}{\underbrace{n_xn+{N}_L{n}^2+{N}_On}}+\underset{\mathrm{Biases}}{\underbrace{N_Ln}}\underset{\mathrm{large}\
+    n}{\sim }{N}_L{n}^2 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equai.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where we indicate the number of neurons in the output layer as *N*[*O*]. If
+    you refer to the previous section, you can see that the formulas for *M*[*W*]
+    and *M*[*A*] are unchanged, while *M*[*M*] needs to be written as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {M}_M=m{n}_x\frac{8}{1024^3} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This accounts for the fact that the dataset size is not 60000 but *m* and that
+    the input dimension is not 784 but *n*[*x*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Exercise 1 (Level: Easy)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Try to build a multiclass classification model like the one you saw in this
+    chapter, but with a different dataset, the MNIST database of handwritten digits
+    ([`http://yann.lecun.com/exdb/mnist/`](http://yann.lecun.com/exdb/mnist/)). To
+    download the dataset from TensorFlow, use the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Exercise 2 (Level: Medium)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Apply He weight initialization to the multiclass classification problem you
+    saw in this chapter to see if you can speed up the learning phase.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Exercise 3 (Level: Difficult)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Try to optimize the feed-forward neural network built in this chapter to reach
+    the best possible accuracy (without overfitting the training dataset!). Tune the
+    number of epochs, the learning rate, the optimizer, the number of neurons, the
+    layers, and the mini-batches. *Hint*: Write a function like the one we used to
+    test different numbers of layers and neurons and give it as inputs all the tunable
+    parameters.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Exercise 4 (Level: Difficult)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider the regression problem we solved with a model made by a single neuron
+    (predicting radon activity in U.S. houses). Try to build a feed-forward neural
+    network to solve the same regression task. See if you can get better prediction
+    performance. *Hint*: You will need to change the loss function and the metrics
+    to evaluate your results, and one-hot encoding will not be necessary anymore.
+    As a starting point, you can find the entire code in the online version of the
+    book at [`https://adl.toelt.ai`](https://adl.toelt.ai).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: References
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[1] Burnham, K. P.; Anderson, D. R. (2002), *Model Selection and Multimodel
+    Inference* (2nd ed.), Springer-Verlag.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[2] [`https://en.wikipedia.org/wiki/Zalando`](https://en.wikipedia.org/wiki/Zalando),
+    last accessed 16.02.2021.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[3] [`www.kaggle.com`](http://www.kaggle.com), last accessed 16.02.2021.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[4] Xiao, Han, Kashif Rasul, and Roland Vollgraf. “Fashion-mnist: a novel image
+    dataset for benchmarking machine learning algorithms.” arXiv preprint arXiv:1708.07747
+    (2017).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[5] [`https://keras.io/api/models/model_training_apis/#fit-method`](https://keras.io/api/models/model_training_apis/%2523fit-method),
+    last accessed 14/03/2021.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[6] “Understanding the Difficulty of Training Deep Feedforward neural networks”,
+    X. Glorot, Y. Bengio (2010), [`https://goo.gl/bHB5BM`](https://goo.gl/bHB5BM).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[7] [`https://www.tensorflow.org/api_docs/python/tf/keras/initializers`](https://www.tensorflow.org/api_docs/python/tf/keras/initializers),
+    last accessed 23.02.2021.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

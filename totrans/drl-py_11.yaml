@@ -1,0 +1,2698 @@
+- en: 11. Proximal Policy Optimization (PPO) and RLHF
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: This is an exciting chapter. It starts from the foundations and builds toward
+    one of the most exciting uses of RL. Have you have used ChatGPT or another Large
+    Language Model (LLM) and found it amazing how these models seem to follow your
+    prompts and complete a task that you describe in English? Apart from the machinery
+    of generative AI and transformers-driven architecture, RL also plays a very important
+    role. Proximal Policy Optimization (PPO) using human annotated (or machine annotated)
+    preferences over pairs of sentences is used as a reward model to fine-tune LLMs
+    to follow the human preferences. This makes LLMs safer and better. This chapter
+    starts with the basics, building toward a deeper understanding of PPO, which even
+    after so many years is still the state-of-the-art policy-based optimization technique
+    in RL. This is followed by a quick overview of LLMs—the architecture, the training
+    process, and the overall LLM ecosystem. The chapter walks through a complete demo
+    of RLHF tuning on a LLM using the state-of-the-art approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Along the way, the chapter also touches upon concepts like prompt engineering,
+    fine-tuning, parameter efficient fine-tuning, and various approaches of using
+    LLMs for increasing complex and human-like tasks. These tasks have resulted in
+    the Large Language Models being called foundational models or even new-age CPUs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [8](502835_2_En_8_Chapter.xhtml) briefly touched upon the issue of policy,
+    deviating a lot during the gradient update thereby showing instability. It briefly
+    talked about the intuition that controlling the size of update in the policy space
+    gives you better control versus controlling the update in network parameter space.
+    Chapter [8](502835_2_En_8_Chapter.xhtml) introduced two approaches following this
+    concept of control in policy/probability space. First, it talked about Trust Region
+    Policy Optimization (TRPO) and then there was a brief discussion of Proximal Policy
+    Optimization (PPO). These both control the update size by making sure that each
+    update does not lead to a revised policy that is significantly different from
+    the current policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I first discuss why this is important. Refer to Figure [11-1](#Fig1) and imagine
+    that the agent is trying to learn a policy to climb the hill with a very uneven
+    surface. There are steep valleys on the right side of the path to the top. The
+    agent needs to be cautious and take careful steps while exploring the neighborhood.
+    A step in the wrong direction could cause the agent to fall off the cliff and
+    it would be hard to recover and climb back to the top or to the previous point
+    in the path. The red circle in Figure [11-1](#Fig1) shows the *trust region* around
+    the current policy, point which is safe and does not lead to any disastrous consequences.
+    If the change in policy is within this circle, the agent will continue to see
+    improvement in the policy while being safe from the cliff.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A three-dimensional illustration of the side view of a mountain peak with a
+    wavy pathway that has several U-pin bends. A shaded point within a circle is labeled
+    as the current point and the U-pin bend is labeled as the trust region.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trust region around a point in policy space
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is the concept on which TRPO and PPO are based. In TRPO, you put this as
+    a hard constraint as expressed in Equation [11-1](#Equ1). You first form a policy
+    objective that has dependence on the current and the new policy parameters, θ[*k*]
+    and θ, respectively. To do this, you must resort to using importance sampling,
+    which was covered in a previous chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta, {\uptheta}_k\right)={E}_{a\sim {\uppi}_{\uptheta_k}\left(a|s\right)}\left[\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right]
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to make sure that new policy π[θ] stays with the trust region centered
+    on the current policy ![$$ {\uppi}_{\uptheta_k} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq1.png)shown
+    in Figure [11-1](#Fig1), you use a hard constraint of Kullback-Liebler distance
+    between two policies being within some small value δ.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uptheta}_{k+1}=\underset{\uptheta}{\arg\ \max }\ J\left(\uptheta, {\uptheta}_k\right)\kern0.5em
+    s.t.{D}_{KL}\left(\uptheta \Big\Vert {\theta}_k\right)\le \updelta $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and *J*(θ, θ[*k*]) is defined in 11-1(11-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The theoretical update in TRPO as per Equations [11-1](#Equ1) and [11-2](#Equ2)
+    is not easy to carry out. Calculating KL involves expectations set across all
+    possible states and actions. With the help of the second order Taylor approximation
+    and by replacing the KL divergence with a sample-based estimation, the final TRPO
+    updates require estimating the policy gradient as shown in Equation [11-3](#Equ2):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{g}}_k=\frac{1}{D_k}{\sum}_{r\in {D}_k}{\sum}_{t=0}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\left.\kern0em \right|}_{\uptheta_k}\cdotp
+    {\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you calculate ![$$ {\hat{x}}_k={\hat{H}}_k^{-1}{\hat{g}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq2.png)
+    where ![$$ {\hat{H}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq3.png)
+    is the Hessian of the sample average KL divergence. The key point to note is that
+    Hessian is the second-order derivative of the policy maximization objective. If
+    the policy network has *n* parameters, ![$$ {\hat{H}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq4.png)
+    will be a *n* × *n* matrix. You need to calculate the inverse of ![$$ {\hat{H}}_k
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq5.png) to get
+    ![$$ {\hat{x}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq6.png)
+    and this inverse is a very slow process, of the order of *n*³ computations. The
+    last part of TRPO is the update of parameter, as per Equation [11-4](#Equ4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uptheta}_{k+1}={\uptheta}_k+{\upalpha}^j\sqrt{\frac{2\updelta}{{\hat{x}}_k^T{\hat{H}}_k{\hat{x}}_k}}\cdotp
+    {\hat{x}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Where *j* ∈ {0, 1, 2, …*K*} is the smallest value that improves the sample loss
+    and satisfies the KL divergence constraint.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The derivation of the TRPO equation is fairly involved. If you are interested,
+    you can refer to the TRPO paper^([1](#Fn1)) for more details. However, there are
+    two key take aways. First, constraining a policy update within a trust region
+    using KL divergence ensures that each update to the policy avoids a disastrous
+    drop into bad regions and using KL divergence as a hard constraint like TRPO requires
+    calculating and inverting a very large *n* × *n* matrix ![$$ {\hat{H}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq7.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Soon after the TRPO paper, the lead author of that paper came up with PPO approach.
+    The paper’s introduction reads:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*“We propose a new family of policy gradient methods for reinforcement learning,
+    which alternate between sampling data through interaction with the environment
+    and optimizing a “surrogate” objective function using stochastic gradient ascent.
+    Whereas standard policy gradient methods perform one gradient update per data
+    sample, we propose a novel objective function that enables multiple epochs of
+    minibatch updates. The new methods, which we call proximal policy optimization
+    (PPO), have some of the benefits of trust region policy optimization (TRPO), but
+    they are much simpler to implement, more general, and have better sample complexity
+    (empirically). Our experiments test PPO on a collection of benchmark tasks, including
+    simulated robotic locomotion and Atari game playing, and we show that PPO outperforms
+    other online policy gradient methods, and overall strikes a favorable balance
+    between sample complexity, simplicity, and wall-time.”*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: As you can see, PPO follows policy updates in kind of a trust region on the
+    policy space, just like TRPO. Yet PPO is much simpler and has better sample efficiency.
+    Therefore, it seems to have the best of both the worlds, making it the state-of-the-art
+    direct policy optimization approach since its introduction in 2017.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having introduced PPO, the next section gets into a step-by-step derivation
+    of PPO and its theoretical basis. If you want to skip ahead, you can skip the
+    sections on PPO and move to the topic of RLHF and fine-tuning LLMs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theoretical Foundations of PPO**
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The next set of action sections will walk the you through the core foundations
+    of Score function, Hessian Matrix, Fisher Information Matrix, and natural gradients,
+    leading to the PPO in its current form. A section is devoted to discussing the
+    practical implementation details of PPO. This deep dive is optional. You can skip
+    ahead to the sections on LLM- and RLHF-based instruction fine-tuning without any
+    loss of continuity. However, if you go through the PPO deep dive, it is time well
+    spent, as PPO is a popular and very efficient algorithm in the domain of direct
+    policy optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I have to introduce a few key concepts from statistics and optimization theory
+    to set the foundations for natural policy optimization family of algorithms (to
+    which TRPO and PPO belong).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Score Function and MLE Estimator
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Most of the machine learning models revolve around finding the parameters of
+    a probability distribution that maximize the joint probability of all the data
+    seen—the training data. This section derives how this comes about and, in the
+    process, introduces the Score function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assume that you have a probability model of the unknown parameter θ signified
+    as *x* ∼ *p*[*X*](*x*; θ) where x, a random variable, follows this distribution.
+    Now say you know the type of distribution and the only thing unknown is θ, which
+    is the parameter of the probability distribution. You also have some samples drawn
+    using this distribution as *x*[1], *x*[2], *x*[3], …*x*[*n*]. Calculate the joint
+    probability of this data conditioned on the unknown parameter θ, as shown in Equation
+    [11-5](#Equ4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ P\left({x}_1,{x}_2,\dots, {x}_n|\uptheta \right)={\prod}_{i=1}^n{p}_X\left({x}_i|\uptheta
+    \right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Take the log on both sides of the Equation [11-5](#Equ4) to get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \log P\left({x}_1,{x}_2|\dots |{x}_n|\uptheta \right)={\sum}_{i=1}^n\log
+    {p}_X\left({x}_i|\uptheta \right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The log is the probability of observing a specific value of *x* = *x*[*i*].
+    In machine learning, you usually form something called Negative Log Loss (NLL),
+    which is nothing but -ve of the expression in Equation [11-6](#Equ5) with an average
+    taken over a number of samples. This is shown in Equation [11-7](#Equ6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ NLL=-\frac{1}{\mathrm{n}}\cdotp \log P\left({x}_1,{x}_2|\dots |{x}_n|\uptheta
+    \right)=-\frac{1}{n}\cdotp {\sum}_{i=1}^n\log {p}_X\left({x}_i|\uptheta \right)
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In most of the machine learning models, including even Large Language Models
+    and other generative AI models, you should try to maximize the evidence, that
+    is, the θ that will maximize the probability of observing the data seen so far,
+    the training data. You convert the maximization to minimization using NLL. In
+    other words, you minimize NLL with respect to θ using stochastic gradient descent.
+    This requires you to take the gradient of NLL with respect to θ, as shown in Equation
+    [11-8](#Equ7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta} NLL=-\frac{1}{\mathrm{n}}\cdotp {\sum}_{\mathrm{i}=1}^{\mathrm{n}}{\nabla}_{\uptheta}\log
+    {\mathrm{p}}_{\mathrm{X}}\left({\mathrm{x}}_{\mathrm{i}}|\uptheta \right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Stochastic gradient, you adjust θ with α · ∇[θ]NLL, where α is known as the
+    learning rate. The update expression is shown in Equation [11-9](#Equ8).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uptheta =\uptheta +\upalpha \cdotp {\nabla}_{\uptheta} NLL $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-9)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is how most machine learning models are trained. Now turn your attention
+    to something called the score function. Look again at the expression in Equation
+    [11-8](#Equ7)—the term inside the summation, ∇[θ] log p[X](x[i]| θ), is known
+    as the *score function*. The score function is the derivative of the log likelihood
+    function. In Equation [11-8](#Equ7) you have a specific sample in the form of
+    *x*[*i*]. However, while defining the score function, you use the unsampled random
+    variable x. The definition of the score function is shown in Equation [11-10](#Equ9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{score}\left(\uptheta \right)={\nabla}_{\uptheta}\log \mathrm{p}\left(\mathrm{x}|\uptheta
+    \right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In traditional statistics, you also use the score function to form the Most
+    Likelihood Estimator (MLE). Under MLE, you take the form in Equation [11-8](#Equ7)
+    and find the θ (analytically), which will make derivative ∇[θ]NLL = 0\. The θ,
+    so found, will minimize the NLL and therefore maximize the probability of the
+    training data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The score function holds significant importance across various domains, including
+    statistics, probability, and machine learning, primarily due to its fundamental
+    role in estimating and optimizing parameters. In statistics, the score function—often
+    represented as the derivative of the log-likelihood function with respect to a
+    parameter—is crucial for assessing the sensitivity of the likelihood function
+    to the parameter. This sensitivity analysis is vital in maximum likelihood estimation,
+    where the goal is to find parameter values that maximize the likelihood function,
+    thereby providing the best fit for the data. In probability theory, the score
+    function aids in understanding the behavior of probability distributions, especially
+    in the context of small changes in parameters, thus enhancing the understanding
+    of stochastic models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the realm of machine learning, the score function is particularly useful
+    in gradient-based optimization algorithms, as shown in Equations [11-6](#Equ5)
+    to [11-10](#Equ9). It serves as a guide to navigate the parameter space in order
+    to find optimal parameters that minimize or maximize a chosen objective function,
+    such as a loss function in supervised learning. This is crucial for training models
+    where the objective is to learn from data by adjusting parameters and improve
+    predictive accuracy. Furthermore, in reinforcement learning, the score function
+    plays a key role in policy gradient methods, where it helps estimate the gradient
+    of expected rewards with respect to policy parameters, enabling the development
+    of strategies that maximize cumulative rewards. Overall, the score function is
+    a versatile tool that enhances your ability to make statistical inferences, understand
+    probabilistic models, and develop efficient machine learning algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Look at one of the important properties of the score function. What is its
+    expected value *E*[*score*(θ)]? Go through the derivation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ E\left[ score\left(\uptheta \right)\right]=E\left[{\nabla}_{\uptheta}\log
+    p\left(x|\uptheta \right)\right] $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {\nabla}_{\uptheta}\log p\left(x|\uptheta \right)p\left(x|\uptheta
+    \right) dx $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int \frac{\nabla_{\uptheta}p\left(x|\uptheta \right)}{p\left(x|\uptheta
+    \right)}p\left(x|\uptheta \right) dx $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {\nabla}_{\uptheta}p\left(x|\uptheta \right) dx $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Using the linearity property, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ ={\nabla}_{\uptheta}\int p\left(x|\uptheta \right) dx $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ ={\nabla}_{\uptheta}(1)=0 $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \mathrm{i}.\mathrm{e}.,E\left[{\nabla}_{\uptheta}\log p\left(x|\uptheta
+    \right)\right]=0 $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ10.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-11)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The expected value of the score function is zero. From MLE point of view, you
+    can view this result as saying that MLE estimator in limit will give you an unbiased
+    estimate of the unknown parameter θ of the underlying distribution that’s generating
+    the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The actual estimate of θ will depend on the evidence, that is, the data you
+    see, and you use MLE estimator to get an estimate. In statistics, whenever you
+    use data to form some estimate, you are always interested in understanding the
+    variance of this estimate. How much will it change as you see new data or repeat
+    the estimation exercise with another batch of data? Therefore, the next section
+    looks at the covariance of the score function ∇[θ] log *p*(*x*| θ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fisher Information Matrix (FIM) and Hessian
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'This section is interested in the covariance of the score function. Whenever
+    you use the MLE estimator, you are also interested in the sensitivity of this
+    estimate based on the data samples used. This can be inferred from the covariance
+    of the score function. Remember that score function is a vector—it is a derivate
+    of log likelihood which is scalar with respect to the unknown parameters of the
+    distribution, a vector *θ*. The dimensions of the score function and *θ* will
+    match. The covariance, accordingly, will be a matrix. Derive the expression for
+    this covariance, that is, the Fisher Information Matrix, F:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ covariance=F={E}_{p\left(x|\uptheta \right)}\left[\left(s\left(\uptheta
+    \right)-0\right){\left(s\left(\uptheta \right)-0\right)}^T\right] $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ F={E}_{p\left(x|\uptheta \right)}\left[{\nabla}_{\uptheta}\log p\left(x|\uptheta
+    \right){\nabla}_{\uptheta}\log p{\left(x|\uptheta \right)}^T\right] $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ11.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-12)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In machine learning where you replace expectations with sample estimates, you
+    can get the estimate ![$$ \hat{F} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq8.png)
+    as shown:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{F}=\frac{1}{N}{\sum}_{i=1}^N{\nabla}_{\uptheta}\log p\left({x}_i|\uptheta
+    \right){\nabla}_{\uptheta}\log p{\left({x}_i|\uptheta \right)}^T $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ12.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-13)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Fisher Matrix has an interesting property. The negative expected Hessian
+    of log likelihood is equal to the Fisher Information Matrix, *F*. If you have
+    not heard of Hessian *H*, it is a square matrix and is the second-order partial
+    derivative of a scalar function—in this case, the likelihood function. The relationship
+    between F and H is as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {E}_{p\left(x|\uptheta \right)}\left[{H}_{\log p\left(x|\uptheta \right)}\right]=-F
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Or written the other way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ F=-{E}_{p\left(x|\uptheta \right)}\left[{H}_{\log p\left(x|\uptheta \right)}\right]
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ13.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-14)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The derivation of this property involves a bit of math and interested readers
+    can refer to any standard text on statistics for a step-by-step derivation. There
+    are two insights that you can draw from the expression in Equation [11-13](#Equ12)
+    or [11-14](#Equ13). The first one is that the Fisher Information Matrix can be
+    used to make an estimate about the second derivative of the MLE estimator or the
+    Negative Loss function (NLL). The second derivate, the Hessian H, tells you about
+    the sensitivity of θ found using the NLL minimization over samples and you can
+    calculate this sensitivity using F as a replacement in place of hessian. The second
+    insight is about doing gradient descent in machine learning using second-order
+    approximation instead of the first-order approximation as shown in Equation [11-9](#Equ8).
+    The use of the property in Equation [11-14](#Equ13) will help you develop practical
+    algorithms that do gradient descent using second order and using the Fisher Matrix
+    instead of Hessian. The Fisher Information Matrix is also linked to KL divergence.
+    I explore these in the next section, when I talk about the Natural Gradient method,
+    which forms the basis for TRPO and PPO.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Natural Gradient Method
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To recap the motivation of TRPO and PPO, you saw earlier in the chapter that
+    to make sure that updates to the policy stay within a defined difference, you
+    need to put constraints on the delta change in the probability distribution space
+    (i.e., policy) instead of the parameters of the probability distribution. TRPO
+    does that by way of a hard constraint on KL divergence between the old and new
+    policy, as described in Equations [11-1](#Equ1) to [11-4](#Equ3). PPO does this
+    without using a hard constraint and you are working your way toward that. To further
+    motivate this point, look at two Gaussian distributions with mean -2 and +2 and
+    variance of 0.49 (standard deviation of 0.7). You plot the two distributions as
+    shown in the left side of Figure [11-2](#Fig2). You can see that the two distributions
+    are far apart with negligible overlap. Keeping the means fixed at -2 and +2, change
+    the variance from 0.49 to 4.0\. You can see the second version of the graph on
+    the right side of Figure [11-2](#Fig2) and confirm that the two distributions
+    have a significant overlap, even when the mean distance between the two distributions
+    has remained constant.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 graphs with 2 bell curves each. Left. The vertices of the curves are (negative
+    2, 0.6) and (2, 0.6). They intersect at (negative 4, 0), (0, 0), and (4, 0). Right.
+    The vertices are (negative 2, 0.2) and (2, 2). They intersect at (negative 8,
+    0), (0, 0.125), and (8, 0). The values are approximate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: KL divergence changes even when the mean distance remains constant
+  prefs: []
+  type: TYPE_NORMAL
+- en: The KL divergence due to significant overlap will be lower in the right-side
+    distributions in Figure [11-2](#Fig2). Therefore, operating in parameter space
+    will not give you the ability to control the similarity or dissimilarity of two
+    distributions. Putting a bound on the KL divergence gives you a better way to
+    control the change in distribution as you update its parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now you’ll work your way through establishing the relationship between KL divergence
+    and the Fisher Information Matrix. Look at the expression of KL divergence between
+    two policies, the current one with parameter θ and the revised one with parameter
+    θ^′.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ KL\left[\mathrm{p}\left(\mathrm{x}|\uptheta \right)\right\Vert\;\left[\mathrm{p}\left(\mathrm{x}|{\uptheta}^{\prime}\right)\right]={E}_{p\left(x|\uptheta
+    \right)}\left[\log p\left(x|\uptheta \right)\right]-{E}_{p\left(x|\uptheta \right)}\left[\log
+    p\left(x|{\theta}^{\prime}\right)\right] $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Taking the first derivate of this expression with respect to θ^′, the parameter
+    of the updated distribution, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta \prime }\  KL\left[p\left(x|\uptheta \right)\right\Vert\
+    \left[p\left(x|{\uptheta}^{\prime}\right)\right]={\nabla}_{\uptheta \prime }{E}_{p\left(x|\uptheta
+    \right)}\left[\log p\left(x|\uptheta \right)\right]-{\nabla}_{\uptheta \prime
+    }\ {E}_{p\left(x|\uptheta \right)}\left[\log p\left(x|{\uptheta}^{\prime}\right)\right]
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The first term on the right side of the expression will be 0, as the derivative
+    is with respect to θ^′ but the expression *E*[*p*(*x*| θ)][log*p*(*x*| θ)] has
+    no dependence on θ^′.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now expand the second term on right side from the expectation operation to
+    an explicit integral:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta \prime }\  KL\left[p\left(x|\uptheta \right)\right\Vert\
+    \left[p\left(x|{\uptheta}^{\prime}\right)\right]=-\int p\left(x|\uptheta \right){\nabla}_{\uptheta
+    \prime}\log p\left(x|{\uptheta}^{\prime}\right)\  dx $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Take the second derivate of the expression to get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta \prime}^2\  KL\left[p\left(x|\uptheta \right)\right\Vert\
+    \left[p\left(x|{\uptheta}^{\prime}\right)\right]=-\int p\left(x|\uptheta \right)\
+    {\nabla}_{\uptheta \prime}^2\log p\left(x|{\uptheta}^{\prime}\right)\  dx $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The left expression—the second derivate of the scalar value against the parameter
+    vector—is nothing but a Hessian, the Hessian of KL divergence between old and
+    updated distribution with respect to the parameters of the updated distribution.
+    Now evaluate the Hessian at θ^′ = θ to get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {H}_{KL\left[\right(p\left(x|\theta \right)\left\Vert p\left(x|{\theta}^{\prime}\right)\right]}=-\int
+    p\left(x|\uptheta \right){\nabla}_{\uptheta^{\prime}}^2\log p\left(x|{\uptheta}^{\prime}\right){\left.\kern0em
+    \right|}_{\uptheta \prime =\uptheta} dx $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =-\int p\left(x|\uptheta \right){H}_{\log p\left(x|\uptheta \right)} dx
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =-{\mathrm{E}}_{\mathrm{p}\left(\mathrm{x}|\uptheta \right)}\left[{\mathrm{H}}_{\log
+    \left(\mathrm{x}|\uptheta \right)}\;\right] $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Substituting Equation [11-14](#Equ13), you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {H}_{KL\left[\right(p\left(x|\theta \right)\left\Vert p\left(x|{\theta}^{\prime}\right)\right]}=F
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-15)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equation [11-15](#Equ14) is an important result. It tells you that the Fisher
+    Information Matrix *F* is the Hessian of KL divergence between two distributions
+    *p*(*x*| *θ*) and *p*(*x*| *θ*^′), with respect to *θ*^′, evaluated at *θ*^′ = *θ*.
+    How will you use this? Can you think of it?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Look at *KL*[*p*(*x*| θ)‖ [*p*(*x*| θ^′)] and switch the variables, as θ^′ = θ + *d*
+    to explicitly define the change in parameters from old value θ to new value θ^′
+    with a change vector *d*. Now derive a second order, Taylor series expansion of
+    KL divergence around the original parameter vector θ. I shorten the probability
+    function notation to keep the focus on the core manipulations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ KL\left[{p}_{\uptheta}\Big\Vert {p}_{\uptheta \prime}\right]\approx KL\left[{p}_{\uptheta}\Big\Vert
+    {p}_{\uptheta}\right]+{\left({\nabla}_{\uptheta \prime } KL\left[{p}_{\uptheta}\Big\Vert
+    {p}_{\uptheta \prime}\right]{\left.\kern0em \right|}_{\uptheta \prime =\uptheta}\right)}^Td+\frac{1}{2}{d}^T{\nabla}_{\uptheta
+    \prime}^2 KL\left[{p}_{\uptheta}\Big\Vert {p}_{\uptheta \prime}\right]{\left.\kern0em
+    \right|}_{\uptheta \prime =\uptheta}d $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The first term, *KL*[*p*[θ]‖*p*[θ]], will be 0, as the KL distance between
+    the same distributions is 0\. The second term has ∇[θ′]*KL*[*p*[θ]‖*p*[θ′]]|[θ ′  = θ],
+    which is equal to *E*[*p*(*x*| θ)][∇[θ] log *p*(*x*| θ)], which according to Equation
+    [11-11](#Equ10), is also 0\. Expression ![$$ {\nabla}_{\uptheta \prime}^2 KL\left[{p}_{\uptheta}\Big\Vert
+    {p}_{\uptheta \prime}\right]{\left.\kern0em \right|}_{\uptheta \prime =\uptheta},
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq9.png) by Equation
+    [11-15](#Equ14) is the Fisher Information Matrix F. Making these substitutions,
+    you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ KL\left[{p}_{\uptheta}\Big\Vert {p}_{\uptheta \prime}\right]\approx \frac{1}{2}{d}^T
+    Fd $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ15.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-16)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With this result, you now know that if you need to constrain the KL divergence
+    during a parameter update, you can do so with the help of Equation [11-16](#Equ15).
+    Say your loss function is L(θ) and you want to find the optimal θ that minimizes
+    this loss function subject to KL divergence being within a constant *c*. You can
+    express this mathematically as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {d}^{\ast }=\arg \underset{d\kern0.5em \mathrm{s}.\mathrm{t}. KL\left[{p}_{\uptheta}\Big\Vert
+    {p}_{\uptheta +\mathrm{d}}\right]=c}{\min }L\left(\uptheta +d\right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'You can express this minimization problem with constraint in Lagrangian form
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {d}^{\ast }=\arg \underset{d}{\min }L\left(\uptheta +d\right)+\uplambda
+    \left( KL\left[{p}_{\uptheta}\Big\Vert {p}_{\uptheta +d}\right]-c\right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Using Equation [11-15](#Equ14) to replace *KL*[*p*[θ]‖*p*[θ + *d*]], you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {d}^{\ast}\approx \arg \underset{d}{\min }L\left(\uptheta +d\right)+\frac{1}{2}\uplambda
+    {d}^T Fd-\uplambda c $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Next, approximate *L*(θ + *d*) by its first-order Taylor expansion *L*(θ + *d*) = *L*(θ) + ∇[θ]*L*(θ)^(*T*)*d*
+    to get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {d}^{\ast}\approx \arg \underset{d}{\min}\left[L\left(\uptheta \right)+{\nabla}_{\uptheta}L{\left(\uptheta
+    \right)}^Td+\frac{1}{2}\uplambda {d}^T Fd-\uplambda c\right] $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'To find the *d*^∗, you set the derivate of right side with respect to *d* equal
+    to 0, to get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial }{\partial d}\left[L\left(\uptheta \right)+{\nabla}_{\uptheta}L{\left(\uptheta
+    \right)}^Td+\frac{1}{2}\uplambda {d}^T Fd-\uplambda c\right]=0 $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \Rightarrow {\nabla}_{\uptheta}L\left(\uptheta \right)+\uplambda dF=0
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Solving for *d*, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ d=-\frac{1}{\uplambda}{F}^{-1}{\nabla}_{\uptheta}L\left(\uptheta \right)
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ16.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-17)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Where the Natural Gradient ![$$ {\overset{\sim }{\nabla}}_{\uptheta} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq10.png)
+    is defined as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\overset{\sim }{\nabla}}_{\uptheta}L\left(\uptheta \right)={F}^{-1}{\nabla}_{\uptheta}L\left(\uptheta
+    \right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ17.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-18)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equation [11-18](#Equ17) is an important result that forms the basis for TRPO
+    and PPO as well as many other policy algorithms based on natural gradients. Natural
+    gradients convert the gradient in the parameter space to a gradient in distribution
+    space by using *F*^(−1), which captures the curvature of the probability graph
+    around the parameter θ.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using the result from Equation [11-18](#Equ17), you can define the natural
+    gradient descent by using the following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Do a forward pass and calculate the loss *L*(θ).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Compute the Fisher Information Matrix F estimate using Equation [11-13](#Equ12).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Compute the gradient ∇[θ]*L*(θ).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Calculate the natural gradient ![$$ {\overset{\sim }{\nabla}}_{\uptheta}L\left(\uptheta
+    \right)={F}^{-1}{\nabla}_{\uptheta}L\left(\uptheta \right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq11.png)
+    using Equation [11-18](#Equ17).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Update the parameter ![$$ \uptheta =\uptheta -\upalpha {\overset{\sim }{\nabla}}_{\uptheta}L\left(\uptheta
+    \right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq12.png).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: With natural gradients, the size of the update is controlled in the distribution
+    space instead of in the parameter space and it is achieved by using natural gradients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This has been a long section, full of math and derivations. You do not need
+    to understand everything in the first reading. You can also skip the whole section—just
+    remember the concept of a natural gradient and how it is related to a regular
+    gradient, as per Equation [11-18](#Equ17).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next section visits TRPO briefly in the context of this understanding and
+    then goes into the details of how PPO implements that KL constraint, what are
+    the implementation level details, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trust Region Policy Optimization (TRPO)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Having derived the natural gradient, you can now better appreciate the TRPO
+    Equations [11-1](#Equ1) to [11-3](#Equ2). They implement the KL divergence constraint
+    and ensure improvement of policy on each update using something called a *line
+    search,* as explained in Equation [11-4](#Equ3). TRPO also calculates the Hessian
+    ![$$ {\hat{H}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq13.png)of
+    the KL divergence by calculating the Hessian on the sample average KL divergence.
+    Next, it calculates ![$$ {\hat{x}}_k={\hat{H}}_k^{-1}{\hat{g}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq14.png)
+    using the conjugate gradient approach and then ![$$ {\hat{x}}_k $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq15.png)
+    is used to update the policy parameters, as shown in Equation [11-4](#Equ3). Note
+    that TRPO calculates the Hessian of the sample average KL divergence instead of
+    using the Fisher Information Matrix as a drop-in replacement.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Even with all the optimization in implementation, TRPO is a complex and exacting
+    algorithm. It may not have been very popular, but it laid the foundation for authors
+    to come up with PPO, which is covered next.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PPO Deep Dive**
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'PPO is inspired by the same challenge as TRPO: how can developers update a
+    policy as much as possible with the data they have now, without going too far
+    and risking a drop in performance? While TRPO tries to solve this problem with
+    a complicated method based on second-order derivatives, PPO is a group of methods
+    that use first-order derivatives and some other techniques to keep new policies
+    similar to the old ones. PPO methods are much easier to implement, and they seem
+    to work as well as or better than TRPO in practice. There are two primary variants
+    of PPO—PPO-Penalty and PPO-Clip.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like TRPO, PPO-Penalty updates the policy network with an approximate solution
+    to a KL-constrained problem, but instead of enforcing the constraint strictly,
+    it adds a penalty term for the KL divergence in the objective function, and it
+    automatically adapts the penalty coefficient during training so that it has the
+    right magnitude.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Instead of a KL divergence term in the objective or a constraint, PPO-Clip uses
+    a special clipping technique in the objective function to prevent the new policy
+    from deviating too much from the old policy. This chapter focuses only on PPO-Clip.
+    Readers may want to quickly review the section on PPO from Chapter [8](502835_2_En_8_Chapter.xhtml)
+    before proceeding further.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PPO CLIP Objective
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This section first talks about the clipped objective as defined in Equation
+    8 of the PPO paper.^([2](#Fn2)) This objective is reproduced in Equation [11-19](#Equ18).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}^{\mathrm{CLIP}}\left(\uptheta \right)={\hat{E}}_t\left[\mathit{\min}\left({r}_t\left(\uptheta
+    \right){\hat{A}}_t, clip\left({r}_t\left(\uptheta \right),1-\upvarepsilon, 1+\upvarepsilon
+    \right){\hat{A}}_t\right)\right] $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ18.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-19)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Equation [11-19](#Equ18), *r*[*t*](θ) is the importance sampling ratio and
+    ![$$ {\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq16.png)
+    is the usual Advantage function, which you studied about in Chapter [8](502835_2_En_8_Chapter.xhtml).
+    Advantage ![$$ {\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq17.png)
+    helps reduce the variance when used as a drop-in replacement for rewards-to-go
+    value in the policy optimization algorithms. *r*[*t*](θ) is the ratio of the probability
+    of a given action in a given state under the new policy and under the old policy,
+    as shown in Equation [11-20](#Equ19). Epsilon (ϵ) is the hyperparameter and is
+    usually kept at a value of 0.2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {r}_t\left(\uptheta \right)=\frac{\uppi_{\uptheta}\left({a}_t|{s}_t\right)}{\uppi_{\uptheta_{old}}\left({a}_t|{s}_t\right)}
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ19.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-20)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that *r*[*t*](θ) is 1 when θ = θ[*old*], that is, when old and new policies
+    are the same. Let’s unpack the expression ![$$ clip\left({r}_t\left(\uptheta \right),1-\upvarepsilon,
+    1+\upvarepsilon \right){\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq18.png).
+    Note the range of values. *r*[*t*](θ), being the ratio of two probabilities, would
+    lie between 0 and 1\. *CLIP*, as the name suggests, clips the ratio *r*[*t*](θ)
+    in the range [1 − ϵ, 1 + ϵ], thereby removing any incentive for *r*[*t*] to move
+    outside of this range. This limits policy updates to be within a range controlled
+    by the parameter ϵ.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Equation [11-19](#Equ18), you use the minimum of clipped and unclipped as
+    the objective. Depending on whether the value of ![$$ {\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq19.png)
+    is positive or negative, the behavior of the `min` function is different.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now consider the case of positive ![$$ {\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq20.png).
+    Consider three different values of *r*[*t*]; below 1 − ϵ, in the range [1 − ϵ,
+    1 + ϵ], and above 1 + ϵ. To keep the notation uncluttered, you can drop the sub-index
+    *t*. When *r* is below 1 − ϵ, the clipped value will be ![$$ \left(1-\upvarepsilon
+    \right)\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq21.png)
+    and the unclipped value will be ![$$ r\hat{A,} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq22.png)
+    which is lower than the clipped value. Therefore, the surrogate objective function
+    *L*^(*CLIP*) will be ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq23.png).
+    When *r* lies in [1 − ϵ, 1 + ϵ], clipped and unclipped portions will be the same,
+    thus making ![$$ {L}^{CLIP}=r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq24.png).
+    For *r* > 1 + ϵ, clipped value will be ![$$ \left(1+\upvarepsilon \right)\hat{A}
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq25.png) and
+    it will be less than ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq26.png),
+    making *L*^(*CLIP*) equal to ![$$ \left(1+\upvarepsilon \right)\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq27.png).
+    You can see these in the following table as well as in Figure [11-3](#Fig3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can carry out similar analysis for negative ![$$ {\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq28.png).
+    Once more consider three different values of *r*[*t*]; below 1 − ϵ, in the range
+    [1 − ϵ, 1 + ϵ], and above 1 + ϵ. When *r* is below 1 − ϵ, the clipped value will
+    be ![$$ \left(1-\upvarepsilon \right)\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq29.png)
+    and the unclipped value will be ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq30.png).
+    As ![$$ {\hat{A}}_t $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq31.png)
+    is negative, ![$$ \left(1-\upvarepsilon \right)\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq32.png)
+    will be smaller and will be the *L*^(*CLIP*). When *r* lies in [1 − ϵ, 1 + ϵ],
+    clipped and unclipped portions will be the same, making ![$$ {L}^{CLIP}=r\hat{A}
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq33.png). For
+    *r* > 1 + ϵ, the clipped value will be ![$$ \left(1+\upvarepsilon \right)\hat{A}
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq34.png) and
+    it will be more than ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq35.png),
+    since ![$$ \hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq36.png)
+    is negative. Therefore, in this case *L*^(*CLIP*) will be equal to ![$$ r\hat{A}
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq37.png). Again,
+    refer to the following table, as well as Figure [11-3](#Fig3) for a summary and
+    plot of how *L*^(*CLIP*) changes for different values of ration *r*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 graphs of L clip versus r. Left. The condition reads A greater than 0\. The
+    line increases to the dashed vertical line at 1 + epsilon and becomes constant.
+    A dot is marked at 1\. Right. The condition reads A less than 0\. The line remains
+    constant initially and decreases from the dashed line at 1 minus epsilon.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*L*^(*CLIP*) plot for different values of ratio *r* and Advantage ![$$ \hat{A}
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq46.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | *r* < 1 − ϵ | *r* ∈ [1 − ϵ, 1 + ϵ] | *r* > 1 + ϵ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| ![$$ \hat{A}\ge 0 $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq38.png)
+    | ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq39.png)
+    | ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq40.png)
+    | ![$$ \left(1+\upvarepsilon \right)\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq41.png)
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| ![$$ \hat{A}&lt;0 $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq42.png)
+    | ![$$ \left(1-\upvarepsilon \right)\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq43.png)
+    | ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq44.png)
+    | ![$$ r\hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq45.png)
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: You can see that, in Figure [11-3](#Fig3), whenever the change in probability
+    ratio will make *L*^(*CLIP*) improve, you ignore the change beyond a threshold,
+    1 + *ϵ* for positive ![$$ \hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq47.png)
+    and 1 − *ϵ* for negative ![$$ \hat{A} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_IEq48.png).
+    You include the ratio without any clipping whenever the change is making the objective
+    worse.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Advantage Calculation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Like the other policy gradient approaches in Chapter [8](502835_2_En_8_Chapter.xhtml),
+    calculating Advantage remains the same. There are various ways to calculate the
+    Advantage. The original PPO paper suggested using two types of Advantage functions,
+    as shown in Equations [11-21](#Equ20) and [11-22](#Equ21).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{A}}_t=-V\left({s}_t\right)+{r}_t+\upgamma {r}_{t+1}+\cdots +{\upgamma}^{T-t+1}{r}_{T-1}+{\upgamma}^{T-t}V\left({s}_T\right)
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ20.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-21)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{A}}_t={\updelta}_t+\left(\gamma \lambda \right){\updelta}_{t+1}+\cdots
+    +\cdots +{\left(\gamma \lambda \right)}^{T-t+1}{\updelta}_{T-1} $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \mathrm{Where}\ {\updelta}_t={r}_t+\upgamma V\left({s}_{t+1}\right)\hbox{--}
+    V\left({s}_t\right) $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ21.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-22)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equation [11-21](#Equ20) is the n-step return with *n* = *T* in this case. Equation
+    [11-22](#Equ21) is the Generalized Advantage Estimate, which reduces to Equation
+    [11-21](#Equ20) for λ = 1 and to TD(0) for λ = 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Value and Entropy Loss Objectives
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'As with many other Actor-Critic algorithms that involve Advantage calculations,
+    you need a network that can take state to produce state-value. PPO also has a
+    value network that is fitted as part of the loss objective:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}^{VF}={\hat{E}}_t\left[{\left({V}_{\upphi}\left({s}_t\right)-{V}_t^{target}\right)}^2\right]
+    $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ22.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-23)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you have seen a few times before, you add entropy term *S*[π[θ]](*s*[*t*])
+    to encourage exploration. With all these, the objective function that you want
+    to maximize is given in Equation [11-24](#Equ23). Remember that the objective
+    in Equation [11-24](#Equ23) is for maximization, which can be converted into a
+    minimization by multiplying by -1.0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}^{CLIP+ VF+S}={L}^{CLIP}-{L}^{VF}+S $$](../images/502835_2_En_11_Chapter/502835_2_En_11_Chapter_TeX_Equ23.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (11-24)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementation Details of PPO
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Having explained the theoretical foundations of the PPO algorithm, this section
+    will now go through its implementation, as seen in CleanRL. CleanRL library documentation^([3](#Fn3))
+    and actual code file^([4](#Fn4)) will be the primary source.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CleanRL library authors documented all the implementation details in a blog,
+    which you can read on the ICLR website.^([5](#Fn5)) There are 37 details that
+    the blog talks about, 13 of which are core details, with the remaining 24 relevant
+    to specific variants such as the Atari environment, robotics tasks, LSTM version,
+    and so on. This section goes over the 13 core details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1\. Vectorized Environment
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: PPO leverages an efficient paradigm known as the *vectorized architecture**,*
+    which features a single learner that collects samples and learns from multiple
+    environments. You can see this in Lines 162 to 164 of the implementation file
+    `ppo.py`,^([6](#Fn6)) as shown in Listing [11-1](#PC1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Based on the command-line argument `args.num_envs`, many environments are created
+    in parallel and wrapped with `gym.vector.SyncVectorEnv`. The `SyncVectorEnv` in
+    Gymnasium is a subclass of `gymnasium.vector.VectorEnv`. `VectorEnv` enables running
+    of multiple independent copies of the same environment in parallel. Vector environments
+    can provide a linear speed-up in the steps taken per second through sampling multiple
+    subenvironments at the same time. To prevent terminated environments waiting until
+    all subenvironments have terminated or truncated, the vector environments auto-reset
+    subenvironments after they are terminated or truncated. The vector environments
+    batch observations, rewards, terminations, truncations, and info for each parallel
+    environment. In addition, the `step()` function expects to receive a batch of
+    actions for each parallel environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The command-line arguments `num_envs` and `num_steps` determine the number of
+    steps to run in each environment per policy rollout, and together they control
+    the batch size. The batch size is defined as `args.batch_size = int(args.num_envs
+    * args.num_steps)`. The `total_timesteps` argument controls the total number of
+    environment steps that will be taken during the training. This is broken down
+    into several iterations, with each iteration having `batch_size steps`. Each batch
+    is used multiple times to train the model with the number of repetitions controlled
+    by a command-line argument `args.update_epochs`. A high-level breakdown of this
+    training loop is shown in Listing [11-2](#PC2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2\. Parameter Initialization
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In general, the weights of hidden layers use orthogonal initialization of weights
+    with `scaling np.sqrt(2)`, and the biases are set to 0, as shown in Listing [11-3](#PC3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 3\. Adam Optimizer’s Epsilon Parameter
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: PPO sets the epsilon parameter to 1e-5, which is different from the default
+    epsilon of 1e-8 in PyTorch and 1e-7 in TensorFlow. Note that PPO uses the same
+    optimizer for both policy and value network, as shown in Listing [11-4](#PC4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 4\. Adam Learning Rate Annealing
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The Adam optimizer’s learning rate can be constant or set to decay. By default,
+    the hyperparameters for training agents playing Atari games set the learning rate
+    to linearly decay from 2.5e-4 to 0 as the number of timesteps increases. In MuJoCo,
+    the learning rate linearly decays from 3e-4 to 0\. Listing [11-5](#PC5) shows
+    the code details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 5\. Generalized Advantage Estimation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Although the PPO paper uses the abstraction of Advantage estimate in the PPO’s
+    objective, as shown in Listing [11-6](#PC6), the PPO implementation uses a Generalized
+    Advantage Estimation, as shown in Equation [11-22](#Equ21). The gamma (γ) is set
+    to 0.99 and lambda (λ) is set to 0.95\. Both of these can be controlled as command-line
+    parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 6\. Mini-Batch Updates
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: While learning, the PPO implementation randomly arranges the training data of
+    size N∗M and splits it into smaller batches to calculate the gradient and improve
+    the policy. This is presented in Listing [11-3](#PC3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 7\. Normalization of Advantages
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Using GAE to compute the advantages, PPO then normalizes them by taking away
+    their mean and dividing them by their standard deviation. This normalization is
+    done at the minibatch level, not the whole batch level, as shown in Listing [11-7](#PC7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 8\. Clipped Surrogate Objective
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: PPO clips the objective, which is controlled via the command-line argument `clip_coef`,
+    and it is set by default to 0.2\. Listing [11-8](#PC8) shows the code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 9\. Value Function Loss Clipping
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: PPO clips the value function like the PPO’s clipped surrogate objective, and
+    it is controlled via the same command-line argument, `clip_coef`. Listing [11-8](#PC8)
+    shows how this clipping is done.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 10\. Overall Loss and Entropy Bonus
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: As shown in Listing [11-8](#PC8), the overall loss is calculated as `loss =
+    policy_loss - entropy * entropy_coefficient + value_loss * value_coefficient`,
+    which maximizes an entropy bonus term. Note that the policy parameters and value
+    parameters share the same optimizer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 11\. Global Gradient Clipping
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: For each update iteration in an epoch, PPO rescales the gradients of the policy
+    and value network so that the “global l2 norm” (i.e., the norm of the concatenated
+    gradients of all parameters) does not exceed 0.5, as contained in Listing [11-8](#PC8).
+    The value of 0.5 can be controlled via the command-line argument `max_grad_norm`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 12\. Debug Variables
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'The PPO implementation comes with several debug variables, which are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`policy_loss`: The mean policy loss across all data points'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`value_loss`: The mean value loss across all data points'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`entropy_loss`: The mean entropy value across all data points'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`clipfrac`: The fraction of the training data that triggered the clipped objective'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`approxkl`: The approximate Kullback–Leibler divergence, measured by `(-logratio).mean()`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the CleanRL implementation, these are logged to the weights and biases if
+    that option is enabled from the command line. The logging code is from lines 300
+    to 309 in the `ppo.py` file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 13\. Shared and Separate MLP Networks for Policy and Value Functions
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: You can either use a shared network with separate heads or separate networks.
+    CleanRL implementations separate the network approach in the `ppo.py` file, as
+    shown in Listing [11-9](#PC9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Running CleanRL PPO
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You saw PPO running in Chapter [8](502835_2_En_8_Chapter.xhtml). Refer to the
+    `8.c-ppo_sb3.ipynb` notebook for running PPO on `CartPole`, to record videos,
+    log training details to weights and biases, as well as ways to share trained agents
+    using HuggingFace.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Asynchronous PPO
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'A group of authors of a paper titled “Sample Factory: Egocentric 3D Control
+    from Pixels at 100000 FPS with Asynchronous Reinforcement Learning”^([7](#Fn7))
+    introduced a high-throughput training system with a focus on very efficient synchronous
+    and asynchronous implementations of policy gradients (PPO). Figure [11-4](#Fig4)
+    shows the schematic and the main components of the library.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An architecture for a sample factory has a sampler entity with rollout workers
+    from 0 to N and inference workers, from 0 and 1\. They have a shared memory to
+    send observations and receive action. The rollouts are sent to shared memory,
+    batcher, learner, and shared G P U memory as parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Simple Factory library^([8](#Fn8))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample Factory is based on the concept that RL training can be divided into
+    several mostly separate components, each one dedicated to a specific task. This
+    allows for a modular design, where these components can be sped up/parallelized
+    separately, enabling you to reach the highest performance on any RL task. Components
+    interact asynchronously by sending and receiving messages with components typically
+    living on different event loops in different processes. Instead of explicitly
+    sending the data between components (i.e., by serializing observations and sending
+    them across processes), the library chooses to send the data through shared memory
+    buffers. Each time a component needs to send data to another component, it writes
+    the data to a shared memory buffer and sends a signal containing the buffer ID
+    (essentially a pointer to data). This massively reduces the overhead of message
+    passing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Each component focuses on a particular task and can be viewed as a data processing
+    engine (i.e., each component takes some input by getting signals, performs a computation,
+    and sends out the results by producing its own signals). These are the main components
+    of Sample Factory:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Rollout workers** simulate the environment. They take actions from the policy,
+    perform the environment steps, generate observations after each step, and complete
+    trajectories after `--rollout` steps.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Inference workers** take in observations and hidden states and generate actions.
+    The learner performs SGD steps and then updates the policy on each inference worker.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Batcher** receives trajectories from the rollout workers, puts them together,
+    and produces datasets of data for the learner.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Learner** receives batches of data from the batcher, divides them into smaller
+    batches, and performs Stochastic gradient descent for `--num_epochs` times. After
+    each SGD step, it writes the new weights to shared memory buffers and sends the
+    related signal to others.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Runner** bootstraps the whole system, receives all sorts of statistics from
+    other components, and takes care of logging and summary writing.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Sampler**, despite being a separate component that can communicate with other
+    signals, usually acts as a simple layer around rollout/inference workers and connects
+    them to the rest of the system.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Interested readers can refer to the Sample Factory Documentation^([9](#Fn9))
+    details for using this library. Listing [11-10](#PC10) shows a sample run.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: This completes the deep dive of PPO. In upcoming sections, you will look at
+    the application of PPO in Large Language Models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Large Language Models(**)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Having look ed PPO in detail, now you’ll see its latest use in making Large
+    Language Models by following human prompts to carry out specific tasks. OpenAI
+    demonstrated the use of RL with human feedback using PPO in a seminal paper in
+    March 2022, titled “Training Language Models to Follow Instructions With Human
+    Feedback”.^([10](#Fn10)) The current models deployed by OpenAI, ChatGPT-3.5, and
+    ChatGPT-4 use this approach. Even all other models that follow a prompt—an instruction
+    from a user to complete some tasks like summarizing a text, generate new content,
+    identify themes, or extract information from text—use some form of fine-tuning
+    to make these models follow these instructions. RLHF was the first technique that
+    was successfully demonstrated by OpenAI and still continues to be a very popular
+    approach for fine-tuning models to make these models follow instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before diving into the details of this paper and the approach of RLHF, I quickly
+    recap Large Language Models. I also discuss various emerging trends in the world
+    of LLMs. Most of the information in this section is orthogonal to understanding
+    RLHF. Therefore, this section is optional and readers with prior knowledge of
+    LLMs or wanting to jump right into RLHF may skip this section on LLMs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A language model is a system that can learn the statistical patterns of natural
+    language and generate text that resembles the input data. Language models have
+    many applications, such as speech recognition, machine translation, text summarization,
+    question answering, and conversational agents. However, most traditional language
+    models are limited by the size of their vocabulary and the length of their input
+    and output sequences. They also rely on supervised learning, which requires large
+    amounts of labeled data for each specific task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Large Language Models are a new paradigm in natural language processing, where
+    a single model is trained on a massive amount of unlabeled text data from diverse
+    domains and sources, such as books, websites, news articles, social media posts,
+    and more. These models can achieve impressive performance on various natural language
+    tasks, even without any fine-tuning on task-specific data, by simply using the
+    text itself as supervision. Large Language Models can also generate coherent and
+    fluent text across different genres and styles, demonstrating a high level of
+    generalization and creativity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the key innovations that enabled the development of Large Language Models
+    is the Transformer architecture, which was introduced in a paper “Attention Is
+    All You Need” by Vaswani et al. (2017).^([11](#Fn11)) The Transformer architecture
+    introduced a novel approach to handling sequential data, moving away from the
+    limitations of previous models like recurrent neural networks (RNNs) and long
+    short-term memory (LSTM) networks. It achieved this with self-attention mechanisms,
+    which allow the model to weigh the importance of different parts of the input
+    data differently. This innovation enabled the Transformer to process all parts
+    of the input data in parallel, significantly improving efficiency and effectiveness
+    in handling long-range dependencies in text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Transformer is based on the concept of attention, which allows the model
+    to focus on the most relevant parts of the input and output sequences, regardless
+    of their length or position. The Transformer also uses a self-attention mechanism,
+    which enables the model to learn the dependencies and relations among the words
+    in a sequence. The Transformer consists of two main components—an encoder, which
+    encodes the input sequence into a latent representation, and a decoder, which
+    generates the output sequence from the latent representation. Figure [11-5](#Fig5)
+    shows the schematic of the Transformer model proposed in the paper.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A model diagram has 2 N x blocks. The left block has inputs with input embedding,
+    multi-head attention, and feed-forward with add and norm. The right block has
+    outputs with output embedding, masked and multi-head attention, and feed-forward
+    with add and norm, linear, softmax, and output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transformer model^([12](#Fn12))
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Transformer architecture was further extended in a paper titled “Improving
+    Language Understanding by Generative Pre-Training” by Radford et al. (2018),^([13](#Fn13))
+    who proposed the Generative Pretrained Transformer (GPT) model. GPT is a variant
+    of the Transformer that only uses the decoder component and is trained as an autoregressive
+    language model, which means that it predicts the next word in a sequence given
+    the previous words. GPT is pretrained on a large corpus of text using the objective
+    of masked language modeling, where some of the words in the input sequence are
+    randomly replaced with a special token and the model has to recover the original
+    words. This way, the model can learn the general patterns and structures of natural
+    language from the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, GPT still faced some limitations, such as the fixed size of its vocabulary
+    and the difficulty of scaling up to larger models and datasets. These challenges
+    were addressed in a paper titled “Language Models Are Unsupervised Multitask Learners”
+    by Radford et al. (2019),^([14](#Fn14)) who introduced the GPT-2 model, which
+    was an order of magnitude larger than GPT in terms of parameters and data. GPT-2
+    used a sub-word tokenization method, which allowed it to handle a larger and more
+    diverse vocabulary, as well as a more efficient training algorithm, which reduced
+    the computational cost and memory usage. GPT-2 was able to generate high-quality
+    text on various topics and domains, without any task-specific fine-tuning or data,
+    showing remarkable generalization and versatility.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The GPT-2 model was further scaled up as discussed in a paper titled “Language
+    Models Are Few-Shot Learners” by Brown et al. (2020),^([15](#Fn15)) who presented
+    the GPT-3 model, which was the largest language model at the time of its publication,
+    with 175 billion parameters and 45 terabytes of text data. GPT-3 achieved state-of-the-art
+    results on several natural language benchmarks, such as natural language understanding,
+    natural language generation, and commonsense reasoning, surpassing the performance
+    of many specialized models that were fine-tuned on task-specific data. GPT-3 also
+    demonstrated the ability to perform few-shot learning, where the model could adapt
+    to a new task by simply providing a few examples of the desired input and output
+    in the query, without any explicit fine-tuning or data. This is known as *prompting*
+    or *prompt engineering*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This scale-up to very large sizes eventually led to these models being referred
+    to as *Large Language Models* (LLMs) or also as *Foundation Models*. The term
+    reflects not just their physical size in terms of parameters but also their extensive
+    understanding of language and the capability to perform a wide range of NLP tasks
+    with little to no task-specific training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The GPT series of models belong to a broader class of AI models, known as generative
+    models, which aim to learn the underlying distribution of the data and generate
+    new samples from it, mimicking the training data. Generative models have many
+    applications beyond natural language processing, such as computer vision, audio
+    synthesis, and even code. Generative models can also be used for data augmentation,
+    anomaly detection, domain adaptation, and more. Some of the common types of generative
+    models are variational autoencoders, generative adversarial networks, and autoregressive
+    models, such as GPT. A schematic of autoregressive training for Large Language
+    Models is shown in Figure [11-6](#Fig6). In autoregressive training, the input
+    text itself acts as the model output and there is no manual step of human-generated
+    labels. The input sequence of words shifted by one place is used as the label/output
+    sequence. This way, the LLM is trained to predict the next word in the sequence
+    given the sequence of words so far in the sentence. Using this approach, a very
+    large model is trained on a very large corpus of text, almost close to 2-6 trillion
+    word tokens. In a nutshell, this is what LLMs are all about.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An auto-regressive model diagram has a set of words in rectangles over and under
+    it that are mapped. It points at is. It, is points at a. It, is, a point at bright.
+    It, is, a, bright point at day. It, is, a, bright, day point at e o s within angle
+    brackets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoregressive style of training
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, in its raw form when trained in an autoregressive way only, LLMs can
+    complete a sentence or text but they cannot efficiently follow additional instructions
+    given to the model. RLHF is the process by which a raw trained (pretrained) LLM
+    is further trained to produce output preferred by humans that can follow human
+    instructions much more effectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, the pace of release of newer fine-tuned LLMs for different tasks
+    and domains is exponentially increasing. Hardly a week goes by when there is a
+    new announcement of a new model or technique that makes LLMs even more powerful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This ability of models to follow human instructions (also called “prompts”)
+    has made these models powerful and given rise to a new area of expertise, called
+    *prompt engineering*. Researchers are spending countless hours refining the way
+    prompts are generated. You will learn about a few popular approaches but I will
+    not go into the detail, as the focus in this chapter is at an introductory level.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prompt Engineering
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Due to the effectiveness of LLMs’s ability to follow instructions/prompts and
+    carry out various NLP tasks, prompt engineering has become a new discipline when
+    it comes to LLMs. Some experts in the AI field have gone to the extent to say
+    that the English language is the new programming language. The same LLM can produce
+    outputs from very poor quality to extremely high and relevant quality based purely
+    on prompts. Prompts are natural language instructions or questions that specify
+    the task, the input, the output format, and sometimes additional information or
+    hints for the LLM. Prompt engineering aims to leverage the general knowledge and
+    capabilities of LLMs without requiring any or minimal fine-tuning on task-specific
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example, if you want to use an LLM to perform sentiment analysis on a given
+    sentence, you can use different types of prompts, such as the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classify the sentiment of the sentence "I love this movie" as positive, negative,
+    or neutral.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: How does the speaker feel about the movie? Happy, sad, or indifferent?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Sentence: I love this movie'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Sentiment: [MASK]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The quality and effectiveness of the prompts may vary depending on the LLM,
+    the task, the input, and the output. Prompt engineering involves experimenting
+    with different prompt styles, formats, and structures to find the optimal one
+    that maximizes the performance and accuracy of the LLM. A prompt contains any
+    of the following elements:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Instruction: The description of the task that the model is being asked to do.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Context: The external information or additional context to help the model produce
+    more accurate/relevant responses.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Input data: The actual question or task that you are asking the model to complete.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Output format: The type or format of the output.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Prompting Techniques
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Using this structure, there are various ways to guide the LLMs to provide the
+    desired type of output for a given task. It is a rapidly changing area with newer
+    techniques emerging on a daily basis. This section visits some of the more popular
+    approaches being practiced at the time of writing this book.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Zero-shot prompting* is the simplest type, where you produce instructions
+    and input data only. There is no additional context or guidance. An example of
+    zero-shot prompting would be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '““”Instruction: Classify the sentiment of the sentence as positive or negative:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Sentence: I love this movie'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Sentiment:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ”””
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The model will get these three lines of input and it will complete it with either
+    “positive” or “negative” based on the sentence. In this specific case, you expect
+    the LLM response to be “positive” as “I love this movie” is a sentence that signifies
+    a positive sentiment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Few-shot prompting* is also called *in-context learning*. With this approach,
+    additional context in the form of examples is provided to the model. In the case
+    of the sentiment classifier, you could provide the following examples that show
+    the mapping of sample sentences to the sentiment these signify. An example prompt
+    using this approach would look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '““”Instruction: Classify the sentiment of the sentence as positive or negative:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Context: Move was worth the money // positive'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: What a waste of the time // negative
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Though slow at times, it is still worth a watch // positive
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Sentence: I love this movie'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Sentiment:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ”””
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We have expanded the prompt by providing three examples of “sentence -> sentiment”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next one is *chain of thought prompting*. It came from the Google team
+    early in 2022, in a paper titled “Chain-of-Thought Prompting Elicits Reasoning
+    in Large Language Models.”^([16](#Fn16)) It is a very simple idea but one with
+    a lot of power packed in it. The idea adds intermediate steps of reasoning, leading
+    to a final solution for each of the few-shot examples and then asks the model
+    to solve another user-defined problem. The LLM uses the patterns of examples to
+    complete the prompt by giving the intermediate reasoning steps and a final answer
+    for the unsolved problem. The paper shows that such an approach increases the
+    correctness of the answer significantly over the naïve few-shot approach. An example
+    is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: “““
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The odd numbers in this group add up to an even number: 4, 8, 9, 15, 12, 2,
+    1.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'A: Adding all the odd numbers (9, 15, 1) gives 25\. The answer is False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The odd numbers in this group add up to an even number: 15, 32, 5, 13, 82,
+    7, 1.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'A:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ”””
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Another example from the paper is shown in Figure [11-7](#Fig7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 types of prompting. Standard prompting. It has a model input with two questions
+    and an answer. A model output has the answer indicated by a wrong sign. Chain-of-thought
+    prompting. It has a model input with 2 questions and an answer. A model output
+    has the answer indicated by a tick sign.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Chain of thought (CoT) promptingSource: CoT paper^([17](#Fn17))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After this paper came out, there was an explosive growth in the number of papers
+    extending the original CoT idea with different variants/enhancements. Some examples
+    are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Self-consistency improvement to CoT**: Use of multiple CoT passes with majority
+    voting.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Zero-shot chain-of-thought**: Involves adding "Let’s think step by step"
+    to the original prompt. An example prompt is:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: “””
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Q: A juggler can juggle 16 balls. Half of the balls are golf balls,'
+  prefs: []
+  type: TYPE_NORMAL
+- en: and half of the golf balls are blue. How many blue golf balls are
+  prefs: []
+  type: TYPE_NORMAL
+- en: there?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A: Let’s think step by step.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: “””
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Automatic chain-of-thought**: The original CoT requires hand-crafted examples
+    which the zero-shot CoT tried to eliminate by replacing the examples with the
+    instructions “Let’s us think step by step”. However, it can still produce errors.
+    Auto-CoT^([18](#Fn18)) uses an automated way to select diverse examples that help
+    increase the guidance to the LLM in the form of additional context.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Many more**: There are many more approaches. At the time of writing this
+    book, I counted an additional 20+ variations and improvements to the CoT approach.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Having discussed CoT, the next section looks at yet another very popular approach,
+    known as *Retrieval Augmented Generation* (RAG).
+  prefs: []
+  type: TYPE_NORMAL
+- en: RAG and Chat Bots
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Retrieval Augmented Generation (RAG) was introduced by Meta in 2020^([19](#Fn19))
+    before the emergence of LLMs. This approach can be applied to LLMs for tasks involving
+    specific external knowledge such as Wikipedia or other large corpora, to enhance
+    the generation of text by LLMs. For example, to generate a biography of a person,
+    you can use a RAG prompt like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Retrieve relevant information about the person from Wikipedia or other sources.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use the retrieved information to write a coherent and informative biography
+    that covers the person’s life, achievements, and legacy.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The RAG approach consists of two main components—a retriever and a generator.
+    The retriever is responsible for finding the most relevant documents or passages
+    from the external knowledge sources given a query or a partial generation. The
+    generator is a LLM that takes the retrieved information as context and produces
+    the final text output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The RAG approach can improve the quality, diversity, and specificity of the
+    generated text, especially for tasks that require factual or domain-specific knowledge.
+    However, it also introduces some challenges, such as how to select the best sources
+    of knowledge, how to deal with noisy or incomplete information, and how to ensure
+    the consistency and coherence of the generated text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example RAG schematic from LangChain—a library that helps manage complex
+    multi-step complex and dynamic prompt driven LLM interactions—is shown in Figure
+    [11-8](#Fig8).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram has a question that undergoes query transformation, routing construction,
+    and documents in a multi-modal or semi-structured index. The documents are sent
+    to the vector store and relational and graph databases and are sent for post-processing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'RAG pipelineSource: LangChain library blog^([20](#Fn20))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'RAG and LLMs are increasingly being used to power chatbots that provide customer
+    service or answer specific queries. If you use Bing or Google search today, apart
+    from the links, you also see a well-crafted responses at the top of the page.
+    This is an example of RAG-driven search and response. It can also be used to provide
+    customer service, answer internal employee queries about HR policies, and so on.
+    Let’s walk through an example of customer query asking about some product details.
+    The complete interaction between the customer and chatbot can be broken into the
+    following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Receive the customer query and analyze its intent and domain. For example, if
+    the customer asks about the features of a product, the intent is information seeking
+    and the domain is the product category.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Retrieve relevant documents or passages from a large-scale knowledge source,
+    such as Wikipedia or a product database, using RAG. RAG uses a neural retriever
+    to find the most similar documents to the query, and a neural generator to reran
+    them based on their usefulness for answering the query. A very popular approach
+    right now is to use cosine similarity between the LLM-based embeddings of knowledgebase
+    items and the LLM base embedding of the query.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Generate a natural language response to the customer query using the retrieved
+    documents as additional context for the LLM. The LLM can use the documents to
+    provide factual or domain-specific information, as well as to personalize the
+    response based on the customer profile or preferences.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Evaluate the quality and relevance of the generated response using metrics such
+    as ROUGE, BLEU, or human feedback. If the response is satisfactory, send it to
+    the customer. If not, repeat the previous steps with a different set of documents
+    or a different LLM model.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The chatbots also have a way to handle multi-turn chats between the system and
+    user, wherein the previous query from the user and the response from the system
+    are maintained as a list of past interactions and added to the context at each
+    turn of interaction with the system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LLMs as Operating Systems
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: All these approaches have taken the LLM use to a level across such diverse sets
+    of tasks that LLMs are now being called *new age CPUs*. Check out the very informative
+    talk by Andrej Karpathy, one of the top voices and experts when it comes to AI.^([21](#Fn21))
+    Figure [11-9](#Fig9) shows a slide from Andrej’s talk that propositions that LLMs
+    are going to be the new operating systems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An L L M operating system has an L L M context window in the R A M in the C
+    P U, that is accessed by the calculator, python interpreter terminal, file system
+    in the disk, ethernet browser, video and audio peripheral devices, and other L
+    L Ms. 10 uses of the future L L Ms are listed below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'LLMs as operating systems Source: Andrej Karpathy talk'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fine-Tuning
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: LLM fine-tuning involves modifying the parameters of a pretrained LLM to make
+    it more suitable for a specific downstream task. Unlike prompt engineering, which
+    relies on using natural language or special tokens as inputs and outputs, fine-tuning
+    modifies the internal weights of the LLM to optimize its performance on the task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Fine-tuning is required when the task-specific data is very different from
+    the general domain data that the LLM was trained on, or when the task requires
+    a high level of accuracy and robustness that cannot be achieved by prompt engineering
+    alone. For example, if the task is to classify legal documents or generate biomedical
+    summaries, the LLM may not have enough knowledge or linguistic skills to handle
+    these domains and tasks without fine-tuning. Furthermore, some tasks may have
+    complex output formats or evaluation metrics that are difficult to implement with
+    prompt engineering, such as machine translation or question answering. The process
+    of fine-tuning LLMs can be broken into the following high-level steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Select a pretrained LLM that is suitable for the task and the data. For example,
+    if the task is related to natural language understanding, a masked language model
+    like BERT may be a good choice. If the task is related to natural language generation,
+    an autoregressive model like GPT may be a better option.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Define a task-specific architecture that includes an input layer, an output
+    layer, and optionally some intermediate layers that connect the LLM with the input
+    and output. The input layer should match the format and vocabulary of the LLM,
+    and the output layer should match the format and vocabulary of the task. The intermediate
+    layers can be used to transform or enhance the representations from the LLM, such
+    as adding attention, pooling, or classification layers.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Prepare a task-specific dataset that consists of input-output pairs that represent
+    the examples and labels of the task. The dataset should be split into training,
+    validation, and test sets, and should be balanced and representative of the task
+    domain and difficulty.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Fine-tune the LLM and the task-specific layers on the training set using a suitable
+    optimization algorithm, such as stochastic gradient descent or Adam. The objective
+    function should be defined according to the task, such as cross-entropy loss for
+    classification or generation or mean squared error for regression. The learning
+    rate, batch size, number of epochs, and other hyperparameters should be tuned
+    to optimize the performance on the validation set and avoid overfitting or underfitting.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Evaluate the fine-tuned model on the test set using appropriate metrics, such
+    as accuracy, precision, recall, F1-score, BLEU, ROUGE, or METEOR. The results
+    should be compared with the baseline models or the state-of-the-art methods to
+    assess the effectiveness of the fine-tuning technique.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Fine-tuning LLMs has its own challenges. The first one is *data scarcity*. There
+    may not be enough task-specific data to fine-tune the LLM effectively, especially
+    for low-resource languages or domains. This may lead to poor generalization or
+    catastrophic forgetting of the LLM’s general knowledge. Some techniques to address
+    this challenge are data augmentation, transfer learning, multi-task learning,
+    or meta-learning, which can increase the diversity and quantity of the data, leverage
+    the knowledge from related tasks or domains, or adapt the model to new tasks quickly
+    and efficiently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second challenge is that of *data noise*. The task-specific data may contain
+    errors, inconsistencies, or ambiguities that may affect the quality and reliability
+    of the fine-tuning process. This may lead to incorrect or misleading outputs or
+    reduced robustness of the model. Some techniques to address this challenge are
+    data cleaning, data filtering, data validation, or data quality assessment, which
+    can remove or correct the noisy data, select or prioritize the high-quality data,
+    or monitor and evaluate the data quality throughout the fine-tuning process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third challenge is that of *model complexity*. The LLMs have a large number
+    of parameters that are difficult to fine-tune on limited computational resources
+    or within a reasonable time. This may limit the scalability or feasibility of
+    the fine-tuning technique. Some techniques to address this challenge are model
+    compression, model pruning, model distillation, and model quantization, which
+    can reduce the size or complexity of the model, remove or simplify the redundant
+    or irrelevant parameters, or approximate the model with a smaller or faster one.
+    You will investigate one of the approaches in the next section, called Parameter
+    Efficient Fine Tuning (PEFT).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The capability of fine-tuning models is increasingly being offered by all the
+    cloud platforms that provide LLM services, such as Azure, AWS, Databricks, Google
+    Vertex AI, and so on. It is a fast-growing list of vendors that provide these
+    capabilities of low-code-no-code approach to RAG, fine-tuning, RLHF, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameter Efficient Fine-Tuning (PEFT)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You studied the challenges of fine-tuning LLMs in the previous section. Full
+    fine-tuning is not feasible to train on common hardware when models get bigger
+    and bigger. Moreover, it is very costly to store and deploy fine-tuned models
+    separately for each downstream task, because fine-tuned models have the same size
+    as the original pretrained model. Parameter-Efficient Fine-tuning (PEFT) approaches
+    aim to solve both issues.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PEFT approaches only adjust a small number of (additional) model parameters
+    while keeping most parameters of the pretrained LLMs fixed, thereby greatly reducing
+    the computational and storage costs. This also avoids the problems of catastrophic
+    forgetting, a behavior seen during the full finetuning of LLMs. PEFT approaches
+    have also proven to be better than fine-tuning in the low-data regimes and generalize
+    better to out-of-domain scenarios.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another benefit of PEFT methods is that they make the models more portable,
+    as users can modify the models with small checkpoints that only take up a few
+    MBs of storage, instead of the large checkpoints of full fine-tuning. The small
+    number of trained weights from PEFT methods are added on top of the pretrained
+    LLM, so the same LLM can be used for multiple tasks by adding small weights, without
+    having to change the whole model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are two common approaches of PEFT. The first one is prompt-based fine-tuning.
+    A prompt can either explain a task or give an example of a task that you want
+    the model to learn. Soft-prompting methods do not require manually creating these
+    prompts, but instead add learnable parameters to the input embeddings that can
+    be adjusted for a specific task while keeping the pretrained model’s parameters
+    fixed. This makes it quicker and simpler to fine-tune Large Language Models (LLMs)
+    for new downstream tasks. A good place to refer to the various techniques of this
+    approach is the documentation of the PEFT library from HuggingFace.^([22](#Fn22))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The other very popular approach is LoRA (Low Rank Adaptation), which was introduced
+    in 2021 in a paper titled “LoRA: Low-Rank Adaptation of Large Language Models.”^([23](#Fn23))
+    This approach has an even more efficient version called QLoRA (Quantized LoRA).
+    QLoRA was introduced in 2023 in a paper titled “QLoRA: Efficient Finetuning of
+    Quantized LLMs.”^([24](#Fn24)). Let’s briefly look into both of these approaches.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Low Rank Adaptation (LoRA) freezes the pretrained model weights and injects
+    trainable rank decomposition matrices into each layer of the Transformer architecture,
+    greatly reducing the number of trainable parameters for downstream tasks. Figure
+    [11-10](#Fig10) shows the schematic of the LoRA approach from the paper.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the LoRA approach has a rectangle x of length d that points
+    to pre-trained weights, W belongs to R superscript d by d, and B=0, B belongs
+    to R superscript r by d, and A = N of 0, sigma squared, A belongs to R superscript
+    d by r. They combine to form a rectangle h of width d.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: LoRA approach
+  prefs: []
+  type: TYPE_NORMAL
+- en: Suppose one of the linear layers somewhere in the Transformer has a weight matrix
+    *W* of size *d* × *d*. As part of fine-tuning, you freeze this original pretrained
+    weight matrix *W* and build another path from the input vector *x* ∈ *R*^(*d*)
+    to output vector *h* ∈ *R*^(*d*). You do this by passing x additionally through
+    two weight matrices *A* ∈ *R*^(*d* × *r*) and then through *B* ∈ *R*^(*r* × *d*).
+    Here *d* is the dimension of the input and output vectors and *r* is a number
+    lot lower than the value of *d*. The weight matrix *W* and the product *A*. *B*
+    have the same dimensions, that of *d* × *d*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Originally, vector *x* can be represented as *h* = *W*. *x*. With the addition
+    of a new path as per Figure [11-10](#Fig10), the new expression for *h* is h = (W + A.
+    B). x = W. x + (A. B). x, that is, the original flow from *x* to *h* and an additional
+    flow. During fine-tuning, *W* is kept constant and only weights of *A* and *B*
+    are allowed to change during backpropagation. Weights of *A* are initialized with
+    a zero mean Gaussian, and *B* is initialized with zeros. With *B* = 0 at the start
+    of fine-tuning, you get *h* = *W*. *x* . As fine-tuning progresses, *A* and *B*
+    matrix weights change, allowing for LLM to learn new tasks in an efficient way.
+    As an example, consider the case that *d* = 512 and *r* = 10\. The number of parameters
+    in *W* will be *d* × *d* = 512 × 512 = 2,62,144\. The combined number of parameters
+    in *A* and *B* is 2 × *d* × *r* = 2 × 512 × 10 = 10,240, which is about 3.9 percent
+    of the number of parameters in *W*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that the memory footprint of a model’s parameters is very heavy during
+    training compared to the memory footprint of the model during inference. The reason
+    for a heavy memory footprint during training is because during training you need
+    to maintain additional information to allow for backpropagation and optimizer
+    gradient history tracking, information such as hidden layer activations, backprop
+    gradients, and the running average of first moment and second moment gradient
+    values. Though LoRA marginally increases the memory footprint of model parameters
+    during inference, it offers significant memory advantage and data volume requirements
+    during fine-tuning. This is because, under LoRA, the number of parameters being
+    tuned are in the range of 3-5 percent of the actual model parameters. In a nutshell,
+    LoRA offers these key advantages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A pretrained model can be shared and used to build many small LoRA modules for
+    different tasks. You can freeze the shared model and efficiently switch tasks
+    by replacing the matrices *A* and *B* in Figure [11-10](#Fig10), thus reducing
+    the storage requirement and task-switching overhead significantly.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: LoRA makes training more efficient and lowers the hardware barrier to entry
+    by up to three times when using adaptive optimizers, since you do not need to
+    calculate the gradients or maintain the optimizer states for most parameters.
+    Instead, you only optimize the injected, much smaller low-rank matrices.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Simple linear design allows for merging the trainable matrices with the frozen
+    weights when deployed, introducing no inference latency compared to a fully fine-tuned
+    model.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: LoRA is orthogonal to many prior methods and can be combined with many of them.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You can refer to the paper and other detailed technical blogs for more details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'QLoRA is a further refinement of LoRA in which model parameters are quantized
+    with different precision and numerical representation to offer even more memory
+    efficiency. To quote from the paper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*QLoRA reduces the average memory requirements of finetuning a 65B parameter
+    model from >780GB of GPU memory to <48GB without degrading the runtime or predictive
+    performance compared to a 16- bit fully fine-tuned baseline. This marks a significant
+    shift in accessibility of LLM finetuning: now the largest publicly available models
+    to date fine-tunable on a single GPU.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Source: QLoRA paper'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Another approach, named Weight-Decomposed LowRank Adaptation (DoRA), was introduced
+    in a 2024 paper titled “DoRA: Weight-Decomposed Low-Rank Adaptation.”^([25](#Fn25))
+    It decomposes the pretrained weights into magnitude and direction components for
+    fine-tuning, especially with LoRA to efficiently update the direction component.
+    Interested readers may refer to the paper for further details.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PEFT is seeing many additional approaches. I hope the discussion here has given
+    the you an exposure to explore further.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chaining LLMs Together
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Another way to leverage the power of LLMs for various downstream tasks is to
+    chain them together in a multistep pipeline. This means that instead of using
+    a single LLM for a given task, you can use multiple LLMs, each performing a different
+    subtask, and pass the output of one LLM as the input of another LLM. For example,
+    suppose you want to generate a summary of a long document. You can first use an
+    LLM to extract the most relevant sentences from the document, then use another
+    LLM to paraphrase those sentences into a concise form, and finally use another
+    LLM to merge those sentences into a coherent summary. This way, you can use the
+    different strengths and specialties of different LLMs, and reduce the complexity
+    of each subtask.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the key benefits of chaining LLMs together is that it allows you to customize
+    the pipeline according to the specific needs and characteristics of the task.
+    For instance, you can choose the best LLM for each subtask based on its performance,
+    domain, language, or architecture. You can also fine-tune or adapt each LLM with
+    task-specific data or parameters, such as adapter layers or prompt embeddings,
+    to improve its accuracy and generalization. Moreover, you can control the length
+    and quality of the intermediate outputs by setting appropriate hyperparameters,
+    such as beam size, temperature, or length penalty, for each LLM.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, chaining LLMs together also poses some challenges and limitations.
+    One of the main challenges is how to ensure the compatibility and coherence of
+    the intermediate outputs and inputs across different LLMs. For example, if the
+    output of one LLM contains tokens or symbols that are not recognized by the input
+    of another LLM, it may cause errors or degradation in the final output. Similarly,
+    if the output of one LLM does not match the expected format or style of the input
+    of another LLM, it may lead to inconsistency or confusion in the final output.
+    Therefore, it is important to carefully select and preprocess the LLMs that are
+    part of the pipeline, and to monitor and evaluate the intermediate outputs and
+    inputs for any potential issues.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another challenge is how to optimize the overall performance and efficiency
+    of the pipeline, considering the tradeoffs between speed, memory, and quality.
+    For example, using more LLMs in the pipeline may increase the quality of the final
+    output, but it may also increase the latency and the computational cost of the
+    task. Similarly, using larger or more complex LLMs may improve the accuracy of
+    each subtask, but it may also require more resources and time to process the data.
+    Therefore, it is important to balance the number and size of the LLMs in the pipeline,
+    and to leverage techniques such as caching, pruning, or quantization to speed
+    up the inference and reduce the memory footprint of the LLMs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A third challenge is how to explain and monitor the behavior and outcomes of
+    the pipeline, considering the complexity and opacity of the LLMs involved. For
+    example, it may be difficult to trace back the source of errors or biases in the
+    final output, as they may arise from any of the LLMs or their interactions. Similarly,
+    it may be hard to understand the rationale or logic behind the decisions or predictions
+    made by the LLMs, as they may rely on hidden or latent features that are not interpretable
+    by humans. Therefore, it is important to apply methods and tools for explainability
+    and MLOps, such as attribution, visualization, debugging, or logging, to the pipeline,
+    and to evaluate the performance and robustness of the LLMs on various metrics
+    and benchmarks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LangChain^([26](#Fn26)) and LlamaIndex^([27](#Fn27)) are currently two popular
+    libraries that help you manage the complex multi-step solutions built using LLMs,
+    including production monitoring, logging, deployments, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Auto Agents
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: An Auto Agent or an LLM Agent is a term that refers to LLM applications that
+    can perform complex tasks by using an architecture that integrates LLMs with essential
+    modules like planning and memory. In LLM agents, an LLM acts as the main controller
+    or "brain" that directs a series of operations needed to finish a task or user
+    request. The LLM agent needs key modules such as planning, memory, and tool usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As an example, take a look at a 2023 paper titled “ChemCrow: Augmenting Large-Language
+    Models with Chemistry Tools.”^([28](#Fn28)) To quote from the paper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*ChemCrow, an LLM chemistry agent designed to accomplish tasks across organic
+    synthesis, drug discovery, and materials design. By integrating 18 expert-designed
+    tools, ChemCrow augments the LLM performance in chemistry, and new capabilities
+    emerge. Our agent autonomously planned and executed the syntheses of an insect
+    repellent, three organo-catalysts, and guided the discovery of a novel chromophore….Using
+    a variety of chemistry related packages and software, a set of tools is created.
+    These tools and a user input are then given to an LLM. The LLM then proceeds through
+    an automatic, iterative chain-of-thought process, deciding on its path, choice
+    of tools, and inputs before coming to a final answer.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Source: ChemCrow paper'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: A schematic of the process is shown in Figure [11-11](#Fig11). The purpose of
+    the figure is to illustrate the complex ways LLMs are being integrated into various
+    processes. In scenarios like these, LLMs almost act like the CPU or operating
+    system, as shown in Figure [11-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A Chem Crow overview. a. Expert-designed chemistry tools and user-defined scientific
+    tasks that point to a chain of thought reasoning loop. They point to the chemistry-informed
+    sequence of actions and autonomous experimentation. b. The types of tools are
+    molecule, general, safety, and reaction tools.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: ChemCrow overview
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that the key difference between chaining LLMs vs LLM agents together is
+    that in simple chaining, the flow of information is in one direction only, from
+    the first LLM to the last. However, in LLM agents, there is an iterative flow
+    of information back and forth between various LLMs and the decision of this flow
+    is also orchestrated by LLMs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Another interesting paper in this category is the one from Microsoft titled
+    “AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation.”^([29](#Fn29))
+    It is accompanied by a great open-source library to try things out. Interested
+    readers can refer to the `autogen` library on GitHub.^([30](#Fn30))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multimodal Generative AI
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Multimodal Generative AI is a branch of artificial intelligence that aims to
+    create systems that can generate diverse and complex outputs across multiple modalities,
+    such as text, images, video, and audio. Such systems can leverage the power of
+    Large Language Models (LLMs) to understand natural language instructions and queries
+    as well as combine them with other generative models that can produce high-quality
+    content in different domains and formats.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the main components of multimodal generative AI is the ability to fuse
+    and transform information from different sources and modalities, and to maintain
+    coherence and consistency across them. For example, a multimodal generative system
+    can take a textual description of a scene and generate a corresponding image,
+    or vice versa. Alternatively, it can take an image and a caption and generate
+    a relevant audio narration or take a piece of music and generate lyrics that match
+    its mood and style.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another component of multimodal generative AI is the ability to reason and plan
+    overly complex scenarios and tasks that involve multiple steps and subgoals. For
+    example, a multimodal generative system can take a high-level instruction, such
+    as "create a short video tutorial on how to make a paper airplane," and decompose
+    it into a sequence of actions, such as "find a suitable paper sheet," "fold it
+    in half," "make a crease," and so on. Then, it could execute each action by generating
+    the appropriate visual and verbal outputs, such as showing the paper sheet on
+    the screen, narrating the folding steps, or highlighting the creases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Some of the interesting applications and examples of multimodal generative
+    AI include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Content creation and editing:** Multimodal generative systems can help users
+    create and edit various types of content, such as images, videos, podcasts, blogs,
+    or books, by providing suggestions, feedback, or corrections based on natural
+    language commands or queries. For example, a user could ask a system to "add a
+    sunset filter to the image," "change the voice of the narrator to a female one,"
+    or "rewrite the sentence to make it more concise".'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Education and entertainment:** Multimodal generative systems can provide
+    engaging and personalized learning and entertainment experiences, such as interactive
+    games, simulations, stories, or quizzes, by generating content that adapts to
+    the user’s preferences, goals, and feedback. For example, a system could create
+    a customized adventure game for a user, where the user can explore a virtual world,
+    interact with characters, and influence the plot by using natural language commands
+    or queries.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Communication and collaboration:** Multimodal generative systems can facilitate
+    communication and collaboration among users or between users and machines, by
+    providing translation, summarization, transcription, or annotation services across
+    different languages and modalities. For example, a system could translate a speech
+    from one language to another, summarize a long video into a short text, transcribe
+    an audio conversation into a text chat, or annotate an image with relevant labels
+    and captions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This completes the optional section on LLM and emerging trends in LLM world.
+    The chapter now returns to application of RL for fine-tuning LLM to follow human
+    instructions. As discussed, the fine-tuning of LLM for RLHF could be a full parameter
+    fine-tuning or a LoRA based approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL with Human Feedback
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One of the challenges of training Large Language Models (LLMs) is to ensure
+    that they can follow natural language instructions and generate outputs that are
+    aligned with human preferences and expectations. However, obtaining high-quality
+    labeled data for every possible instruction and output combination is impractical
+    and costly. Moreover, LLMs may encounter novel or ambiguous instructions at inference
+    time, which require generalization and adaptation skills that are not easily learned
+    from supervised data alone.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A promising solution to this challenge is to leverage human feedback as a form
+    of a reinforcement learning (RL) signal, which can guide LLMs to improve their
+    performance on a given instruction by rewarding or penalizing their outputs based
+    on human judgments. This technique, known as reinforcement learning from human
+    feedback (RLHF), can enable LLMs to learn from their own interactions with humans,
+    rather than relying on predefined labels or rules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The OpenAI team, in a paper titled “Training Language Models to Follow Instructions
+    with Human Feedback” by Ouyanf et al.( 2022),^([31](#Fn31)) introduced a successful
+    application of this concept and the resulting family of LLMs, which was called
+    InstructGPT. The approach used was to fine-tune GPT-3 to follow a broad class
+    of written instructions. This technique uses human preferences as a reward signal
+    to fine-tune LLM models. The overall approach can be broken into three steps as
+    shown in Figure [11-12](#Fig12).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of 3 steps involved in reinforcement learning. Step 1\. Collect
+    demonstration data and train a supervised policy. Step 2\. Collect comparison
+    data and train a reward model. Step 3\. Optimize a policy against the reward model
+    using reinforcement learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Three steps of RLHF^([32](#Fn32))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Step 1 is *supervised fine-tuning (SFT)**,* which involves starting from a pretrained
+    model such as GPT-3 that has been trained on a very large corpus of data from
+    the Internet. The pretraining data is usually 1-2 trillion tokens of text data
+    scraped from the Internet and other open-source datasets. The pretrained model
+    is fine-tuned on a dataset of human-written summaries. These examples serve as
+    direct demonstrations of the task you want the model to perform. The model learns
+    from this dataset, by adjusting its parameters to minimize the difference between
+    its outputs and the correct summaries in the dataset using supervised learning
+    approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Step 2 involves *reward modelling (RM)*. Reward modeling involves creating a
+    model that can predict the quality of the model’s outputs based on human preferences.
+    This is achieved by collecting a new dataset where humans compare pairs of model-generated
+    outputs and indicate which one they prefer. The reward model is then trained to
+    predict these human preferences, effectively learning what constitutes a "better"
+    summary as a binary classification task. The most successful approach to reward
+    modelling is to start with the SFT model from Step 1 and incorporate an additional
+    linear layer on the final transformer layer to generate a scalar prediction representing
+    the reward value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Step 3 is *RL fine-tuning using PPO* or any other RL optimization algorithm.
+    The reward model learned in Step 2 provides reward feedback for the model output
+    generated from the model in Step 1\. The reward is then used to fine-tune the
+    model from Step 1 using the PPO algorithm from RL. To ensure that the model, during
+    RL fine-tuning, does not deviate too much from the original SFT fine-tuned model,
+    a KL penalty is introduced between the reference SFT model from step one and the
+    model being fine-tuned in this step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To grasp the concept better, let’s walk through the steps with the help of an
+    example. Imagine you want your LLM to generate concise summaries of articles.
+    The goal is for the model to understand the core ideas of the text and present
+    them in a few sentences accurately and coherently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Step 1, you collect a dataset of articles paired with their concise summaries
+    written by human experts. A pretrained LLM is then fine-tuned on this dataset,
+    learning how to condense articles into a few informative sentences. For instance,
+    if one article is about a new scientific discovery in space exploration, its summary
+    might highlight the discovery, its significance, and potential implications, all
+    in a few sentences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the SFT step, you present the model with new articles and generate summaries.
+    Human reviewers are then asked to compare pairs of summaries for the same article,
+    selecting which summary they find more concise and informative. These preferences
+    are used to train a reward model that learns to score summaries based on their
+    conciseness, accuracy, and coherence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the reward model in place, the SFT-tuned LLM generates summaries for a
+    new set of articles. These summaries are then scored by the reward model. The
+    LLM uses these scores to adjust its summarization strategy, focusing on generating
+    summaries that are more likely to be concise, accurate, and informative according
+    to the reward model’s criteria. And it does so with the PPO policy optimization
+    approach. Over time, this iterative process results in a model that generates
+    high-quality summaries that align closely with human preferences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Latest Advances in LLM Alignment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Since its inception in 2022, RLHF has significantly impacted the way artificial
+    intelligence models are trained and improved. As discussed in previous section,
+    RLHF initially involved steps like supervised fine-tuning (SFT), reward modeling,
+    and policy optimization. Over time, this process has seen substantial advancements,
+    particularly in automating and enhancing efficiency, leading to the advent of
+    Direct Preference Optimization (DPO).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Originally, RLHF relied heavily on SFT, where a model was fine-tuned on a dataset
+    of human-labeled examples to learn a desired behavior. However, as the field evolved,
+    researchers sought ways to automate and refine this process, reducing the reliance
+    on extensive human-labeled datasets, which are resource-intensive and potentially
+    biased.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One significant development was the replacement of SFT with outputs from other,
+    more advanced models. This approach leverages the knowledge encapsulated in these
+    pretrained models, transferring it to the model being trained. For instance, using
+    the outputs of a larger or more specialized language model as a target for fine-tuning
+    can provide a richer, more nuanced understanding of complex tasks without direct
+    human annotation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The reward model step in RLHF, where a model is trained to predict the reward
+    (or quality) of an output based on human judgments, has also seen remarkable automation
+    advancements. Instead of manually labeling data to train these reward models,
+    researchers have started using other Large Language Models (LLMs) to automate
+    the generation of reward signals. These LLMs can assess the quality of outputs
+    based on criteria learned from vast datasets, effectively acting as proxies for
+    human judgment. This automation not only streamlines the training process but
+    also scales it, enabling more frequent updates and refinements to the reward models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Recently, in a paper titled “Direct Preference Optimization: Your Language
+    Model is Secretly a Reward Model” by Rafailov et al. (2023),^([33](#Fn33)) a team
+    of Stanford Researchers came up with a pivotal advancement. Direct Preference
+    Optimization (DPO) directly optimizes the model’s parameters to align with human
+    preferences, bypassing the need for a separate reward model. This approach integrates
+    preference modeling directly into the training process, making the optimization
+    more efficient and potentially more aligned with human values.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DPO fundamentally relies on comparing pairs of model-generated outputs and adjusting
+    the model parameters to increase the probability of generating outputs that align
+    with human preferences. A key technical derivation in DPO is the use of preference-based
+    gradients, where the gradient of the preference score with respect to the model
+    parameters is computed. This allows for direct optimization of the model in a
+    direction that is more likely to produce preferred outcomes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The benefits of DPO over traditional RLHF and its components like SFT and separate
+    reward models are manifold. First, DPO streamlines the training process by integrating
+    preference learning directly into model optimization, eliminating the need for
+    separate reward model training. This integration can lead to more efficient use
+    of computational resources and faster iteration cycles.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Secondly, by optimizing directly for human preferences, DPO can more closely
+    align model outputs with what is considered beneficial or desirable by humans,
+    potentially reducing the risk of misaligned incentives. Moreover, DPO allows for
+    continuous improvement and adaptation of models as new preference data becomes
+    available, maintaining the model’s relevance and effectiveness over time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fine-tuning LLMs is a very active area of research. Readers are well advised
+    to search on the Internet and blogs on this topic to stay in touch with the latest
+    advances.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Libraries and Frameworks for RLHF
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Some popular frameworks, libraries, and cloud services providing RLHF fine-tuning
+    are listed in this section. This is also a rapidly evolving ecosystem with almost
+    something new every week. Therefore, use the following list as a starting reference
+    only.
+  prefs: []
+  type: TYPE_NORMAL
+- en: VertexAI from Google
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: VertexAI simplifies and streamlines the process of fine-tuning Large Language
+    Models (LLMs) using Reinforcement Learning from Human Feedback (RLHF). With a
+    user-friendly interface and pre-built containers, VertexAI eliminates the need
+    for complex local setups, allowing you to focus on your data and task. It leverages
+    Google Cloud’s powerful compute resources to train LLM on large datasets efficiently.
+    It manages the entire RLHF fine-tuning process. You can upload your data, define
+    your fine-tuning objective, and track progress through a central dashboard. VertexAI,
+    with the help of training pipelines, automates training, allowing you to focus
+    on data quality and human feedback loops.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You pay only for the resources you use, and you can share your project and collaborate
+    with team members in a secure environment, facilitating smoother development and
+    iteration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: SageMaker from AWS Using Trlx
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: AWS provides RLHF capabilities in SageMaker using an open-source library named
+    `trlX`. The `trlX` library stands out as a tool for fine-tuning Large Language
+    Models (LLMs) with Reinforcement Learning from Human Feedback (RLHF). Unlike generic
+    frameworks, `trlX` focuses specifically on the unique needs of RLHF, simplifying
+    and automating critical tasks like reward model training, policy optimization,
+    and distributed training. It also easily integrates with popular LLM libraries
+    like HuggingFace Transformers, eliminating the need for extensive coding from
+    scratch. Further leveraging the power of distributed training across multiple
+    GPUs or TPUs allows for efficient handling of large datasets and models. `trlX`
+    has an API capable of production-ready RLHF with PPO and Implicit Language Q-Learning
+    ILQL at the scales required for LLM deployment (e.g., 33 billion parameters).
+  prefs: []
+  type: TYPE_NORMAL
+- en: TRL Library from HuggingFace
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: TRL from HuggingFace is a full stack library that provides a set of tools to
+    train Transformer language models with reinforcement learning, from the Supervised
+    Fine-tuning step (SFT), the Reward Modeling step (RM), to the Proximal Policy
+    Optimization (PPO) step. The library is integrated with HuggingFace Transformers
+    library. `trlX` is a fork of the TRL library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Walkthrough of RLHF Tuning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section explains a code example that tunes an LLM using RLHF. As LLM fine-tuning
+    requires a GPU with large configuration and may take hours to train, you can just
+    walk through the code without executing it. If you have access to a GPU either
+    using Google Colab or any other cloud GPU provider, you can try to run the code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example notebook that comes with the TRL library from HuggingFace is used
+    here. You can find more about it in the `examples` section of the TRL library
+    documentation.^([34](#Fn34)) This section uses the example contained in the `gpt2-sentiment.ipynb`
+    notebook.^([35](#Fn35)) I also copied the notebook over to the code accompanying
+    this book as `11.b-gpt2-sentiment.ipynb`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this notebook, you fine-tune GPT-2 (small) to generate positive movie reviews
+    based on the IMDB dataset. The model gets the start of a real review and is tasked
+    to produce positive continuations. To reward positive continuations, you use a
+    BERT classifier to analyze the sentiment of the produced sentences and use the
+    classifier’s outputs as reward signals for PPO training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you may have noticed from the description of the notebook, you do not train
+    your own reward model. Rather, you use a pretrained classifier that classifies
+    a review and outputs the logits for the negative and positive class. You will
+    use the logits for a positive class as a reward signal for the language model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the notebook, you install the required libraries, import the modules you
+    will be using, and log in to Weights and Biases to record the run statistics of
+    the experiment. This is shown in Listing [11-11](#PC11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can also create a configuration for the PPO trainer, as shown in Listing
+    [11-12](#PC12).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this notebook, you do not carry out the SFT step of RLHF. Using the HuggingFace
+    (hf) Transformers library and the HF model-hub, you load a GPT-2 model that was
+    additionally trained on IMDB dataset for one epoch. The IMDB dataset contains
+    50,000 movie reviews annotated with "positive/negative" feedback indicating the
+    sentiment. The IMBD dataset is a dataset containing movie reviews. As can be seen
+    in Listing [11-12](#PC12), PPOConfig initialization takes in `model_name="lvwerra/gpt2-imdb”`
+    hosted on the HF model hub.^([36](#Fn36)) The details of fine-tuning the dataset
+    and script can be found at [`https://huggingface.co/lvwerra/gpt2-imdb`](https://huggingface.co/lvwerra/gpt2-imdb).
+  prefs: []
+  type: TYPE_NORMAL
+- en: To do RLHF fine-tuning, you again use the IMBD dataset. During RLHF training,
+    data is passed through a pretrained BERT-based reward model. These rewards are
+    used to fine-tune `gpt2-imdb` using PPO. Listing [11-13](#PC13) shows the code
+    for preparing the IMBD dataset for training. You first load the tokenizer for
+    GPT-2 to tokenize the text before passing it through the GPT-2 LLM. You download
+    the `train` split of the IMBD dataset, rename the `text` column to `review`, and
+    filter out the reviews that are smaller than 200 characters. Next, for each review
+    in the dataset, you sample a random number of tokens ranging from 2 to 8 from
+    the beginning of the review, and then store the tokenized version in a column
+    named `input_ids` and the decoded text version in a column named `query`. You
+    also retain all the previous columns in the dataset, namely `review` and `label`.
+    You can explore the HuggingFace dataset at [`https://huggingface.co/datasets/imdb`](https://huggingface.co/datasets/imdb).
+    Define a `collator` function to collate the data in a format appropriate for batch
+    training in PPO. If some of these concepts are not clear, refer to the HuggingFace
+    documentation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now you are ready to carry out the third step in RLHF, that of PPO training.
+    You load the `gpt2-imbd` model and make two copies—a reference model that will
+    not change during PPO training and another one that will be fine-tuned under PPO.
+    Next, you initialize the PPO trainer using the `PPOConfiguration`, the two `GPT2-imdb`
+    models, and the dataset with the `collator` function, as shown in Listing [11-14](#PC14).
+    You also load the pretrained reward model, `distilbert-imdb` classifier from HF
+    model hub, and prepare the sentiment pipeline. As discussed earlier, the `distilbert-imdb`
+    model outputs the logits for the negative and positive class and you use the logits
+    for a positive class as a reward signal for the language model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You are now ready to train the model. Training consists of a loop with the
+    following main steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get the query responses from the policy network (GPT-2).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Get sentiments for query/responses from BERT.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Optimize policy with PPO using the (`query, response, reward`) triplet.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Listing [11-15](#PC15) shows the complete code of training loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we have initialized Weights and Biases (wandb). We will be able to track
+    the training progress and various other metrics on wandb.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once the training is over, you can inspect the PPO trained model output and
+    compare it to the output of the `reference gpt2-imdb` model. The notebook contains
+    the code to carry out the inspection. You can see that response (after) is generally
+    better and tilts toward a positive tone, as compared to the reference model. A
+    sample comparison is shown in Figure [11-13](#Fig13). For a detailed walkthrough,
+    refer to the `gpt2-sentiment.ipynb` notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_11_Chapter/502835_2_En_11_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table has 5 columns and 16 rows. The column headers are query, response before,
+    response after, rewards before, and rewards after. The 16 fields have text and
+    numerical data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Three steps of RLHF^([37](#Fn37))
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see that rewards on the PPO trained models are higher than the rewards
+    for the same sentences using the reference `gpt2-imdb` model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This was a toy example of how RLHF works and even on this toy dataset, it can
+    take close to two to three hours. It should make you appreciate that even a fine-tuning
+    of LLM is an expensive process when done on state-of-the-art LLM with large datasets.
+    Almost all models today go through something similar to make the LLMs follow instructions,
+    even for code analysis and code completion like the GitHub AutoPilot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This completes this chapter, which was a PPO deep dive and its application in
+    RLHF fine-tuning for LLMs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter provided a comprehensive overview of the Proximal Policy Optimization
+    (PPO) algorithm, a state-of-the-art policy gradient method for reinforcement learning.
+    The chapter started by reviewing the foundations of policy gradient methods, such
+    as the policy objective function, the importance sampling ratio, the trust region,
+    and the natural gradient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter then derived the PPO algorithm step by step, explaining how it uses
+    a clipped surrogate objective function to control the policy update size and avoid
+    large deviations from the current policy. The chapter also discussed the practical
+    implementation details of PPO, such as the vectorized environment, the parameter
+    initialization, the Adam optimizer, the generalized advantage estimation, the
+    mini-batch updates, the normalization of advantages, the value function loss clipping,
+    the global gradient clipping, and the debug variables.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, the concept of Reinforcement Learning from Human Feedback (RLHF) was introduced.
+    RLHF is a technique to fine-tune Large Language Models (LLMs) using human preferences
+    as a reward signal. There was a brief overview of the Transformer architecture
+    and the GPT series of LLMs, which are generative models that can learn from massive
+    amounts of unlabeled text data and generate high-quality text across different
+    domains and tasks. The chapter also discussed topics like prompt engineering,
+    fine-tuning and PEFT, chaining LLMs together, or even making multiple LLMs work
+    together in an autonomous way, almost like an operating system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'That was followed by a discussion of RLHF and how it can be applied to train
+    LLMs to follow natural language instructions and generate outputs that align with
+    human expectations. The chapter discussed the three main steps of RLHF: supervised
+    fine-tuning, reward modeling, and policy optimization. The chapter also described
+    the latest advances in LLM alignment, such as Direct Preference Optimization (DPO),
+    which bypasses the need for a separate reward model and directly optimizes the
+    model parameters to match human preferences.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter concluded with a walkthrough of RLHF tuning using the TRL library
+    from HuggingFace, which provides a set of tools to train transformer language
+    models with RLHF. The chapter showed you how to use the TRL library to fine-tune
+    a GPT-2 model to generate positive movie reviews based on the IMDB dataset. The
+    discussion also covers the use of a pretrained BERT classifier as a reward model
+    to score the model's outputs based on their sentiment, and how to use PPO to optimize
+    the model's parameters using the reward signals. It concluded with an inspection
+    of the model's outputs and a comparison of the reference model outputs.
+  prefs: []
+  type: TYPE_NORMAL

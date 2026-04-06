@@ -1,0 +1,1049 @@
+- en: 12. Fast Style Transfer
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '**Neural style transfer (NST)** is a computer vision technique that takes two
+    images – a content image and a style reference image – and blends them together
+    so that the resulting output image retains the core elements of the content image
+    but appears to be painted in the style of the style reference image. The output
+    image from a NST network is called a pastiche. A **pastiche** is a work of visual
+    art, literature, theater or music that imitates the style (or character) of the
+    work of one or more other artists. Unlike a parody, a pastiche celebrates rather
+    than mocks the work it imitates.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In many applications of NST, the content image is a photograph, and the style
+    reference image is a painting. But this is not a requirement. The wonder of NST
+    is that we can take an artwork by a famous painter and blend it so the output
+    image looks like the content image painted in the reference image style. So we
+    can train NST networks to automatically create new artistic renderings!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The terms network and model are interchangeable in the data science vernacular
+    (at least when working with neural network models).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The technique is implemented by optimizing the output image to match the content
+    statistics of the content image and the style statistics of the style reference
+    image. Statistics are extracted from the images using a convolutional network.
+    The idea is to train the network to match a base input image with the content
+    and style reference images. NST transforms the base input image by minimizing
+    the content and style reference distances (or losses) with back-propagation to
+    create an image that matches the content of the content image and the style of
+    the style reference image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To extract the content and style representations into a pastiche, the neural
+    net includes intermediate layers. Intermediate layers represent feature maps that
+    become increasingly higher-ordered as we go deeper into the network to define
+    the representation of content and style from the respective images. During training,
+    the network tries to match the base input image to the corresponding style and
+    content target representations at the intermediate layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For a network to perform image classification, it must understand the image.
+    So it takes a raw image as input pixels and builds an internal representation
+    through transformations that turn raw image pixels into a complex understanding
+    of the features present within the image. The *intermediate layers* of the network
+    perform the transformations that allow the model to extract meaningful features
+    from the raw input pixels of the images. So the intermediate layers are able to
+    describe the content and style of input images with precision.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Despite amazing results, NST operates at a slow pace because it treats the task
+    as an optimization problem with hundreds or even thousands of iterations to perform
+    style transfer on just a single image! To tackle this inefficiency, deep learning
+    researchers developed a technique referred to as fast (neural) style transfer.
+    **Fast style transfer** uses deep neural networks, but trains a standalone model
+    to transform an image in a *single* feedforward pass! So trained fast style transfer
+    models can stylize any image with just one iteration (or epoch) through the network
+    instead of hundreds or thousands.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why Is Style Transfer Important?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Not everyone is a born artist. But with recent advances in technologies like
+    style transfer, almost anyone can enjoy the pleasure that comes along with creating
+    and sharing an artistic masterpiece.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the transformative power of style transfer, artists can easily lend their
+    creative aesthetic to others. People without inherent artistic ability can create
+    new and innovative representations of artistic styles to live alongside original
+    masterpieces. So style transfer empowers people to cultivate their own creativity!
+    Creative transformations may lead to new artistic representations that may never
+    have otherwise been created.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Arbitrary Neural Artistic Stylization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Although fast style transfer networks are fast, they are limited to a preselected
+    handful of styles because a separate neural network must be trained for each style
+    image. *Arbitrary Neural Artistic Stylization* (ANAS) mitigates this limitation
+    by using a style network and transformer network. The *style network* learns how
+    to break down an image into a 100-dimensional vector (or style vector) that represents
+    its style. The *transformer network* learns how to produce the final stylized
+    image from the style vector and original content image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Style vectors are also referred to as style bottleneck vectors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ANAS networks are the latest incarnation of fast style networks. ANAS are considered
+    better than NST and fast style transfer because they enable arbitrary style transfer
+    in real time. So they are faster than NST and more flexible than fast style transfer
+    because they automatically adapt to arbitrary new styles.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ANAS adds an *adaptive instance normalization* (AdaIN) layer that aligns the
+    mean and variance of the content features with those of the style features. ANAS
+    achieves speeds comparable to the fastest existing approaches without the restriction
+    of a predefined set of styles. ANAS also allows flexible user controls such as
+    content-style trade-off, style interpolation, and color and spatial controls with
+    only a single feedforward neural network pass!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Notebooks for chapters are located at the following URL:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://github.com/paperd/deep-learning-models`](https://github.com/paperd/deep-learning-models)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since ANAS is the fastest and best implementation of NST, we demonstrate it
+    with an end-to-end code experiment. We include a second ANAS experiment using
+    a pre-trained transfer model from the TensorFlow Lite module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**TensorFlow Lite** is a set of tools to help developers run TensorFlow models
+    on mobile, embedded, and IoT (Internet of Things) devices. It enables on-device
+    ML inference with low latency and a small binary size. An **IoT** device is one
+    that has a sensor attached to it and can transmit data from one object to another
+    or to people with the help of the Internet. *Low latency* describes a computer
+    network that is optimized to process a very high volume of data messages with
+    minimal delay (or latency). Such networks are designed to support operations that
+    require near-real-time access to rapidly changing data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Begin setting up the Colab ecosystem by importing the main TensorFlow library
+    and instantiating the GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Import the TensorFlow Library
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Import the library and alias it as **tf**:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Aliasing the TensorFlow library as tf is common practice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: GPU Hardware Accelerator
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'As a convenience, we include the steps to enable the GPU in a Colab notebook:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click *Runtime* in the top-left menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Click *Change runtime type* from the drop-down menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Choose *GPU* from the *Hardware accelerator* drop-down menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Click *Save*.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Verify that the GPU is active:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: If ‘/device:GPU:0’ is displayed, the GPU is active. If ‘..’ is displayed, the
+    regular CPU is active.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you get the error **NAME** **‘****TF****’** **IS NOT DEFINED**, re-execute
+    the code to import the TensorFlow library!
+  prefs: []
+  type: TYPE_NORMAL
+- en: ANAS Experiment
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We use the *arbitrary-image-stylization-v1-256* network for the experiment.
+    The network is a pre-trained model for fast arbitrary image style transfer. The
+    network doesn't require that images be resized, but prefers that style reference
+    images are about 256 pixels because it is trained on 256 × 256 pixel images. But
+    content images can be any size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We found that style reference images sized larger or smaller than 256 × 256
+    pixels don’t provide very compelling pastiches. So we highly recommend resizing
+    style reference images to the preferred size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Import Requisite Libraries
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Import:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The *gridspec* module specifies the geometry of the grid where a subplot is
+    placed. Setting the number of rows and number of columns of the grid is a requirement.
+    *TensorFlow Hub* is a repository of pre-trained machine learning models that can
+    be tuned and deployed anywhere with just a few lines of code. The *Image* module
+    is used to represent a Python Imaging Library (PIL) image. The *PIL* module provides
+    a number of factory functions including those to load images from files and create
+    new images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get Images from Google Drive
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We get images for this experiment from Google Drive. Other options include (but
+    are not limited to) uploading images from a local drive or downloading images
+    from Wikipedia Commons.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Be sure that all images are in the *Colab Notebooks* directory on Google Drive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Mount Google Drive:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Click the URL. Choose a Google Gmail account. Click the *Allow* button. Copy
+    and paste the authorization code into the textbox and press the *Enter* key on
+    your keypad.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Load and display the style reference image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Images are available through the Apress website or from my GitHub.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get the image type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The image is a PIL image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get the shape of the style reference image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: The *size* method returns the shape of a PIL image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Load and display the content image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Get the image type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Get the shape of the content image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Preprocess Images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Since both images are PIL images, we convert them to tensors so they are consumable
+    by the pre-trained model. The recommended size for the style reference image is
+    256 × 256 because this is the size expected by the pre-trained style transfer
+    network we use for this experiment. The content image can be any size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Convert the style reference image to a NumPy array and scale it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Resize the style reference image to what is expected by the style transfer
+    network:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Voilà. The style reference image is ready to be consumed by the style transfer
+    network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Convert the content image to a NumPy array and scale it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since the content image can be any size, it is now ready to be consumed by the
+    style transfer network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Display Processed Images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Create a display function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the processed style reference image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the processed content image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Prepare Image Batches
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Although the processed content and style reference images are consumable by
+    the style transfer network, it expects each image as a separate batch. So each
+    batch must be a 4D tensor with shape *[batch_size, image_height, image_width,
+    3]*. Since content and style reference images are currently 3D tensors with shapes
+    *[image_height, image_width, 3]*, we add a batch dimension of “1” to satisfy the
+    requirement. The network also requires images as TensorFlow tensors. So we convert
+    them to TensorFlow tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Input and output values of the images are expected to be in the range [0, 1].
+    We already satisfied this requirement by scaling both images. Shapes of content
+    and style reference images don't have to match. So we are fine in that regard.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The pastiche (output image) shape is adapted from the content image shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Add the batch dimension to both images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Convert NumPy images to TensorFlow tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As stated earlier, we use the *arbitrary-image-stylization-v1-256* network to
+    create a pastiche. Earlier NST models are limited to a pre-selected handful of
+    styles because a separate neural network must be trained for each style image.
+    Arbitrary style transfer mitigates this limitation by including a style network
+    and transformer network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *style network* learns how to break down an image into a 100-dimensional
+    vector (or style bottleneck vector) that represents its style. The *transformer
+    network* learns how to produce the final stylized image from the style bottleneck
+    vector and original content image. Arbitrary style networks are state-of-the-art
+    (as of this writing) because they are faster than original NST networks and more
+    flexible than fast style transfer networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Load the pre-trained ANAS network:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build the hub module from a pre-trained ANAS network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Feed the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Demonstrate arbitrary style transfer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: The signature of the hub module accepts the processed content image and the
+    processed style reference image to create a pastiche by learning how to blend
+    the two tensors. A *signature* is the procedural syntax required to train a model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training is fast with the GPU! But training the hub module signature with a
+    CPU takes some time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Explore the Pastiche
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Explore image shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Convert the pastiche to NumPy for easy exploration. The shape is not exactly
+    the same as the content image, but very close.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Explore a slice from the stylized image tensor:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: The pastiche has the same pixel characteristics as the content and style reference
+    images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Extract matrix components:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: The pastiche array is a 3D matrix consisting of 184 rows, 280 columns, and 3
+    channels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get the number of pixels in the matrix:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Each RGB channel has 51,520 pixels. **RGB** refers to three hues of light (red,
+    green, and blue) that can be mixed together to create different colors. Combining
+    red, green, and blue lights is the standard method for producing color images
+    on screens such as TVs, computer monitors, and smartphones. The *RGB color model*
+    is an additive model because the three light beams of color are added together
+    (light spectra wavelength by light spectra wavelength) to create the final color
+    spectrum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Check if RGB channel pixels are scaled:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: The algorithms check if the pixels in each channel are less than one. We display
+    the length of each algorithmically modified channel to see if they contain the
+    expected number of pixels. So far everything checks out.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Since all truth table values aren’t displayed, we need one more step to verify
+    that scaling worked as expected:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: The *all()* function returns True if all items in an iterable are true; otherwise,
+    it returns False. So all pixels are scaled. An **iterable** is an object that
+    can be iterated over. A Python list is an example of an iterable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'But we can check if all matrix pixels are scaled in *one* step:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We demonstrate the multistep process to provide a glimpse under the hood of
+    the stylized image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualize
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Create a visualization function as shown in Listing [12-1](#PC28).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualize the original content, style reference, and stylized images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Create a function to visualize the new stylized image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualize:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Image Stylization with Multiple Images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Create lists of style reference and content images. Choose one from each list
+    to create a pastiche.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get Images
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Create a function to grab an image from Google Drive:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Get style images as shown in Listing [12-2](#PC33).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display style reference image shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Get content images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display content image shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: Process Images
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Create a preprocessing function as shown in Listing [12-3](#PC37).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function converts a PIL image into a NumPy array. It then scales, resizes,
+    and converts the array to a TensorFlow tensor with the appropriate dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Process the style reference images as shown in Listing [12-4](#PC38).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Process the content images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualize Processed Images
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Place style reference and content images in lists:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a function to display tensors as shown in Listing [12-5](#PC41).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display style tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display content tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create Reference Dictionaries
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Create a dictionary to represent style tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Create a dictionary to represent content tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a Pastiche
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Create a function that creates a pastiche:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Create a pastiche:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment with content and style reference images to create your own pastiche.
+    And, of course, you can create a pastiche from your own images!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Create a list for visualization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualize content, style, and pastiche:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Try one with Teddy Roosevelt:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualize content, style, and pastiche:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Try one with gem:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualize content, style, and pastiche:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: TensorFlow Lite Experiment
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '*TensorFlow Lite* is an open source deep learning framework to run TensorFlow
+    models on-device. **On-Device Portals** (ODPs) allow mobile phone users to easily
+    browse, purchase, and use mobile content and services. An ODP platform enables
+    operators to provide a consistent and branded on-device experience across a large
+    portfolio of services. TensorFlow Lite provides an ODP platform to experiment
+    with and deploy deep learning experiments on their phone.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To get started with TensorFlow Lite on your device, peruse
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`www.tensorflow.org/lite/examples`](http://www.tensorflow.org/lite/examples)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For an excellent TensorFlow Lite style transfer example, peruse
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`www.tensorflow.org/lite/examples/style_transfer/overview`](http://www.tensorflow.org/lite/examples/style_transfer/overview)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: But TensorFlow Lite does not have to be deployed on-device. It can be run on
+    a PC. We run this experiment in a Colab notebook on a PC for three reasons. First,
+    we know that our PC has enough RAM to run full-fledged TensorFlow experiments.
+    So we won’t have any issues running a TensorFlow Lite experiment! It is also nice
+    to have an actual keyboard and a large screen. Second, we don’t know what type
+    of on-device you use (e.g., Android, iOS, etc.). Third, TensorFlow Lite modules
+    are pre-installed in Colab!
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you want to develop on-device, we definitely recommend TensorFlow Lite because
+    it is optimized to run on a variety of devices including mobile phones, embedded
+    Linux devices, and microcontrollers. So TensorFlow Lite has better on-device performance
+    and a smaller binary file size than TensorFlow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture for a Pre-trained TensorFlow Lite Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Content images are exactly the same as what we already worked with in the first
+    experiment. As in the first experiment, style images are transformed (or bottlenecked)
+    into *100-dimensional style bottleneck vectors* before being fed into the style
+    transform model. But unlike the first experiment, we manually manipulate the style
+    image into a consumable form by the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The TensorFlow Lite artistic style transfer model consists of two submodels
+    – Style Prediction Model and Style Transform Model. The *Style Prediction Model*
+    is a pre-trained MobileNet-v2-based neural network that takes an input style reference
+    image and transforms it into a 100-dimensional style bottleneck vector. The *Style
+    Transform Model* is a neural network that applies a style bottleneck vector to
+    a content image to create a pastiche.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Crop Images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Remove unwanted noise from images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Import a requisite library for display:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: The mpl parameters set the display size for all images for the rest of the notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get a content image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The Style Transform Model expects a content image of size 384 × 384:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Centrally crop the content image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: Cropping is one of the most basic data augmentation processes for images. The
+    idea is to remove unwanted or irrelevant noise from the periphery of an image,
+    change its aspect ratio or improve its overall composition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get a style image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Centrally crop the style reference image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: Display Cropped Images
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Create a display function as shown in Listing [12-6](#PC60).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display cropped images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: Stylize Images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We feed the cropped style image into the Style Prediction Model to create a
+    style bottleneck vector. We then feed the cropped content image and newly created
+    style bottleneck vector into the Style Transform Model to create a pastiche.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create the Style Prediction Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Create a function for the Style Prediction Model as shown in Listing [12-7](#PC62).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function creates a Style Prediction Model to run style prediction on the
+    cropped style image (*style_lite*). The function accepts a processed style reference
+    image. It then loads the style prediction path into the interpreter object (*tf.lite.Interpreter*).
+    The interpreter is a TensorFlow Lite pre-trained MobileNet-v2-based neural network.
+    The interpreter uses the style_predict_path to create a tflite predicted style.
+    Input to the interpreter model is then set. The function continues by calculating
+    the style bottleneck. The function ends by using the bottleneck calculation and
+    the tflite predicted style to transform the style image into a 100-dimensional
+    style bottleneck vector. Simply, the function accepts a style reference image
+    and transforms it into a 100-dimensional style bottleneck vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Set the style prediction path:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Transform the cropped style image into a 100-dimensional style bottleneck vector:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create the Style Transform Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Create a function for the Style Transform Model as shown in Listing [12-8](#PC65).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function creates a Style Transform Model that applies a style bottleneck
+    vector to a content image to create a pastiche. The function accepts a style bottleneck
+    vector and a processed content image. It then loads the style transform path into
+    the interpreter object (tf.lite.Interpreter). The interpreter uses the style_transform_path
+    to create a tflite transform style. Input to the interpreter model is then set.
+    The function continues by setting the processed content image and style bottleneck
+    vector for the interpreter. The function ends by returning the transformed content
+    image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Set the style transform path:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create the Pastiche
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Stylize the content image with the style bottleneck:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Ensure that the stylized image (or pastiche) is the size expected by the TensorFlow
+    Lite pre-trained model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualize the pastiche:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: Style Blending
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: By blending the style of the content image into the stylized output, we make
+    the pastiche look more like the content image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prepare the Content Image
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Reshape the content image for consumption by the Style Prediction Model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Transform the reshaped content image into a 100-dimensional style bottleneck
+    vector:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: The content image is now a 100-dimensional style bottleneck vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Blend the Style Bottleneck Vectors
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Blend the style bottleneck vector with the content-style bottleneck vector (*style_bottleneck_content*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Define the content blending ratio (between 0 and 1):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: The range of blending the content image into the pastiche is from 0% to 100%.
+    To extract no style from the content image, assign 0%. Zero percent means that
+    the blended pastiche is the same as the pastiche. To extract all of the style
+    from the content image, assign 100%. We set the blending ratio to 50% to extract
+    half of the style from the content image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get a blended style bottleneck vector from the style bottleneck and content-style
+    bottleneck vectors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Stylize the content image using the style bottleneck:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualize the pastiche:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save the Pastiche
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Save the pastiche to a local drive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a function to convert a tensor to a PIL image as shown in Listing [12-9](#PC76).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function up-scales the scaled tensor and converts it to a NumPy array. It
+    then strips the “1” dimension and returns a PIL image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Save a file to a local drive:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: Import the *files* module from the google.colab library. Invoke the function
+    and save method on the PIL image. Use the download method from the files module
+    to download the PIL image to a local drive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The first experiment demonstrates an ANAS implementation of NST with an end-to-end
+    code experiment. The second experiment demonstrates an ANAS implementation of
+    NST with a pre-trained transfer model from the TensorFlow Lite module.
+  prefs: []
+  type: TYPE_NORMAL

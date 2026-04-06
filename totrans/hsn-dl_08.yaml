@@ -1,0 +1,603 @@
+- en: 8. Transfer Learning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Assume that you have been assigned the responsibility of developing an app that
+    can classify ten new musical instruments developed recently by renowned musicians.
+    You only have a few hundred images of these instruments. To classify these images,
+    you decide to use GoogLeNet architecture, which has around 6.8 million parameters.
+    If you decide to train the model using the given images, you will realize that
+    you have an insufficient number of images. However, if you train the model using
+    the pictures of known instruments, you might be able to train it, but it will
+    take a lot of time and computational resources. So the challenge is to train a
+    sufficiently complex model on a dataset that does not have a sufficient number
+    of images, and you probably do not have GPU as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter presents a methodology called transfer learning, which will help
+    you deal with such situations. This chapter discusses the ideas, types, strategies,
+    and limitations of transfer learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Idea
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In transfer learning, we train a model on a given dataset for a particular task.
+    This model is then
+  prefs: []
+  type: TYPE_NORMAL
+- en: Used with some other dataset for the same task. For example, suppose you aim
+    to develop a model that classifies patients suffering from Alzheimer’s from controls.
+    You can train the model on the publicly available Alzheimer’s Disease Neuroimaging
+    Initiative (ADNI) dataset and then use the same model on the dataset collected
+    from a local hospital.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We use the same model and the same dataset for some other task. For example,
+    we develop a model to classify cats and dogs using given images and then use the
+    same model by some means for segmenting the parts of the image. The interested
+    readers may refer to references given at the end of the chapter for such examples
+    of this type of transfer learning.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We use the part of the same model and a new dataset for different tasks. For
+    example, we generally use the pretrained VGG 16 model and freeze the initial layers
+    except for the last ones (fully connected), and we train the model to perform
+    the classification on other datasets.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: One of the ways to accomplish the task stated in “Introduction” is “**to extract
+    knowledge from some model trained on some dataset and use it to accomplish a similar
+    task**.” This is referred to as transfer learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is possible because the earlier layers of a complex model trained on sufficiently
+    large datasets learn **low-level features**, the next layers may learn the **combination
+    of such features,** and so on. To understand this, imagine you develop a model
+    and train it using a huge dataset of faces. The earlier layers of the model learn
+    lines, curves, etc. The later layers learn objects; still later layers learn eyes,
+    nose, etc. You can use this information to classify some other dataset of faces
+    for a particular organization to develop their face recognition system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: VGG 16 and VGG 19 for Binary Classification
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: VGG 16 and VGG 19 are two deep Convolutional Neural Networks having 16 and 19
+    layers, respectively (trainable). They have historically outperformed the benchmarks
+    for many image-related tasks. The VGG 16 model is an outcome of the work “Very
+    Deep Convolutional Networks for Large-Scale Image Recognition” [1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: VGG 16 achieved 92.7% top 5 test accuracy on the ImageNet dataset containing
+    14 million images belonging to 1000 classes. This model takes 224 × 224 × 3 as
+    the input. It contains two convolutional layers with a filter size of 3 × 3 followed
+    by a max pooling layer with a filter size of 2 × 2\. This is repeated twice. After
+    which it contains three convolutional layers with a filter size of 3 × 3 followed
+    by a single max pooling layer of filter size 2 × 2, and this combination is repeated
+    thrice. This is followed by two fully connected layers of size 4096 followed by
+    an output layer having 1000 neurons. VGG 19 has a similar architecture, but it
+    has 19 layers instead of 16\. Figures [8-1](#Fig1) and [8-2](#Fig2) show the architecture
+    of VGG 16 and VGG 19.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/611710_1_En_8_Chapter/611710_1_En_8_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: VGG 19 architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/611710_1_En_8_Chapter/611710_1_En_8_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: VGG 16 architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: VGG 16 and VGG 19 have been trained on huge datasets (ImageNet) having a massive
+    number of images across a thousand categories. This training gives the model the
+    ability to learn generalizable features and empowers these models with the ability
+    to capture complex patterns; hence, they perform well with other datasets as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To be able to use the information gathered in the training process, we generally
+    freeze the earlier layers and train the last layers of these models. These models
+    have shown good performance on many image-related tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the following experiment (Listing [8-1](#PC1)), the pretrained VGG 16 and
+    VGG 19 models are to classify X-ray images of patients diagnosed with tuberculosis
+    (TB) and healthy controls. The dataset, obtained from Kaggle (“[`https://www.kaggle.com/datasets/tawsifurrahman/tuberculosis-tb-chest-xray-dataset”`](https://www.kaggle.com/datasets/tawsifurrahman/tuberculosis-tb-chest-xray-dataset%25E2%2580%259D)),
+    contains 400 images of healthy controls and 240 images of TB patients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The given images were resized to 224 × 224 × 3 shape to match the input shape
+    of the original model. The initial layers of the pretrained models were frozen
+    to extract low-level features. The last few layers were then trained on the above
+    mentioned dataset to learn high-level, data-specific features that distinguish
+    between TB patients and controls. The loss and performance curves of both the
+    models are shown in Figures [8-3](#Fig3) and [8-4](#Fig4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/611710_1_En_8_Chapter/611710_1_En_8_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Loss and accuracy curves: VGG 19'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/611710_1_En_8_Chapter/611710_1_En_8_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Loss and accuracy curves: VGG 16'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: From the above figures, it can be observed that the mean validation accuracy
+    of the two models is 0.9880 (VGG 16) and 0.9886 (VGG 19), respectively. Also,
+    there is a slight difference between the loss curves of the two models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us take another example to understand the applications of transfer learning.
+    The following experiment (Listing [8-2](#PC2)) employs a transfer learning approach
+    to classify Alzheimer’s patients from controls using the OASIS-1 dataset. The
+    dataset includes s-MRI scans of 53 controls and 28 patients suffering from Alzheimer’s
+    disease (AD). The grayscale images were resized to (224 × 224). The additional
+    Conv2D layer is added to convert the single-channel input to three channels by
+    repeating the grayscale information across three channels to match the input shape
+    of the pretrained VGG 19 model. The initial layers of the pretrained model were
+    frozen to extract low-level features. The last few layers were then trained on
+    the abovementioned dataset to learn high-level, data-specific features that distinguish
+    between AD patients and controls. The loss and performance curves of the model
+    are shown in Figure [8-5](#Fig5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/611710_1_En_8_Chapter/611710_1_En_8_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Loss and accuracy curves: VGG 19'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Types and Strategies
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: An important aspect of transfer learning is its ability to transform the representation.
+    One of the interesting examples as stated in [2] is as follows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assume that you need to classify two classes in which the 2D coordinate system
+    is represented as a circle (Class I) within another circle (Class II) and somehow
+    this model transforms this distribution to a linearly separable one; then the
+    classification will become easier. At times transfer learning transforms the given
+    data space into a feature set relatively easy to classify.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As per [2], the domain of transfer learning consists of a feature space and
+    a probability distribution, whereas the task contains the label space. The probability
+    *P*(*X*|*Y*) is derived from a function that learns from a feature vector and
+    the label space. Transfer learning can also be segregated into the following types:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When the feature spaces are not equal: Suppose that you are asked to develop
+    a software that converts a given algorithm into a code in a functional language
+    such as Scala or F#. Note that the input to the software is in English, whereas
+    the output is in complex functional language. In this case the feature spaces
+    are not the same. Such situations can be handled using a concept similar to cross-lingual
+    adaptation. Here transfer learning comes to your rescue.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'When the marginal probability distributions of the source and the target are
+    not same: Consider a scenario in which you are required to develop a model to
+    distinguish between cats and dogs. The model is then trained on high-definition
+    pictures obtained from the Internet. The application so developed is intended
+    to be used by people in the lower middle strata who click the pictures of dogs
+    and cats using their phone, which are not of high quality. In this situation the
+    probability distributions of the source and the target are not same, and transfer
+    learning can help.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'When the labels are different: Suppose you train your model on images of animals
+    and the model is to be used for classifying different types of cats. Here, the
+    labels of the model originally developed with the original dataset have different
+    labels vis-à-vis the required model.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'When the conditional probability of the labels is not the same: When you train
+    your model with a balanced dataset and then use it for an imbalanced one.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Transfer learning is tricky and whether to use it or not can be decided based
+    on
+  prefs: []
+  type: TYPE_NORMAL
+- en: The task to be performed
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Domain
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Availability of data
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For a detailed discussion on the above strategies, the interested readers may
+    refer to the references given at the end of the chapter. Researchers [2] have
+    proposed many transfer learning strategies as shown in Figure [8-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/611710_1_En_8_Chapter/611710_1_En_8_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transfer learning strategies
+  prefs: []
+  type: TYPE_NORMAL
+- en: The interested reader may refer to the references given at the end of the chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Limitations and Applications of Transfer Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Despite being awesome transfer learning has many limitations. If the target
+    dataset does not have anything similar to the original dataset, then the transfer
+    learning will not work. For example, if you train your model with the images of
+    dogs and cats and then test it on a particular disease related to the brain, then
+    the model is bound to fail. Likewise, if the number of labels in your target set
+    is huge, then the model might not work as well. Some of the cases where transfer
+    learning may not work are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: When the training data is insufficient, transfer learning may not work. In some
+    cases, the training data might not be similar to the data used for the task at
+    hand, or there is a domain mismatch or task mismatch. In such cases, the transfer
+    learning generally fails.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In addition to the above, the size of the target data also decides whether or
+    not we can use transfer learning. If the size of the target data is small, there
+    is a possibility of overfitting; also if the target data is too large, transfer
+    learning may not be able to capture the complexities of the data. In transfer
+    learning, freezing of incorrect layers may also affect the recital of the network.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Some of the prominent applications of transfer learning are
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classification of diseases using models trained on similar diseases
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Task related to self-driven cars
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Natural language processing
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Identifying rare elements and so on
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: It is commonly believed that Deep Learning can only be applied if there is a
+    lot of data. Also, as per common perception, a lot of computing power is consumed
+    to train a DL [[3](#Par90), [4](#Par91)] model. However, for many practical tasks,
+    this may not be required. We can learn micro-level or intermediate-level features
+    from a particular source and apply the knowledge so obtained on another task or
+    another dataset [[5](#Par92)]. This chapter introduced transfer learning and explained
+    the need, types, and implementation of transfer learning. After reading this chapter,
+    the reader must have realized the need for huge datasets for carrying out tasks
+    that are not related to the ones for which those datasets were collected. We have
+    seen how to extract the representations and how to fine-tune a model for carrying
+    out some of the assorted tasks using transfer learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next chapter takes the reader to the mesmerizing world of sequences, where
+    words play with each other and spin prose and poetry. We will study the models
+    that will help us comprehend sequences and play with them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Multiple-Choice Questions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Which of the following exemplifies the scenario when feature spaces are not
+    equal in transfer learning?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Translating text from English to Spanish
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Converting an algorithm into code in a functional language such as Scala or
+    F#
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Translating a book from English to French
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Converting a mathematical equation into a graph
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What scenario exemplifies when the marginal probability distributions of the
+    source and target are not the same?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Translating an algorithm to code in a functional language
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Developing a model to distinguish between cats and dogs with high-definition
+    pictures and using it on low-quality phone pictures
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Classifying different types of cats using a model trained on images of animals
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Translating a book from one language to another
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What factor does NOT affect the decision to use transfer learning?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The task to be performed
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Domain
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Availability of data
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The programming language used
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Which statement about transfer learning is TRUE?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It always requires a large amount of data.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It can help when the feature spaces are equal.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It makes it possible to develop a Deep Learning model with less data and computation
+    power.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It is only useful in natural language processing tasks.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What are the benefits of transfer learning mentioned in the text?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It requires more data and computation power.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It allows for classification with less data and less computation power.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It eliminates the need for training models.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: It always produces higher-accuracy models.
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Which type of transfer learning involves developing a software that converts
+    a given algorithm into a code in a functional language?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: When feature spaces are not equal
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: When marginal probability distributions are not the same
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: When labels are different
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: When conditional probability of the labels is not the same
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Application
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Collect 100 images each of the following characters of the popular show *Phineas
+    and Ferb*:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Phineas Flynn
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Ferb Fletcher
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Candace Flynn
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Perry the Platypus
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Dr. Heinz Doofenshmirtz
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Isabella Garcia-Shapiro
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Baljeet Tjinder
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Buford van Stomm
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Linda Flynn-Fletcher
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Lawrence Fletcher
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Major Monogram
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Carl the Intern
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Now, create a CNN model to classify the above classes. Now use pretrained VGG
+    16 and VGG 19 models to classify the images. You may use a different number of
+    neurons in the fully connected layers and report the performance.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: References
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Simonyan, K. & Zisserman, A. Very deep convolutional networks for Large-Scale
+    image recognition. *arXiv (Cornell University)* (2014). [`https://doi.org/10.48550/arxiv.1409.1556`](https://doi.org/10.48550/arxiv.1409.1556)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Protopapas, P. Intro to transfer learning. In *Advanced Practical Data Science*
+    (p. AC295) (2021). [`https://harvard-iacs.github.io/2020F-AC295/lectures/lecture5/presentation/lecture5.pdf`](https://harvard-iacs.github.io/2020F-AC295/lectures/lecture5/presentation/lecture5.pdf)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Johnson, J. (2020, October 7). *Lecture 11: Training Neural Networks (Part
+    2)*. [`https://web.eecs.umich.edu/~justincj/slides/eecs498/FA2020/598_FA2020_lecture11.pdf`](https://web.eecs.umich.edu/~justincj/slides/eecs498/FA2020/598_FA2020_lecture11.pdf)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Pesah, A., Wehenkel, A., Sedghi, H., Liang, P. & Zeng, D. *CS 330 Lecture 3
+    Transfer Learning + Start of Meta-Learning*. [`https://web.stanford.edu/class/cs330/lecture_slides/cs330_transfer_meta_learning.pdf`](https://web.stanford.edu/class/cs330/lecture_slides/cs330_transfer_meta_learning.pdf)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Layton, O. *CS 343 | Notes*. [`https://cs.colby.edu/courses/F22/cs343/notes.html`](https://cs.colby.edu/courses/F22/cs343/notes.html)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

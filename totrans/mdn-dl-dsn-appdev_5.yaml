@@ -1,0 +1,2224 @@
+- en: 5. Automating Model Design with Meta-optimization
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*Learning how to learn is life’s most important skill.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Tony Buzan, Writer and Educational Consultant
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: As the content we find we need to learn changes throughout life, we find new
+    methods of learning that work for us. Through your education, you might have considered
+    brute-force solving dozens of repetitive, minimally varying problems to be helpful
+    when mastering the basics of algebra, active reading with a highlighter and notes
+    on hand to help you succeed in more advanced English classes, and, later on with
+    more advanced topics, understanding the conceptual framework and intuition more
+    helpful than rotely solving a series of problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ultimately, the task of learning is not just one of optimizing your mastery
+    of the content within certain learning conditions but of optimizing those very
+    learning conditions. To become efficient agents and designers of learning processes,
+    we must recognize that learning is multi-tiered, controlled not only by our progress
+    within the learning framework an agent may currently be operating in but also
+    the learning framework itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This necessity applies to neural network design. Designing neural networks involves
+    making many choices, and many of these can often feel arbitrary and therefore
+    unoptimized or optimizable. While intuition is certainly a valuable guide in building
+    model architectures, there are many aspects of neural network design that a human
+    designer simply cannot effectively tune by hand, especially when multiple variables
+    are involved.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Meta-optimization*, also referred to in this context as meta-learning or auto-ML,
+    is the process of “learning how to learn” – a meta-model (or “*controller* model”)
+    finds the best parameters for the *controlled* model’s validation performance.
+    With its tools and knowledge about its underlying dynamics and best use cases,
+    meta-optimization is a valuable box of methods to aid you in developing more structured,
+    efficient models.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction to Meta-optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A deep learning model is already a learner itself, optimizing its designated
+    weights to maximize its performance on the training data it is given. *Meta-optimization*
+    involves another model on a higher level optimizing the “fixed” parameters in
+    the first model such that the first model, when trained under the conditions of
+    those fixed parameters, will learn weights that maximize its performance on the
+    test dataset (Figure [5-1](#Fig1)). In machine learning – a domain in which meta-optimization
+    is frequently applied – these fixed parameters could be factors like the gamma
+    parameter in support vector classifiers, the value of *k* in the *k*-nearest neighbors
+    algorithm, or the number of trees in a gradient boosting model. In the context
+    of deep learning – the focus of this book and thus the application of meta-optimization
+    in this chapter – these include factors like the architecture of the model and
+    elements of its training procedure, like the choice of optimizer or the learning
+    rate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, we use the terms “parameters” and “weights” selectively for the sake of
+    clarity, even though the two are more or less synonymous. “Parameter” will refer
+    to broader factors in the model’s fundamental structure that remain unchanged
+    during training and influence the outcome of the learned knowledge. “Weight” refers
+    to changeable, trainable values that are used in representing a model’s learned
+    knowledge.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig1_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationship between controller model and controlled model in meta-optimization
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'So-called “naïve” meta-optimization algorithms use the following general structure:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Select structural parameters for a proposed controlled model.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Obtain the performance of a controlled model trained under those selected structural
+    parameters.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Repeat.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'There are two generally recognized naïve meta-optimization algorithms used
+    as a baseline against more sophisticated meta-optimization methods:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Grid search*: In a grid search, every combination of a user-specified list
+    of values for each parameter is tried and evaluated. Consider a hypothetical model
+    with two structural parameters we would like to optimize, *A* and *B*. The user
+    may specify the search space for *A* to be [1, 2, 3] and the search space for
+    *B* to be [0.5, 1.2]. Here, “search space” indicates the values for each parameter
+    that will be tested. A grid search would train six models for every combination
+    of these parameters – *A* = 1 and *B* = 0.5, *A* = 1 and *B* = 1.2, *A* = 2 and
+    *B* = 0.5, and so on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Random search*: In a random search, the user provides information about a
+    feasible distribution of potential values that each structural parameter could
+    take on. For instance, the search space for *A* may be a normal distribution with
+    mean 2 and standard deviation 1, and the search space for *B* might be a uniform
+    choice from the list of values [0.5, 1.2]. A random search would then randomly
+    sample parameter values and return the best performing set of values.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Grid search and random search are considered to be naïve search algorithms because
+    they do not incorporate the results from their previously selected structural
+    parameters into how they select the next set of structural parameters; they simply
+    repeatedly “query” structural parameters blindly and return the best performing
+    set. While grid and random search have their place in certain meta-optimization
+    problems – grid search suffices for small meta-optimization problems, and random
+    search proves to be a surprisingly strong strategy for models that are relatively
+    cheaper to train – they cannot produce consistently strong results for more complex
+    models, like neural networks. The problem is not that these naïve methods inherently
+    cannot produce good sets of parameters, but that they take too long to do so.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A key component of the unique character of meta-optimization that distinguishes
+    it from other fields of optimization problems is the impact of the evaluation
+    step in amplifying any inefficiencies in the meta-optimization system. Generally,
+    to quantify how good certain selected structural parameters are, a model is fully
+    trained under those structural parameters and its performance on the test set
+    is used as the evaluation. (See the “Neural Architecture Search” section for proxy
+    evaluation to learn about faster alternatives). In the context of neural networks,
+    this evaluation step can take hours. Thus, an effective meta-optimization system
+    should attempt to require as few models to be built and trained as possible before
+    arriving at a good solution. (Compare this to standard neural network optimization,
+    in which the model queries the loss function and updates its weights accordingly
+    anywhere from hundreds of thousands to millions of times in the span of hours.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To prevent inefficiency in the selection of new structural parameters to evaluate,
+    successful meta-optimization methods used for models like neural networks include
+    another step – incorporating knowledge from previous “experiments” into determining
+    the next best set of parameters to select:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Select structural parameters for a proposed controlled model.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Obtain the performance of a controlled model trained under those selected structural
+    parameters.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Incorporate knowledge about the relationship between selected structural parameters
+    and the performance of a model trained under such parameters into the next selection.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Repeat.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Even with these adaptations, meta-optimization methods are taxing on computational
+    and time resources. A primary factor in the success of a meta-optimization campaign
+    is how you define the *search space* – the feasible distribution of values the
+    meta-optimization algorithm can draw from. Choosing the search space is another
+    trade-off. Clearly, if you specify too large a search space, the meta-optimization
+    algorithm will need to select and evaluate more structural parameters to arrive
+    at a good solution. Each additional parameter enlarges the existing search space
+    by a significant factor, so leaving too many parameters to be optimized by the
+    meta-optimization algorithm will likely perform worse than user-specified values
+    or a random search, which doesn’t need to deal with the complexities of navigating
+    an incredibly sparse space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Herein lies an important principle in meta-optimization design: *be conservative
+    in determining parameters to be optimized by meta-optimization as possible*. If
+    you know that batch normalization will benefit a network’s performance, for instance,
+    it’s probably not worth it to use meta-optimization to determine if batch normalization
+    should be included in the network architecture or not. Moreover, if you decide
+    a certain parameter should be optimized via meta-optimization, attempt to decrease
+    its “size.” For instance, this could be the number or range of possible values
+    a parameter can take on, the range of possible values.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'On the other hand, if you define too small a search space, you should ask yourself
+    another question – *is meta-optimization worth performing in the first place*?
+    A meta-optimization algorithm is likely to find the optimal set of parameters
+    for a search space defined as {*A*: normal distribution with mean 1 and standard
+    deviation 0.001 and *B*: uniform distribution from 3.2 to 3.3} very efficiently,
+    for instance, but it’s not useful. The user could have likely set *A*=1 and *B*=3.25
+    with no visible impact on the resulting model’s performance.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is a “small” or “large” range is dependent on the nature of the parameter
+    and the variation required to make visible change in the performance of the model.
+    Parameters sampled from a normal distribution with mean 0.005 and standard deviation
+    0.001 may yield a very similar model if that parameter is the C parameter in a
+    support vector machine. However, if the parameter is the learning rate of a deep
+    learning model, it is likely that such a distribution would yield visible differences
+    in model test performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thus, the crucial balance in meta-optimization is that of engineering a search
+    space conservative enough not to be redundant, but free and “open” enough to yield
+    significant results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This chapter will discuss two forms of meta-optimization as applicable to deep
+    learning: general hyperparameter optimization and Neural Architecture Search (NAS),
+    along with the Hyperopt, Hyperas, and Auto-Keras libraries.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: General Hyperparameter Optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: General hyperparameter optimization is a broad field within meta-optimization
+    concerning general methods to optimize the parameters of a wide variety of models.
+    These methods are not explicitly built for neural network designs, so additional
+    work will be required for effective results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this section, we’ll discuss Bayesian optimization – the leading general hyperparameter
+    optimization method for machine and deep learning, as well as the usage of the
+    popular meta-optimization library Hyperopt and its accompanying Keras wrapper,
+    Hyperas, to optimize neural network design.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bayesian Optimization Intuition and Theory
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Here’s a function: *f*(*x*). You only have access to its output given a certain
+    input, and you know that it is expensive to calculate. Your task is to find the
+    set of inputs that minimizes the output of the function as much as possible.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sort of setup is known as a black-box optimization problem, because the
+    algorithm or entity attempting to find a solution to the problem has access to
+    very little information about the function (Figure [5-2](#Fig2)). You have access
+    only to the output of any input passed into the function, but not the derivative,
+    barring the usage of gradient-based methods that have proved successful in the
+    domain of neural networks. Moreover, because *f*(*x*) is expensive to evaluate
+    (i.e., takes a significant amount of time to get the output of an input), we cannot
+    employ a host of non-gradient optimization methods from the simple grid search
+    to the more sophisticated simulated annealing. These methods require a large quantity
+    of queries to the black-box function to discover reasonably well-performing results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig2_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Objective functions to minimize. Top – black-box function; bottom – explicitly
+    defined loss function (in this case MSE)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bayesian optimization is often used in these sorts of black-box optimization
+    problems because it succeeds in obtaining reliably good results with a relatively
+    small number of required queries to the objective function *f*(*x*). Hyperopt,
+    in addition to many other libraries, uses optimization algorithms built upon the
+    fundamental model of Bayesian optimization. The spirit of Bayesian modeling is
+    to begin with a set of *prior* beliefs and continually update that set of beliefs
+    with new information to form posterior beliefs. It is this spirit of continuous
+    update – searching for new information in places where it is needed – that makes
+    Bayesian optimization a robust and versatile tool in black-box optimization problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider this hypothetical objective function, *c*(*x*) (Figure [5-3](#Fig3)).
+    In the context of meta-learning/meta-optimization, *c*(*x*) represents the loss
+    or cost of a certain model and *x* represents the set of parameters used in the
+    model that are being optimized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig3_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hypothetical cost function – the loss incurred by a model with some parameter
+    x. For the sake of visualization, in this case we are optimizing only one parameter
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because this is a black-box function and the Bayesian optimization algorithm
+    doesn’t “know” its full shape, it develops its own representations of what it
+    “thinks” the objective function looks like via a *surrogate function* (Figure
+    [5-4](#Fig4)). The surrogate function approximates the objective function and
+    represents the current set of beliefs on how the objective function behaves.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig4_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example surrogate function and how the surrogate function informs the sampling
+    of new points in the objective function
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that the representation of the surrogate model here is deterministic, but
+    in practice it is a probabilistic model that returns *p*(*y*| *x*) or the probability
+    that the objective function’s output is *y* given an input *x*. Probabilistic
+    surrogate models are easier and more natural to update in a Bayesian function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Based on the surrogate function, the algorithm can identify which points look
+    “promising” in addition to which areas need more exploration and samples from
+    these promising regions accordingly (Figure [5-5](#Fig5)). Note that there is
+    an exploration-exploitation trade-off dynamic at play here: if the algorithm sampled
+    only from regions immediately suggested to be minima (purely exploiting), it would
+    completely overlook other promising minima that were not captured in the first
+    round of sampling. Likewise, if the algorithm was purely explorative, it would
+    behave little differently from a random search by not considering previous findings.
+    The *acquisition function* is responsible for determining how surrogate functions
+    are updated.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig5_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Updating the surrogate function with the new, second iteration of sampled points
+  prefs: []
+  type: TYPE_NORMAL
+- en: After just a few number of iterations, there is a very high probability that
+    the Bayesian optimization algorithm has obtained a relatively accurate representation
+    of the minima within the black-box function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because a random or grid search does not take any of the previous results into
+    consideration when determining the next sampled set of parameters, these “naïve”
+    algorithms save time in calculating the next set of parameters to sample. However,
+    the additional computation Bayesian optimization algorithms use to determine the
+    next point to sample is used to construct a surrogate function more intelligently
+    with fewer queries. Net-wise, the reduction in necessary queries to the objective
+    function outweighs the increase in time to determine the next sampled point, making
+    the Bayesian optimization method more efficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This process of optimization is known more abstractly as *Sequential Model-Based
+    Optimization (SMBO)* . It operates as a central concept or template against which
+    various model optimization strategies can be formulated and compared and contains
+    one key feature: a surrogate function for the objective function that is updated
+    with new information and used to determine new points to sample. Across various
+    SMBO methods, the primary differentiators are the design of the acquisition function
+    and the method of constructing the surrogate model. Hyperopt uses the Tree-structured
+    Parzen Estimator (TPE) surrogate model and acquisition strategy.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The expected improvement measurement quantifies the expected improvement with
+    respect to the set of parameters to be optimized, *x*. For instance, if the surrogate
+    model *p*(*y*| *x*) evaluates to zero for all values of *y* less than some threshold
+    value *y*^∗ – that is, there is zero probability that the set of input parameters
+    *x* could yield an output of the objective function less than *y*^∗ – there is
+    likely little improvement.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Tree-structured Parzen Estimator (Figure [5-6](#Fig6)) is built to work
+    toward a set of parameters *x* that maximizes expected improvement. Like all surrogate
+    functions used in Bayesian optimization, it returns *p*(*y*| *x*) – the probability
+    that the objective function’s output is *y* given an input *x*. Instead of directly
+    obtaining this probability, it uses Bayes’ rule:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ p(x)=\frac{p(y)\cdotp p(y)}{p(x)} $$](../images/516104_1_En_5_Chapter/516104_1_En_5_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The *p*(*x*| *y*) term represents the probability that the input to the objective
+    function was *x* given an output *y*. To calculate this, two distribution functions
+    are used: *l*(*x*) if the output *y* is less than some threshold *y*^∗ and *g*(*x*)
+    if the output *y* is less than some threshold *y*^∗. To sample values of *x* that
+    yield objective function outputs less than the threshold, the strategy is to draw
+    from *l*(*x*) rather than *g*(*x*). (The other terms, *p*(*y*) and *p*(*x*), can
+    be easily calculated as they do not involve conditionals.) Sampled values with
+    the highest expected improvement are evaluated through the objective function.
+    The resulting value is used to update the probability distributions *l*(*x*) and
+    *g*(*x*) for better prediction.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig6_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualizing where the Tree-structured Parzen Estimator strategy falls in relation
+    to the Sequential Model-Based Optimization procedure
+  prefs: []
+  type: TYPE_NORMAL
+- en: It’s a little bit math heavy, but ultimately the Tree-structured Parzen Estimator
+    strategy attempts to find the best objective function inputs to sample by continually
+    updating its two internal probability distributions to maximize the quality of
+    prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You may be wondering – what is tree-structured about the Tree-structured Parzen
+    Estimator strategy? In the original TPE paper, the authors suggest that the “tree”
+    component of the algorithm’s name is derived from the tree-like nature of the
+    hyperparameter space: the value chosen for one hyperparameter determines the set
+    of possible values for other parameters. For instance, if we are optimizing the
+    architecture of a neural network, we first determine the number of layers before
+    determining the number of nodes in the third layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hyperopt Syntax, Concepts, and Usage
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Hyperopt is a popular framework for Bayesian optimization. Its flexible syntax
+    allows for you to test hyperparameter tuning on any framework and for any purpose.
+    Using Hyperopt requires three key elements (Figure [5-7](#Fig7)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig7_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationship between the search space, objective function, and search operation
+    in the Hyperopt framework
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Objective function* : This is a function that takes in a dictionary of hyperparameters
+    (the inputs to the objective function) and outputs the “goodness” of those hyperparameters
+    (the output of the objective function). In this context of meta-learning, the
+    objective function takes in the hyperparameters, uses the hyperparameters to build
+    a model, trains the model, and returns the performance of the model on validation/test
+    data. “Better” is synonymous with “less” in Hyperopt, so make sure that metrics
+    like accuracy are negated.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Search space* : This is the space of parameters with which Hyperopt will search.
+    It is implemented as a dictionary of parameters in which the key is the name of
+    the parameter (for your own reference later) and the corresponding value is a
+    Hyperopt search space objective defining the range and type of distribution to
+    sample values for that parameter from.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Search* : Once you have defined the objective function and the search space,
+    you can initiate the actual search function, which will return the best set of
+    parameters from the search.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Install Hyperopt with `pip install hyperopt` and import with `import hyperopt`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Hyperopt Syntax Overview: Finding the Minimum of a Simple Objective Function'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'To illustrate the basic syntax and concepts in Hyperopt, we will use Hyperopt
+    to solve a very simple problem: find the minimum of *f*(*x*) = (*x* − 1)². Let’s
+    first define the search space with `hyperopt.hp` (Listing [5-1](#PC1)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In this case, we are telling Hyperopt that the search space consists of one
+    parameter with label “`x`”, which can reasonably be found from a uniform distribution
+    from –1000 to 1000\. However, from domain knowledge we know that it’s more likely
+    that the optimal value of `x` that minimizes the objective function is more likely
+    to be near zero than equally likely to be any value from –1000 to 1000\. Ideally,
+    we would like the optimizer to sample values of `x` near zero more often than
+    values near 1000 or –1000\. We can formulate this domain knowledge regarding the
+    probability that the optimal value is near a certain value by using other spaces
+    (see Figure [5-8](#Fig8)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig8_HTML.png](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualizations of the normal and quantized normal distributions (top) and the
+    log-normal and quantized log-normal distributions (bottom). The quantized distribution
+    visualization is not completely faithful – values that fall into a sampled “segment”
+    are assigned the same value
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`hp.normal(label, mu, sigma)`: The distribution of the search space for this
+    parameter is a normal distribution with mean `mu` and standard deviation `sigma`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`hp.lognormal(label, mu, sigma)`: The distribution of the search space for
+    this parameter is a log-normal distribution with mean `mu` and standard deviation
+    `sigma`. It acts as a modification of `hp.normal` that returns only positive values.
+    This is useful for parameters like the learning rate of a neural network that
+    are continuous and contain a concentration of likelihood at some point, but require
+    a positive value.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`hp.qnormal(label, mu, sigma, q)` and `hp.qlognormal(label, mu, sigma, q)`:
+    These act as distributions for quasi-continuous parameters, like the number of
+    layers or number of nodes within a layer in a neural network – while these are
+    not continuous (a network with 3.5 layers is invalid), they contain transitive
+    relative relationships (a network with 4 layers is longer than a network with
+    3 layers). Correspondingly, we may want to formulate certain relationships, like
+    wanting the number of layers to be shorter than longer. `hp.qnormal` and `hp.qlognormal`
+    “quantize” the outputs of `hp.normal` and `hp.lognormal` by performing the following
+    operation: ![$$ q\cdotp round\left(\frac{o}{q}\right) $$](../images/516104_1_En_5_Chapter/516104_1_En_5_Chapter_TeX_IEq1.png),
+    where *o* is the output of the “unquantized” operation and *q* is the quantization
+    factor. `hp.qnormal(''x'', 5, 3, 1)`, for instance, defines a search space of
+    “normally distributed” integers (`q = 1`) with mean 5 and standard deviation 3.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If the search space is not continuous or quasi-continuous, but instead a series
+    of discrete, non-comparable choices, use `hp.choice()`, which takes in a list
+    of possible choices.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this case, we can use a standard normal distribution to more accurately describe
+    where we think the optimal location of the parameter is (Listing [5-2](#PC2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can now define the objective function, which simply involves subtracting
+    1 from `x` and squaring: `obj_func = lambda params: (params[''x'']-1)**2`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Only returning the associated output of the objective function is fine if the
+    objective function always returns a valid output or you have configured the search
+    space such that it is impossible for any invalid input to be passed into the objective
+    function. If not, however, Hyperopt provides one additional feature that may be
+    helpful if certain combinations of parameters may be invalid: a status. For instance,
+    if we are trying to find the minimum of ![$$ f(x)=\left|\frac{1}{x}\right|+{x}^2
+    $$](../images/516104_1_En_5_Chapter/516104_1_En_5_Chapter_TeX_IEq2.png), the input
+    *x* = 0 would be invalid. There’s no easy way to restrict the search space to
+    exclude *x* = 0, though. If *x* ≠ 0, the output of the objective function is `{''loss'':value,
+    ''status'':''ok''}`. If the input parameter is equal to 0, though, the objective
+    function returns `{''status'':''fail''}`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the context of modeling, certain parameter constructions may not be valid.
+    Given that restricting the search space is impossible or too difficult, you can
+    construct your objective function with a try/except catching mechanism such that
+    any error Keras throws when building the graph is communicated to Hyperopt in
+    the form of a failed status (Listing [5-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now that the search space and the objective function have been defined, we can
+    initiate a search to find the parameter values specified in the search space that
+    minimize the objective function (Listing [5-4](#PC4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here, `algo=tpe.suggest` uses the Tree-structured Parzen Estimator optimization
+    algorithm and `max_evals=500` lets Hyperopt know that the code will tolerate a
+    maximum 500 evaluations of the objective function. In the context of modeling,
+    `max_evals` indicates the maximum number of models that will be built and trained,
+    because each evaluation of the objective function requires building a new model
+    architecture, training it, evaluating it, and returning its performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the search completes, `best` is a dictionary of the best parameters found.
+    `best['x']` should contain a value very close to 1 (the true minimum).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using Hyperopt to Optimize Training Procedure
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Parameters involved in a model’s training procedure include the learning rate,
+    the choice of optimizer, callbacks, and other parameters involved in how the model
+    is trained rather than the architecture of the model. Let’s use Hyperopt to determine
+    the optimal optimizer and learning rate for training. We’ll need to define specific
+    search space types for these two parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`hp.choice(''optimizer'', [''adam'', ''rmsprop'', ''sgd''])` for the optimizer:
+    This will find the optimal optimizer to train the network on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`hp.lognormal(''lr'', mu=0.005, sigma=0.001)` for the optimizer learning rate:
+    The log-normal distribution is used here because the learning rate must be positive.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We can define these two spaces in a dictionary (Listing [5-5](#PC5)). Note that
+    we import optimizer objects without actually instantiating them (i.e., `keras.optimizers.Adam`
+    rather than `keras.optimizers.Adam()`). This is because we need to pass the learning
+    rate as a parameter within the instantiation of the parameter object, which we’ll
+    do when we’re building the model in the objective function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The objective function will take in a dictionary of parameters sampled from
+    the search space and use them to train a model architecture (Listing [5-6](#PC6)).
+    In this particular case, we will measure model performance by its accuracy on
+    the test dataset. We perform the following operations in the objective function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Build the model*: We will use a simple sequential model with a convolutional
+    and fully connected component. This can be built without accessing the `params`
+    dictionary because we’re not tuning any hyperparameters that influence how the
+    architecture is built.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Compile*: This is the relevant component of the construction and training
+    of the model because parameters we are tuning (optimizer and learning rate) are
+    explicitly used in this step. We will instantiate the sampled optimizer with the
+    sampled learning rate and then pass the optimizer object with that learning rate
+    into `model.compile()`. We will also pass `metrics=[''accuracy'']` into compiling
+    such that we can access the accuracy of the model on the test data in evaluation
+    as the output of the objective function.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Fit model*: We fit the model as usual for some number of epochs.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Evaluate accuracy*: We can call `model.evaluate()` to return a list of loss
+    and metrics calculated on the test data. The first element is the loss, and the
+    second is the accuracy; we index the output of evaluation accordingly to assess
+    the accuracy.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Return negated accuracy on validation set*: The accuracy is negated such that
+    smaller is “better.”'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that we specify `verbose=0` with both `model.fit()` and `model.evaluate()`,
+    which prevents Keras from printing progress bars and metrics during training.
+    While these progress bars are helpful when training a Keras model in isolation,
+    in the context of hyperparameter optimization with Hyperopt, they interfere with
+    Hyperopt’s own progress bar printing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can use the objective function and the search space, along with the Tree-structured
+    Parzen Estimator and the maximum number of evaluations, into the `fmin` function:
+    best = fmin(objective, space, algo=tpe.suggest, max_evals=30).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the search has completed, `best` should contain a dictionary of best performing
+    values for each parameter specified in the search space. In order to use these
+    best parameters in your model, you can rebuild the model as it is built in the
+    objective function and replace the `params` dictionary with the `best` dictionary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For even better performance, two adaptations should be made:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Early stopping callback*: This stops training after performance plateaus to
+    save as many resources (computational and time-wise) as possible, as meta-optimization
+    is an inherently expensive operation. This can usually be coupled with a high
+    number of epochs, such that each model design is trained toward fruition – its
+    potential is extracted as much as reasonably possible, and training stops after
+    there seems to be no more potential to extract.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Model checkpoint callback with weight reloading before evaluation*: Rather
+    than evaluating the state of the neural network after it has completed training,
+    it is optimal to evaluate the best “version” of that neural network. This can
+    be done via the model checkpoint callback, which saves the weights of the best
+    performing model. Before evaluating the performance of the model, reload these
+    weights.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: These two measures will further increase the efficiency of the search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using Hyperopt to Optimize Model Architecture
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Although Hyperopt is often used to tune parameters in the model’s training procedure,
+    you can also use it to make fine-tuned optimizations to the model architecture.
+    It’s important, though, to consider whether you should use a general meta-optimization
+    method like Hyperopt or a more specialized architecture optimization method like
+    Neural Architecture Search. If you want to optimize large changes in the model
+    architecture, it’s best to use Neural Architecture Search via Auto-Keras (this
+    is covered later in the chapter). On the other hand, if you want to optimize small
+    changes, Auto-Keras may not offer you the level of precision you desire, and thus
+    Hyperopt may be the better solution. Note that if the change in architecture you
+    intend to optimize is very small (like finding the optimal number of neurons in
+    a layer), it may not be fruitful to even optimize it at all, provided that you
+    have set a reasonable default parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Good architecture components to optimize with a general optimization framework
+    like Hyperopt that are neither too large to optimize with a more specialized Neural
+    Architecture Search method nor too small to be insignificant with respect to the
+    model performance include
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Number of layers in a certain block/component* (provided the range is long
+    enough): The number of layers is quite a significant factor in the model architecture,
+    especially if it is compounded via a block/cell-based design.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Presence of batch normalization*: Batch normalization is an important layer
+    that aids in smoothing the loss space. However, it succeeds only if used in certain
+    locations and with a certain frequency.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Presence and rate of dropout layer*: Like batch normalization, dropout can
+    be an incredibly powerful regularization method. Successful usage of dropout requires
+    placement in certain locations, with a certain frequency, and a well-tuned dropout
+    rate.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For this example, we’ll tune three general factors of the model architecture:
+    the number of layers in the convolutional component, the number of layers in the
+    dense component, and the dropout rate of a dropout layer inserted in between every
+    layer. (You could also tune the dropout rate of all dropout layers, which offers
+    less customizability but may be more successful in some circumstances.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because we are keeping track of the dropout rate of several dropout layers,
+    we cannot merely define it as a single parameter in the search space. Rather,
+    we will need to automate the storage and organization of several parameters in
+    the search space corresponding to each dropout layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin by defining some key variables that we’ll need to use repeatedly
+    later (Listing [5-7](#PC7)). We’re willing to accept any number of convolutional
+    layers from a minimum of 3 layers to a maximum of 8 layers and any number of dense
+    layers from 2 to 5\. (You can adjust this, of course, to your particular problem.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using this information, we will generate two lists, `conv_drs` and `dense_drs`,
+    which contain a Hyperopt search space object for the dropout rate of each layer
+    in the convolutional and dense components, respectively (Listing [5-8](#PC8)).
+    This allows us to store multiple related but different search parameters efficiently;
+    these can be accessed easily via indexing when constructing the model. We use
+    string formatting to provide a unique string name to the Hyperopt search space.
+    Note that while the name you provide to each search space parameter is arbitrary
+    (the user accesses each parameter through other means), Hyperopt requires (a)
+    string names and (b) unique names (i.e., no two parameters can have the same name).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that we are constructing as many search space variables as the maximum
+    number of layers for the convolutional and fully connected components, which means
+    that there will be redundancy if the number of layers sampled is less than the
+    maximum number (i.e., some dropout rates will not be used). This is fine; Hyperopt
+    will handle it and adapt to these relationships. Additionally, we are defining
+    a normal search space for the dropout rate that could theoretically sample values
+    less than 0 or larger than 1 (i.e., invalid dropout rates). We will adjust these
+    within the objective function to demonstrate custom manipulation of the search
+    space when Hyperopt does not provide a function that fits your particular needs
+    (in this case, a normal-shaped distribution that is bounded on both ends).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can use these parameters to create the search space (Listing [5-9](#PC9)).
+    When defining the number of layers in the convolutional and dense components,
+    we use a quantized uniform distribution with `q=1` to sample all integers from
+    `min_num_convs/dense` to `max_num_convs/dense` (inclusive). Additionally, note
+    that we passed in lists for the `'conv_dr'` and `'dense_dr'` parameters. Hyperopt
+    will interpret this (or any other data type that contains several Hyperopt search
+    space objects) as a sub-class of parameters that will be tuned like any other
+    parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Building the objective function in this context is an elaborate process, so
+    we’ll build it in multiple pieces.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall that the Hyperopt search space for the dropout rate was defined to be
+    normally distributed, meaning that it is possible to sample invalid dropout rates
+    (less than 0 or larger than 1). We can address sampled parameters that are invalid
+    at the beginning of the objective function (Listing [5-10](#PC10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the dropout rate is larger than 0.9, we set it to 0.9 (Keras does not accept
+    a dropout rate equal to 1, and any dropout rate larger than 90% is unlikely to
+    succeed anyways). On the other hand, if the dropout rate is less than 0, we set
+    it to 0\. Given the mean and standard deviation parameters defined in the search
+    space, it is unlikely for either of these to be sampled, but it’s important to
+    define these catch mechanisms to prevent errors that disrupt the optimization
+    process. Note that another alternative would be to return `{'status':'fail'}`
+    to indicate an invalid parameter(s). The Bayesian optimization algorithm will
+    adapt to any of these measures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can then build the model “template” (the Sequential base model) and attach
+    an input to it (Listing [5-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: When building the convolutional component, we add however many convolutional
+    layers specified in the input parameters via a for loop (Listing [5-12](#PC12)).
+    Note that we wrap the sampled number of convolutional layers `params['#convs']`
+    in an `int()` function; the output of the quantized value will not technically
+    be an integer (e.g., `3.0`, `4.0`), whereas Python requires an integer object
+    input to the `range()` function . After each convolutional layer, we add a dropout
+    layer with the dropout rate accessed by indexing the previously defined `conv_drs`
+    list of dropout rates. By organizing dropout rates into the easily accessible
+    and storable list format, we are able to integrate several parameters into the
+    optimization procedure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Constructing the dense component follows the same logic (Listing [5-13](#PC13)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Afterward, append the model output and perform the previously discussed remaining
+    steps of compiling, fitting, evaluating, and returning the output of the objective
+    function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, Hyperopt allows for a tremendous amount of control over specific
+    elements of the model, even if it involves a little bit more work – your imagination
+    (and your capability for organization) is the limit!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hyperas Syntax, Concepts, and Usage
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Hyperopt offers a tremendous amount of customizability and adaptability toward
+    your particular optimization needs, but it can be a lot of work, especially for
+    relatively simpler tasks. Hyperas is a wrapper that operates on Hyperopt but is
+    specialized in syntax for meta-optimizing Keras models. The primary advantage
+    of Hyperas is that you can define parameters to be optimized with much fewer code
+    than Hyperopt syntax requires.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: While Hyperas is a useful resource, it’s important to know how to use Hyperopt
+    because (a) often, problems that require meta-optimization in the first place
+    are complex enough to warrant using Hyperopt and (b) Hyperas is a less developed
+    and stable package (it is currently archived by the owner). Additionally, be warned
+    that there are complications with using Hyperas with Jupyter Notebooks in an environment
+    like Kaggle or Colab – if you are working with these circumstances, it may be
+    easier to use Hyperopt.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Install Hyperas with `pip install hyperas` and import with `import hyperas`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using Hyperas to Optimize Training Procedure
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Let’s use Hyperas’ syntax to perform the same optimization of the model training
+    procedure by finding the best combination of optimizer and learning rate. Hyperas
+    has three primary components (Figure [5-9](#Fig9)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig9_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key components of the Hyperas framework – data feeder, objective function, and
+    search operation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Data feeder function* : A function must be defined to load data, perform any
+    preprocessing, and return four sets of data: *x* train, *y* train, *x* test, and
+    *y* test (in that order). By defining the data feeding process as a function,
+    Hyperas can make shortcuts to prevent redundancy in data loading in training the
+    model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Objective function* : This function takes in the four sets of data from the
+    data feeder function. It builds the model with unique markers for parameters to
+    be optimized, fits on the training data, and returns whatever loss is used for
+    evaluation. The objective function should return a dictionary with three key-value
+    pairs: the loss, the status, and the model the loss was evaluated on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Minimization* : This function takes in the objective function (model creating
+    function) and the data feeder function, alongside the Tree-structured Parzen Estimators
+    algorithm from Hyperopt and a `max_evals` parameter. Because Hyperas is implemented
+    with lots of recording, the minimization procedure requires a `hyperopt.Trials()`
+    object, which serves as an additional documentation/recording object. (You can
+    also pass this into `fmin()` for Hyperopt, although it’s not required.)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Assuming the data feeder function has already been created, we will create
+    the objective function (Listing [5-14](#PC14)). It is almost identical to the
+    objective function in Hyperopt, with two key differences: the objective function
+    takes in the four sets of data rather than the parameters dictionary, and optimizable
+    parameters are defined completely within the objective function and with as little
+    user attachment and handling as necessary.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To specify an optimizable parameter, put double braces around a `hyperas.distributions`
+    search space distribution object (e.g., `{{hyperas.distributions.choice(['a','b','c'])}}`).
+    Hyperas contains all the distributions implemented in Hyperopt. Note that no label
+    is required, which allows for easy definition of numerous optimizable parameters.
+    The double-brace syntax can only be used in the context of the objective function,
+    which Hyperas uses Jinja style for template replacement and temporary files. Note
+    that because Hyperas is creating these models in separate “environments,” you
+    may need to re-import certain models or layers again within the objective function.
+    In this case, we import the `Sequential` model and the Keras layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: To perform optimization, use the `hyperas.optim.minimize` function (Listing
+    [5-15](#PC15)), which helpfully returns both the best parameters and the best
+    model from the optimization procedure. (Recall that Hyperopt returns only the
+    best set of parameters, which you need to store into a rebuilt model.) `optim.minimize()`
+    takes in the user-specified objective function and the data feeder function, as
+    well as the `tpe.suggest` and `Trials()` entities from Hyperopt. If you are working
+    in Jupyter Notebooks, `optim.minimize()` also requires the name of your notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: After training, you can save the model and parameters for later usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using Hyperas to Optimize Model Architecture
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The true convenience of Hyperas is exposed when applied to a task like earlier
+    of optimizing a host of parameters all at once. Rather than needing to create
+    elaborate lists and organization structures for the search space, we can define
+    parameters to optimize within the function itself (Listing [5-16](#PC16)). To
+    prevent sampled parameters for the dropout rate from exceeding 0.9 or falling
+    below 0, we can implement a custom rounding function, `r`, which takes in a parameter
+    `x_` (an underscore was added to distinguish it from `x`, which Hyperas uses internally
+    and can cause problems) and either adjusts it if it is invalid or lets it pass.
+    We wrap `r` around all sampled rates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: This objective function can then be used in `hyperas.optim.minimize()` as usual.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Making adaptations is simple too – if you want to have one dropout rate per
+    component, for instance, just sample the dropout rate outside of the loop such
+    that only one parameter is created for the entire component (Listing [5-17](#PC17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Neural Architecture Search
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In our previous discussion of meta-optimization methods, we have used generalized
+    frameworks for the optimization of parameters in all sorts of contexts that are
+    also applicable to neural network architecture and training procedure optimization.
+    While Bayesian optimization suffices for some relatively detailed or non-architectural
+    parameter optimizations, in other cases we desire a meta-optimization method that
+    is designed particularly for the task of optimizing the architecture of a neural
+    network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Architecture Search (NAS) is the process of automating the engineering
+    of neural network architectures. Because NAS methods are designed specifically
+    for the task of searching architectures, they are generally more efficient in
+    finding high-performing architectures than more generalized optimization methods
+    like Bayesian optimization. Moreover, because Neural Architecture Search often
+    requires searching for practical, efficient architectures, many view NAS as a
+    form of model compression – building an architecture that can effectively represent
+    the same knowledge as a larger architecture more effectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NAS Intuition and Theory
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Many of the well-known deep learning architectures – ResNet and Inception, for
+    instance – are built with incredibly complex structures that require a team of
+    deep learning engineers to conceive and experiment with. The process of building
+    such structures, too, has never quite been a precise science, but instead a continual
+    process of following hunches/intuition and experimentation. Deep learning is such
+    a quickly evolving field that theoretical explanations for the success of a method
+    almost always follow empirical evidence rather than vice versa.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Architecture Search is a growing subfield of deep learning, attempting
+    to develop structured and efficient searches for the most optimal neural network
+    architectures. Although earlier work in Neural Architecture Search (early 2010s
+    and before) used primarily Bayesian-based methods, modern NAS work involves the
+    usage of deep learning structures to optimize deep learning architectures. That
+    is, a neural network system is trained to “design” the best neural network architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Modern Neural Architecture Search methods contain three key components: the
+    search space, the search strategy, and the evaluation strategy (Figure [5-10](#Fig10)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig10_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationship between three key components of Neural Architecture Search – the
+    search space, the search strategy, and evaluation strategy
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is a similar structure to how Bayesian optimization frameworks perform
+    optimization. However, NAS systems are differentiated from general optimization
+    frameworks in that they do not approach neural network architecture optimization
+    as a black-box problem. Neural Architecture Search methods take advantage of domain
+    knowledge about neural network architecture representation and optimization by
+    building it into the design of all three components.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representing the search space of neural network architectures is an interesting
+    problem. The search space must not only be capable of representing a wide array
+    of neural network architectures but also must be set up in a way that enables
+    the search strategy to navigate the search space to sample new promising architectures
+    – there must be some concept of distance (i.e., certain architectures are “closer”
+    to others, Figure [5-11](#Fig11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig11_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Left – a sequential topology; right – a more complex nonlinear topology
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moreover, the search space must be capable of representing both linear and nonlinear
+    neural network topologies, which further complicates the organization of such
+    a search space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that Neural Architecture Search systems go to tremendous trouble to represent
+    neural networks in seemingly contrived ways primarily for the purposes of the
+    *search strategy* component , not the search space itself. If the only purpose
+    of the search space component is to represent the model, current graph network
+    implementations more than suffice. However, it’s incredibly difficult to create
+    a search strategy that is able to effectively output and work with a neural network
+    architecture in that exact format. The medium of the search space representation
+    allows the search strategy to output a *representation*, which can be used to
+    build and evaluate the corresponding model. Moreover, limiting the search space
+    to only certain architecture designs likely to be successful forces the search
+    strategy to sample from and explore more high-potential architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Perhaps the most simple representation of neural network topologies is to represent
+    them as a sequential string of structured information with many rules to encode
+    and decode the representation (Figure [5-12](#Fig12)). If a “block” of information
+    indicates the existence of a convolutional layer, for instance, then other blocks
+    must follow containing information regarding parameters in the convolutional layer,
+    like the kernel size and number of filters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig12_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sequential representation of a linear neural network topology
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additional adaptations can be made to represent more complex nonlinear topologies
+    and recurrent neural networks by incorporating indices and “anchor points” into
+    the sequential string of information. Skip connections can be modeled via an attention-style
+    mechanism, in which the modeling agent can add skip connections between any two
+    anchor points. The sequential string representation is powerful in that any neural
+    network architecture – regardless of how complex – can be represented in and rebuilt
+    from this format, even if it takes a very long sequence of information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sort of sequential representation was used to represent the search spaces
+    of earlier NAS work by Barret Zoph and Quoc V. Le in 2017\. The sequential representation
+    of the search space, while being powerful (i.e., it can model many neural network
+    architectures), proved not to be very efficient. Because the search space is so
+    large, however, sequential representations of neural networks proved to be inefficient
+    to navigate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cell-based representations of the architecture search space (Figure [5-13](#Fig13))
+    have decreased representative power (i.e., they cannot represent as many architectures
+    as a sequential representation can), but they have proven to be more efficient
+    to navigate. The Neural Architecture Search algorithm learns the architecture
+    of a cell structure, for instance, by selecting operations to fill in a blank
+    “template cell.” The cell structure is then repeated in the final neural network
+    architecture. Multiple different types of cell types can be used, and cells can
+    be stacked together in nonlinear ways.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig13_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cell-based neural network architecture representation. See NASNet for an example
+    of a cell-based space
+  prefs: []
+  type: TYPE_NORMAL
+- en: While the representative power of cell-based search spaces is significantly
+    smaller than that of sequential representations (a network must be built with
+    repeated segments to be efficiently represented cell-wise), it has yielded better
+    performing architectures with shorter resource investment. Moreover, these learned
+    cells can be rearranged, selectively chosen, and transferred to other data contexts
+    and tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The search strategy operates within the search space to find the most optimal
+    representation of the neural network. As discussed prior, the search strategy
+    employed is dependent on the design of the search space representation. For instance,
+    a sequential representation can be modeled with a recurrent based neural network,
+    which takes in previous elements of the network and predicts the next corresponding
+    piece of information (Figure [5-14](#Fig14)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig14_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example recurrent neural network-based search strategy with a sequential information-based
+    search space. This sort of design was used in early 2017 Neural Architecture Search
+    work by Barret Zoph and Quoc. V. Le
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reinforcement learning is a commonly used search strategy for Neural Architecture
+    Search. In the preceding example, for instance, the recurrent based neural network
+    functions as the *agent* and its parameters function as the *policy*. The agent’s
+    policy is iteratively updated to maximize the expected performance of the generated
+    architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Most search strategy methods face a problem: search space representations are
+    discrete, not continuous, but gradient-based search strategies cannot operate
+    on purely discrete problems. Thus, search strategies seeking to take advantage
+    of gradients involve some operation to differentiate discrete operations.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For example, the Differentiable Architecture Search (DARTS) (Figure [5-15](#Fig15))
+    search strategy uses *continuous relaxation*. Every potential operation (e.g.,
+    convolution, pooling, activation, etc.) that could be performed to link one “block”
+    to another (think of these not as blocks of layers, but instead as network “anchor
+    points”) is represented in a graph. Each operation is associated with a weight.
+    The operation between any two blocks with the highest weight is built into the
+    final model, and a gradient-based method is used to find the weight associations
+    that lead to the selected model with the best performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig15_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of continuous relaxation in DARTS. Blue, green, and yellow connections
+    represent potential operations that could be performed on blocks, like a convolution
+    with a 5x5 filter size and 56 filters
+  prefs: []
+  type: TYPE_NORMAL
+- en: Evolutionary search strategy methods don’t require this discrete-to-continuous
+    mapping mechanism, however. Evolutionary algorithms repeatedly mutate, evaluate,
+    and select models to obtain the best performing designs. While evolutionary search
+    was one of the first proposed Neural Architecture Search designs in the early
+    2000s, genetic-based NAS methods continue to yield promising results in the modern
+    context. Modern evolutionary search strategies generally use more specialized
+    search spaces and mutation strategies to decrease the inefficiency often associated
+    with evolution-based methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The simplest method to evaluate the performance of a search strategy is to train
+    the proposed network architecture to completion and to evaluate the performance.
+    This direct method of neural network evaluation suffices and is the most precise
+    method of evaluation, but it is costly on computational and time resources. Unless
+    the searching strategy requires relatively few models to be searched to arrive
+    at a good solution, it’s usually infeasible to directly evaluate all proposed
+    architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A proxy evaluation method is a method used to indicate the direct evaluation
+    performance. Several techniques exist:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Training on a smaller sampled dataset*: Rather than training the model on
+    the entire dataset, train proposed architectures on a smaller, sampled dataset.
+    The dataset can be selected randomly or to be representative of different “components”
+    of the data (e.g., equal/proportional quantities per label or data cluster).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Train a smaller*-*scaled* version of the architecture: For architecture searching
+    strategies involving predicting a cell-based architecture, the proposed architecture
+    used for evaluation can be scaled down (i.e., fewer number of repeats or less
+    complexity).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Predicting test performance curve*: The proposed architecture is trained for
+    a few epochs, and a time series regression model is trained to extrapolate out
+    the expected future performance. The maximum of the extrapolated future performance
+    is taken to be the predicted performance of the proposed architecture.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: See different approaches toward the three components of Neural Architecture
+    Search visually mapped in Figure [5-16](#Fig16).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig16_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Demonstration of methods discussed for the search space, search strategy, and
+    evaluation strategy components of NAS. Note that the discussed methods, of course,
+    only cover some of modern NAS research
+  prefs: []
+  type: TYPE_NORMAL
+- en: For more information on advances in NAS, see this chapter’s case studies, which
+    detail three key advances in Neural Architecture Search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Architecture Search is currently a quite cutting-edge area of deep learning
+    research. Many of the NAS methods discussed still require massive quantities of
+    time and computational resources and are not suitable for general usage in the
+    same way architectures like convolutional neural networks are. We will use Auto-Keras
+    – a library that efficiently adapts the Sequential Model-Based Optimization framework
+    for architecture optimization – for NAS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Auto-Keras
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: There are many auto-ML libraries like PyCaret, H2O, and Azure; for the purposes
+    of this book, we use Auto-Keras, an auto-ML library built natively upon Keras.
+    Auto-Keras demonstrates the progressive disclosure of complexity principle, meaning
+    that users can both build incredibly simple searches and run more complex operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To install, use `pip install auto-keras`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Auto-Keras System
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The Auto-Keras Neural Architecture Search system is one of very few easily accessible
+    NAS libraries, as of the writing of this book – even state-of-the-art NAS designs
+    are still too computationally expensive and intricate to be feasibly written into
+    an approachable package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Auto-Keras uses Sequential Model-Based Optimization (SMBO) , which was earlier
+    presented as a formal framework for understanding Bayesian optimization.^([1](#Fn1))
+    However, while generalized SMBO is designed to solve black-box problems, like
+    the Tree-structured Parzen Estimator strategy used in Hyperopt, Auto-Keras exploits
+    domain knowledge about the problem domain – neural network architectures – to
+    develop more efficient SMBO components.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While the Tree-structured Parzen Estimator strategy employs the TPE surrogate
+    model, Auto-Keras utilizes another commonly used model, the Gaussian process.
+    Like all surrogate models used in SMBO, the Gaussian process probabilistically
+    represents knowledge about the true function. Unlike TPE, however, the Gaussian
+    process does so by learning the probability distribution of functions that could
+    feasibly represent the sampled data (Figure [5-17](#Fig17)). A function that fits
+    the sampled data well will be associated with a high probability, whereas a function
+    that fits the data poorly is associated with a low probability. The mean of this
+    probability distribution is the most representative function. (Note that there
+    is an infinite quantity of existing functions, so few functions have significant
+    probabilities.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig17_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Simplified representation of the idea behind Gaussian processes – different
+    fitted functions on sampled points and their associated probabilities. In practice,
+    you probably won’t see a polynomial fit next to a sinusoidal fit in the same Gaussian
+    process operation, but it is included for the sake of conceptual visualization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gaussian processes require a probability distribution of functions in Euclidean
+    space, but it is very difficult to map neural network architectures to vectors
+    in the Euclidean space. To address this problem, Auto-Keras uses the *edit distance
+    neural network kernel* (Figure [5-18](#Fig18)), which quantifies the minimum number
+    of edits required to morph some network *f*[*a*] into another network *f*[*b*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig18_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure showing morphing process used in the edit distance neural network kernel.
+    First, the second and third layers in *f*[*a*] are widened to contain the same
+    number of neurons as the corresponding layers in *f*[*b*]. Then, another layer
+    is added to *f*[*a*]. Created by Auto-Keras authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: The edit distance neural network kernel allows for a quantification of similarity
+    between neural network structures, which – roughly speaking – provides the necessary
+    link from the discrete neural network architecture search space to the Euclidean
+    space of the Gaussian process. Using the edit distance kernel and a correspondingly
+    designed acquisition function, the Auto-Keras NAS algorithm is able to control
+    the crucial exploit/explore dynamic – it samples network architectures with a
+    low edit distance with respect to successful networks to exploit and samples network
+    architectures with a high edit distance with respect to poorer performing networks
+    to explore.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Auto-Keras trains each model to completion for some number of user-specified
+    epochs (i.e., it uses a direct evaluation method rather than a proxy method),
+    but its Bayesian character requires a fewer number of networks to be sampled and
+    trained, provided the search space is well defined. In experiments carried out
+    by Auto-Keras’ authors, Auto-Keras achieves a lower classification error than
+    state-of-the-art network morphism and Bayesian-based approaches to Neural Architecture
+    Search in the benchmark MNIST, CIFAR-10, and Fashion datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Auto-Keras API further employs the usage of parallelism between CPU and
+    GPU; the GPU is used to train the generated model architectures, whereas the CPU
+    is used to perform searching and updating (Figure [5-19](#Fig19)). Moreover, Auto-Keras
+    utilizes a memory estimation function to enable efficient GPU usage and to prevent
+    GPU memory crashes (Figure [5-20](#Fig20)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig20_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig20_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Auto-Keras’ system design – relationship between searcher, queue, GPU, and CPU
+    usage. Proposed graphs are generated in CPU, kept in the queue, and trained in
+    GPU
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig19_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig19_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Auto-Keras’ API task-level and search-level operations in hardware. Created
+    by Auto-Keras authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: Both in its design and implementation, Auto-Keras is a key library in making
+    Neural Architecture Search algorithms more efficient and accessible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Simple NAS
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'The simplest form of Neural Architecture Search is to define the inputs and
+    outputs and allow the NAS algorithm to automatically determine all processing
+    layers to “connect” input to output. Let’s consider building a neural network
+    for an image classification task. Auto-Keras follows a very similar syntax to
+    the Keras Functional API. For this particular task, we need to define three key
+    elements, linked together via function notation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*The* *input node* : In this particular case, the input is an image input,
+    so we use `ak.ImageInput()`, which accepts numpy arrays and TensorFlow datasets.
+    For other input data types, use `ak.StructuredDataInput()` for tabular data (accepts
+    pandas DataFrames in addition to numpy arrays and TensorFlow datasets), `ak.TextInput()`
+    for text data (must be a numpy array or TensorFlow dataset of strings; Auto-Keras
+    performs vectorization automatically), or `ak.Input()` as a general input method
+    accepting tensor data from numpy arrays or TensorFlow datasets from all contexts.
+    Using this last method comes at the cost of helpful preprocessing and linkage
+    that Auto-Keras performs automatically when a context-specific data input is specified.
+    These are known in Auto-Keras terminology as *node* objects. There is no need
+    to specify the input shape; Auto-Keras automatically infers it from the passed
+    data and constructs architectures that are valid with respect to the input data
+    shape.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*The* *processing block* : You can think of blocks in Auto-Keras as supercharged
+    clumps of Keras layers – they perform similar functions as groups of layers, but
+    are integrated into the Auto-Keras NAS framework such that key parameters (e.g.,
+    number of layers in the block, which layers are in the block, parameters for each
+    layer) can be left unspecified and are automatically tuned. For instance, the
+    `ak.ConvBlock()` block consists of the standard “vanilla” series of convolutional,
+    max pooling, dropout, and activation layers – the specific number, sequence, and
+    types of layers can be left to the NAS algorithm. Other blocks, like `ak.ResNetBlock()`,
+    generate a ResNet model; the NAS algorithm tunes factors like which version of
+    the ResNet model to use and whether to enable pretrained ImageNet weights or not.
+    Blocks represent the primary components of neural networks; Auto-Keras’ design
+    is centered around manipulating blocks, which allows for more high-level manipulation
+    of neural network structure. If you want to be even more general, you can use
+    context-specific blocks like `ak.ImageBlock()`, which will automatically choose
+    which image-based block to use (e.g., vanilla convolutional block, ResNet block,
+    etc.).'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*The* *head/output block* : Whereas the input node defines what Auto-Keras
+    should expect to be passed into the input of the architecture, the head block
+    defines what type of prediction task the architecture should be participating
+    in by determining two key factors: the activation of the output layer and the
+    loss function. For instance, in a classification task, `ak.ClassificationHead()`
+    is used; this block automatically infers the nature of the classification head
+    (binary or multiclass classification) and correspondingly imposes limits on the
+    architecture (sigmoid and binary cross-entropy for binary classification vs. softmax
+    and categorical cross-entropy for multiclass classification). If it detects “raw”
+    labels (i.e., labels that have not been preprocessed), Auto-Keras will automatically
+    perform binary encoding, one-hot encoding, or any other encoding procedure required
+    to conform the data to the inferred prediction task. It’s usually best to make
+    sure Auto-Keras does not need to make any drastic changes based on its inferences
+    on your intent, however, as a precaution. Similarly, use `ak.RegressionHead()`
+    for regression problems.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: To build an incredibly simple and general image classification model, we can
+    begin by importing Auto-Keras and defining the three key components of the neural
+    network architecture in functional relation to one another (Listing [5-18](#PC18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For text data, use `ak.TextBlock()`, which chooses from vanilla, transformer,
+    or n-gram text-processing blocks. Auto-Keras will automatically choose a vectorizer
+    based on the processing block used. For tabular/structured data, use `ak.StructuredDataBlock()`;
+    Auto-Keras will automatically perform categorical encoding and normalization.
+    This will need to be followed by a processing block like `ak.DenseBlock()`, which
+    stacks FC layers together.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Just as in the Keras Functional API, these layers can be aggregated into a “model”
+    by specifying the input and output layers (Listing [5-19](#PC19)). The `max_trials`
+    parameter indicates the maximum number of different Keras models to try, although
+    the search may conclude before reaching that quantity. The “model” can then be
+    fitted on the data; the `epochs` parameter represents the number of epochs to
+    train each candidate Keras model on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: During the search, Auto-Keras will not only automatically determine which type
+    of image-based block to choose but also various normalization and augmentation
+    methods to optimize model performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may also see some error messages printed when working with Auto-Keras for
+    debugging purposes – as long as the code keeps on running, it’s generally safe
+    to ignore the warnings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It’s important to realize that this “model” is not really a model, but a searching
+    object that acts as a template upon which various model candidates are created
+    and evaluated. In order to extract the best model after training, call `best_model
+    = search.export_model()`. You can then use `best_model.summary()` or `plot_model(best_model)`
+    to list or visualize the architecture of the best model from the search (Figure
+    [5-21](#Fig21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig21_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig21_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example sampled architecture of Auto-Keras model search
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unfortunately, such an approach – simply defining the inputs and outputs and
+    letting Neural Architecture Search figure out the rest – is unlikely to yield
+    good results in a feasible amount of time. Recall that every parameter you leave
+    untuned is another parameter the NAS algorithm must consider in its optimization,
+    which expands the number of trials it needs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NAS with Custom Search Space
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: We can design a more practical architecture in terms of time to reach a good
+    solution and computational burden by providing certain limitations on the search
+    space using strategies that we know work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall that using Auto-Keras means playing with higher-level blocks or components.
+    We know the following image recognition pipeline to be successful (see Chapter
+    [2](516104_1_En_2_Chapter.xhtml) on transfer learning and pretrained models, Figure
+    [5-22](#Fig22)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig22_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig22_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: General component-level design of image recognition models
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can build these blocks using Auto-Keras blocks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`ak.ImageInput()`, as discussed prior, is the input node.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`ak.ImageAugmentation()` is an augmentation block that performs various image
+    augmentation procedures, like random flipping, zooming, and rotating. Augmentation
+    parameters, like whether to randomly perform horizontal flips or the range with
+    which to select a factor to zoom or rotate, are automatically tuned by Auto-Keras
+    if left unspecified.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`ak.ResNetBlock()`, as discussed prior, is a ResNet architecture with only
+    two parameters – which version of ResNet to use (v1 or v2) and whether to initialize
+    with ImageNet pretrained weights or not. This serves as the pretrained model component
+    of our image model design.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`ak.DenseBlock()` is a block consisting of fully connected layers. If left
+    unspecified, Auto-Keras tunes four parameters: the number of layers, whether or
+    not to use batch normalization in between layers, the number of units in each
+    layer, and the dropout rate to use (a rate of 0 indicates not to use dropout).'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`ak.ClassificationHead()`, as discussed prior, is the head block specifying
+    the loss function to use and the activation of the last output layer.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Let’s define these functionally in relation to one another and specify parameters
+    which we have a good idea of what we want (Listing [5-20](#PC20)). For instance,
+    in augmentation, we may know that we don’t want to flip vertically or horizontally
+    (e.g., in the MNIST dataset, flipping some digits will necessitate changing their
+    label). We also know that we want a translation factor of 10% the image width
+    – not too large nor small. However, we’re not quite sure which zoom or contrast
+    factor is best; these parameters can be left as `None` and will be automatically
+    tuned by Auto-Keras. Similarly, we would like the ResNet block to use pretrained
+    weights – enough to further process the output of the ResNet block, but not enough
+    to cause network length and overfitting problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since Auto-Keras leaves all parameters at `None` by default, we can more compactly
+    represent the same specified parameters by removing all parameters we set explicitly
+    to `None` (Listing [5-21](#PC21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: The layers can then be aggregated into an `ak.AutoModel` (visualized in Figure
+    [5-23](#Fig23)) and fitted accordingly. By specifying a custom search space, you
+    dramatically increase the chance that you will arrive at a satisfactory solution
+    in less chance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For text data, use `ak.TextBlock()`, use `ak.Embedding()` for embedding (can
+    use GloVe, fastText, or word2vec pretrained embeddings as pretraining), and use
+    `ak.RNNBlock()` for recurrent layers. For tabular/structured data, use `ak.CategoricalToNumerical()`
+    for numerical encoding of categorical features in addition to standard processing
+    blocks, like `ak.DenseBlock()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig23_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig23_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-23
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example sampled architecture of Auto-Keras model search
+  prefs: []
+  type: TYPE_NORMAL
+- en: NAS with Nonlinear Topology
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Because Auto-Keras is built using Functional API-like syntax, we can also define
+    broadly nonlinear topologies using components. For instance, rather than passing
+    the input through only one pretrained model block, we could pass it through two
+    pretrained models to obtain their “insights”/“perspectives” on the inputs and
+    then merge and process the two together (Figure [5-24](#Fig24)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig24_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig24_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: Component-wise plan for implementing a nonlinear topology in Auto-Keras
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can express this idea using Function API-like syntax, aggregating and fitting
+    afterward (Listing [5-22](#PC22), Figure [5-25](#Fig25)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig25_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig25_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example sampled architecture of Auto-Keras model search
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Case Studies
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These three case studies discuss three different approaches to developing more
+    successful and efficient Neural Architecture Search systems, building upon topics
+    discussed both in the NAS and the Bayesian optimization sections of this chapter.
+    As pillars of the rapidly developing Neural Architecture Search research frontier,
+    these case studies will themselves serve as the foundations upon future work in
+    the automation of more powerful neural network architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NASNet
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The NASNet search space , proposed by Barret Zoph, Vijay Vasudevan, Jonathon
+    Shlens, and Quoc V. Le,^([2](#Fn2)) is cell-based. The NAS algorithm learns two
+    types of cells: normal and reduction cells. Normal cells make no change to the
+    shape of the feature map (i.e., input and output feature maps have identical shapes),
+    whereas reduction cells halve the width and height of the input feature map.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cells are built as complex topological combinations of blocks, which are small,
+    architecturally predefined “templates” that contain several “blank operation slots”
+    that are learned by the NAS algorithm and are arranged together into a network
+    cell. A cell is defined as a certain fixed number of these blocks *B*. (*B=*5
+    in the authors’ experiments.) These cells can then be sequentially stacked to
+    form a neural network (Figure [5-26](#Fig26)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig26_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig26_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-26
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generation of architectures via a recurrent model, which outputs hidden
+    states, operations, and a merging method to select in the design of a cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: A recurrent neural network is used to iteratively generate these blocks by choosing
+    two hidden states to combine in the operation, two operations to apply to the
+    two hidden states individually, and one merging method. Operations include the
+    identity operation, standard square kernel convolutions, rectangular kernel convolutions,
+    dilated convolutions (the kernel is widened or “inflated” with empty spaces in
+    between kernel weights), separable convolutions (convolutions that apply not only
+    to spatial but also depth dimensions), pooling, and more. Two branches can be
+    merged either through adding or concatenation. The network is trained via reinforcement
+    learning methods to maximize the test performance of the resulting neural network
+    architecture proposal (Figure [5-27](#Fig27)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig27_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig27_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-27
+  prefs: []
+  type: TYPE_NORMAL
+- en: Relationship between the recurrent based controller and the proposed architecture
+    (the child network). The controller is updated to maximize the validation performance
+    of the child network. Created by NASNet authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moreover, because the recurrent neural network is able to select which two outputs
+    of previously constructed cell outputs to perform the cell operation on, it is
+    able to construct incredibly elaborate architectures in an elegant, recursive
+    manner (Figures [5-28](#Fig28) and [5-29](#Fig29)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig29_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig29_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-29
+  prefs: []
+  type: TYPE_NORMAL
+- en: High-performing NASNet normal and reduction cell architectures on ImageNet.
+    Created by NASNet authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig28_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig28_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-28
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example selection of hidden states and operations via recurrent style generation.
+    Created by NASNet authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: The derived normal and reduction cells can be stacked together in different
+    lengths to suit different datasets (Figure [5-30](#Fig30)). A network built for
+    the CIFAR-10 dataset, for instance, with its incredibly small 32x32 resolution,
+    uses fewer reduction cells than a network built for the ImageNet architecture.
+    This sort of ease in transferring the results of an intensive Neural Architecture
+    Search to all sorts of different contexts greatly increases its practicality.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig30_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig30_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-30
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stacking normal and reduction cells to suit a certain dataset image size. Created
+    by NASNet authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: The NASNet architecture family is constructed from the best performing normal
+    and reduction cells. It manages to obtain better top 1 and top 5 accuracy in ImageNet
+    classification against previous architectural giants like Inception and more recently
+    proposed architectures with a fewer number of parameters (Table [5-1](#Tab1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of various sizes of NASNet (sizes determined by stacking different
+    combinations and lengths of normal and reduction cells) against similarly sized
+    models
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Model | # Parameters | Performance |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Top 1 Acc. | Top 5 Acc. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Small-sized models– InceptionV2– *Small NASNet* | 11.2 M*10.9 M* | 74.8%*78.6%*
+    | 92.2%*94.2%* |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Medium-sized models– InceptionV3– Xception– Inception ResNetV2– *Medium NASNet*
+    | 23.8 M22.8 M55.8 M*22.6 M* | 78.8%79.0%80.1%*80.8%* | 94.%94.5%95.1%*95.3%*
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Large-sized models– ResNeXt– PolyNet– DPN– *Large NASNet* | 83.6 M92 M79.5
+    M*88.9 M* | 80.9%81.3%81.5%*82.7%* | 95.6%95.8%95.8%*96.2%* |'
+  prefs: []
+  type: TYPE_TB
+- en: The NASNet architecture (not the search process) with ImageNet weights is available
+    in Keras. It comes in two versions, NASNet Large and NASNet Mobile, which are
+    scaled versions of the best performing learned cell architectures from the NASNet
+    search space. The architectures are available in `keras.applications` at
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`keras.applications.nasnet.NASNetMobile`: 23 MB storage size with 5.3 m parameters.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`keras.applications.nasnet.NASNetLarge`: 343 MB storage size with 88.9 m parameters.
+    (NASNet Large, as of the writing of this book, holds the highest ImageNet top
+    1 and top 5 accuracy of all `keras.applications` models with such reported metrics.)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: See Chapter [2](516104_1_En_2_Chapter.xhtml) on usage of pretrained models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Even given NASNet’s advances in developing high-performing cell architectures,
+    such results required hundreds of GPUs and 3–4 days of training in Google’s powerful
+    laboratories. Other advances worked to build more computationally accessible search
+    operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Progressive Neural Architecture Search
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Chenxi Liu, along with other coauthors at Johns Hopkins University, Google
+    AI, and Stanford University, proposes the *Progressive Neural Architecture Search*
+    (PNAS).^([3](#Fn3)) True to its naming, PNAS adopts a progressive approach to
+    the building of neural network architectures from simple to complex. Moreover,
+    PNAS interestingly combines many of the earlier discussed Neural Architecture
+    Search methods into one cohesive, efficient approach: a cell-based search space,
+    a Sequential Model-Based Optimization search strategy, and proxy evaluation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The search space used by Progressive Neural Architecture Search is very similar
+    to that of the NASNet design, with one key difference: rather than learning two
+    different cells (a normal and reduction cell), PNAS only learns one type of “normal
+    cell” (Figure [5-31](#Fig31)). A “reduction cell” is formed by using a normal
+    cell with a stride of 2\. This slightly reduces the size of the search space relative
+    to that of NASNet.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig31_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig31_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-31
+  prefs: []
+  type: TYPE_NORMAL
+- en: Progressive Neural Architecture Search cell design. Left – high-performing PNAS
+    cell design. Right – examples of how PNAS cell architectures can be stacked with
+    different stride lengths to adapt to datasets of different sizes. Created by PNAS
+    authors
+  prefs: []
+  type: TYPE_NORMAL
+- en: PNAS makes use of a Sequential Model-Based Optimization search strategy, in
+    which the most “promising” model proposals are selected for evaluation, in conjunction
+    with a proxy evaluator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The proxy evaluator, an LSTM, is trained to read an information sequence representing
+    the architecture of a proposed model and to predict the performance of the proposed
+    model. A recurrent based model was chosen for its ability to handle variable length
+    inputs. Note that the proxy evaluator is trained on a very small dataset (the
+    label – the performance of a proposed model – is expensive to obtain), so an ensemble
+    of LSTMs trained on a subset of the data is used to support generalization and
+    decrease variation. An RNN-based method’s predicted performance of candidate model
+    architectures can reach as high as 0.996 Spearman rank correlation with the true
+    performance rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Progressive Neural Architecture Search (Figure [5-32](#Fig32)) begins with the
+    simplest cell architectures first, which consist of only one block. Then, each
+    cell is expanded by adding another block to the cell architecture. As the number
+    of blocks in the cell architecture increases, the number of candidates and the
+    resources required to train grows exponentially, so these candidate models cannot
+    all be trained. This is where the proxy evaluator comes in – the proxy evaluator
+    evaluates hundreds of thousands of proposed architectures in negligible time,
+    and the top *K* most promising architectures (highest performing according to
+    the proxy evaluator) are sampled for direct evaluation. The results of these architectures
+    are in turn used as additional training data to update the proxy evaluator. This
+    is repeated until a satisfactory number of blocks per cell is reached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig32_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig32_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-32
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of the PNAS search and evaluation process. From *S*[1] to *S*′[2]
+    trained cell architectures are expanded by one block. These generated cell architectures
+    are evaluated via a proxy evaluator (labeled “predictor” in the visualization)
+    and the top few are selected for training in *S*[2]. Created by PNAS authors.
+    The performance of the generated architectures is used to update the proxy evaluator.
+    The process repeats
+  prefs: []
+  type: TYPE_NORMAL
+- en: The proxy evaluator functions as the surrogate function in Sequential Model-Based
+    Optimization, used to perform sampling and updated using sampled results to be
+    more accurate. Its progressive design allows for computational efficiency – if
+    a smaller number of blocks per cell returns good performance, we have saved ourselves
+    from needing to run through architectures with higher blocks per cell; even if
+    a smaller number of blocks per cell does not yield good results, it functions
+    as live training for the proxy evaluator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This design allows Progressive Neural Architecture Search to yield significant
+    speedups over previous NAS methods, reducing the number of models that need to
+    be trained by the thousands while reaching the same accuracy. Moreover, its cell-based
+    design, like NASNet, allows for transferability of the cell design across different
+    datasets (Table [5-2](#Tab2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of PNAS against earlier work by Barret and Zoph in 2017, in which
+    reinforcement learning is used to optimize a RNN to generate sequential representations
+    of CNN architectures. Note that this is different from the closely related work
+    by Zoph, Vasudevan, Shlens, and Le in 2018 on NASNet, which uses a cell-based
+    representation. “# models trained on <method>” indicates the number of models
+    the method trains to reach the listed corresponding performance. PNAS can reach
+    almost a fivefold decrease in the number of models trained
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Cells per Block | Top | Accuracy | # Models Trained by PNAS | # Models Trained
+    by NAS |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 5 | 1 | 0.9183 | 1160 | 5808 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 5 | 5 | 0.9161 | 1160 | 4100 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 5 | 25 | 0.9136 | 1160 | 3654 |'
+  prefs: []
+  type: TYPE_TB
+- en: Efficient Neural Architecture Search
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: While proxy evaluation in Progressive Neural Architecture Search allows for
+    quick prediction on the potential of a proposed model architecture and thus decreases
+    the number of models that needs to be trained for good performance, the computational
+    and time bottleneck in the process still remains in the training stage. Hieu Pham
+    and Melody Y. Guan, along with Barret Zoph, Quoc V. Le, and Jeff Dean, put forth
+    the *Efficient Neural Architecture Search* (ENAS) ^([4](#Fn4)) method, which attempts
+    to decrease the time needed to obtain accurate measurements on the performance
+    of a candidate model by forcing *weight sharing* across all candidate architectures
+    during training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'ENAS uses a similar reinforcement learning and recurrent based architecture
+    generation model as the NASNet creators use, with one key difference: rather than
+    predefining the “template” or “slots” of the cell and training the architecture
+    generation model to identify which operations to “fill in” the “slots” with, in
+    ENAS the controller model not only identifies which operations to choose but also
+    how operations are connected.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Candidate network architectures can be represented as directed acyclic graphs
+    (DAGs) or a graph with directions but no cycles (i.e., you cannot end up in a
+    loop by following directed connections between nodes). A DAG with *N* nodes is
+    initialized (Figure [5-33](#Fig33), *N*=4) in which each node is connected to
+    every other node. This “fully connected” DAG represents the search space for that
+    block, and architectures can be sampled by selecting *sub-graphs* within the full
+    DAG. Nodes that are included in the sampled sub-graphs are attached to an operation,
+    and all the “dead ends” of the graph are averaged and considered outputs of the
+    cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig33_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig33_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-33
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Left: “Fully connected” DAG with selected sub-graph shown in red. Right: example
+    selected architecture based on sampled sub-graph'
+  prefs: []
+  type: TYPE_NORMAL
+- en: These architectures are generated by an LSTM trained using reinforcement learning
+    methods to maximize the validation performance of generated architectures (Figure
+    [5-34](#Fig34)). The LSTM selects sub-graphs by outputting the index of the node
+    that the node being generated currently will be attached to. This sort of generation
+    procedure can be applied both to generate cells that will be stacked into full
+    architectures and to produce an entire architecture single handedly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_5_Chapter/516104_1_En_5_Fig34_HTML.jpg](../images/516104_1_En_5_Chapter/516104_1_En_5_Fig34_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-34
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recurrent model selection of sub-graphs from the “fully connected” DAG for the
+    example model shown in Figure [5-30](#Fig30)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The conceptual understanding of all sampled architectures as sub-graphs of the
+    “super-graph,” “fully connected” DAG is crucial as the underlying basis of ENAS’
+    usage of weight sharing. The “fully connected” DAG represents a series of knowledge-based
+    relationships between nodes; for maximum efficiency, the knowledge stored in the
+    “fully connected” DAG’s connections should be transferred to selected sub-graphs.
+    Thus, all proposed sub-graphs that contain the same connection will share the
+    same value for that connection. Gradient updates performed on one proposed architecture’s
+    connections are also performed identically on other proposed architectures with
+    the same corresponding connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: By sharing weights, proposed models can “learn from one another” by updating
+    weights they have in common via the insights derived by another model architecture.
+    Moreover, it serves as a rough approximation as to how models with similar architectures
+    would have developed regardless under the same conditions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This aggressive weight sharing “approximation” allows for massive quantities
+    of proposed model architectures to be trained with much smaller computation and
+    time consumption. Once the child models are trained, they are evaluated on a small
+    batch of validation data and the most promising child model is trained from scratch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With additional regularization, Efficient Neural Architecture Search allows
+    for a tremendous speedup from several days to a fraction of a day with very few
+    GPUs (Table [5-3](#Tab3)). ENAS is a huge step toward making Neural Architecture
+    Search a reality outside of high-computation laboratories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of ENAS against the results of other Neural Architecture Search
+    methods. CutOut is an image augmentation method for regularization in which square
+    regions of the input are randomly masked during training. CutOut is applied to
+    NASNet and ENAS to increase performance of final architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Method | GPUs | Time (Days) | Params | Error |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Hierarchical NAS | 200 | 1.5 | 61.3 m | 3.63% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Micro NAS with Q-Learning | 32 | 3 | – | 3.60% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Progressive NAS | 100 | 1.5 | 3.2 m | 3.63% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| NASNet-A | 450 | 3–4 | 3.3 m | 3.41% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| NASNet-A + CutOut | 450 | 3–4 | 3.3 m | 2.65% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| ENAS | 1 | 0.45 | 4.6 m | 3.54% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| ENAS + CutOut | 1 | 0.45 | 4.6 m | 2.89% |'
+  prefs: []
+  type: TYPE_TB
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this chapter, we discussed the intuition, theory, and implementation for
+    general hyperparameter optimization and Neural Architecture Search and their implementations
+    in Hyperopt, Hyperas, and Auto-Keras:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In meta-optimization, a controller model optimizes the structural parameters
+    of a controlled model to maximize the controlled model’s performance. It allows
+    for a more structured search for the best “type” of model to train. Meta-optimization
+    methods repeatedly select structural parameters for a proposed controlled model
+    and evaluate their performance. Meta-optimization algorithms used in practice
+    incorporate information about the performance of previously selected structural
+    parameters to inform how the next set of parameters is selected, unlike naïve
+    methods like grid or random search.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A key balance in meta-optimization is that of the size of the search space.
+    Defining search space to be larger than it needs to significantly expands the
+    computational resources and time required to obtain a good solution, whereas defining
+    too narrow a search space is likely to yield results no different from user-specified
+    parameters (i.e., meta-optimization is not necessary). Be as conservative in determining
+    parameters to be optimized by meta-optimization (i.e., do not be overly redundant
+    in your search space), but ensure that parameters allocated for meta-optimization
+    are “wide” enough to yield significant results.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Bayesian optimization is a meta-optimization method to address black-box problems
+    in which the only information provided about the objective function is the corresponding
+    output of an input (a “query”) and in which queries to the function are expensive
+    to obtain. Bayesian optimization makes use of a surrogate function, which is a
+    probabilistic representation of the objective function. The surrogate function
+    determines how new inputs to the objective function are sampled. The results of
+    these samples in turn affect how the surrogate function is updated. Over time,
+    the surrogate function develops accurate representations of the objective function,
+    from which the optimal set of parameters can be easily derived.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Sequential Model-Based Optimization (SMBO) is a formalization of Bayesian optimization
+    and acts as a central component or template against which various model optimization
+    strategies can be formulated and compared.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The Tree-structured Parzen Estimator (TPE) strategy is used by Hyperopt and
+    represents the surrogate function via Bayes’ rule and a two-distribution threshold-based
+    design. TPE samples from locations with lower objective function outputs.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Hyperopt usage consists of three key components: the objective function, the
+    search space, and the search operation. In the context of meta-optimization, the
+    model is built inside the objective function with the sampled parameters. The
+    search space is defined via a dictionary containing `hyperopt.hp` distributions
+    (normal, log-normal, quantized normal, choice, etc.). Hyperopt can be used to
+    optimize the training procedure, as well as to make fine-tuned optimizations to
+    the model architecture. Hyperas is a Hyperopt wrapper that makes using Hyperopt
+    to optimize various components of neural network design more convenient by removing
+    the need to define a separate search space and independent labels for each parameter.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Neural Architecture Search (NAS) is the process of automating the engineering
+    of neural network architectures. NAS consists of three key components: the search
+    space, the search strategy, and the evaluation strategy. The search space of a
+    neural network can be represented most simply as a sequential sequence of operations,
+    but it’s not as efficient as a cell-based design. Search strategies include reinforcement
+    learning methods (a controller model is trained to find the optimal policy – the
+    parameters of the controlled model) and evolutionary designs. Methods like DARTS
+    map the discrete search space of the neural network into a continuous, differentiable
+    one. Evaluation of sampled parameters can take the form of direct evaluation or
+    via proxy evaluation, in which the performance of the parameters is estimated
+    with fewer resources at the cost of precision.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The Auto-Keras system uses Sequential Model-Based Optimization, with a Gaussian
+    process-based surrogate model design and the edit distance neural network kernel
+    to quantify similarity between network structures. Moreover, Auto-Keras is built
+    with GPU-CPU parallelism for optimal efficiency. In terms of user usage, Auto-Keras
+    employs the progressive disclosure of complexity principle, allowing users to
+    build both incredibly simple and more complex architectures with few lines of
+    code. Moreover, because it follows Functional API-like syntax, users can build
+    searchable architectures with nonlinear topologies.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the next chapter, we will discuss patterns and concepts in the design of
+    successful neural network architectures.
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,2036 @@
+- en: '2. The Foundation: Markov Decision Processes'
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: As discussed in Chapter [1](502835_2_En_1_Chapter.xhtml), reinforcement learning
+    involves sequential decision-making. This chapter formalizes the notion of using
+    stochastic processes under the branch of probability that models sequential decision-making
+    behavior. Although most of the problems you’ll study in reinforcement learning
+    are modeled as *Markov decision processes* (MDP), this chapter starts by introducing
+    Markov chains (MC) followed by Markov reward processes (MRP). Next, the chapter
+    discusses MDP in-depth while covering model setup and the assumptions behind MDP.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter then discusses related concepts, such as value functions of state
+    and action value functions of state-action pairs. It follows with an in-depth
+    discussion of the various forms of Bellman equations, like Bellman expectation
+    equations and Bellman optimality equations. It also includes a quick introduction
+    to various types of learning algorithms. With the framework of MDP in place, the
+    chapter switches gears to train a couple of agents, along the way covering a high-level
+    overview of the software libraries you will using in this book. While the chapter’s
+    focus is the theoretical foundations of reinforcement learning, it includes examples
+    and exercises to help cement these concepts. There is no better way to learn than
+    to code yourself, which is a recurring theme of this book.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter finishes with a brief discussion of the different approaches to
+    RL training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Definition of Reinforcement Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The previous chapter explained the cycle of an agent interacting with the environment
+    by taking an action based on its current state, getting a numerical reward, and
+    finding itself in a new state. Figure [2-1](#Fig1) illustrates this concept.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A block diagram of the agent and environment interaction cycle has two blocks
+    labeled agent and environment. Environment leads to the agent via S t, R t + 1,
+    and S t + 1\. Agent leads to the environment via A t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cycle of agent-environment interaction
+  prefs: []
+  type: TYPE_NORMAL
+- en: The agent at time *t* is in a state *S*[*t*]. From the set of actions, the agent
+    can take in this state it takes a specific action, *A*[*t*]. At this point, the
+    system transitions to the next time tick (*t* + 1). The environment responds to
+    the agent with a numerical reward, *R*[*t* + 1] as well as puts the agent in a
+    new state, *S*[*t* + 1]. The cycle of “state to action to reward and next state”
+    goes on until the time agent reaches some end-goal state, like the end of a game,
+    the completion of a task, or the end of a specified number of time steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Figa_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A horizontal flow diagram. The current state S t leads to action taken A t when
+    the agent acts. A t leads to the reward and new state, R t + 1, S t + 1, when
+    the environment reacts. A sequence of S 0, A 0, R 1, S 1, A 1, R 2, S 2, A 2,
+    R 3, S 3, A 3, R 4, S 4, and ellipsis is at the bottom.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is a cycle of state, action, reward, and next state (*S*[*t*], *A*[*t*],
+    *R*[*t* + 1], *S*[*t* + 1]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The agent takes an action based on the state it finds itself in, that is, the
+    agent “acts” by taking an action. The environment “reacts” to the agent’s action
+    by rewarding the agent with some numeric reward and transitioning the agent to
+    a new state. The agent’s objective is to take a sequence of actions that maximizes
+    the sum total of rewards it gets from the environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The purpose of reinforcement learning is to have the agent learn the best possible
+    action for each of the states it could find itself in, keeping in mind the cumulative
+    reward maximization objective.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As an example, consider the game of chess. The position of a piece on the board
+    could form the current state (*S*[*t*]). The agent (player) takes action (*A*[*t*])
+    by moving a chess piece. The agent gets a reward (*R*[*t* + 1])—let’s say 0 for
+    a safe move and -1 for a move leading to checkmate. The game also moves to a new
+    state, (*S*[*t* + 1]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the literature, states are sometimes referred to as *observations* to distinguish
+    between the fact that in some situations the agent may get to see only partial
+    details of the actual state. This partially observable state is known as *observation*.
+    The agent uses the full or partial state information, as may be available, to
+    make decisions with respect to the action it should take. It is an important aspect
+    in real-life implementations to understand what will be observed by the agent
+    and how detailed it will be. The choice and theoretical guarantee of the learning
+    algorithm can be significantly influenced by the level of partial observability.
+    This chapter initially focuses on situations where state and observations are
+    the same; in other words, the agent knows every possible detail of the current
+    state. But starting in Chapter [5](502835_2_En_5_Chapter.xhtml), you will start
+    looking at situations where the state is either not fully known or, even if fully
+    known, needs to be summarized using some kind of approximation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now go through a couple of examples to understand in depth the cycle of
+    state/observation to action to reward to the next state. The book uses a Python
+    library by *Gymnasium,* which is a maintained fork of the *Gym* library by OpenAI.
+    Gym by OpenAI has stopped new development and all the additions now happen in
+    the Gymnasium library. Gymnasium implements some common simple environments. Let’s
+    look at the first environment, called `MountainCar-v0,` from the Gymnasium library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first step is to start your Jupyter Notebook and navigate to `2.a-RL-environment.ipynb`
+    or you can open the notebook in Google Colab. Refer to Chapter [1](502835_2_En_1_Chapter.xhtml)
+    for how to set up a local environment or the steps to follow to run the notebook
+    directly on Google Colab.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once you have opened the notebook, read further to explore the environment and
+    related code. In the `MountainCar` environment, there is a hill that the car is
+    trying to climb with the end goal of reaching the flag on the top-right side of
+    the hill. The car is not powerful enough, so the car needs to swing to the left
+    and then accelerate to the right to reach the goal. This back-and-forth swing
+    needs to happen multiple times so that the car can gain enough momentum and reach
+    the flag at the right-top side of the valley. See Figure [2-2](#Fig2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of the mountain car v 0 environment has a U-shaped curve with its
+    vertex at (220, 340). The car and flag points are indicated at (210, 340) and
+    (560, 70), respectively. The values are approximated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: MountainCar-v0 environment. This environment has a two-dimensional state and
+    a set of three discrete actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [2-1](#PC1) shows the code needed to test the `MountainCar` environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s walk through the code line by line. You first import the Gymnasium library
+    by using `import gymnasium as gym`. Gymnasium has multiple environments implemented
+    for reinforcement learning. You will be using some of these environments as you
+    go through the chapters of this book.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Moving on, you instantiate the `MountainCar` environment with `env = gym.make(''MountainCar-v0'',...).`
+    This is followed by initializing the environment through `obs = env.reset()`,
+    which returns the initial observation. In the case of `MountainCar`, the observation
+    is a tuple of two values: `(x-position, x-velocity)`. The agent uses observation
+    to find the best action: `action = policy(obs)`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In Listing [2-1](#PC1), the agent is taking random actions. However, as you
+    progress through the book, you will learn different algorithms that can be used
+    to find reward-maximizing policies. For the `MountainCar` environment, there are
+    three possible actions: accelerate left, do nothing, and accelerate right. The
+    agent passes the action to the environment. At this point, the system conceptually
+    takes a time step, moving from time *t* to time *t* + 1.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The environment executes the action and returns a tuple of five values: *new
+    observation* at time (*t* + 1), *reward* (*r*[*t* + 1]), *terminated* flag, *truncated*
+    flag, and some debug info. Note that the Gym environment from OpenAI had a *done*
+    flag, which has now been split into two flags in the Gymnasium library*—truncated*
+    and *terminated*. The reason for this split is to provide better control. For
+    now, just think of the old done flag as a combination of truncated and terminated
+    flags with the expression (`done = terminated or truncated`).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, the agent uses the new observation to get back a new tuple of five values—*next
+    state, reward, terminated, truncated, and debug* info. This cycle of “state to
+    action to reward to new state” goes on until the game ends (i.e., terminated)
+    or until it times out (i.e., truncated). In this setup, the agent gets a reward
+    of -1 at each time step, with a reward of 0 when the game ends. Accordingly, the
+    agent’s objective is to reach the flag in the shortest possible number of steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s look at yet another environment. Replace the `line env = gym.make('MountainCar-v0',
+    ...)` with `env = gym.make('CartPole-v1', render_mode="rgb_array")` and again
+    run the code in Listing [2-1](#PC1). See Figure [2-3](#Fig3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of the cartpole v 1 environment has a horizontal line between (0,
+    300) and (600, 300). The location of the cartpole is indicated symbolically at
+    (300, 300). The values are approximated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The CartPole-v1 environment. The objective is to keep the pole upright as long
+    as possible
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `CartPole` environment has an observation space consisting of four values.
+    The cart’s position on the x-axis and velocity along the x-axis are the first
+    two values. The tilt angle of the pole is the third value in the observation tuple
+    and it has to be between −24° to 24°. The fourth value in the observation tuple
+    is the angular velocity of the pole.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Possible actions are 0 and 1, which push the cart to the left or right, respectively.
+    The agent keeps getting the reward of 1 at each time step, thereby incentivizing
+    the agent to balance the pole for the longest possible duration and earn as many
+    points as possible. The game ends if the pole tilts more than 12^o on either side
+    or if the cart moves more than 2.4 on either side, that is, the cart reaches either
+    ends or if 200 steps have been taken.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may have noticed that the code setup is the same in both cases. I just changed
+    one code line to instantiate different environments. The rest of the code to step
+    through the environment and receive feedback remains the same. The abstraction
+    provided by the Gymnasium library makes it easier to test a particular algorithm
+    across many environments. Further, you can also create your own custom environment
+    based on the problem at hand.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This section covered a brief definition of reinforcement learning and the basics
+    of the Gymnasium environment that you will be using. In the upcoming sections,
+    you will learn about the different components of a problem set up as reinforcement
+    learning (RL) in detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Agent and Environment
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The setup of the agent and environment is a flexible one. The agent is a closed
+    system and it gets the state/observation details from outside the system. It uses
+    policy that could be handcrafted or learned, to take an action with a goal to
+    maximize the rewards the agent is seeking. The agent gets a reward from the environment
+    based on the current observation/state and the action the agent takes. The agent
+    has no direct control over what those rewards will be—rather, the agent can influence
+    it by taking good actions given the state it finds itself in. The agent also does
+    not control the transition from state to state. The transition depends on the
+    environment, and the agent can only influence the outcome indirectly by deciding
+    which action to take in each state it finds itself in.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'On the other hand, the environment is everything that is outside the agent.
+    In other words, it could be the rest of whole world. However, the environment
+    is usually defined in a more narrow way: to comprise information that could influence
+    the reward. The environment receives the action the agent wants to take. It provides
+    feedback to the agent in the form of reward and transitions to a new state based
+    on the action the agent took. Next, the environment provides part/all of the revised
+    state information to the agent, which becomes the agent’s new observation/state.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The boundary between the agent and the environment is an abstract one. It is
+    defined based on the task at hand and the goal you are trying to achieve in a
+    particular case. Let’s look at some examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider the case of an autonomous car. The agent state could be the visuals
+    from multiple cameras, light detection and ranging (LiDAR), and the other sensor
+    readings as well as geocoordinates. While the “environment” is everything outside
+    the agent, that is, the whole world, the agent’s relevant state/observation is
+    only those parts of the world that are relevant for the agent to take an action.
+    The position and actions of a pedestrian two blocks away may not be relevant for
+    an autonomous car to make decisions and hence do not need to be part of the observation/state
+    of the agent. The action space of an autonomous car could be defined in terms
+    of gas-pedal values, breaks, and steering controls. The actions taken by the vehicle
+    result in transitioning the car into a new observation state. This cycle goes
+    on. The agent (i.e., the autonomous car) is expected to take actions that maximize
+    the reward based on a specific goal, for example, going from Point A to Point
+    B.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s consider another example of a robot trying to solve a Rubik’s Cube. The
+    observation/state in this case would the configuration of the Rubik Cube’s six
+    faces, and the actions would be the manipulations that can be performed on the
+    Rubik’s Cube. The reward could be -1 for each time step and 0 at the end of a
+    successful solution, that is, on termination. Such a reward setup will incentivize
+    the agent to find the least number of manipulations to solve the puzzle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this setup where you will be using the Gymnasium environment, observations
+    will always be a tuple of various values with the exact composition dependent
+    on the specific Gymnasium environment. Actions will be dependent on the specific
+    environment. Rewards will be provided by the environment with the exact real number
+    dependent on the specific Gymnasium environment. The agent in this case will be
+    the software program that you write. The agent’s (software program) main job will
+    be to receive observation from the Gymnasium environment, take an action, and
+    wait for the environment to provide feedback in terms of the reward and the next
+    state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although this describes discrete steps—that is, the agent in state (*S*[*t*])
+    taking an action (*A*[*t*]) and, in the next time step, receiving a reward (*R*[*t* + 1])
+    and the next state (*S*[*t* + 1])—many times the nature of the real-life problem
+    would be a continuous one. In such cases, you could conceptually divide the time
+    into small discrete time steps, thereby modeling the problem back into the discrete
+    time-step environment and solving it using the familiar setup shown earlier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At the most general level, when the agent finds itself in state *S*, it can
+    take one of the many possible actions with some probability distribution over
+    the space of actions. Such policies are known as *stochastic policies*. Further,
+    in some cases the agent may take only one specific action for a given state every
+    time the agent finds itself in that state. Such policies are known as *deterministic
+    policies*. A policy is defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uppi =p\left(a|s\right) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: That is, the probability of taking an action *a* when the agent is in state
+    *s*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly, at a most general level, the reward received and the next state of
+    the agent would be a probability distribution over the possible values of rewards
+    and next states. This is known as *transition dynamics*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{p}\left({\mathrm{s}}^{\prime },\mathrm{r}\right)=\left\{\mathit{\Pr}\;{S}_t={s}^{\prime
+    },{R}_t=r\;|\;{S}_{t-1}=s,{A}_{t-1}=a\right\} $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: where *S*[*t*] and *S*[*t* − 1] belong to all possible states, also called state/observation
+    space. *A*[*t*] belongs to all possible actions, also called action space, and
+    reward *r* is a numerical value. The previous equation defines the probability
+    of the next state being *s′* and the reward being *r* when the last state was
+    *s* and the agent took an action, *a*. Figure [2-4](#Fig4) shows the relationship
+    between the state, the action, and feedback from the environment in the form of
+    the next state and reward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A process flow between agent and environment. The brain represents the agent.
+    The agent sends the action as per policy pi to the environment, while receiving
+    the state observation and reward and the next state as per transition. The environment
+    graph has a horizontal line at 300 with a cartpole at the center.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Agent and environment interaction
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rewards
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In reinforcement learning, a reward is a signal from the environment to the
+    agent to let the agent know how good or bad the action was. The agent uses this
+    feedback to fine-tune its knowledge and learn to take good actions that maximize
+    the rewards. It gives rise to some important questions, such as what do you maximize,
+    the immediate reward for the last action or the reward over the complete life
+    history? What happens when the agent does not know enough about the environment?
+    How much should it explore the environment by taking some random steps before
+    it starts? This dilemma is known as the *exploration versus exploitation dilemma*.
+    I will keep coming back to this point as I go through various algorithms. The
+    objective of the agent to maximize the cumulative total rewards is known as the
+    *reward hypothesis*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To reiterate, a reward is a signal, or a scalar numerical value, that the environment
+    sends back to the agent to inform the agent of the quality of the agent’s action
+    and the quality of the resulting state/observation due to that action. Note that
+    the observations could be multidimensional—such as two-dimensional for `MountainCar`
+    and four-dimensional for `CartPole`. Similarly, actions can be multidimensional,
+    for example, acceleration value and steering angle for the autonomous car scenario.
+    However, in each such case, the reward is always a scalar real number. It may
+    seem limiting to have only a single value, but it is not. At the end, the agent
+    is trained for the purpose of reaching a goal, and rewards codify that progress.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now you’ll look at a maze example where the agent is trying to find its way
+    out. You could formulate the reward as the agent getting a reward of -1 at each
+    time step and a reward of 0 at the end of episode. Such a reward configuration
+    incentivizes the agent to come out of the maze with the least possible number
+    of steps and minimize the sum of the negative ones (-1). An alternate reward configuration
+    could be an agent getting a reward of 0 in all the time steps and a reward of
+    1 at the end of episode when the agent is out of the maze. What do you think will
+    happen to the agent’s behavior in the latter setup? The agent has a reason to
+    get out of the maze to collect a reward of +1, but it is in no hurry. It will
+    get the same +1 whether it comes out after 5 steps or 500 steps. How do you modify
+    the situation to push the agent to not focus just on reward collection but to
+    do so in the fastest possible time?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This question leads naturally to the concept of *discounting*. What carries
+    more utility—a reward *x* after 5 time steps or the same reward *x* after 500
+    time steps? Of course, the earlier the better, and hence a reward of +1 after
+    5 steps is more valuable as compared to +1 reward after 500 steps. You can induce
+    this behavior by discounting the rewards from the future to present. A reward
+    of *R* from the next time step is discounted to the current time by a discount
+    factor, γ (gamma). The discount factor is a value between 0 and 1\. In the maze
+    example, the reward with maze completion in five steps would mean a reward of
+    ![$$ {\upgamma}^5\cdotp \dot{\left(+1\right)} $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_IEq1.png)
+    versus a reward of ![$$ {\upgamma}^{500}\cdotp \dot{\left(+1\right)} $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_IEq2.png)
+    for 500 steps to complete. The “return” at time *t* is defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t={R}_{t+1}+\upgamma \cdotp {R}_{t+2}+{\upgamma}^2\cdotp {R}_{t+3}+\cdots
+    +{\upgamma}^{T-t+1}\cdotp {R}_T $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The discount factor is similar to what you see in the financial world. It is
+    the same concept as money now being more valuable than money later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The discount factor also serves an important mathematical purpose of making
+    sure that total return, *G*[*t*], is bounded for continuing tasks. Consider a
+    scenario of a continuing task where each state gives some positive reward. As
+    it is a continuing task that has no logical end, the total reward will keep adding
+    and exploding to infinity. However, with a discounting factor, the total cumulative
+    reward will be capped. Therefore, discounting is always introduced in continuing
+    tasks and is optional in episodic tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is interesting to note the effect of the discounting factor on the horizon
+    over which the agent tries to maximize the cumulative reward. Consider a discount
+    factor of 0\. If you use this discount value in Equation [2-3](#Equ3), you will
+    see that cumulative reward is equal to just the reward at the next instant reward.
+    It would lead the agent to become short-sighted and greedy with respect to the
+    next time step reward, without any focus on future rewards beyond the next time
+    step. Next, consider the other extreme with a discount factor approaching a value
+    of 1\. In this case, the agent will become more and more far-sighted because,
+    using a discount factor of 1, you can see that the cumulative reward as defined
+    in Equation [2-3](#Equ3) will give equal importance to all the future rewards.
+    The whole sequence of actions, from the current time step until the end, becomes
+    important and not just the immediate next time step reward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The previous discussion should emphasize the importance of designing an appropriate
+    reward based on the behavior the agent needs to optimize. The reward is the signal
+    that the agent uses to decide between a good or bad state and/or action. For example,
+    in a game of chess, if you design the reward as the number of opponent pieces
+    captured, the agent may learn to play dangerous moves just to maximize rewards
+    from immediate actions instead of sacrificing one of its own pieces to get into
+    a position of strength and a possible win in a future move. The field of reward
+    design is an open area of research. Having said that, the examples in this book
+    use fairly simple and intuitive reward definitions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The reward design is not an easy task, especially in the field of continuous
+    control and robotics. Consider the task of a humanoid where the objective of training
+    is, say, to make the agent learn to run for as long as possible. How will the
+    agent know the way the arms and legs need to be moved to learn the task of running?
+    Specific measures, such as the distance of the center of gravity of the agent
+    from the ground, the energy spent in making action, and the torso angle to the
+    ground are combined with trial and error to make the agent learn a good policy.
+    In the absence of a good reward signal shaping the behavior you want the agent
+    to learn, it will take a long time for agent to learn. Even worse, the agent sometimes
+    may learn counterintuitive behavior. A good example is OpenAI’s agent to play
+    the video game Coast-Runners that had the objective of finishing the boat race
+    quickly and ahead of other players. The game provided a score for hitting the
+    targets in the way, and there was no explicit score for finishing the game. Under
+    such reward configuration, the agent learned a hilarious and destructive behavior
+    of repeatedly hitting a set of targets and not progressing through the race but
+    scoring 20 percent higher than human players. You can read more about it in the
+    OpenAI blog^([1](#Fn1)) and see a video of the behavior in action. Rewards need
+    to be designed with care to ensure that autonomous RL agents do not learn potentially
+    dangerous behaviors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In other cases, it is not at all clear how to model the reward function. Consider
+    a robot trying to learn human-like behavior, such as pouring water in a glass
+    from a jug without spilling water or breaking the glass tumbler due to excessive
+    grip force. In such cases, an extension of reinforcement learning, known as *inverse
+    reinforcement learning,* is used to learn the implicit reward function based on
+    observations from watching a human expert perform the task. Chapter [13](502835_2_En_13_Chapter.xhtml)
+    briefly talks about this. However, a detailed study of reward shaping and discovery
+    could take a book of its own.
+  prefs: []
+  type: TYPE_NORMAL
+- en: So, in a nutshell, just as the quality of data is important for supervised learning,
+    an appropriate reward function is important to make algorithms train the agent
+    for a desired behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'RL has recently found interesting use in the field of Large Language Models.
+    This approach is known as RLHF—Reinforcement Learning from Human Feedback. It
+    was introduced by OpenAI in 2017 and was first used by OpenAI in 2022 to make
+    Large Language Models safer in their InstructGPT model. To learn more, you can
+    read the paper “Training Language Models to Follow Instructions with Human Feedback,”
+    by OpenAI Jan 2022.^([2](#Fn2)) The reward is the human preference of one sentence
+    over another for safety. Recently, Meta has used two reward functions to steer
+    the Llama2 model introduced in July 2023\. One reward function models the human
+    preference for safety and another reward function models the human preference
+    for helpfulness. You can read more about it in Meta’s bog titled “Llama 2: Open
+    Foundation and Fine-Tuned Chat Models”.^([3](#Fn3)) Specific details of RLHF are
+    mentioned in Section 3.2 of that paper.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Markov Processes
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The field of reinforcement learning is based on the formalism of Markov processes.
+    Before diving deep into learning (behavior optimization) algorithms, you need
+    to have a good grasp of the Markov Processes construct. This section goes over
+    Markov Chains followed by Markov Reward Processes and lastly Markov Decision Processes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Markov Chains
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s first talk about what a Markov Property is. Consider the diagram in Figure
+    [2-5](#Fig5). It is trying to model the daily rain status of a city. It has two
+    states—on any given day, whether it rains or not. The arrows from one state to
+    another indicate the probability of being in one of the two states the next day
+    based on the current day’s state. For example, if it rains today, the chance of
+    rain the next day is 0.3, and the chance it will not rain the next day is 0.7\.
+    Similarly, if there is no rain today, the chance it will continue to be dry tomorrow
+    is 0.8, while there is a 0.2 chance that it will rain tomorrow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A state diagram of the Markov Chain contains two states labeled S 0 = rain and
+    S 1 = no rain. It also indicates the values, p = 0.7 from S 0 to S 1, p = 0.2
+    from S 1 to S 0, p = 0.3 at S 0, and p = 0.8 at S 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: A simple two-state Markov Chain. One state is “rain,” and second state is “no
+    rain”
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This model assumes that rain on a given day depends on the state of the previous
+    day, that is, the chance of rain tomorrow is 0.3 if it also rained today, and
+    the chance of rain tomorrow is 0.2 if it did not rain today. Whether it rained
+    yesterday or before that has no impact on the probability of rain tomorrow. This
+    is an important concept. It is known as *independence*, that is, knowing the present
+    (present state at time *t*) makes the future (future state at time *t* + 1) independent
+    of the past (all past states at time 0, 1, ⋯, *t* − 1). Mathematically, you can
+    express this as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ P\left({S}_{t+1}={s}^{\prime}\right|\ {S}_0,{S}_1,\dots \dots {S}_{t-1},{S}_t=\mathrm{s}\left)=P\left({S}_{t+}={s}^{\prime
+    }\ \right|\ {S}_t=\mathrm{s}\right) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: It simply means that the probability of being in a state at time *t* + 1 depends
+    only on the state at time *t*. The state at time (*t* + 1) has no dependence on
+    the states before time (*t*), that is, no dependence on the states *S*[0] to *S*[*t* − 1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the environment provides observations to the agent that is detailed enough,
+    the agent will know what is to be known from its current state and will not need
+    to remember the chain of states/events it had to go through in the past to reach
+    the present. This *Markov independence* is an important assumption that is required
+    to prove the theoretical soundness of reinforcing learning algorithms. In practice,
+    many times you’ll still get fairly good results for non-Markov systems. However,
+    it is important to remember that in the absence of the Markov Property, the results
+    cannot be evaluated for theoretical worst-case bounds.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Going back to the Markov Chain diagram in Figure [2-5](#Fig5), you can define
+    transition probability as the probability of moving to state *S*[*t* + 1]from
+    state *S*[*t*] in the prior time step. If a system has *m* states, the transition
+    probabilities will be a square matrix with *m* rows and *m* columns. The transition
+    probability matrix for Figure [2-5](#Fig5) will look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ P=\left[\begin{array}{cc}0.3&amp; 0.7\\ {}0.2&amp; 0.8\end{array}\right]
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The sum of values in every row will be 1\. The row values indicate the probability
+    of going from one given state to all the states in the system. For example, row
+    1 indicates that the probability from *S*[1] to *S*[1] is 0.3 and from *S*[1]
+    to *S*[2] is 0.7.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The previous Markov Chain will have a steady state in which there is a defined
+    probability of being in one of the two states on a given day. Let’s say that the
+    probability of being in state *S*[1] and *S*[2] is given by a vector *S* = [*S*[1] *S*[2]]^(*T*).
+    From Figure [2-5](#Fig5), you can see that
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {S}_1=0.3\cdotp {S}_1+0.2\cdotp {S}_2\cdots (a) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {S}_2=0.7\cdotp {S}_1+0.8\cdotp {S}_2\cdots (b) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'As the system must be in one of the two states at any point in time, you also
+    have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {S}_1+{S}_2=1\cdots (c) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The equations in (*a*), (*b*), and (*c*) form a consistent and solvable system
+    of equations. From (*a*),
+  prefs: []
+  type: TYPE_NORMAL
+- en: 0.7 · *S*[1] = 0.2 · *S*[2] or, ![$$ {S}_1=\frac{0.2}{0.7}\cdotp {S}_2 $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_IEq3.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Substituting the value of s[1] in (*c*), you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{0.2}{0.7}\cdotp {S}_2+{S}_2=1 $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Which gives:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {S}_2=\frac{0.7}{0.9}=0.78 $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Substituting this in (*c*), gives
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {S}_1=\frac{0.2}{0.9}=0.22 $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In vector algebra notations, you can specify the relationship at steady state
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {S}^T={S}^T\cdotp P $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This relationship can be used to solve steady-state probability iteratively.
+    Listing [2-2](#PC2) shows a code snippet of this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When you run the Python notebook `2.b-RL-components.ipynb`, the output produced
+    is given here, which matches with the values you got from solving equations (*a*),
+    (*b*), and (*c*) together:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The formulation in Figure [2-5](#Fig5) has no start or end state. This is an
+    example of a continuing task. There is another class of formulation that has one
+    or more end states. Look at Figure [2-6](#Fig6). This is known as an *episodic
+    task,* in which the agent starts in some state and goes through many transitions
+    to eventually reach an end state. There could be one or more end states with different
+    outcomes. In Figure [2-6](#Fig6), the end state is the successful completion of
+    an exam resulting in a certificate. In a game of chess, there could be three end
+    states: win, loss, or draw.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A state diagram of the Markov processes. The states are to study, take exams,
+    be distracted, and obtain certificates. The values indicated are p = 2 from studying
+    to taking the exam, 0.3 at studying, 0.9 at distracted, 0.4 from taking the exam
+    to studying, 0.5 from studying to distracted, and 0.6 from taking the exam to
+    obtain the certificate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example of an episodic Markov Chain with one end state depicted by way of
+    a square box
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Like the continuing formulation, there is a concept of a transition probability
+    matrix. First you define the states with a variable name:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*S*[1] = “Study”; *S*[2] = “Distracted”, *S*[3] = “Take Exam” ; *S*[4] = “Obtain
+    Certificate”'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Transition matrix will look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ P=\left[\begin{array}{cccc}0.3&amp; 0.5&amp; 0.2&amp; 0\\ {}0.1&amp; 0.9&amp;
+    0&amp; 0\\ {}0.4&amp; 0&amp; 0&amp; 0.6\\ {}0&amp; 0&amp; 0&amp; 1\end{array}\right]
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In the case of the episodic task as shown earlier, you can look at multiple
+    runs, with each run called an *episode*. Let the start state always be *S*[1].
+    As you have only one end state—“Obtain Certificate”—the episodes will always end
+    in *S*[4], as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {S}_1,{S}_2,{S}_2,{S}_1,{S}_3,{S}_4 $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {S}_1,{S}_2,{S}_2,{S}_1,{S}_3,{S}_1,{S}_2,{S}_3,{S}_4 $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {S}_1,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_2,{S}_1,{S}_3,{S}_4
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Episodic tasks do not have a steady state. Eventually the system will transition
+    to one of the end states. The path/trajectory from state to end state could go
+    through multiple hoops and other states, but eventually the agent will find an
+    end state and the episode will end.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Markov Reward Processes
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Moving on to the Markov Reward Process, I now introduce the concept of rewards.
+    Look at the modified state diagrams in Figures [2-7](#Fig7) and [2-8](#Fig8).
+    They are the same problems from the previous section (Figures [2-5](#Fig5) and
+    [2-6](#Fig6), respectively) with the addition of rewards at each transition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A state diagram of the episodic Markov reward process has 4 states, study, take
+    an exam, be distracted, and obtain a certificate. The values of P and R include
+    0.2 and negative 2 from study to exam, 0.4 and negative 2 from exam to study,
+    0.3 and negative 3 at study, and 0.5 and 0 from study to distracted.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: The episodic Markov reward process similar to Figure [2-6](#Fig6), with additional
+    rewards R for each transition
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A state diagram of the Markov reward process has two states S 0 = rain and S
+    1 = no rain. The values of p and R are 0.7 and 3 from S 0 to S 1, 0.2 and 0 from
+    S 1 to S 0, 0.3 and negative 2 at S 0, and 0.8 and 2 at S 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Continuing Markov Reward Process. This is similar to the Markov Chain in Figure
+    [2-5](#Fig5), with an addition of reward R for each transition arrow
+  prefs: []
+  type: TYPE_NORMAL
+- en: In these two MRP setups, you can compute transition probabilities similar to
+    that in MC, as in the preceding section. In addition, you can calculate the value
+    of a state *V*(*S*), which is the cumulative reward that the agent gets when it
+    is in state *S* = *s* at time *t* and then it follows the dynamics of the system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ V(s)=E\left[{G}_t\ \right|\ {S}_t=s\Big] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Where *G*[*t*] is defined in Equation [2-3](#Equ3):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t={R}_{t+1}+\gamma {R}_{t+2}+\kern0.5em {\gamma}^2{R}_{t+3}+\dots
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The notation *E*[*G*[*t*]| *S*[*t*] = *s*] is read as an expectation of returning
+    *G*[*t*] when the starting state at time *t* is *S*[*t*] = *s*. The word *expectation*
+    implies the average value of *G*[*t*] when the simulation is performed a large
+    number of times. The expectation operator (*E*[∙]) is used to derive formulae
+    and to prove theoretical results. However, in practice, it is replaced by averages
+    over many sample simulations and is also known as the *Monte Carlo simulation*.
+    In the Monte Carlo simulation, you have the agent start at state *S*[*t*] = *s*
+    and follow the trajectory collecting the rewards, calculating *G*[*t*] each time,
+    and finally taking the average of *G*[*t*] across such multiple repeats. The average
+    ![$$ {\overline{G}}_t $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_IEq4.png)
+    so calculated works as an approximation of the theoretical expectation *V*(*s*) = *E*[*G*[*t*] | *S*[*t*] = *s*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note the use of γ as the discount factor. As explained earlier, γ captures the
+    notion that the reward today is better than the reward tomorrow. It is also important
+    mathematically to avoid unbounded returns for continuing tasks. I do not go into
+    the mathematical details here beyond mentioning this fact.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A value of γ = 1 implies there is no discount, and that the agent is far-sighted.
+    It cares as much about future rewards as it does for immediate rewards. A value
+    of γ = 0 implies that an agent is short-sighted. It now cares only about immediate
+    reward in the next time step. You can check this concept by putting different
+    values of γ in the *G*[*t*] = *R*[*t* + 1] + *γR*[*t* + 2] + *γ*²*R*[*t* + 3] + ...
+    equation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To summarize, up to now I have introduced the concept of transition probability
+    *P*, return *G*[*t*], and value of a state *V*(*s*) = *E*[*G*[*t*] | *S*[*t*] = *s*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Markov Decision Processes
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Markov Decision Processes (MDP) extend reward processes by bringing the additional
+    concept of “action”. In MRP, the agent had no control over the outcome. Everything
+    was governed by the environment. However, under MDP regime, agents can choose
+    actions based on the current state/observation. The agent can learn to take actions
+    that maximize the cumulative reward, that is, total return *G*[*t*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: For example, look at an extension of episodic MRP from Figure [2-8](#Fig8).
+    Looking at Figure [2-9](#Fig9), you can see that in the “Learning” state, the
+    agent can take one of two actions—study more or take the exam. The agent chooses
+    the two actions with equal probability of 0.5\. Choosing actions with certain
+    probabilities based on the current state is called a *policy* that the agent learns
+    in order to optimize the long-term rewards. The action influences the probabilities
+    of the next state and the reward values that the agent will see. If an agent decides
+    to “study” more, there is a 0.7 chance that agent will get “distracted” and turn
+    to social media, while there is 0.3 chance that they will continue to stay focused
+    on “learning”. If the agent, while in state of “learning,” decides to “take exam”
+    instead of “study”, the outcome of the “take exam” action would lead to two outcomes—the
+    agent fails with probability of 0.4, going back to “Learning” with a reward of
+    -2 or (with a probability of 0.6) the agent successfully completes the exam, thus
+    obtaining a certificate and getting a reward of 10.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A state diagram of the episodic Markov decision process has 5 states, study,
+    take exams, be distracted, learn, and obtain a certificate. The study and take
+    exam states are highlighted. The values of P are labeled 0.1, 0.3, 0.4, 0.5, 0.6,
+    0.7, and 0.9\. The values of p and R are provided along the links.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Episodic Markov Decision Process as an extension of the Markov Reward Process
+    shown in Figure [2-8](#Fig8). The black filled circles are the decisions that
+    the agent can take
+  prefs: []
+  type: TYPE_NORMAL
+- en: The transition function is now a mapping from the current state and action to
+    the next state and reward. It defines the probability of getting a reward *r*
+    with a transition to the next state *s*^′ whenever the agent takes action *a*
+    in state *s*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ p\left({s}^{\prime },r\ \right|\ s,a\left)=\Pr \left\{\ {S}_t={s}^{\prime
+    },{R}_t=r\ \right|\ {S}_{t-1}=s,{A}_{t-1}=a\right\} $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can use Equation [2-6](#Equ6) to derive many useful relations. Transition
+    probability can be derived from the previous transition function. Transition probability
+    defines the probability of the agent finding itself in state *s*^′ when it takes
+    action *a* while in state *s*. It is defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{p}\left({s}^{\prime }|s,a\right)=\Pr\ \left\{{S}_t={s}^{\prime
+    }|{S}_{t-1}=s,{A}_{t-1}=a\right\}={\sum}_{r\in R}\mathrm{p}\left({s}^{\prime },\mathrm{r}|s,a\right)
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equation [2-7](#Equ7) is derived by averaging all the possible rewards that
+    the agent could get while transitioning from (*s*, *a*) to *s*^′.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s look at a different example of MDP, one that is a continuing task. Think
+    of an electric cart at the airport that ferries passengers from one terminal to
+    another. The cart has two states, “High Charge” and “Low Charge.” In each state,
+    the cart can stay idle, recharge by connecting to the charging station, or ferry
+    passengers. If the cart ferries passengers, it gets a reward of b, but there is
+    a chance that in the “Low Charge” state, ferrying passengers may drain the battery
+    completely and the cart would need to be rescued, resulting in a reward of -10\.
+    Figure [2-10](#Fig10) shows the MDP.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A state diagram of the episodic Markov decision process has 2 states, low charge
+    and high charge. The low charge state is connected to 3 dark circles labeled ferry,
+    idle, and recharge. The high charge is connected to 2 circles for the ferry and
+    idle. The values of p and r are provided on the links.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Electric cart: A continuing Markov Decision Process with two states. Each state
+    has three actions: idle, ferry, or recharge'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the “Low Charge” state, the cart can take an action from the set of possible
+    actions, {recharge, idle, ferry}. In the “High Charge” state, the cart can take
+    an action from {idle, ferry}. All other transitions are 0\. With *p*(*s*^′, *r* | *s*,
+    *a*) given as shown earlier, *p*(*s*^′ | *s*, *a*) can be calculated. In this
+    case, it is the same as *p*(*s*^′, *r* | *s*, *a*). This is because for each transition
+    from (*s*, *a*) to (*s*^′) there is only one fixed reward. In other words, there
+    is no uncertainty or a probability distribution for rewards after an action is
+    taken in a given state. The reward is the same fixed value every time the agent
+    in state *s* takes an action *a* and finds itself in the next state *s′*. This
+    is one of the most common setups encountered in practical problems. However, theoretically
+    in the most general case, the reward could be a probability distribution like
+    a “ferry” action reward being linked to the number of passengers being ferried
+    by the cart.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following sections of this chapter continue to use this example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policies and Value Functions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As shown earlier, MDP has states, and the agent can take actions that transition
+    the agent from the current state to the next state. In addition, the agent gets
+    feedback from the environment in the form of a reward. The dynamics of MDP are
+    defined as *p*(*S*[*t*] = *s*^′, *R*[*t*] = *r*| *S*[*t* − 1] = *s*, *A*[*t* − 1] = *a*).
+    You have also seen “cumulative return,” *G*[*t*], which is defined as the sum
+    of all rewards received from time *t*. The agent has no control over transition
+    dynamics. It is outside the agent’s control. However, the agent can control the
+    decision, that is, what action to take in which state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is exactly what the agent learns based on the transition dynamics of the
+    system. The agent does so with an objective to maximize the *G*[*t*] for each
+    state *S*[*t*] that can be expected on average across multiple runs (the expected
+    value). The mapping of states to actions is known as *policy*. It is formally
+    defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uppi \left({A}_t=a|{S}_t=s\right) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy is defined as the probability of taking action *a* at time *t* when the
+    agent is in state *s* at time *t*. The agent learns the mapping function from
+    the state to actions with a goal to maximize the total return.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policies can be of two types. See Figure [2-11](#Fig11). The first type is a
+    *stochastic policy* in which *π*(*a*| *s*) is a probability function. For a given
+    state, there are multiple actions that the agent can take, and the probability
+    of taking each such action is defined by *π*(*a*| *s*). The second type is a *deterministic
+    policy* where there is only one unique action for a given state. In other words,
+    the probability function *π*(*A*[*t*] = *a*| *S*[*t*] = *s*) becomes a simple
+    mapping function with the value of a function being 1 for some action *A*[*t*] = *a*
+    and 0 for all other actions *A*[*t*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram. The node v asterisk of s is connected to 3 dark circles. The
+    center and right circles are labeled p of s prime, r vertical bar s, a and a,
+    respectively. Each circle is further connected to 2 circles. The circle on the
+    right end is the v asterisk of s prime, linked via r.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backup diagram starting from state, taking an action. Empty circles signify
+    states, and dark circles signify actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 tree diagrams of Stochastic and deterministic policies. S is divided into
+    a 1, a 2, and up to a n. The deterministic policy mentions only one of pi of a
+    i vertical bar S is equal to one and others are all 0\. The expression of the
+    Stochastic policy reads summation i = 1 to n of pi of a i vertical bar s = 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Types of policies. (a) Stochastic policy in which the agent can take one of
+    the many actions based on a probability distribution. (b) Deterministic policy
+    in which the agent learns to take only one specific action that is optimal
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The cumulative reward *G*[*t*] (i.e., return) that the agent can get at time
+    *t* while in state *S*[*t*] is dependent on the state *S*[*t*], and the policy
+    agent is the following. It is known as a *state* *value function*. The value of
+    *G*[*t*] is dependent on the trajectory of states that the agent will see after
+    time *t*, and trajectories in turn depend on the policy the agent is going to
+    follow. Hence, the value function is always defined in the context of the policy
+    the agent is following. It is also referred to as the agent’s *behavior*. It is
+    formally defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{G}_t|{S}_t=s\right] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-9)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s try to break this down a little bit. *v*[*π*](*s*) specifies the “state
+    value” of state *s* when the agent is following a policy *π*. *E*[*π*][·] signifies
+    that whatever comes inside the square bracket is an average taken over many samples.
+    While it is mathematically known as the *expectation* of the expression inside
+    the square brackets under policy *π*, in reality you’ll usually calculate these
+    values using simulation. You carry out the calculation over multiple iterations
+    and then average the value. As per one of the fundamental laws of statistics,
+    averages converge to expectations under general conditions. This concept is regularly
+    used in computers while estimating an expectation and is called *Monte Carlo simulations*.
+    Coming to the final part, the expression inside the square brackets is (*G*[*t*] | *S*[*t*] = *s*).
+    That’s the average return *G*[*t*] over many runs that the agent can see in repeated
+    trials at time *t* when the agent is in state *s* at time *t* and the agent’s
+    behavior is that of following policy *π*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Backup diagrams* show the path from time *t* when the agent is in state *S*[*t*]
+    to its successor states that the agent can find itself in at time *t* + 1\. It
+    depends on the action the agent takes at time *t*, that is, *π*(*A*[*t*] = *a*|
+    *S*[*t*] = *s*). Further, it depends on the environment/model transition function
+    *Pr*{*S*[*t* + 1] = *s*^′, *R*[*t* + 1] = *r*| *S*[*t*] = *s*, *A*[*t*] = *a*},
+    which transitions the agent to state *S*[*t* + 1] with a reward of *R*[*t* + 1]
+    based on the action *A*[*t*] it took while in state *S*[*t*]. Pictorially, a one-step
+    transition from the current state to the possible successor states is called a
+    *backup diagram* and looks like Figure [2-12](#Fig12).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will make extensive use of backup diagrams, especially in the next section
+    about Bellman equations. Backup diagrams are helpful in conceptualizing and reasoning
+    about the equations as well as working out the proofs for various RL algorithms.
+    They are also helpful in reasoning about data collection required to train agents.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Another related concept to *state value functions* *(*also called *value functions*
+    in short*)* is the concept of *action value functions*. A value function is the
+    expected cumulative reward the agent gets when it is in a specific state and takes
+    actions based on the policy *π*. However, suppose that the agent is free to take
+    any action at this first-time step *t* with the condition that it must follow
+    policy *π* on all the following time steps from *t* + 1 onward. The expected return
+    that the agent gets at time *t* is now known as *action-value-function q*[*π*](*s*,
+    *a*). Formally, it is defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\pi}\left(s,a\right)={E}_{\pi }\ \left[\ {G}_t\ \right|\ {S}_t=s,{A}_t=a\
+    \Big] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ10.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is a simple and subtle relationship between *v*-value (state value) and
+    *q*-values (state action value), which is explored in detail in the next section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This pretty much completes the definition of various components of an MDP. The
+    next section explores the recursive relationship between *v*-value of the states
+    and *q*-values of state action at time *t* to that of the successor values at
+    time *t* + 1\. Almost all the RL algorithms exploit this recursive relationship.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bellman Equations
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Bellman equations are a fundamental concept in the field of reinforcement learning
+    (RL). They formalize the recursive relationship between the current and successor
+    values in a sequential decision-making setup like RL. Almost all the algorithms
+    in RL are based on variations of these equations with the purpose of maximizing
+    the value functions under different assumptions and approximations. Bellman equations
+    provide a powerful tool for understanding and solving Markov Decision Processes
+    (MDP) in RL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look again at Equation [2-9](#Equ9), which defines the value function.
+    Also let’s look at the definition of *G*[*t*] defined in Equation [2-3](#Equ3);
+    both are reproduced here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t={R}_{t+1}+\upgamma \cdotp {R}_{t+2}+{\upgamma}^2\cdotp {R}_{t+3}+\cdots
+    +{\upgamma}^{T-t+1}\cdotp {R}_T $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ11.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-11)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{G}_t|{S}_t=s\right] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ12.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-12)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing the two equations, you can see that the value of a state is the expectation/average
+    of the cumulative reward if an agent in that state *S* follows a policy *π*. The
+    state that the agent finds itself in and the reward it gets from the environment
+    are dependent on the policy it is following, that is, the action it takes in a
+    given state. There is a recursive relationship in which the expression for *G*[*t*]
+    can be written in terms of *G*[*t* + 1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t={R}_{t+1}+\upgamma \left[{R}_{t+2}+\upgamma {R}_{t+3}+{\upgamma}^2{R}_{t+4}+\cdots
+    +{\upgamma}^{T-t+1-1}{R}_T\right] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ13.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-13)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now extract the expression inside the square brackets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {R}_{t+2}+\upgamma {R}_{t+3}+{\upgamma}^2{R}_{t+4}+\cdots +{\upgamma}^{T-t+1-1}{R}_T
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In this expression, you do a change of variables *t*^′ = *t* + 1 changing the
+    above expression to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {R}_{t\prime +1}+\upgamma {R}_{t\prime +2}+{\upgamma}^2{R}_{t\prime +3}+\cdots
+    +{\upgamma}^{T-t\prime +1}{R}_T $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-14)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Comparing Equation [2-14](#Equ14) to the expression of *G*[*t*] as given in
+    Equation [2-11](#Equ11), you can see that:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {R}_{t\prime +1}+\upgamma {R}_{t\prime +2}+{\upgamma}^2{R}_{t\prime +3}+\cdots
+    +{\upgamma}^{T-t\prime +1}{R}_T={G}_{t\prime }={G}_{t+1} $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ15.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-15)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, substitute Equation [2-15](#Equ15) in 2-13 to get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {G}_t={R}_{t+1}+\upgamma {G}_{t+1} $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ16.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-16)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can now substitute this recursive definition of *G*[*t*] in the expression
+    for *v*[*π*](*s*) in Equation [2-12](#Equ12) to get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{R}_{t+1}+\upgamma {G}_{t+1}|{S}_t=s\right]
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ17.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-17)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The expectation *E*[*π*] is over all possible actions *a* that the agent can
+    take in state *S*[*t*] = *s* as well as all over the new states the environment
+    transitions the agent to defined by the transition function *p*(*s*^′, *r* | *s*,
+    *a*). The expanded form of expectation leads to the revised expression of *v*[*π*](*s*)
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime
+    },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ18.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-18)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The way to interpret this equation is that the state value for *s* is the average
+    over all the rewards and state values for successor states *s*^′. The averaging
+    is done based on the policy *π*(*a*| *s*) of taking an action *a* in state *s*
+    followed by the environment transition probability *p*(*s*^′, *r* | *s*, *a*)
+    of the agent which moves the agents to *s*^′ with reward *r* based on the initial
+    state-action pair (*s*, *a*). Equation [2-18](#Equ18) shows the recursive nature
+    of linking the state value of the current state (*s*) with the state values of
+    the successor states (*s*^′).
+  prefs: []
+  type: TYPE_NORMAL
+- en: A similar relationship exists for action value functions. Let’s start from Equation
+    [2-10](#Equ10) and walk through the derivation of the recursive relationship between
+    *q*-values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\pi}\left(s,a\right)={E}_{\pi }\ \left[\ {G}_t\ \right|\ {S}_t=s,{A}_t=a\
+    \Big] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\kern0.5em {E}_{\pi }\ \left[\ {R}_t+\gamma\ {G}_{t+1}\ \right|\ {S}_t=s,{A}_t=a\
+    \Big] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Expanding the expectation with summing over all possibilities, you get this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\pi}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ19.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-19)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Comparing Equations [2-18](#Equ18) and [2-19](#Equ19), you will notice that
+    the expression for *q*[π](*s*, *a*) has the outer summation over action *a* missing
+    with the inner summation of (Equation [2-18](#Equ18)) matching the summation in
+    Equation [2-19](#Equ19). This shows the relationship of *v*[*π*](*s*) and *q*[*π*](*s*,
+    *a*). They are related through the policy *π*(*s*| *a*) the agent is following.
+    The *q*-value is the value of the tuple (*s*, *a*), and the state value is the
+    value for a state (*s*). The policy links the state to the possible set of actions
+    through a probability distribution. The agent in state *s* takes an action *a*
+    using the policy π(*s*| *a*) and the value of that state action pair is defined
+    by the action-value function *q*[π](*s*, *a*) :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a\ \right|s\Big).{q}_{\pi}\left(s,a\right)
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ20.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-20)
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can also infer this relationship from visual inspection of Equations [2-18](#Equ18)
+    and [2-19](#Equ19). You can write the relationship between *v*[*π*](*s*) in terms
+    of *q*[*π*](*s*, *a*), wherein you replace the inner summation on the right side
+    in Equation [2-18](#Equ18) with *q*[*π*](*s*, *a*) as per Equation [2-19](#Equ19).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Just like Equation [2-18](#Equ18) gives a recursive relationship of *v*[*π*](*s*)
+    in terms of the state values of the next state *v*[*π*](*s*^′), you could also
+    express *q*[*π*](*s*, *a*) in Equation [2-19](#Equ19) in terms of the pairs *q*[*π*](*s*^′,
+    *a*^′). This is achieved by replacing *v*[*π*](*s*^′) in Equation [2-19](#Equ19)
+    with the expression in Equation [2-20](#Equ20). This manipulation gives a recursive
+    relationship between *q*-values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\pi}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ \sum \limits_{a^{\prime }}\pi \left({a}^{\prime
+    }|{s}^{\prime}\right)\ q\left({s}^{\prime },{a}^{\prime}\right)\right] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ21.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-21)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Equations [2-18](#Equ18) and [2-21](#Equ21) link the current state-values/*q*-values
+    with successive state-value/*q*-values and can be represented by way of backup
+    diagrams. To show this relationship clearly, let’s expand the backup diagram to
+    cover the q-value transitions also, as shown in Figure [2-13](#Fig13). The diagram
+    follows the standard convention: states *s* are shown as outlined circles, and
+    action nodes representing *a* are shown as filled black circles.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 tree diagrams. Left. Node s is divided into 3 dark circles that are further
+    divided into 2 circles each. The circle at the bottom right is s prime. Right.
+    The dark node a is divided into 2 circles with s prime on the right. They are
+    further divided into 3 dark circles each, with a prime on the right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backup diagram for state values and action values. Outline circles represent
+    states, and filled circles represent actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equation [2-18](#Equ18) is the Bellman equation for *v*[*π*](*s*), which is
+    reflected in the left side of Figure [2-13](#Fig13). Equation [2-21](#Equ21) is
+    the Bellman equation for *q*[*π*](*s*, *a*), which is reflected in right side
+    of Figure [2-13](#Fig13). These equations formalize the recursive relationship
+    in a sequential decision-making setup like reinforcement learning. All the algorithms
+    in reinforcement learning are based on variations of these two equations with
+    the purpose of maximizing the value functions under different assumptions and
+    approximations. As I go through these algorithms, I will keep highlighting the
+    parts of the equation being approximated under certain assumptions along with
+    the pros and cons of individual approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A large part of expertise as a practitioner of reinforcement learning will revolve
+    first on formulating a real-life problem into an RL setup, choosing what the state
+    is, how actions are defined, and what will constitute reward. Secondly, expertise
+    will involve choosing the right set of algorithms based on constraints and assumptions.
+    Accordingly, the emphasis of this book is on the assumptions required to make
+    a technique work best. When to choose which technique based on the problem statement,
+    data availability, and other factors along with pros and cons of different approaches
+    is also discussed as I introduce different algorithms under RL learning. I will
+    present mathematical equations to formalize the relationship, but the core focus
+    is to help you gain an intuitive sense of what is going on and when a given approach/algorithm
+    makes sense.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optimality Bellman Equations
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Solving a reinforcement learning problem means finding (learning) a policy
+    that maximizes the state value functions. Suppose you have a set of policies.
+    The objective then would be to choose the policy that maximizes the state value
+    *v*[*π*](*s*). The optimal value function for a state is defined as *v*^∗(*s*).
+    The relation for optimal state value can be stated as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}^{\ast }(s)=\underset{\uppi}{\max }{v}_{\uppi}(s) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ22.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-22)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The previous equation shows that the optimal state value is the maximum state
+    value that can be obtained across all possible policies π. Suppose this optimal
+    policy is denoted by a superscript (*) to the policy, that is, π^∗. If an agent
+    is following the optimal policy, then the agent in state (*s*) will take that
+    action (*a*), which maximizes the *q*(*s*, *a*) obtained under the optimal policy.
+    In other words, Equation [2-20](#Equ20) is modified from being an expectation
+    to a maximization as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}^{\ast }(s)=\underset{a}{\max }{q}_{\uppi^{\ast }}\left(s,a\right)
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ23.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-23)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Replacing the expression of ![$$ {q}_{\pi^{\ast }}\left(s,a\right) $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_IEq5.png)
+    from Equation [2-19](#Equ19), the revised expression of *v*^∗(*s*) as given here,
+    in which *v*^∗(*s*) is recursively linked to the optimal value of the next states:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\mathrm{v}}^{\ast}\left(\mathrm{s}\right)=\underset{\mathrm{a}}{\max
+    }{\sum}_{\mathrm{s}\prime, r}\left[\mathrm{p}\left({\mathrm{s}}^{\prime },\mathrm{r}|\mathrm{s},\mathrm{a}\right)\left[\mathrm{r}+\upgamma
+    \cdotp {\mathrm{v}}^{\ast}\left({\mathrm{s}}^{\prime}\right)\right]\right\} $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ24.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-24)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Equation [2-24](#Equ24) links the optimal state value in state *s* with the
+    optimal state values *s*^′ in the next time step. Next, let’s derive a recursive
+    relationship between the *q*-values. Start with Equation [2-19](#Equ19) and substitute
+    the *v*(*s*^′) with the expression in 2-23, which links *v*^∗ with *q*^∗. This
+    substitution leads to the revised recursive relation between *q*-values:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}^{\ast}\left(s,a\right)={\sum}_{s\prime, r}p\left({s}^{\prime },r|s,a\right)\cdotp
+    \left[r+\upgamma \cdotp \underset{a^{\prime }}{\max }{q}^{\ast}\left({s}^{\prime
+    },{a}^{\prime}\right)\right] $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equ25.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (2-25)
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will notice the optimal equation for state value in Equation [2-24](#Equ24)
+    is a tough one to solve, as the max operator comes outside the summation side.
+    At the same time, the optimal value of the *q* state action values in Equation
+    [2-25](#Equ25) is far easier to solve due to the max operation being restricted
+    to the individual following states *s*^′ instead of the max over summation. These
+    optimal equations can be represented using backup diagrams, as shown in Figure
+    [2-14](#Fig14), which highlights the recursive relationship between the current
+    and successor values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 tree diagrams. Left. Node v asterisk of s is divided into 3 dark circles that
+    are further divided into 2 circles each. Right. The dark node q asterisk of s,
+    a is divided into 2 circles with v asterisk of s prime on the right. They are
+    further divided into 3 dark circles each, with q asterisk of s prime, a prime
+    on the right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backup diagram for optimal state values and action values. Policy π is replaced
+    by the “max” operation
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once you have *v*^∗(*s*) using Equation [2-24](#Equ24), it is straightforward
+    to derive the optimal policy. You use a one-step backup diagram, as shown in Figure
+    [2-14](#Fig14), to find the *a*^∗ that resulted in the optimal value *v*^∗. It
+    can be seen as a one-step search. Once you have optimal *q*^∗(*s*, *a*) using
+    Equation [2-25](#Equ25), finding the optimal policy is even easier. In a state
+    *s*, you just choose the action *a*, which has the highest value of *q*. This
+    is evident from right-side backup diagram in Figure [2-14](#Fig14). Let’s apply
+    these concepts to the problem of the electric van introduced in Figure [2-10](#Fig10),
+    which is reproduced in Figure [2-15](#Fig15).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A state diagram with 2 states, low and high charges. The low charge state is
+    connected to 3 dark circles labeled ferry, idle, and recharge. The high charge
+    state is connected to 2 circles of ferry and idle. The values of p and r are provided
+    on the links.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Electric van: continuing Markov Decision Process with two states. Each state
+    has three actions: idle, ferry, or recharge. Reproduction of Figure [2-10](#Fig10)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s draw the table depicting various values, as shown in Table [2-1](#Tab1).
+    This table lists all the *possible combinations of* (*s*, *a*, *s*^′, *r*) as
+    well as probability *p*(*s*^′, *r* | *s*, *a*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 2-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: System Dynamics for MDP in Figure [2-5](#Fig5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| State (***s***) | Action (***a***) | New State (***s***^′) | Reward (***r***)
+    | ***p***(***s***^′, ***r*** &#124;  ***s***, ***a***) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Low battery | Idle | Low battery | a | 1.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Low battery | Charge | High battery | 0 | 1.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Low battery | Ferry | Low battery | b | α |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Low battery | Ferry | High battery | -10 | 1- α |'
+  prefs: []
+  type: TYPE_TB
+- en: '| High battery | Idle | High battery | a | 1.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| High battery | Ferry | High battery | b | β |'
+  prefs: []
+  type: TYPE_TB
+- en: '| High battery | Ferry | Low battery | b | 1-β |'
+  prefs: []
+  type: TYPE_TB
+- en: You can use Table [2-1](#Tab1) to calculate the optimal state values using Equation
+    [2-24](#Equ24).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}^{\ast}\left(\mathrm{low}\right)=\mathit{\max}\ \left\{\begin{array}{c}a+\gamma\
+    {v}^{\ast }(low)\\ {}\gamma\ {v}^{\ast }(high)\\ {}\alpha \left[b+\gamma {v}^{\ast
+    }(low)\right]+\left(1-\alpha \right).\left[-10+\gamma\ {v}^{\ast }(high)\right]\end{array}\right.
+    $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {v}^{\ast }(high)=\max \left\{\begin{array}{c}a+\gamma\ {v}^{\ast }(high)\\
+    {}\beta\ \left[b+\gamma\ {v}^{\ast }(high)\right]+\left(1-\beta \right).\left[b+\gamma\
+    {v}^{\ast }(low)\right]\end{array}\right. $$](../images/502835_2_En_2_Chapter/502835_2_En_2_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'For given set of values of *a*, *b*, *α*, *β*, *γ*, there will be a unique
+    solution for *v*^∗(*high*) and *v*^∗(*low*) that will satisfy the previous equations.
+    However, explicitly solving equations is feasible only for simple toy problems.
+    Real-life bigger problems require the use of other methods that are scalable.
+    This is exactly what you are going to study in the rest of the book: various approaches
+    and related algorithms to solve Bellman equations for an optimal policy.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Train Your First Agent
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section looks at two Gymnasium environments and two algorithms to train
+    agents for these two environments. Along the way, you will learn about different
+    RL libraries in Python that you will be using throughout the book. As this is
+    the first introduction to RL training, you will be looking at the training algorithms
+    as black boxes with a focus to get familiar with the libraries and different components
+    required for carrying out RL training. However, as you progress with the book,
+    you will be opening up the black boxes and writing your own versions of these
+    algorithms to gain deeper understanding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First Agent
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'This section uses an environment called LunarLander, which is a classic rocket
+    trajectory optimization problem (see Figure [2-16](#Fig16)). The aim is to land
+    the craft on the landing pad as marked by two flags. There are four possible actions
+    (*a*) to control the craft:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0: Do nothing'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '1: Fire left orientation engine'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '2: Fire main engine'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '3: Fire right orientation engine'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The observation (*o*), that is, the part of the state environment exposed to
+    the agent consists of eight-dimensional vector:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: x, y coordinates of the lander
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Linear velocities in the x and y directions
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The craft’s angle and its angular velocity
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Two flags indicating respectively if the left and right leg are in contact with
+    the ground
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The rewards are awarded at each time step based on how far the craft is to the
+    landing pad, whether it is tilted or straight, whether the engines are firing,
+    and whether either leg is in contact with the ground. Landing safely or crashing
+    earns extra +ve / -ve rewards. You can read more about it in the Gymnasium documentation.^([4](#Fn4))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of Lunar Lander depicts the landing of the lunar between two
+    flags in the bright environment from the dark space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: LunarLander environment from the Gymnasium library - [`https://gymnasium.farama.org/environments/box2d/lunar_lander/`](https://gymnasium.farama.org/environments/box2d/lunar_lander/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This example uses DQN, or Deep Q-Network, which is a reinforcement learning
+    algorithm that combines the traditional Q-learning algorithm with the power of
+    deep neural networks. It is used to approximate the optimal action-value function,
+    which represents the maximum expected future rewards for taking a particular action
+    in a given state. DQN has been successfully applied to a wide range of problems,
+    including game playing and control tasks, and has been shown to achieve human-level
+    performance in many cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [6](502835_2_En_6_Chapter.xhtml) and [7](502835_2_En_7_Chapter.xhtml)
+    are devoted to a deep dive of DQN and its variants. Therefore, this chapter simply
+    shows an example without getting into the specifics of how DQN works.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This example uses another library called `stable_baseline3` to create a small
+    neural network that learns the agent policy π(*a*| *s*), that is, the mapping
+    of state to action. Input to the network is the eight-dimensional observation
+    vector and action is a value from the discrete set of four actions {0, 1, 2, 3}.
+    DQN agents need to explore the environment in a random way to have good coverage
+    of possible *(state, action) ➤ next_action* transitions. This is specified by
+    setting `exploration_final_eps=0.1` The verbosity is defined as 1 in order to
+    get appropriate level of logs. Refer to the notebook `2.c-First-Agent.ipynb` for
+    details. Note that you can either run the notebook locally in an environment you
+    created following the instructions in Chapter [1](502835_2_En_1_Chapter.xhtml),
+    or you can run the notebooks directly on Google Colab, which is a web-hosted Python
+    environment with a free tier and paid tiers. For the book, the free tier of Colab
+    will mostly suffice. The excerpt where DQN is instantiated is shown in Listing
+    [2-3](#PC4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, train the agent and save it using the built-in DQN algorithm from the
+    `stable_baselines3` library. Training is done by calling the `model.learn` function
+    with `total_timesteps=int(1e5)` to run training for 100,000 steps, `log_interval=400`
+    to log the progress of training every 400 episodes (and not 400 steps), and finally
+    setting `progress_bar=True` to observe the progress of training with the help
+    of a progress bar.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: You then evaluate the trained agent to check the performance using the following
+    code. The agent, before training, produced a mean reward of -600, which improves
+    to about +100 after 100,000 steps of training. See Listing [2-5](#PC6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The notebook `2.c-First-Agent.ipynb` also shows the way you can record the
+    video of the trained agent. After you are satisfied with the result of training,
+    you can use `huggingface` to upload the model, which then can be shared with others.
+    In order to upload the model to `huggingface`, you will need to generate a token
+    to enable notebook access to your `huggingface` account. First create an account
+    at `huggingface.co` if you do not have one already. You can create/find a `huggingface`
+    token at [`https://huggingface.co/settings/tokens`](https://huggingface.co/settings/tokens).
+    Once your model has been pushed to `huggingface`, you can navigate to the link
+    where it is hosted. The URL is printed at the end by the code used for pushing
+    the model to the `huggingface` hub. In my case, it looks like this: [`https://huggingface.co/nsanghi/dqn-LunarLander-v2`](https://huggingface.co/nsanghi/dqn-LunarLander-v2).
+    The `nsanghi` corresponds to my `huggingface` login and `dnq-LunarLander-v2` refers
+    to the space/repository on `huggingface` under my account where the model was
+    pushed, based on the name I defined in the `package_to_hub()` function call in
+    the notebook. The call to this function is shown in Listing [2-6](#PC7). Change
+    the `repo_id` to refer to your `huggingface` account login before you run this
+    code.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can share this link with your friends and family to show the performance
+    of the agent you have trained using just a few lines of code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Walkthrough of Common Libraries Used
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section takes a quick tour of the libraries used in training an agent on
+    the LunarLander environment, as well as a few other common libraries you will
+    be using in other chapters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Environments: Gymnasium and OpenAI Gym'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'As described in the first section in this chapter on RL definitions, every
+    RL problem must have a concept of environment, which is about states, actions,
+    and rewards, that is, what a state is, what actions are possible by the agent,
+    and what kinds of rewards the agent can get. The agent receives a state, uses
+    a policy that it learns outside of environment to take an action, and passes this
+    action to the environment. The environment takes the action as input and steps
+    the agent to the next time instance, returning a bunch of things: the next state,
+    the reward, the terminated flag, the truncated flag, and some debug info. The
+    Gymnasium^([5](#Fn5)) library, which is a port of the OpenAI Gym library, provides
+    a standard interface to all the RL environments. This makes it modular, whereby
+    the learning algorithm code is abstracted away from the code of the environment
+    dynamics/model. Gymnasium, in addition to providing a standard interface, also
+    provides a wide range of environments:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Classic Control****:** This is classic reinforcement learning based on real-world
+    problems and physics.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Box2D****:** These environments all involve toy games based around physics
+    control, using Box2D-based physics and PyGame-based rendering.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Toy Text****:** These environments are designed to be extremely simple, with
+    small discrete state and action spaces, and hence are easy to learn. They are
+    suitable for debugging implementations of reinforcement learning algorithms.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**MuJoCo****:** Physics engine based environments with multi-joint controls,
+    which are more complex than the Box2D environments.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Atari:** A set of 57 Atari 2600 environments simulated through Stella and
+    the Arcade Learning Environment that have a high range of complexity for agents
+    to learn.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Third-party options****:** A number of environments have been created that
+    are compatible with the Gymnasium API.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Gymnasium is a new port of the original OpenAI Gym. While it has mostly retained
+    the function signatures of the OpenAI Gym, there are some subtle differences.
+    The popular RL libraries are still in the process of adding support to Gymnasium.
+    While installing these other libraries, be sure to install the version appropriate
+    for the Gymnasium port.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stable Baselines3 (SB3)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Stable Baselines3^([6](#Fn6)) (SB3) is a set of reliable implementations of
+    reinforcement learning algorithms in PyTorch. It is the next major version of
+    Stable Baselines version 2\. You can read a detailed presentation of Stable Baselines3
+    in the JMLR paper^([7](#Fn7)). It implements seven common algorithms:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Advantage Actor Critic(A2C)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Deep Deterministic Policy Gradient (DDPG)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Deep Q Network (DQN)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Hindsight Experience Replay (HER), which works with DQN, SAC, TD3, and DDPG
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Proximal Policy Optimization (PPO)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Soft Actor Critic (SAC)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Twin Delayed DDPG (TD3)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The implementations have been benchmarked against reference codebases, and automated
+    unit tests cover 95% of the code. The algorithms follow a consistent interface.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL Baselines3 Zoo
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: RL Baselines3 Zoo^([8](#Fn8)) is a training framework for reinforcement learning,
+    using Stable Baselines3\. It provides scripts for training, evaluating agents,
+    tuning hyperparameters, plotting results, and recording videos.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition, it includes a collection of tuned hyperparameters for common environments
+    and RL algorithms, and agents trained with those settings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hugging Face
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Hugging Face^([9](#Fn9)) has an extensive set of Python libraries around Transformers,
+    which was introduced in a seminar paper titled “Attention is all you need”^([10](#Fn10))
+    in 2017\. This resulted in an explosion of various derivatives of this idea for
+    solving natural language processing (NLP) related learning methods. All the recent
+    language models are increasing based on the variations of this architecture—including
+    the OpenAI GPT family, Google’s BERT and BARD, Meta’s Llama and Llama2, and many
+    more. Hugging Face came into the scene to provide standard, easy-to-use implementations
+    of these language models—the model code, the infrastructure including data management,
+    training runs, and space to host trained models. It enabled collaboration in the
+    open-source community and now covers all other kinds of deep learning models,
+    including ones related to vision, voice, and reinforcement learning. I use this
+    library extensively when I touch upon the topic of RLHF (Reinforcement Learning
+    from Human Feedback), which is an approach introduced by OpenAI in developing
+    InstructGPT and ChatGPT. Since then, it has been adopted by almost all LLM-based
+    chat and instruction following models. A section in one of the later chapters
+    is devoted to RLHF.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, even before I go to RLHF, I will be using the Hugging Face hub to host
+    the trained models so that the same can be shared with others, including a video
+    of the agent in action post training. This is what I did in the section titled
+    “Train First Agent”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Second Agent
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now you’ll see how to train an agent to play the Atari Game of Pong. This example
+    uses an environment from the Atari Simulator. Atari environments are simulated
+    via the Arcade Learning Environment ALE^([11](#Fn11)) through Stella.^([12](#Fn12))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A schematic of 2 rectangular shaded regions of the same length. The height of
+    the upper rectangle is smaller than the lower. The upper rectangle has a vertical
+    shaded rectangle and a hollow rectangle with a thick border. The lower rectangle
+    has 2 vertical rectangles at random positions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Atari Pong from the Gymnasium library - [`https://gymnasium.farama.org/environments/atari/pong/`](https://gymnasium.farama.org/environments/atari/pong/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This example uses a specific variant of Pong from the Atari game simulator,
+    `PongNoFrameskip-v4`. Atari simulator 1600 has 18 actions, of which Pong uses
+    6\. The observation space is an RGB image of the game state in the form of 210x160x3
+    three-color channel pixel values, each ranging from 0-255, that is, uint8 values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As a single image of the paddles and ball does not tell you anything about the
+    direction in which the ball is travelling, you have to take four consecutive images
+    of the game and stack them together to form a single observation and capture the
+    movements in the game. The observation is hence a stacked image consisting of
+    four images. The policy that agent learns is to take these stacked four-image
+    observation vectors as input and produce the probability of making one of the
+    six actions possible. This is mathematically depicted as learning a policy *p*[π(θ)](*a*|
+    *o*) where the policy is a neural network π(θ) with stacked image vector (*o*)
+    as input and six actions (*a*) as output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This example uses a `CnnPolicy` class of a neural network for the policy. The
+    inputs are stacked images and a CNN class of networks are best suited for image
+    processing in neural networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the previous case of LunarLander, the agent’s policy was based on DQN. However,
+    for the game of Pong, I use the A2C algorithm. A2C is a synchronous, deterministic
+    variant of Asynchronous Advantage Actor Critic (A3C).^([13](#Fn13))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: The rest of the steps of creating a video to check the performance and pushing
+    a trained model to Hugging Face are all very similar to what you did in the previous
+    example of LunarLander. You can refer to the accompanying Python notebook `2.d-Second-Agent.ipynb`
+    for details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL Zoo Baselines3
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: RL Baselines3 Zoo^([14](#Fn14)) is a training framework for reinforcement learning.
+    Using Stable Baselines3 (SB3), reliable implementations of reinforcement learning
+    algorithms in PyTorch are provided in this library. It provides scripts for training,
+    evaluating agents, tuning hyperparameters, plotting results, and recording videos.
+    In addition, it includes a collection of tuned hyperparameters for common environments
+    and RL algorithms, and agents trained with those settings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL Zoo is supposed to be run from the command line. However, you can use Python
+    notebooks to run commands using the `!` bang character before the commands. For
+    example, to run the `pwd` UNIX command to list the current working directory,
+    you can execute the `!pwd` command in a code cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this section, you learn how to train agents, record videos of the trained
+    agents, as well as push the trained agents to Hugging Face—all using RL Zoo SB3\.
+    You will first train the same `LunarLander` agent using the DQN algorithm. Notebook
+    `2.e-RL-Zoo.ipynb` contains the code for running the RL Zoo commands.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: At the start of script run, it prints the various hyperparameters that control
+    the training. You can refer to the RL Zoo documentation for more details. As an
+    example, the default values for the DQN agent for LunarLander are given in the
+    location; see the footnote.^([15](#Fn15)) You can modify these values at the time
+    of calling the training script using an extended list of command-line arguments
+    given in the RL Zoo SB3 documentation, under the section “Train an Agent”.^([16](#Fn16))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once the agent is trained, you can run additional command-line scripts to a)
+    evaluate the performance of the trained agent; b) record a video on the local
+    machine; and c) push the trained agent model, performance, and video to the Hugging
+    Face hub. These additional commands are shown in Listing [2-9](#PC10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now it is your turn to see if you can replicate these steps for the second agent—the
+    Atari Pong game playing an agent trained using A2C.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This ends the exploration of various libraries and sample code to load environments,
+    train agents, record performance, and push things to Hugging Face for sharing.
+    While the approach taken here is a high-level overview of libraries involved and
+    many introductory books on Practical RL stop at this, the endeavor in this book
+    is to master both—a theoretical code-level understanding of various training algorithms
+    used in RL as well as common production-level libraries involved in RL. Accordingly,
+    the rest of the chapters have an equally strong emphasis on coding your own working
+    algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Solution Approaches with a Mind Map
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that you have a background in reinforcement learning configuration, related
+    blocks, Bellman equations, and a sample of algorithms, it is time to look at the
+    complete landscape of algorithms in the reinforcement learning world. Figure [2-18](#Fig18)
+    from OpenAI shows a high-level landscape of the various types of learning algorithms
+    in the RL space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_2_Chapter/502835_2_En_2_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A tree diagram. R L algorithms are divided into model-free R L and model-based
+    R L. Model-free R L is classified into policy optimization and Q-learning. Model-based
+    R L is classified into learn the model and given the model. They are further classified.
+    Given the model leads to alpha zero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 2-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mind map of algorithms in reinforcement learning. This is a high-level map showing
+    only broad categorizations (refer to [`https://spinningup.openai.com/en/latest/spinningup/rl_intro2.html`](https://spinningup.openai.com/en/latest/spinningup/rl_intro2.html))
+  prefs: []
+  type: TYPE_NORMAL
+- en: As seen in Bellman equations, the system transition dynamics *p*(*s*^′, *r* | *s*,
+    *a*) forms a central part. Transition dynamics describe the model of the environment,
+    that is, based on the current state and action taken by the agent, what is the
+    response of the environment in terms of the reward given back to the agent and
+    the new state the agent is transitioned into? However, transition dynamics are
+    not always known. Accordingly, the first broad categorization of learning algorithms
+    can be done based on the knowledge (or lack thereof) of this transition model.
+    The algorithms where the transition dynamics are known or learned explicitly are
+    categorized as *model-based algorithms* and the ones where transition dynamics
+    are not known or not used directly are categorized as *model-free algorithms*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Model-based algorithms can be further classified into two categories: one where
+    you are given the model, for example, the game of Go or chess, and the second
+    category being the one where the agent needs to explore and learn the model. Some
+    popular approaches under “learn the model” are World Models, Imagination Augmented
+    Agents (I2A), Model-Based RL with Model-Free fine tuning (MBMF), and Model-Based
+    Value Exploration (MBVE).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moving back to the model-free setup, note that Bellman equations provide you
+    with a way to find the state/action values and use them to find the optimal policies.
+    Most of these algorithms take an approach of iterative improvement. Eventually
+    you want the agent to have an optimal policy, and algorithms use Bellman equations
+    to evaluate the goodness of a policy and to guide the improvement in the right
+    direction. However, there is another way. Why not improve the policy directly
+    instead of the indirect way of values to policies? Such an approach of direct
+    policy improvement is known as *policy optimization*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moving to the left side of Figure [2-18](#Fig18), the model-free category, *Q-learning*
+    forms a major part of model-free Bellman-driven state/action value optimization.
+    The popular variants under this approach are Deep Q-Networks (DQN) along with
+    various variants of DQN, such as Categorical 51-Atom DQN (C51), Quantile Regression
+    DQN (QR-DQN), and Hindsight Experience Replay (HER).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The algorithms that follow the path of policy optimization directly are Policy
+    Gradient, Actor Critic and its variations (A2C/A3C), Proximal Policy Optimization
+    (PPO), and Trust Region Policy Optimization (TRPO). PPO is the state of the art
+    when it comes to policy-based algorithms. Recently, PPO has been used with Large
+    Language Models such as the GPT family, Llama, and other variants to make the
+    model generate safe and helpful human outputs, under an approach called Reinforcement
+    Learning from Human Feedback (RLHF).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, there is a set of algorithms that lie midway between Q-learning and
+    Policy Optimization. The popular ones in this category are deep deterministic
+    policy gradient (DDPG), twin delayed DDPG (TD3), and soft actor-critic (SAC).
+  prefs: []
+  type: TYPE_NORMAL
+- en: These categorizations are just to help you appreciate the different approaches
+    and popular algorithms. However, the list and categorizations are not exhaustive.
+    The field of reinforcement learning is evolving rapidly, with new approaches being
+    added on a regular basis. Use the previous mind map only as high-level guidance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter sets the context for what reinforcement learning is, the setup,
+    and the various definitions. The chapter first talked about the high-level setup
+    and the mathematical foundations of various Markov formulations. This was followed
+    by a discussion of Bellman equations, the derivation of their recursive nature,
+    and the optimality equations. State/action value functions and backup diagrams
+    formalized this notion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter then looked at a couple of agent training workflows using Stable
+    Baselines3\. It dove deep into the related libraries and software frameworks in
+    RL and the ones you will be using significantly during the course of this book.
+    The chapter then concluded with a view of the algorithm landscape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the upcoming portions of the book, I delve deeper into many of these algorithms,
+    starting with dynamic programming in the next chapter.
+  prefs: []
+  type: TYPE_NORMAL

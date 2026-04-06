@@ -1,0 +1,1207 @@
+- en: 4. Advanced GPU Programming for Deep Learning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 4.1 CUDA Programming Model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 4.1.1 What Is CUDA?
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: CUDA (Compute Unified Device Architecture) is a parallel computing platform
+    and programming model developed by NVIDIA to leverage the massive processing capabilities
+    of its GPUs for general-purpose computing. By enabling compute-intensive algorithms
+    to run directly on the GPU instead of the CPU, CUDA facilitates substantial performance
+    gains for tasks that can be parallelized effectively. Introduced in 2007 alongside
+    the NVIDIA Tesla GPU architecture, CUDA has since evolved into a cornerstone of
+    high-performance computing. It is now widely used across various domains, including
+    scientific computing, deep learning, image and signal processing, and large-scale
+    simulations, due to its ability to unlock accelerated processing and efficient
+    resource utilization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Programming with CUDA is typically done using extensions to standard programming
+    languages such as C, C++, and Fortran. In addition, high-level interfaces such
+    as PyCUDA allow Python developers to write GPU-accelerated code using Python syntax.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'CUDA is built around three fundamental abstractions that enable developers
+    to express parallelism and manage hardware resources efficiently:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Hierarchy of Thread Groups:** CUDA organizes parallel computations using
+    a hierarchy of threads. Threads are grouped into blocks, and blocks are further
+    organized into grids. This hierarchical structure helps in expressing both data-level
+    and task-level parallelism.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '**Shared Memory:** Each thread block can access a fast, on-chip shared memory
+    space. This memory can enable communication and data sharing among threads within
+    the same block, leading to significant performance optimizations.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '**Barrier Synchronization:** CUDA provides mechanisms for synchronizing threads
+    within a block. Thread synchronization ensures that all threads in a block reach
+    a certain point in the program before proceeding, which is essential when working
+    with shared data to avoid race conditions.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: These abstractions make CUDA a powerful model for exploiting fine-grained parallelism
+    in modern computational problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.2 CUDA Programming Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The CUDA programming model is designed to express and execute parallel algorithms
+    on NVIDIA GPUs efficiently. It provides a structure for implementing fine-grained
+    data parallelism and thread-level parallelism, which are nested within coarse-grained
+    data parallelism and task parallelism. This multilevel parallelism enables CUDA
+    to scale across thousands of GPU cores and efficiently utilize the GPU architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The CUDA model follows a three-step design pattern for parallel problem-solving:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Partitioning the Problem into Coarse-Grained Subproblems:** The first step
+    in designing a CUDA-based solution is dividing the problem into multiple independent
+    subproblems. These subproblems are large enough to be computed independently of
+    each other. Each coarse-grained unit typically corresponds to a chunk of data
+    or a portion of the computation that can be handled in parallel.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '**Assigning Subproblems to Thread Blocks:** Once the problem is divided, each
+    subproblem is assigned to a group of threads called a *block*. A thread block
+    is a logical execution unit in CUDA and is scheduled independently by the GPU.
+    Multiple blocks can run in parallel on different multiprocessors of the GPU. This
+    level introduces coarse-grained parallelism in terms of blocks.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '**Decomposing Each Subproblem into Fine-Grained Tasks:** The assigned subproblem
+    is further broken down within each block into smaller work items. The individual
+    threads execute these tasks within the block. All threads in a block can share
+    data using fast on-chip shared memory and can synchronize their execution to coordinate
+    computations. This fine-grained parallelism at the thread level allows for efficient
+    calculation of subtasks.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Figure [4.1](#Fig1) shows the hierarchical model containing grid to blocks to
+    threads, which provides flexibility in mapping complex computational tasks to
+    the GPU architecture. It allows developers to exploit both interblock parallelism
+    and intrablock parallelism, leading to efficient and scalable parallel execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Diagram illustrating the CUDA execution hierarchy. It shows a grid containing
+    multiple blocks. Each block consists of threads and shared memory. The structure
+    emphasizes the organization of threads within blocks and blocks within a grid,
+    highlighting the parallel processing architecture.](../images/641715_1_En_4_Chapter/641715_1_En_4_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Fig. 4.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The CUDA Execution Hierarchy highlights how threads are organized into warps,
+    blocks, and grids to efficiently utilize the GPU’s parallel architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.3 Heterogeneous Computing
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Heterogeneous computing is a computing paradigm in which a system utilizes more
+    than one processor or computational unit to perform a task. The goal is to leverage
+    the strengths of different types of processors for improved performance, power
+    efficiency, or scalability. In the context of CUDA and GPU computing, heterogeneous
+    systems typically combine a CPU (central processing unit) and a GPU (graphics
+    processing unit), working together to solve a computational problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In such a system, we distinguish between two primary components.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.3.1 Host
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The **host** refers to the CPU and its associated memory, often called *host
+    memory*. The CPU is responsible for general-purpose computing tasks, including
+    program control flow, task scheduling, and memory management. It initializes the
+    program, prepares data, and launches computations on the GPU. The host manages
+    communication and data transfer between itself and the GPU device.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.3.2 Device
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The **device** refers to the GPU and its dedicated memory, known as *device
+    memory*. The GPU excels at highly parallel tasks and is optimized for executing
+    thousands of threads concurrently. It is well-suited for data-parallel and compute-intensive
+    workloads such as matrix operations, image processing, and deep learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.3.3 Interaction Between Host and Device
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'In CUDA-based heterogeneous computing, the typical workflow includes the following
+    steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Allocate memory on the host (CPU) and the device (GPU).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Transfer input data from host memory to device memory.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Launch one or more kernels (GPU functions) from the host to execute on the device.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Copy results from device memory back to host memory.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Deallocate memory resources on both host and device.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Efficient data transfer and synchronization between the host and device are
+    critical for achieving optimal performance in heterogeneous systems. CUDA provides
+    APIs for memory management and kernel execution to facilitate this interaction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Code snippet titled "Serial Code on Host (CPU)" showing C language syntax
+    for memory allocation and data transfer. It includes variable declarations for
+    pointers `in`, `out`, `d_in`, and `d_out`. The code calculates `size` using ``,
+    `RADIUS`, and `sizeof(int)`. Memory is allocated for `in` and `out` using `malloc`,
+    and initialized with `fill_ints`. CUDA functions `cudaMalloc` and `cudaMemcpy`
+    are used for memory allocation and data transfer between host and device.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaaa_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![Screenshot of parallel code for a GPU device. The code defines a global function
+    `stencil_1d` with integer pointers `in` and `out`. It uses shared memory for a
+    temporary array `temp` and calculates indices `gindex` and `lindex`. The code
+    includes a conditional statement to handle boundary conditions and a loop to compute
+    results using the `temp` array. The final result is stored in the `out` array.
+    Key functions include `__syncthreads()` for synchronization.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaab_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![Code snippet titled "Launching the Kernel and Final Steps" showing CUDA operations.
+    It includes a kernel launch with `stencil_1d` and memory operations like `cudaMemcpy`,
+    `free`, and `cudaFree`. The code manages input and output data with specified
+    block sizes and memory transfers between device and host.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaac_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![Code snippet titled "Main Function and Constants" showing C language code.
+    It defines constants as 1024, RADIUS as 3, and BLOCK_SIZE as 16\. A function `fill_ints`
+    takes an integer pointer and an integer, calling `fill_n` with these parameters
+    and 1\. The `main` function includes a comment about memory setup and kernel launch,
+    returning 0.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaad_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 4.1.4 CUDA Extensions to C/C++
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: CUDA (Compute Unified Device Architecture) extends the C/C++ programming languages
+    with features specifically designed for general-purpose GPU programming. These
+    extensions allow developers to write parallel programs that can be executed efficiently
+    on NVIDIA GPUs. The CUDA model introduces new syntax, keywords, and API functions
+    to support kernel-based parallelism, memory management, and thread organization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.4.1 Function Launch and Kernel Execution
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'In CUDA, functions intended to run on the GPU are called **kernels**. These
+    are launched from the host (CPU) using a special syntax involving triple angle
+    brackets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![The image shows a code snippet for launching a kernel in parallel computing.
+    It reads: `kernelName<<<gridDim, blockDim>>>(arguments);`. The snippet includes
+    placeholders for the kernel name, grid dimensions, block dimensions, and arguments.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaae_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This syntax indicates that the GPU will execute the kernel using `gridDim` blocks,
+    each containing `blockDim` threads. Each thread executes the same code but can
+    operate on different data, enabling data-parallel execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.4.2 Calling Functions on the GPU
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'CUDA allows functions to be executed either on the host or the device, or called
+    from one device function to another. This is specified using qualifiers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![The image is a list explaining CUDA function qualifiers. It includes: - `__global__`:
+    Declares a kernel function called from the host, executed on the device. - `__device__`:
+    Declares a function that both runs and is called from the device. - `__host__`:
+    Optional; indicates the function is executed on the host (default behavior).](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaaf_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 4.1.4.3 Memory Management
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: CUDA extends memory control beyond standard C/C++ by introducing device memory
+    management routines. These include
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A screenshot displaying a list of CUDA functions with descriptions: "cudaMalloc()
+    - Allocates memory on the GPU," "cudaMemcpy() - Transfers data between host and
+    device memory," and "cudaFree() - Deallocates memory on the GPU."](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaag_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: These functions are necessary because the host and device have separate memory
+    spaces. Proper memory management ensures efficient data transfers and overall
+    performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.4.4 Memory Declaration Qualifiers
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'CUDA introduces qualifiers to declare variables in different memory spaces:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A list explaining CUDA memory qualifiers: "__shared__" for on-chip shared
+    memory accessible by all threads in a block, "__global__" for kernel functions,
+    "__device__" for variables or functions in device memory, "__constant__" for read-only
+    memory accessible to all threads, and "__local__" for thread-private memory in
+    device DRAM.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaah_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: These qualifiers help optimize memory access patterns and allow explicit control
+    over variable storage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.4.5 Special Instructions
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'CUDA provides synchronization and memory consistency primitives to ensure correct
+    execution of parallel threads:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![The image is a text box listing CUDA functions for thread synchronization.
+    It includes: - `__syncthreads()`: Synchronizes all threads within a block. - `__threadfence()`,
+    `__threadfence_block()`: Ensure ordering of memory operations across threads or
+    blocks.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaai_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: These are crucial when multiple threads collaborate and share data during execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.4.6 Thread and Block Identification Keywords
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'CUDA offers built-in variables to determine a thread’s unique position within
+    the execution grid:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A list of terms related to thread and block indexing in a grid, formatted
+    with bullet points. The terms include: "threadIdx" for the index of a thread within
+    its block as a 3D vector, "blockIdx" for the index of a block within the grid
+    as a 3D vector, "blockDim" for the dimensions of a thread block, and "gridDim"
+    for the dimensions of the grid.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaaj_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: These identifiers are used to assign data or tasks to individual threads. They
+    provide fine-grained control over how a program is parallelized and how data is
+    accessed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.4.7 Function Declarations in CUDA
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'In CUDA programming, function qualifiers specify where a function will execute
+    (host or device) and from where it can be called. These qualifiers are essential
+    in determining how code interacts with CPU (host) and GPU (device) memory and
+    execution threads. CUDA defines three primary function qualifiers: `__device__`,
+    `__global__`, and `__host__`. Understanding their behavior is key to writing efficient
+    and correct CUDA programs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.1.4.8 CUDA Function Qualifiers Overview
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The Table [4.1](#Tab1) gives the basic syntax of function description, execution
+    mode and callable from.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: CUDA Function Qualifiers and Their Execution/Call Context
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Function declaration | Executed on | Callable from |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `__device__ float deviceFunc()` | Device | Device |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `__global__ void kernelFunc()` | Device | Host |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `__host__ float hostFunc()` | Host | Host |'
+  prefs: []
+  type: TYPE_TB
+- en: 4.1.4.9 Function Qualifier Descriptions
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '`__device__`: Declares a function that runs on the GPU and can only be invoked
+    from device or global functions. These functions are not accessible directly from
+    the CPU.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`__global__`: Declares a kernel function that executes on the GPU but is invoked
+    from the host using the kernel launch syntax (e.g., `<<<...>>>`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`__host__`: Declares a function that executes on the CPU and can be called
+    from other host functions. By default, all C++ functions are treated as host functions
+    unless specified otherwise.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '4.1.4.10 Example: CUDA Function Declarations in Action'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '![Code screenshot showing CUDA C++ functions for squaring numbers. The `__device__`
+    function `square` takes a float `x` and returns its square. The `__global__` function
+    `squareKernel` calculates the square of elements in an input array `d_in` and
+    stores results in `d_out`. The `__host__` function `launchKernel` manages memory
+    allocation and data transfer between host and device, invoking `squareKernel`
+    to process data. Functions include `cudaMalloc`, `cudaMemcpy`, and `cudaFree`
+    for memory management.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaak_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![The image displays a LaTeX code snippet illustrating an itemized list. The
+    list includes three items: a `__device__` function for computing squares on a
+    GPU, a `__global__` kernel launched from the host, and a `__host__` function that
+    manages memory and launches the kernel.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaal_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 4.2 Variable Type Qualifiers in CUDA
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '![Table illustrating memory scope and lifetime in a programming context. The
+    table has two columns: "Memory Scope" and "Lifetime." It lists different variable
+    declarations with their respective memory scopes and lifetimes. For example, "int
+    localVar" is in the register memory scope with a thread lifetime. "__device__
+    __local__ int localVar" has a local memory scope and thread lifetime. "__device__
+    __shared__ int sharedVar" has a shared memory scope and block lifetime. "__device__
+    int globalVar" has a global memory scope and grid lifetime.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaam_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In CUDA programming, variables are stored in different types of memory depending
+    on their declaration and qualifiers. Understanding these memory types is essential
+    for optimizing performance, reducing memory latency, and ensuring correct data
+    access patterns across threads and blocks. Below are some important points about
+    variable memory qualifiers in CUDA:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Automatic variables without qualifiers** are stored in registers, which are
+    the fastest form of memory, and their lifetime is restricted to a single thread.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Local arrays** (i.e., arrays declared inside functions without special qualifiers)
+    are stored in *local memory*, which resides in global memory but is private to
+    each thread. This happens because arrays typically exceed register capacity.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`__shared__` variables reside in *shared memory*, which is visible to all threads
+    within a block. This memory is useful for interthread communication within the
+    block and offers much lower latency compared to global memory.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`__device__` variables declared at file scope (i.e., outside functions) and
+    without any other qualifiers are placed in *global memory*. This memory is accessible
+    by all threads and persists throughout the lifetime of the application.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In CUDA, **pointers** can only refer to memory in global space. They cannot
+    point to registers or local memory of other threads. This restriction ensures
+    proper memory access and consistency across GPU threads.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Each of these memory types plays a specific role in GPU computation, and their
+    correct usage is essential for achieving optimal throughput and minimizing bottlenecks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.1 SIMT Architecture
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The SIMT (Single Instruction, Multiple Threads) architecture is a fundamental
+    design principle of modern GPU programming frameworks like CUDA. SIMT enables
+    multiple threads to execute the same instruction concurrently on different data
+    elements, thus harnessing the inherent parallelism of GPU hardware. While SIMT
+    resembles SIMD (Single Instruction, Multiple Data) in structure, it adds layer
+    of flexibility through multithreading. Unlike SIMD, where developers must often
+    be aware of the vector width and explicitly manage it in their code, SIMT abstracts
+    these hardware details, enabling a simpler and more scalable programming model.
+    In SIMT, a group of threads called a warp (typically 32 threads) executes instructions
+    in lockstep, but each thread maintains its program counter and register state,
+    allowing divergent control flows. This multithreaded execution model will enable
+    developers to write scalar-like code that automatically scales across thousands
+    of cores. As a result, the need to know the exact number of cores is largely eliminated,
+    and developers can focus on the data-parallel nature of their problems rather
+    than the specific execution units.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.1.1 Mapping Blocks and Threads
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In CUDA, when a kernel function is launched from the host (CPU), it defines
+    a grid of thread blocks that must be mapped to the hardware resources of the GPU.
+    This process is crucial to achieving efficient execution and maximizing parallel
+    throughput. Each block is assigned to a streaming multiprocessor (SM), the basic
+    compute unit in the GPU. Once assigned, all threads within a thread block execute
+    concurrently on a single SM. Each thread block has access to shared memory and
+    can synchronize internally, allowing efficient intrablock collaboration. Multiple
+    thread blocks can also run simultaneously on a single SM, provided sufficient
+    resources like registers and shared memory are available. As the thread blocks
+    complete their execution, the CUDA runtime system dynamically schedules new blocks
+    on the freed SMs. This process continues until all thread blocks have completed,
+    ensuring high occupancy and effective utilization of GPU resources throughout
+    the kernel’s execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.1.2 Thread Life Cycle in a GPU
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'The thread life cycle on a GPU begins with the launch of a kernel function,
+    which triggers the creation of a grid consisting of multiple thread blocks. These
+    thread blocks are then serially assigned to the available streaming multiprocessors
+    (SMs). Depending on the availability of computational resources, a single SM may
+    host more than one thread block concurrently. Within each thread block, threads
+    are further organized into warps, which are groups of typically 32 threads. This
+    hierarchical scheduling supports two levels of parallelism: interblock parallelism,
+    where different thread blocks run across different SMs, and intrablock parallelism,
+    where multiple warps execute within a single SM. The SM’s scheduler dynamically
+    selects warps that are ready to run, specifically those whose operands are already
+    available.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.2 Device Memory Management
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In CUDA programming, memory management on the device side is crucial for efficient
+    GPU utilization. Device memory can be allocated in two primary forms: linear and
+    CUDA arrays. While both are supported, linear memory is more commonly used in
+    general-purpose GPU computing due to its straightforward interface. Allocation
+    of linear device memory is typically performed using the `cudaMalloc()` function,
+    and the corresponding deallocation is done using `cudaFree()`. Data transfer between
+    the host (CPU) and the device (GPU) is managed through the `cudaMemcpy()` function,
+    which allows copying data in both directions. Additionally, CUDA provides shared
+    memory, which is allocated using the `__shared__` memory space specifier. Shared
+    memory resides on-chip and is significantly faster than global memory when used
+    correctly, making it suitable for intrablock communication and temporary storage.
+    Understanding how to manage these memory types is critical for optimizing CUDA
+    applications.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.3 Memory Hierarchy
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'CUDA’s memory architecture features a layered hierarchy designed to optimize
+    performance based on access patterns and scope. Beyond global and shared memory,
+    CUDA includes two additional read-only memory spaces accessible by all threads:
+    constant memory and texture memory. These memory spaces originate from GPU graphics
+    pipelines and shading languages and have been adapted for general-purpose computing.
+    Each memory type serves different access models and optimization strategies. For
+    instance, constant memory is ideal for broadcasting values to all threads efficiently,
+    while texture memory provides benefits like caching and spatial locality, which
+    are particularly useful in image processing tasks. Importantly, global, constant,
+    and texture memory spaces are persistent across multiple kernel launches within
+    the same application, allowing for reusable data storage without reallocation,
+    thereby improving performance and reducing host-device communication overhead.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.4 GPU Memory Management
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Efficient GPU memory management is essential for high-performance computing,
+    particularly in CUDA-based programming. CUDA exposes multiple levels of memory
+    to developers, each with different characteristics, performance, and scope. Understanding
+    how memory is allocated, accessed, and synchronized helps optimize applications
+    for speed and resource efficiency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.4.1 Types of GPU Memory (Global, Shared, Constant, Texture)
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: CUDA supports a rich memory hierarchy, each level designed to support different
+    access scopes and performance trade-offs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Global memory** is the most commonly used memory space accessible by all
+    threads across all blocks. It is off-chip, meaning it resides in DRAM and thus
+    has higher access latency than on-chip memory. Despite its latency, it is persistent
+    across kernel launches and ideal for storing large datasets.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Shared memory**, on the other hand, is a low-latency, high-bandwidth memory
+    region that is allocated per thread block. Threads within the same block can collaborate
+    by reading and writing from shared memory. It is declared using the `__shared__`
+    keyword and can significantly accelerate performance if memory access is managed
+    properly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Constant memory** is a small read-only memory space optimized for broadcasting
+    the same data across all threads. Since it is cached, access to constant memory
+    is faster when all threads access the exact location, making it ideal for look-up
+    tables and continuous parameters.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Texture memory** is another read-only memory that comes from the GPU’s graphics
+    heritage. It is optimized for 2D spatial locality and provides hardware interpolation,
+    making it useful for image processing tasks. Like constant memory, texture memory
+    is cached and can be accessed by all threads.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: These memory spaces—global, shared, constant, and texture—offer different trade-offs
+    regarding access latency, bandwidth, and scope. Their efficient utilization is
+    a cornerstone of high-performance GPU programming.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.4.2 Memory Growth, Garbage Collection, and Layer-wise Memory Reuse
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In large-scale deep learning applications, managing GPU memory growth and reuse
+    is critical due to increasing model sizes and batch processing demands. Improper
+    handling can lead to fragmentation and performance degradation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CUDA does not provide automatic garbage collection. However, developers can
+    implement custom memory pools to efficiently allocate and reuse memory buffers—avoiding
+    costly repeated allocations and deallocations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A widely adopted strategy is **layer-wise memory reuse**, particularly in neural
+    networks. Intermediate activations, used only during forward and backward passes,
+    can be repurposed across layers when not accessed concurrently. Deep learning
+    frameworks like PyTorch and TensorFlow apply such techniques internally via memory
+    planners.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To coordinate memory access among threads, constructs like `__syncthreads()`
+    are used for synchronizing shared memory operations, while atomic instructions
+    such as `atomicAdd()` help prevent race conditions during concurrent updates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, host-device synchronization ensures computations complete on the GPU
+    before results are accessed by the host. This synchronization is often implicit
+    at the end of kernel execution, though asynchronous streams may require explicit
+    management in advanced use cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.4.3 Efficient Memory Access and Coalescing Strategies
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Efficient memory access is fundamental to achieving high performance in GPU
+    programming. CUDA enables threads within a warp (typically 32 threads) to access
+    global memory in a coalesced manner—where adjacent threads access contiguous memory
+    addresses—allowing a single memory transaction to serve the entire warp. This
+    significantly reduces latency and leverages the high memory bandwidth of the GPU.
+    Conversely, uncoalesced or scattered memory accesses trigger multiple memory transactions,
+    resulting in substantial performance degradation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Shared memory access must also be optimized to avoid bank conflicts, which occur
+    when multiple threads attempt to access the same memory bank simultaneously. These
+    conflicts can be mitigated through careful indexing strategies and padding, ensuring
+    that accesses are parallelized and conflict-free.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dynamic memory allocation and deallocation on the device can be handled using
+    `cudaMalloc()` and `cudaFree()`. Data transfers between host and device are managed
+    using `cudaMemcpy()`, which should be minimized or overlapped with computation
+    via asynchronous streams to reduce idle time and improve overall throughput.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moreover, utilizing read-only memory spaces such as constant and texture memory
+    can further optimize memory access. These memory types offer cached access and
+    are ideal for broadcast or spatially local access patterns, enhancing performance
+    through reduced latency and improved cache utilization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.2.4.4 Memory Growth, Garbage Collection, and Layer-wise Memory Reuse
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In large-scale applications, intense learning workloads, managing GPU memory
+    growth, and reuse become a complex yet essential task. Memory consumption can
+    grow rapidly with increasing model size and batch processing requirements. Therefore,
+    it is necessary to carefully handle memory allocation and deallocation to avoid
+    fragmentation and excessive usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While CUDA does not offer automatic garbage collection, developers can implement
+    custom memory pools to manage allocations efficiently. This helps in reusing memory
+    buffers instead of repeatedly allocating and freeing memory, which is computationally
+    expensive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One practical approach is **layer-wise memory reuse**, especially in neural
+    networks. Since intermediate activations are used only during forward and backward
+    passes, their memory can be reused across layers when not needed concurrently.
+    Frameworks like PyTorch and TensorFlow apply such optimizations internally through
+    memory planners.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Efficient synchronization constructs like `__syncthreads()` help manage the
+    temporal sharing of shared memory within a block. Similarly, atomic operations
+    like `atomicAdd()` ensure safe concurrent access to memory locations without race
+    conditions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, host-device synchronization ensures that GPU computations are completed
+    before the host accesses results. This is typically handled through implicit synchronization
+    at kernel completion, ensuring correctness without explicit developer intervention
+    unless using asynchronous streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3 Optimization Techniques on GPUs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Graphics processing units (GPUs) are designed to handle massive parallel workloads
+    efficiently. However, specific optimization strategies must be employed to harness
+    their computational power fully. These techniques aim to minimize latency, maximize
+    throughput, and ensure efficient use of hardware resources. This section elaborates
+    on key optimization techniques applicable to GPU programming, particularly using
+    CUDA.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.1 Memory Access Optimization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Efficient memory access is fundamental to GPU performance. Global memory accesses
+    are relatively slow, and optimizing access patterns is critical.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.1.1 Memory Coalescing
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: GPUs allow threads in a warp to access global memory in a coalesced manner,
+    i.e., adjacent threads accessing adjacent memory locations. Proper coalescing
+    minimizes memory transactions and improves bandwidth utilization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To optimize memory access on GPUs, it is essential to follow key best practices
+    such as organizing data in the Structure of Arrays (SoA) format rather than Array
+    of Structures (AoS), ensuring that thread indices correspond linearly to memory
+    addresses, and aligning data structures to 32-, 64-, or 128-byte boundaries to
+    enable memory coalescing. Additionally, effectively utilizing shared memory—an
+    on-chip, low-latency memory shared among threads in a block—can significantly
+    enhance performance. This involves loading frequently accessed data into shared
+    memory, minimizing bank conflicts by ensuring threads access different memory
+    banks, and introducing padding to avoid multiple threads contending for the same
+    bank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.2 Thread-Level Optimization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Thread-level control helps ensure efficient execution of code within a warp
+    and across thread blocks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.2.1 Occupancy Optimization
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Occupancy refers to the ratio of active warps per streaming multiprocessor (SM)
+    to the maximum number of warps the SM can support. High occupancy helps hide memory
+    latency. Maximizing occupancy—the ratio of active warps per streaming multiprocessor
+    (SM) to the maximum supported warps—is critical in achieving high performance
+    on GPUs. Efficient occupancy ensures better latency hiding and resource utilization.
+    One key strategy is to carefully tune the number of threads per block, ideally
+    using values that are multiples of 32, as warps are executed in groups of 32 threads.
+    Selecting an appropriate block size helps ensure enough warps are scheduled on
+    each SM to keep the execution pipelines busy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another important consideration is managing register and shared memory usage.
+    Excessive usage of these limited resources by individual threads or blocks can
+    reduce the number of concurrent threads launched, thereby decreasing occupancy.
+    Developers should strive to write memory- and register-efficient kernels to allow
+    more blocks to reside on an SM simultaneously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tools such as `cudaOccupancyMaxPotentialBlockSize()` and NVIDIA’s Occupancy
+    Calculator can aid in making informed decisions. These tools analyze the kernel’s
+    resource usage and provide optimal block sizes and launch configurations that
+    maximize occupancy, helping developers fine-tune performance through empirical
+    and automated analysis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.2.2 Avoiding Thread Divergence
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Divergence in GPU execution arises when threads within the same warp follow
+    different execution paths due to conditional statements, leading to serialized
+    execution and reduced performance. To mitigate this, it is advisable to minimize
+    the use of conditionals within warps and ensure that threads are grouped in a
+    way that follows similar control flow paths. Additionally, techniques such as
+    warp voting and predicated execution can be employed to handle common conditions
+    more efficiently, allowing all threads in a warp to remain active and reducing
+    the impact of divergence on overall kernel performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.3 Instruction-Level Optimization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Instruction-level parallelism (ILP) enhances GPU performance by enabling the
+    simultaneous execution of multiple independent instructions within a single thread.
+    To exploit ILP effectively, developers should restructure code to minimize inter-instruction
+    dependencies. One way to achieve this is by reordering instructions so that the
+    execution of one does not depend on the result of another. Loop unrolling is another
+    helpful technique, as it increases the number of operations exposed to the scheduler
+    while reducing overhead from loop control. Composing complex tasks into smaller,
+    independent units can improve pipeline utilization and ensure smoother, more efficient
+    execution on the GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.4 Asynchronous Execution and Overlapping
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Modern GPUs support asynchronous execution, enabling memory transfers and kernel
+    execution to occur concurrently using CUDA streams. This capability significantly
+    enhances performance by reducing idle time and maximizing GPU resource utilization.
+    By leveraging multiple CUDA streams, developers can overlap data movement between
+    host and device with computation on the GPU, thus improving throughput. Using
+    `cudaMemcpyAsync()` allows for non-blocking memory transfers, enabling the application
+    to initiate data copy operations without waiting for them to complete before launching
+    kernels. Additionally, using pinned (page-locked) memory further accelerates data
+    transfer by allowing direct access from the GPU, avoiding the overhead of pageable
+    memory. Together, these techniques form a powerful strategy for achieving high
+    efficiency in GPU-accelerated deep learning workloads.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.5 Profiling and Analysis Tools
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Performance tuning in GPU programming must be guided by effective profiling
+    to identify and resolve computational bottlenecks. Several tools are available
+    to support this process. `Nsight Compute` provides kernel-level profiling, offering
+    insights into individual CUDA kernel executions. `Nsight Systems` is used for
+    system-level profiling, allowing developers to analyze CPU-GPU interactions and
+    timeline-based behavior. Tools like `nvprof` and the `CUDA Profiler API` offer
+    access to performance counters and memory throughput data. Key metrics to analyze
+    during profiling include memory throughput, occupancy rate, warp execution efficiency,
+    and memory access patterns—both global and shared. These metrics help understand
+    how effectively the GPU resources are utilized and guide developers in optimizing
+    kernel performance for deep learning applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.3.6 Essential GPU Optimization Guidelines
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Maximizing GPU efficiency in deep learning requires adherence to several essential
+    optimization practices. Developers should reduce reliance on global memory in
+    favor of shared memory, which offers lower latency and higher throughput. Ensuring
+    that memory access patterns are coalesced can significantly enhance bandwidth
+    utilization. The use of occupancy calculators helps in fine-tuning thread and
+    block configurations to achieve optimal hardware utilization. To maintain warp
+    execution efficiency, control flow should be carefully designed to avoid divergence
+    within warps. Leveraging asynchronous streams allows for the overlapping of computation
+    and memory transfers, which helps minimize idle GPU time. Finally, continuous
+    profiling is vital to identify and address performance bottlenecks, enabling informed
+    adjustments throughout the development lifecycle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.4 GPU Optimization Techniques
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Optimizing applications for GPUs requires a deep understanding of both the hardware
+    architecture and the nature of parallel algorithms. While the GPU excels in high-throughput
+    parallel execution, efficient utilization demands tailored programming approaches.
+    This section explores advanced GPU optimization techniques especially relevant
+    in large-scale matrix computations and deep learning workloads. The methods discussed
+    are essential for achieving state-of-the-art performance in scientific computing,
+    AI, and graphics applications. Table [4.2](#Tab2) gives the comparison of various
+    techniques for GPU optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.4.1 Tiled Matrix Multiplication and Parallel Algorithms
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Matrix multiplication is fundamental in many domains, from computer graphics
+    to machine learning. On GPUs, naive implementations often lead to performance
+    bottlenecks due to excessive global memory accesses. *Tiled matrix multiplication*
+    addresses this by partitioning the computation into subblocks (tiles), enabling
+    effective use of fast shared memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This approach loads portions of the input matrices into shared memory by cooperative
+    threads in a block. Each thread computes a partial result for a tile and accumulates
+    it in registers. This dramatically reduces the number of redundant global memory
+    accesses and leverages the high bandwidth of shared memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The tiled matrix multiplication algorithm given in Algorithm [1](#FPar1) is
+    a parallel strategy designed to efficiently multiply two large matrices on a GPU
+    or similar parallel architecture. The key idea is to divide the input matrices
+    into smaller submatrices or *tiles*, which can be loaded into the fast, on-chip
+    shared memory. Each thread block is responsible for computing a tile of the output
+    matrix. Within a block, threads collaborate to load corresponding tiles of the
+    input matrices from global memory into shared memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4.2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparison of Key GPU Optimization Techniques
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| **Technique** | **Method** | **Performance impact** |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Tiled matrix multiplication** | Divides large matrices into smaller tiles
+    and loads them into shared memory to reduce global memory accesses. | Up to 2–5$$$\times
+    $$$ speedup over naive implementations. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Gradient checkpointing (recomputation)** | Saves only a subset of activations
+    during forward pass; recomputes the rest during backward pass to reduce memory
+    use. | Reduces memory usage by 50–80%; small compute overhead. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Mixed-precision training with tensor cores** | Performs calculations in
+    FP16/BF16 while retaining FP32 master weights; uses loss scaling for stability.
+    | 2–3$$$\times $$$ faster training with 50% memory savings. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Loop unrolling** | Expands loops to minimize loop control overhead and
+    expose more instruction-level parallelism. | 10–30% speed gain depending on loop
+    depth and dependency. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Kernel fusion** | Merges multiple GPU kernels to reduce global memory transfers
+    and kernel launch overhead. | 20–40% performance boost in memory-bound workloads.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Memory coalescing** | Ensures threads in a warp access consecutive memory
+    addresses to minimize memory transactions. | Critical for bandwidth efficiency;
+    up to 10$$$\times $$$ speedup in worst-to-best case. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Warp divergence avoidance** | Minimizes control flow divergence by grouping
+    threads with similar execution paths or using predication. | Improves warp execution
+    efficiency; avoids serialization. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Asynchronous execution and streams** | Uses CUDA streams to overlap kernel
+    execution with memory transfers. | Enables compute-communication overlap; up to
+    1.5–2$$$\times $$$ speedup. |'
+  prefs: []
+  type: TYPE_TB
+- en: Once the tiles are loaded, each thread computes a partial product by performing
+    an inner product of the relevant row and column from the shared memory tiles.
+    These partial results are accumulated across all required phases (based on the
+    inner dimension *K*) to produce a single output element. After all phases are
+    complete, the final result is written back to global memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tiling approach drastically reduces the number of global memory accesses,
+    thereby improving memory throughput and overall performance. The algorithm ensures
+    data reuse within shared memory and allows for scalable, predictable execution
+    on parallel hardware. It is widely used in GPU libraries such as cuBLAS and is
+    a foundation for many high-performance computing tasks in graphics, scientific
+    computing, and deep learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Algorithm 1 Tiled Matrix Multiplication on GPU
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Pseudocode for matrix multiplication using a tiled approach. It requires
+    matrices A of size M times K , B of size K times , and a tile size TILE_WIDTH
+    . The output is matrix C of size M times . The process involves iterating over
+    tile pair indices, initializing C_{sub} to zero, loading tiles A_{tile} and B_{tile}
+    into shared memory, synchronizing threads, and performing multiplication and accumulation.
+    Finally, C_{sub} is written to C[i][j] .](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaan_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 4.4.2 Gradient Checkpointing and Recomputation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Memory is often a limiting factor in large-scale deep learning models, especially
+    during backpropagation, where activations for each layer must be stored. *Gradient
+    checkpointing* (also known as *activation recomputation*) provides a trade-off
+    between memory usage and computation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gradient checkpointing is a memory optimization technique widely used in training
+    deep neural networks, particularly those with many layers or large parameter sizes
+    such as transformers. During the forward pass of backpropagation, conventional
+    implementations store all intermediate activations to be reused in the backward
+    pass. However, this storage can quickly exhaust GPU memory when working with deep
+    models or large batch sizes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gradient checkpointing addresses this limitation by saving only a subset of
+    activations, called *checkpoints*, during the forward pass. Instead of storing
+    every intermediate output, it strategically stores outputs at specific intervals.
+    When needed during backpropagation, the missing activations are recomputed from
+    the nearest stored checkpoint, thereby trading additional computation for reduced
+    memory usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method allows training of deeper or more memory-intensive models without
+    running out of memory, making it especially useful for GPUs with limited capacity.
+    It is supported in major deep learning frameworks like PyTorch (via `torch.utils.checkpoint`)
+    and TensorFlow. Though it introduces additional compute time, the memory efficiency
+    gained is often crucial in practice and enables scalability of model training.
+    The detailed steps are summerized in Algorithm [2](#FPar2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Algorithm 2 Gradient Checkpointing with Recomputation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Flowchart for a backpropagation algorithm in a neural network model with
+    L layers and input x . The process involves selecting checkpoint layers C subset
+    {1, 2, ldots, L} , computing activations x_l = f_l(x_{l-1}) , and storing or discarding
+    them based on checkpoint presence. Loss is computed from the final output x_L
+    . During the backward pass, if an activation is unavailable, it is recomputed
+    from the nearest checkpoint. Gradients frac{partial L}{partial x_{l-1}} are computed
+    for parameter updates.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaao_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Instead of storing all intermediate activations during the forward pass, only
+    selected checkpoints are saved. During backpropagation, missing activations are
+    recomputed on-the-fly from the nearest checkpoints. This significantly reduces
+    memory usage, allowing larger batch sizes or deeper models to fit within GPU constraints.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This optimization is particularly beneficial on GPUs with limited memory or
+    when training large transformer-based models. Frameworks like PyTorch and TensorFlow
+    have built-in support for checkpointing via libraries such as `torch.utils.checkpoint`.
+    While it increases computational overhead due to recomputation, the gain in memory
+    efficiency is crucial in practice and often outweighs the performance trade-off.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.4.3 Mixed-Precision Training and Tensor Core Usage
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Modern GPUs, such as NVIDIA’s Volta, Ampere, and Hopper architectures, incorporate
+    specialized hardware units called *Tensor Cores* that are designed to perform
+    matrix operations with high throughput, especially using lower-precision formats
+    like FP16 or BF16\. *Mixed-precision training* is a technique that takes advantage
+    of these units to accelerate deep learning model training while reducing memory
+    usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In mixed-precision training, model weights are maintained in FP32 (single precision)
+    to ensure numerical stability, but the forward and backward computations are carried
+    out in FP16 or BF16\. This approach greatly reduces memory bandwidth and storage
+    requirements. However, operating at reduced precision can introduce numerical
+    underflow, particularly during gradient computation. To address this, a technique
+    called *loss scaling* is employed to scale gradients before they are reduced and
+    then unscaled during updates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Frameworks such as PyTorch and TensorFlow support mixed-precision training via
+    tools like NVIDIA’s Automatic Mixed Precision (AMP) and Apex. These frameworks
+    automate the management of precision casting, scaling, and memory handling. Mixed-precision
+    training offers the dual benefit of increased throughput—often 2–3$$$\times $$$
+    compared to FP32-only training—and the ability to fit larger models or batch sizes
+    in the same memory footprint, making it standard practice for state-of-the-art
+    deep learning systems. The steps are summerized in Algorithm [3](#FPar3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Algorithm 3 Mixed-Precision Training with Tensor Cores
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Flow chart detailing a process for updating neural network model parameters
+    using mixed precision. It begins with initializing master weights in FP32 and
+    model copies in FP16/BF16\. The process involves setting a loss scaling factor,
+    casting inputs, performing forward and backward passes, computing and scaling
+    loss, unscaling gradients, and checking for gradient overflow. If no overflow
+    occurs, master weights are updated in FP32 and copied to the FP16/BF16 model.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaap_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 4.4.4 Implementation of Matrix Multiplication Kernel
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Matrix multiplication is a core operation in scientific computing, machine learning,
+    and graphics. On GPUs, an efficient implementation leverages thread-level parallelism
+    and shared memory to reduce global memory accesses and improve data reuse. The
+    kernel assigns blocks of threads to tiles of the result matrix, where each thread
+    computes one element by performing a row and column dot product.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Below is a high-level CUDA-style pseudocode using shared memory for tiled matrix
+    multiplication.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Algorithm 4 Tiled Matrix Multiplication Kernel (CUDA-Style)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![The image is a pseudocode for matrix multiplication using shared memory in
+    parallel computing. It involves input matrices A[M][K] and B[K][], and outputs
+    matrix C[M][]. Key steps include defining `TILE_WIDTH`, calculating row and column
+    indices, initializing `Cvalue` to zero, and iterating over tiles in the K dimension.
+    Shared memory arrays A_s and B_s are used to load submatrices. The code includes
+    synchronization with `__syncthreads()` and updates `Cvalue` with products of elements
+    from A_s and B_s. Finally, C[row][col] is set to `Cvalue`.](../images/641715_1_En_4_Chapter/641715_1_En_4_Figaaq_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This implementation achieves high memory efficiency by reducing global memory
+    accesses through shared memory buffering. Thread synchronization ensures the correctness
+    when multiple threads operate on shared data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 4.5 Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The chapter provides a comprehensive overview of GPU computing principles and
+    advanced optimization techniques for deep learning. It introduces the CUDA programming
+    model, emphasizing heterogeneous computing where CPUs and GPUs collaborate, and
+    discusses CUDA extensions to C/C++, SIMT architecture, and GPU memory hierarchy
+    for efficient data handling. The chapter further explores key performance optimization
+    strategies such as memory access, thread and instruction-level parallelism, asynchronous
+    execution, and profiling tools. Advanced topics like tiled matrix multiplication,
+    gradient checkpointing, mixed-precision training using tensor cores, and optimized
+    kernel implementations are also covered. The chapter equips readers with the theoretical
+    and practical knowledge required to build efficient, GPU-accelerated deep learning
+    applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercise
+  prefs: []
+  type: TYPE_NORMAL
+- en: What are the advantages of using the CUDA programming model for deep learning
+    applications?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Explain the concept of heterogeneous computing and its significance in GPU-based
+    systems.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Describe the purpose and usage of CUDA-specific function qualifiers such as
+    `__global__`, `__device__`, and `__host__`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Compare SIMT (Single Instruction, Multiple Threads) with SIMD (Single Instruction,
+    Multiple Data) architectures.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Discuss the different types of device memory in CUDA and their roles in kernel
+    execution.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Explain the hierarchy of CUDA memory and identify which memory types offer the
+    fastest access.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: How can effective GPU memory management improve the performance of deep learning
+    models?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What are coalesced memory accesses, and how do they contribute to memory access
+    optimization?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Describe thread divergence and suggest ways to minimize its impact in CUDA programming.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Discuss instruction-level parallelism in the context of CUDA. Provide examples
+    where applicable.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Explain how asynchronous execution and overlapping of memory transfers with
+    computation can enhance performance.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: List three profiling or analysis tools used in CUDA development and describe
+    their features.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Summarize key guidelines to be followed for optimizing GPU kernels.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Illustrate the implementation of tiled matrix multiplication using CUDA. Why
+    is this technique preferred?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What is mixed-precision training? How do tensor cores assist in accelerating
+    such training?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

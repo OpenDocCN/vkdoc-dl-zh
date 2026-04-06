@@ -1,0 +1,1159 @@
+- en: 3. Model-Based Approaches
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Chapter [2](502835_2_En_2_Chapter.xhtml) talked about the parts of the setup
+    that form the agent and the part that forms the environment. To recap, the agent
+    gets the state *S*[*t*] = *s* and follows a policy *π*(*s*| *a*) that maps states
+    to actions. The agent uses this policy to take an action *A*[*t*] = *a* when in
+    state *S*[*t*] = *s*. The system transitions to the next time instant of *t* + 1\.
+    The environment responds to the action (*A*[*t*] = *a*) by putting the agent in
+    a new state of *S*[*t* + 1] = *s*^′ and providing feedback to the agent in terms
+    of a reward, *R*[*t* + 1]. The agent has no control over what the new state *S*[*t* + 1]
+    and reward *R*[*t* + 1] will be. The transition from (*S*[*t*] = *s*, *A*[*t*] = *a*) → (*R*[*t* + 1] = *r*,
+    *S*[*t* + 1] = *s*^′) is governed by the environment. This is known as *transition
+    dynamics*. For a given pair of (*s*, *a*), there could be one or more pairs of
+    (*r*, *s*^′). In a deterministic world, you would have a single pair of (*r*,
+    *s*^′) for a fixed combination of (*s*, *a*). However, in stochastic environments,
+    that is, environments with uncertain outcomes, you could have many pairs of (*r*,
+    *s*^′) for a given (*s*, *a*). Chapter [2](502835_2_En_2_Chapter.xhtml) also looked
+    at the computation of state values *V*(*s*) and state-action values *Q*(*s*, *a*)
+    and the recursive relationship between current state/state-action values and next
+    state/state-action values (in Equations [2-19](502835_2_En_2_Chapter.xhtml#Equ19)
+    and [2-21](502835_2_En_2_Chapter.xhtml#Equ21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL agents learn optimal actions for any given state, which maximizes the total
+    reward the agent gets by following an optimal set of actions as the agent transitions
+    from one state to another. Equations [2-19](502835_2_En_2_Chapter.xhtml#Equ19)
+    and [2-21](502835_2_En_2_Chapter.xhtml#Equ21) clearly indicate that *V*(*s*) and
+    *Q*(*s*, *a*) depend on two components, the transition dynamics and the next state/state-action
+    values. To lay the foundations of RL learning, this chapter starts with the simplest
+    setup—one in which the transition dynamics Pr{ *S*[*t* + 1] = *s*^′, *R*[*t* + 1] = *r* | *S*[*t*] = *s*,
+    *A*[*t*] = *a*} are known. It also assumes that the number of states and actions
+    possible in a given state form a closed, small set of discrete values. Such a
+    simplifying assumption will help you develop the foundations of RL learning algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In real life, these assumptions are not valid. Consider an example of a robotic
+    arm (or any physical system). Each time the arm is moved, due to the mechanical
+    parts involved, the movement may be imprecise and therefore the next state is
+    only approximately defined in a strict sense. Further, consider the case of a
+    self-driving car, where the state at the next instant depends on many other stochastic
+    elements like the sudden move by another car or a pedestrian, which may vary from
+    time to time. This shows that prior knowledge of the transition function is an
+    assumption that can be made only in very simple scenarios. The second assumption
+    of a finite set of discrete states and actions is not valid for most of the physical
+    systems that live in the world of continuous states and actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hence, the algorithms you will study in later chapters use various techniques
+    to either estimate these transition functions using sampling and other related
+    approaches under *model-based RL* or side-step the need to explicitly estimate
+    the transition functions under *model-Free RL*. I discussed these in the section
+    on “Solution Approaches with a Mind Map” toward the end of Chapter [2](502835_2_En_2_Chapter.xhtml).
+    These approaches help remove both these constraints and I will discuss these in
+    detail as you progress through the book.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Coming back to the focus of this chapter, the agents in this chapter use the
+    transition knowledge to “plan” a policy that maximizes the cumulative return of
+    the state value *v*[π](*s*) or *q*[π](*s*, *a*). All these algorithms are based
+    on dynamic programming, which allows you to break the problem into smaller subproblems
+    and use the recursive relationship of Bellman equations explained in Chapter [2](502835_2_En_2_Chapter.xhtml).
+    Next, I will extend the approach to come up with a more general framework of policy
+    improvement.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Grid World Environment
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The coding exercises are based on a simple grid world environment—an idealized
+    maze world of 16 squares arranged in a 4x4 format, as shown in Figure [3-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a 4 by 4 grid. The grid has 16 blocks that are labeled from
+    0 to 15\. 0 and 15 lie on the opposite end of the grid.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Grid world environment. It is a 4×4 grid with terminal states at the top left
+    and bottom right. Numbers in the grid represent the state S
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The top-left and bottom-right positions are terminal states shown as shaded
+    cells in the figure. In a given cell, the agent can move in any of the four directions:
+    `UP, RIGHT, DOWN,` and `LEFT`. The actions deterministically move the agent in
+    the direction of the action unless there is a wall. In the case of hitting a wall,
+    the agent stays in the current position. The agent gets a reward of `-1` every
+    time step until it reaches the terminal state.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: I will keep the implementation of the grid-world environment to bare bones,
+    just implementing the core capabilities. For a detailed way to create custom environments
+    in the Gymnasium library, refer to the documentation of Gymnasium.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You’ll create a new class called `GridworldEnv` that implements the transition
+    dynamics Pr{ *S*[*t* + 1] = *s*^′, *R*[*t* + 1] = *r* | *S*[*t*] = *s*, *A*[*t*] = *a*}
+    as a dictionary `P` in which `P[s][a]` gives a list of tuples with the values
+    `(probability, next_state, reward, done)`. In other words, for a given state *s*
+    and action *a*, it gives a list of tuples consisting of the possible next states
+    *s*^′, reward *r*, and probability *p*(*s*^′, *r*| *s*, *a*). The fourth value
+    in the tuple is a Boolean flag called `done` that indicates if the next state
+    *s*^′ is a terminal state or not.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The transition dynamics `P` are known under the current setup of model-based
+    learnings, which is the focus of this chapter. However, `P` is unknown in real-world
+    problems, whether model-based or model-free. Algorithms either learn without the
+    knowledge of the model (transition dynamics) or build an approximation of the
+    model dynamics to solve the RL optimization problem. You will study these algorithms
+    in subsequent chapters. Listing [3-1](#PC1) shows the transition function implementation
+    of grid world, which is contained in the script file `gridworld.py`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `limit_coordinates` function makes sure that the agent does not use all
+    of the grid. If you are in one of the left-most cells, an action to move “left”
+    does not let the agent get out of the grid. The agent in such a case stays unmoved,
+    as there is no way to go left while in a left-most cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `transition_prob` function takes the current position of the agent and an
+    action such as UP or DOWN. It moves the agent as per the action, taking care to
+    not let the agent fall off the grid. It returns a tuple of `prob_of_new_state,
+    next state value, reward` and a `done` flag. In the current environment, you are
+    modeling a deterministic world, which means that the move based on the action
+    is certain and the outcome is only a single new state with a probability of 1.0\.
+    Therefore, `prob_of_new_state` in the returned tuple is always 1 and only one
+    tuple is returned for each state-action pair. However, in a stochastic world,
+    for each state, action pair would get a list of tuples, whereby each tuple refers
+    to one of the possible states the agent could find itself in after the action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now focus on the model-based algorithms, which is the focus of this chapter.
+    I will first explain the concept of dynamic programming.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dynamic Programming
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Dynamic programming is an optimization technique that was developed by Richard
+    Bellman in the 1950s. In the context of algorithmic thinking, dynamic programming
+    is equated with the concept of avoiding repeated work by remembering partial results.
+    Stated another way, it refers to simplifying a complex problem into simpler sub-parts
+    in a recursive way. This recursive breaking down into simpler problems stops once
+    you reach a level of simplification where the problem can be solved trivially.
+    An example is the calculation of a Fibonacci series.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Fibonacci series is defined as *F*[*i*] = *F*[*i* − 1] + *F*[*i* − 2] with
+    the base case of *F*[1] = *F*[2] = 1\. Let’s look at how to calculate *F*[51].
+    *F*[51] = *F*[50] + *F*[49]. But *F*[50] itself has to be calculated first, using
+    *F*[49] + *F*[48]. As you can see, to calculate *F*[51], you need to calculate
+    *F*[49] twice, first as part of *F*[50] and then directly as the second term in
+    the equation of *F*[51]. Using dynamic programming, you can calculate *F*[49]
+    only once and store it the first time it is calculated. Any subsequent call to
+    calculate *F*[49] would return the previously stored value instead of calculating
+    it again. There are two ways to implement this. A top-down approach of starting
+    with the big problem and recursively breaking it down into calculations of smaller
+    sub-problems (when implemented in a naïve way) would lead to exponential growth
+    of runtime due to repeated calculations of a sub-problem multiple times, similar
+    to what I talked about in the context of *F*[49] and illustrated in Figure [3-2](#Fig2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A recursion diagram. From top, F 6 splits into F 5 and F 4\. Similarly, F 5
+    is divided into F 4 and F 3\. F 4 is divided into F 2 and F 3\. F 4 is further
+    split into F 3 and F 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recursion diagram of calculating Fibonacci *F*[6]
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see from Figure [3-2](#Fig2) that to calculate *F*[6], you need to calculate
+    *F*[5] once, *F*[4] twice, *F*[3] three times, *F*[2] five times, and *F*[1] seven
+    times. As you calculate the Fibonacci value of higher numbers, the lower number’s
+    Fibonacci values need to be calculated/accessed multiple times. The way to avoid
+    this exponential growth is to a) store the values as you go from the top node
+    in Figure [3-2](#Fig2) to the leaf nodes, in a *top-down approach*, or b) start
+    the calculation from leaves and climb up the tree to reach the root node at the
+    top, in a *bottom-up approach*. The technique of saving values as you calculate
+    and using them the next time when they are needed is called *memoization* and
+    should not be confused with memorization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dynamic programing in the world of mathematics optimization refers to the simplification
+    of a calculation into a sequence of steps over time—that is, calculating current
+    time step values from the values of the previous time step. This is the approach
+    you will be using to build a time-indexed recursion for calculating the state
+    values *v*[π](*s*). Take a look at the Bellman equation, which expresses the value
+    of a state *v*[π](*s*) in terms of the policy π(*a*| *s*), system dynamics *p*(*s*^′,
+    *r*| *s*, *a*), and state value of successor states *v*[π](*s*^′).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime
+    },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This expresses the value *v*[π](*s*) in terms of other state values *v*[π](*s*^′),
+    all of which are unknown. If you could somehow get all the successor state values
+    for the current state, you would be able to calculate *v*[π](*s*). This shows
+    the recursive nature of the equation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that a particular value *v*[π](*s*^′) would be needed multiple times wherever
+    *s*^′ is a successor state of some state *s*. Because of this, you can cache (i.e.,
+    store) the value *v*[π](*s*^′) and use it multiple times to avoid recalculating
+    *v*[π](*s*^′) again and again, every time it is needed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dynamic programming is an extensively used optimization technique for a varied
+    class of problems; it allows decomposition of complex problems into smaller problems.
+    Some common applications are scheduling algorithms, graph algorithms like shortest
+    path, graphical models like Viterbi algorithms, and lattice models in bioinformatics.
+    As this book is about reinforcement learning, I restrict the use of dynamic programming
+    for solving the Bellman expectation and Bellman optimality equations, both for
+    value and action-value functions. These equations are given in Chapter [2](502835_2_En_2_Chapter.xhtml),
+    in Equations [2-18](502835_2_En_2_Chapter.xhtml#Equ18), [2-21](502835_2_En_2_Chapter.xhtml#Equ21),
+    [2-24](502835_2_En_2_Chapter.xhtml#Equ24), and [2-25](502835_2_En_2_Chapter.xhtml#Equ25).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Equation [2-18](502835_2_En_2_Chapter.xhtml#Equ18) shows the recursive nature
+    of state values *v*[π](*s*) in terms of successor state values *v*[π](*s*^′) as
+    reproduced here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime
+    },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Equation [2-21](502835_2_En_2_Chapter.xhtml#Equ21) showed the recursive nature
+    state-action values *q*[π](*s*, *a*) in terms of successor state-action values
+    *q*[π](*s*^′| *a*^′) as reproduced here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\pi}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ \sum \limits_{a^{\prime }}\pi \left({a}^{\prime
+    }|{s}^{\prime}\right)\ q\left({s}^{\prime },{a}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Equation [2-24](502835_2_En_2_Chapter.xhtml#Equ24) showed the recursive relationship
+    of state-value *v*[∗](*s*) in terms of successor state-values *v*[∗](*s*^′) as
+    shown in Equation [3-3](#Equ3). I remove the outer summation in Equation [3-1](#Equ1)
+    and replace it with a *max* function. This is the Bellman Optimality Equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\ast }(s)=\underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\ast}\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equation [2-25](502835_2_En_2_Chapter.xhtml#Equ25) showed the recursive relationship
+    between the state-action values *q*[∗](*s*, *a*) in terms of successor state-action
+    values *q*[∗](*s*^′| *a*^′) under the Bellman optimality construction, where the
+    inner sum in Equation [3-2](#Equ2) is replaced with the *max* function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\ast}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma \underset{a^{\prime }}{\mathit{\max}}{q}_{\ast}\left({s}^{\prime
+    },{a}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each of these four equations represents the *v* or *q* value of a state or state-action
+    pair in terms of the value of successor states or state-actions meeting the recursive
+    nature of dynamic programming.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Remember that each of the summations in these four equations is nothing but
+    the expectation operation *E*[·] over all possible values reward and the next
+    state in the next time period, which is a function of the current state and action
+    taken in that state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the following sections, you will first use the expectation in Equation [3-1](#Equ1)
+    and/or [3-2](#Equ2) to evaluate a policy, which is known as an *evaluation* or
+    *prediction*. You will then use optimality Equation [3-3](#Equ3) and/or [3-4](#Equ4)
+    to find an optimal policy that maximizes the state values and state-action values,
+    which is known as *policy improvement*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once you understand this concept, you will look at a generalized setup, an extensively
+    used generalized framework for policy improvement. I conclude the chapter by talking
+    about the practical challenges in large-scale problem setups and various approaches
+    to optimizing dynamic programming in that context.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As discussed at the beginning of this chapter, I mostly focus on the class of
+    problems whereby you have a finite set of states the agent can find itself in
+    as well as a finite set of actions in each state. Problems with continuous states
+    and continuous actions can technically be solved using dynamic programming by
+    first discretizing the states and actions. You will see an example of such an
+    approach toward the end of Chapter [4](502835_2_En_4_Chapter.xhtml). It also forms
+    the bulk of Chapter [5](502835_2_En_5_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Evaluation/Prediction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section uses Equation [3-1](#Equ1) to derive the state values using its
+    iterative nature and the concepts of dynamic programming. Equation [3-1](#Equ1)
+    represents the state value for a state *s* in terms of its successor states. The
+    values of states also depend on the policy the agent is following, which is defined
+    as policy *π*(*a*| *s*) in Equation [3-1](#Equ1). As you may have noticed, because
+    of this dependence of value on policy, all the state values are subscripted with
+    *π* to signify that state values in Equation [3-1](#Equ1) are the ones obtained
+    by following a specific policy *π*(*a*| *s*). To stress once again the importance
+    of a policy π, note that changing the policy *π* will produce a different set
+    of values, *v*[*π*](*s*) and *q*[*π*](*s*, *a*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The relationship in Equation [3-1](#Equ1) can be graphically represented by
+    a backup diagram, as shown in Figure [3-3](#Fig3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a backup diagram of the Bellman expectation equation. The
+    illustration has dark circles and empty circles. The dark circles signify actions,
+    and the empty circles signify states.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backup diagram of Bellman expectation equation for state-value functions. Empty
+    circles signify states, and dark circles signify actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: The agent starts in state *s*. It takes an action *a* based on its current policy
+    *π*(*a*| *s*). As a result of this action, the environment transitions the agent
+    to a new state *s*^′ along with the reward *r* based on the system dynamics *p*(*s*^′,
+    *r*| *s*, *a*). It should be evident that Equation [3-1](#Equ1) forms a system
+    of equations, one equation for each state. If there are *N* states, you will have
+    *N* such equations. The number of equations equals the total number of states,
+    mathematically represented as *N* =  ∣ *S*∣, and is the same as the number of
+    unknown state values *v*(*s*), one for each state *S* = *s*. Thus, Equation [3-1](#Equ1)
+    represents a system of |*S*| equations with |*S*| unknowns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You could solve the system of equations using any linear programming technique.
+    The recursive set of N equations can be represented in Vector Algebra notation.
+    While you will not be using this approach in real-life problems for reasons soon
+    to be discussed, I will go over the approach to vectorization of Equation [3-1](#Equ1).
+    This is optional and you may skip it if you are not very mathematically inclined.
+    You first rewrite Equation [3-1](#Equ1) by merging the outer and inner summations
+    in two separate summations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi }(s)=\sum \limits_{a,s^{\prime },r}\pi \left(a|s\right).p\left({s}^{\prime
+    },r\ \right|s,a\left).r+\gamma .\sum \limits_{a,\kern0.5em {s}^{\prime },r}\pi
+    \left(a|s\right).p\left({s}^{\prime },r\ \right|s,a\right).{v}_{\pi}\left({s}^{\prime}\right)
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now take the summation over successor state *s*^′ out of the summation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi }(s)=\sum \limits_{s^{\prime },a,r}\pi \left(a|s\right).p\left({s}^{\prime
+    },r\ \right|s,a\left).r+\gamma .\sum \limits_{s^{\prime }}\sum \limits_{a,r}\pi
+    \left(a|s\right).p\left({s}^{\prime },r\ \right|s,a\right).{v}_{\pi}\left({s}^{\prime}\right)
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The first term on the right—*π*(*a*| *s*). *p*(*s*^′, *r* |*s*, *a*) with the
+    summation over all possible *s*^′, *a*, *r* is nothing but the expectation, *E*[.]
+    due to a specific policy, π. Also note that you will have *N* such equations,
+    one for each state *S* = *s*. If you write all the *N* equations, one below the
+    other, you can specify all *v*[π](*s*), all *N* of them as a single vector of
+    size 1*xN* denoted as ***V***[**π**]. In a similar fashion, the first term on
+    the right side can be expressed as a vector of rewards of size 1*xN* depicted
+    as *R*[π], thereby denoting the expected reward for each state based on the policy
+    that the agent follows in each of the state. The summation ![$$ \sum \limits_{a,r}\pi
+    \left(a|s\right).p\left({s}^{\prime },r\ \right|s,a\Big) $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_IEq1.png)
+    in the second expression on the right can be expressed as *P*[π] and is the transition
+    dynamics of the system under a specific policy. This will be a matrix of size
+    *NxN* with a number of rows and number of columns equal to the total number of
+    states *N*. Making these changes, you can represent the previous equation as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{\uppi}={R}_{\uppi}+\upgamma \cdotp {P}_{\uppi}\cdotp {V}_{\uppi}
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Collecting all the terms with *V*[π] on left, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{\uppi}\cdotp \left(I+\upgamma \cdotp {P}_{\uppi}\right)={R}_{\uppi}
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'You can now rewrite the vector equation as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{\uppi}={\left(I+\upgamma \cdotp {P}_{\uppi}\right)}^{-1}\cdotp {R}_{\uppi}
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: As you can see, calculating *V*[*π*] involves inverting an *N* × *N* matrix
+    (*I* + *γ* · *P*[*π*]), which is not feasible for a large value of *N*. And this
+    is the primary reason that you would not use the linear algebra approach to solve
+    this system of *N* linear equations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Instead, I will resort to the use of iterative solutions. This is achieved by
+    starting with some random state values *v*[0](*s*) at first iteration *k* = 0
+    and using them on the right side of Equation [3-1](#Equ1) to obtain the state
+    values at the next iteration step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{k+1}(s)\leftarrow \sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime
+    },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Notice the change of subscript from *π* to (*k*) and (*k* + 1). Also notice
+    the change of equality (=) to assignment (←). You are now representing the state
+    values at iteration (*k* + 1) in terms of the state values in the previous iteration
+    *k*, and there will be *N* (total number of states) such updates in each iteration.
+    It can be shown that, as the iteration index *k* increases and goes to infinity
+    (∞), *v*[*k*] will converge to *v*[π]. This approach of finding the values of
+    all the states for a given policy is known as *policy evaluation*. You start from
+    an arbitrarily chosen value of *v*[*o*] at *k* = 0 and iterate over the state
+    values using Equation [3-6](#Equ5), until the state values *v*[*k*] stop changing.
+    The other name for policy evaluation is *prediction*—that is, predicting the state
+    values for a given policy. The convergence of *v*[*k*] to *v*[π] is guaranteed
+    because *v*[*k*] = *v*[π] is a fixed point and it flows from a contraction mapping
+    theorem which you can look up in advanced texts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While updating all the *N* state values *v*[*k* + 1], one for each of the N
+    states, from the previous iteration values of states (*N* of the *v*[*k*] values),
+    there are two approaches. The first such approach is known as the *synchronous
+    version*. In this, you maintain two arrays for the values of the states—one from
+    the previous iteration *k* which is used to update the second array to hold updated
+    state values in the current iteration *k* + 1\. At the end of the current iteration,
+    the values from the second array to the first array and the next cycle of iteration
+    from *k* + 1 to *k* + 2 is initiated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second approach is known as *asynchronous version**,* because there is only
+    one array and updates are carried out in place. This is shown to display faster
+    convergence while requiring memory for only one array. In the approach, there
+    are many ways to choose which state value to update in what sequence. I will discuss
+    this in detail in a subsequent section in this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-4](#Fig4) shows the pseudocode for iterative policy evaluation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of iterative policy evaluation. It takes in pie value, the policy
+    to be evaluated. The algorithm initializes state values, makes a copy, and runs
+    a loop until delta is less than theta.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iterative policy evaluation algorithm
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now apply the algorithm to the grid world given in Figure [3-1](#Fig1).
+    This assumes a random policy *π*(*a*| *s*) where each of the four actions (`UP,
+    RIGHT, DOWN, LEFT`) have an equal probability of 0.25\. Listing [3-2](#PC2) shows
+    relevant portions of the code for iterative policy evaluation applied to the grid
+    world. This is from the file `3.a-policy-evaluation.ipynb`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: You start with k=0, the index of current iteration, and two arrays `V` and `V_new`
+    to hold the values of the states in the grid. The inner `for` loop `for s in range(env.nS)`
+    loops over all the states to update the array `V_new` with *v*[*k* + 1](*s*) from
+    the previous state values *v*[*k*](*s*) contained in the array `V` using Equation
+    [3-1](#Equ1). Along the way, it records the maximum change in value across all
+    the states and stores this maximum change in the `delta` variable. Next, it copies
+    the values from `V_new` to `V` and checks if the maximum change in the current
+    iteration, as stored in `delta,` is less than the initial threshold, called `theta`.
+    If the check is true, the program terminates printing the grid and its state values.
+    If `delta` is more than `theta`, the program loops back to the next iteration,
+    incrementing the iteration counter `k` by 1\. The final values of the states in
+    the grid for following this random policy produced by the program are shown in
+    Figure [3-5](#Fig5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a 4 by 4 grid. The opposite end blocks of the grid are labeled
+    0\. The blocks from top to bottom are labeled 0, - 14, - 20, - 22, - 14, - 18,
+    - 20, - 20, - 20, - 20, - 18, - 14, - 22, - 20, - 14, and 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Policy evaluation: *v*[*π*](*s*) for the grid world from Figure [3-1](#Fig1)
+    with the agent following a random policy. Each of the four actions (`UP`, `DOWN`,
+    `LEFT`, and `RIGHT`) have an equal probability of `0.25`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that the values have converged. Let’s look at the third row in the last
+    column with a state value of *v*[*π*](*s*) =  − 14\. In this state, the `UP` action
+    will take the agent to a cell with a state value of -20, the `LEFT` action takes
+    the agent to a cell with a state value of -18, the `DOWN` action takes the agent
+    to a terminal state with a value of 0, and the `RIGHT` action hits the wall, leaving
+    the agent in the same state. Let’s apply Equation [3-1](#Equ1). I will expand
+    the right side of Equation [3-1](#Equ1) with the actions applied in order—`TOP,
+    RIGHT`, `DOWN`, and `LEFT`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: -14 = 0.25*(-1+(-20)) + 0.25*(-1+(-14)) + 0.25*(-1+0) + 0.25*(-1+(-18))
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: -14 = -14
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The values on both sides are matching, which confirms convergence. Accordingly,
+    the values shown in Figure [3-5](#Fig5) are the state values when the agent follows
+    a random policy. Note that this considers a discount factor of γ = 1.0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This section considered a random policy with equal probability of action in
+    all four directions. However, this probably may not be an optimal policy to follow.
+    There could be one or more optimal policies producing higher state values. The
+    next section looks at a way to devise the algorithm to find a better policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Improvement and Iterations
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The previous section discussed an algorithm to get state values *v*[*π*](*s*)
+    for a given policy. You could use this information to improve upon the policy.
+    In the grid world, you have four actions that you can take from any state. Instead
+    of following a random policy *π*(*a*| *s*), you’ll now look at the value of taking
+    all four actions individually and then follow the policy *π* after that step.
+    This will give you four values of *q*(*s*, *a*) action values, which are the action
+    values of taking each of the four possible actions in the grid world.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ q\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\
+    \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Note that *q*(*s*, *a*) has no subscript of *π*. You are evaluating *q*(*s*,
+    *a*) for all possible actions while in state *S* = *s*. If any of the *q*(*s*,
+    *a*) values are greater than the current state value *v*[*π*](*s*), it means that
+    current policy *π*(*a*| *s*) is not taking the optimal action. You can improve
+    the current policy in current state *S* = *s* by taking the *q*-value, maximizing
+    action *A* = *a* and defining this to be the policy in state *S* = *s*. It will
+    give a higher state value compared to the current policy *π*(*a*| *s*). This new
+    policy is defined as *π*^′(*a*| *s*). In other words, you define the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\pi}^{\prime}\left(a|s\right)=\underset{a}{argmax}\ q\left(s,a\right)
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There is a general result called *policy improvement theorem**,* which states:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let there be two deterministic policies π and π^′ such that, for all *s* ∈ *S*,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\uppi}\left(s,{\uppi}^{\prime }(s)\right)\ge {v}_{\uppi}(s) $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Then the policy π^′ must be as good as or better than π. In other words:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{\pi}^{\prime }(s)\ge {v}_{\pi }(s)\kern0.75em s\ \mathit{\text{\EUR}}\
+    S $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The values for all states under the new policy π^′ are going to be equal to
+    or greater than the state values under previous policy *π*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stated differently, while choosing a maximizing action in a specific state *S* = *s*
+    improves the state value of that state, it cannot reduce the values of other states.
+    It can either leave them unchanged or improve those other states that depend on
+    *S* = *s*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The previous maximizing step could be applied to all the states based on their
+    current *q*-values. It can be seen as a greedy step since you are maximizing the
+    state value of a particular state without considering anything else. Extending
+    this greedy step action across all states in the MDP is known as a *greedy policy*.
+    The recursive state value relationship is given by the Bellman’s optimality Equations
+    [3-3](#Equ3) and [3-4](#Equ4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You now have a framework to improve the policy. For a given MDP, you first
+    do policy evaluation iteratively to obtain state values *v*(*s*), and then you
+    apply the greedy selection of action by maximizing the *q* values as per Equation
+    [3-7](#Equ6). This results in state values going out of sync with Bellman equations,
+    as the maximization step is applied to each individual state without flowing it
+    through all the successor states. Therefore, you again carry out the policy iteration
+    under the new policy *π*^′ to find the state/action values under the improved
+    policy. Once the values are obtained, the maximizing action from Equation [3-7](#Equ6)
+    is applied again to further improve the policy to *π*^″. The cycle goes on until
+    no further improvement is observed. This sequence of action can be depicted as
+    follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\pi}_0\overset{evaluate}{\to }\ {v}_{\pi_0}\overset{improve}{\to }\ {\pi}_1\overset{evaluate}{\to
+    }{v}_{\pi_1}\overset{improve}{\to }{\pi}_2\dots ..\overset{improve}{\to }\ {\pi}_{\ast}\overset{evaluate}{\to
+    }{v}_{\ast } $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: From the policy improvement theorem, you know that each swipe of greedy improvement
+    and policy evaluation (![$$ {v}_{\pi}\overset{improve}{\to }\ {\pi}^{\prime}\overset{evaluate}{\to
+    }{v}_{\pi}\Big) $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_IEq2.png))
+    gives you a policy that is better than the previous one with ![$$ {v}_{\pi}^{\prime
+    }(s)\ge {v}_{\pi }(s)\kern0.75em s\ \text{\EUR}\ S $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_IEq3.png).
+    For an MDP that has a finite number of discrete states along with a finite number
+    of actions in each state and with each swipe leading to an improvement, an optimal
+    policy would be found once you stop observing any further improvement in state
+    values. This is bound to happen within a finite number of cycles of improvement.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This approach to finding an optimal policy is called *policy iteration*. Figure
+    [3-6](#Fig6) shows the pseudocode for policy iteration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a policy iteration algorithm for finite M D P. The algorithm
+    contains two steps, policy evaluation step and the policy improvement step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy iteration algorithm for finite MDP
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now apply the policy-iteration algorithm to the grid world from Figure [3-1](#Fig1).
+    Listing [3-3](#PC3) shows the code for the policy iteration applied to the grid
+    world. The complete code is given in `3-b-policy-iteration.ipynb`. The `policy_evaluation`
+    function remains the same as Listing [3-2](#PC2). There is a new function, called
+    `policy_improvement`, which applies greedy maximization to return a policy that
+    improves upon the existing policy. `policy_iteration` is a function that runs
+    `policy_evaluation` followed by `policy_improvement` in a loop until the state
+    values stop increasing and converge to a fixed point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the policy improvement, you loop over all states and do greedy maximization
+    for each state, as shown in the `for` loop `for s in range(env.nS)`. In a given
+    state *s*, you first calculate the current state-action values `Q[s,a]` and pick
+    the action *a* with maximum Q value. This action becomes the new policy in that
+    given state. If there is more than one action with same maximum state value, all
+    such actions are taken as a set of best actions in that state with equal probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The policy iteration step, as shown in Listing [3-4](#PC4), iterates over policy
+    evaluation and policy improvement in a loop until the values converge and there
+    is no further improvement observed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [3-7](#Fig7) shows the state values for each grid cell as a result of
+    running `policy_iteration` on the grid world.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of 4 by 4 grid. The opposite blocks of the grid have 0 values.
+    The values from top to bottom are 0, - 1, - 2, - 3, - 1, - 2, - 3, - 2, - 2, -
+    3, - 2, - 1, - 3, - 2, - 1, and 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy iteration *v*[∗](*s*) for the grid world from Figure [3-1](#Fig1). The
+    agent is following an optimal policy as found by applying policy_iteration from
+    Listing [3-4](#PC4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that the optimal state values are the number of steps required to reach
+    the closest terminal state with a -ve sign. As the reward is -1 for each time
+    step until the agent reaches the terminal state, the optimal policy would take
+    the agent to the terminal state in the minimal number of possible steps multiplied
+    with -1\. For some states, more than one action could lead to the same number
+    of steps to reach the terminal state. For example, looking at the top-right state
+    with the state value = -3, it takes three steps to reach the terminal state at
+    the top left and also three steps to reach the terminal state at the bottom right.
+    In other words, the state value is the negative of the Manhattan distance between
+    the state and nearest terminal state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can also extract the optimal policy, as shown in Figure [3-8](#Fig8). The
+    left side of the figure shows the policy as extracted from the code in Listing
+    [3-4](#PC4), and the right side of the diagram shows the same policy graphically
+    superimposed on the grid.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 illustrations. Left. An illustration of optimal policy highlights the probability
+    of action for each cell in the grid on the right. Right. An illustration of a
+    4 by 4 grid with values ranging from - 3 to 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Optimal state values v∗(s) for the grid world as shown in Figure [3-7](#Fig7).
+    Left: optimal policy with probability of action for each cell in the grid. Right:
+    grid superimposed with the optimal policy'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As discussed earlier, policy evaluation is also known as *prediction,* as you
+    are trying to find the state values consistent with the current policy of the
+    agent. Similarly, using policy iteration to find an optimal policy is also known
+    as *control*—to control the agent and find an optimal policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Value Iteration
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section looks at policy iteration and computes how many passes you need
+    to find an optimal policy. Policy iteration has two steps. The first step is policy
+    evaluation, which is run for the current policy. It requires multiple passes over
+    the state space so that state values converge and become consistent with the current
+    policy. The second part of the loop is policy improvement, which requires one
+    pass over the state space to find the best action for each state—that is, greedy
+    improvement with respect to the current state action values. From this, it is
+    evident that a large part of the time is spent in policy evaluation and letting
+    values converge.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An alternative approach is to truncate the loop inside policy evaluation well
+    before the state values have converged. When you truncate the loop inside policy
+    evaluation to only one loop, you are using an approach known as *value iteration*.
+    Similar to the approach of Equation [3-6](#Equ5), you take the Bellman optimality
+    from Equation [3-3](#Equ3) for the state value and convert it into an assignment
+    with iteration. The revised equation is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{k+1}(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you iterate, the state values will keep improving and will converge to v*,
+    which are the optimal values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_0\to {v}_1\to \dots {v}_k\to {v}_{k+1}\to \dots \to {v}_{\ast } $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Once the values converge to optimal state values, you can use a one-step backup
+    diagram to find the optimal policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\pi}_{\ast}\left(a\ |\ s\right)\underset{a}{= argmax}\ \sum \limits_{s^{\prime
+    },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\ast}\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (3-9)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The previous procedure to iterate over values by taking a max at each step is
+    known as *value iteration*. Figure [3-9](#Fig9) shows the pseudocode for value
+    iteration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a value iteration algorithm. It initializes state values
+    v, makes a copy, and runs a loop until theta is greater than delta. The output
+    of the algorithm illustrates a deterministic policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Value iteration algorithm for a finite MDP
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can now apply the previous value iteration algorithm to the grid world given
+    in Figure [3-1](#Fig1). Listing [3-5](#PC5) contains the code for value iteration
+    applied to the grid world. Check out the `3.c-value-iteration.ipynb` file for
+    a detailed implementation. The `value_iteration` function is the straight implementation
+    of the pseudocode in Figure [3-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The output of running the value algorithm against the grid world will produce
+    the optimal state values *v*[∗](*s*) and optimal policy ![$$ {v}_{\uppi^{\ast
+    }}\left(a|s\right) $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_IEq4.png)
+    with the same values and policy, as shown in Figures [3-7](#Fig7) and [3-8](#Fig8).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before moving forward, let’s summarize. What you have learned until now are
+    classified as *synchronous dynamic programming algorithms*, as summarized in Table
+    [3-1](#Tab1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Synchronous Dynamic Programming Algorithms
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Algorithm | Bellman Equation | Type of Problem |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Iterative policy evaluation | Expectation equations | Prediction |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Policy iteration | Expectation equations and greedy improvement | Control
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Value iteration | Optimality equations | Control |'
+  prefs: []
+  type: TYPE_TB
+- en: Generalized Policy Iteration
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The policy iteration described earlier has two steps. The first step is *policy
+    evaluation*, which gets the state values in sync with the current policy the agent
+    is following. It requires multiple passes over all the states for state values
+    to converge to *v*[π]. The second step is greedy action selection, which improves
+    the policy. As explained, the second step of improvement results in the current
+    state of values going out of sync with the new policy. Therefore, you have to
+    carry out yet another round of policy evaluation to bring the state values back
+    into sync with the new policy. The cycle of *evaluation* followed by *improvement*
+    stops when there is no further change to the state values. This happens when the
+    agent has reached an optimal policy, when the state values are optimal and in
+    sync with the optimal policy. The convergence to the optimal policy (fixed point)
+    *v*[*π*] can be depicted visually, as shown in Figure [3-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of iteration between two steps. A line gets reflected infinitely
+    between two fixed planes labeled pie = greedy and v = v pie. The first step is
+    used to evaluate the state values in sync, followed by improving the policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iteration between the two steps. The first step is evaluating to get the state
+    values in sync with the policy being followed. The second step is improving the
+    policy to do a greedy maximization for actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: You have seen two extremes for the number of loops to iterate inside the policy
+    evaluation step. Also, every iteration, be it policy evaluation or policy improvement,
+    covered all the states in the model. But there can be many variations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, even within a single iteration of *evaluation + improvement*, you can
+    visit only a partial set of states to evaluate as well as a partial set of the
+    state-actions in a given state to improve with greedy maximization. The *policy
+    improvement theorem* guarantees that even partial coverage of the states or partial
+    coverage of state-action maximization will lead to an improvement unless the agent
+    is already following an optimal policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Secondly, you do not have to carry out the evaluation step over multiple iterations
+    until the state values converge. You could stop early. The state value sync does
+    not need to be complete. It may terminate midway.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All of this results in the arrows in Figure [3-10](#Fig10) stopping short of
+    touching the bottom line of *v* = *v*[π]. The arrow diagram in this scenario is
+    shown in Figure [3-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of an iteration that is just enough to cover all the states.
+    A line gets reflected infinitely between two fixed planes labeled pie = greedy
+    and v = v pie. The first step is used to evaluate the state values in sync, followed
+    by improving the policy. The line touches the top of the plane.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iterating just enough to cover all the states in a single iteration leads to
+    not touching the bottom line *v* = *v*[*π*]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly, the step of policy improvement may not carry out improvement for
+    all the states, which this time leads to arrows in Figure [3-10](#Fig10) stopping
+    short of the upper line of π = *greedy*(*v*). Figure [3-12](#Fig12) shows the
+    arrow diagram for such a case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of an iteration during the policy improvement step. A line gets
+    reflected infinitely between two fixed planes labeled pie = greedy and v = v pie.
+    The first step is used to evaluate the state values in sync, followed by improving
+    the policy. The line touches the bottom of the plane.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iterating when the policy improvement step is not carried out over all the states,
+    leading to not touching the top line *π* = *greedy*(*v*)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In summary, these two steps of policy evaluation and policy improvement—with
+    all their variations—lead to convergence as long as each state is visited enough
+    times in both evaluation and improvement. This is known as *generalized policy
+    iteration* (GPI). Most of the algorithms that you will study in this book can
+    be classified as some form of GPI. When you go through the various algorithms,
+    keep in mind the images shown in Figures [3-10](#Fig10) through [3-12](#Fig12).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_3_Chapter/502835_2_En_3_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of 2 blocks are labeled v and pie. They are interconnected through
+    evaluation and improvement vectors. The evaluation equation is v = v pie s. The
+    improvement equation is pie = greed V.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 3-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iteration between the two steps. The first step is evaluation to get state values
+    in sync with the policy being followed. The second step is that of policy improvement
+    to do a greedy maximization for actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Asynchronous Backups
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Dynamic programming–based algorithms have scalability issues. The dynamic programming
+    approach is much better and more scalable than direct solution methods such as
+    linear programing, which involve solving a matrix equation. However, dynamic programming
+    still does not scale well with real-life problems. Consider a single sweep under
+    policy iteration. It requires a visit to each state, and under each state, you
+    need to consider all the possible actions. Further, each action involves a calculation
+    that may theoretically involve all the states again, depending on the state transition
+    function *p*(*s*^′, *r*| *s*, *a*). In other words, every iteration has a complexity
+    of *O*(|*A*| ∗ |*S*|²), one |*S*| for covering each state and |*A*| for visiting
+    each action in a given state, taking the computation to *O*(|*A*| ∗ |*S*|). Then
+    one more |*S*| is added due to the backup equation, where for a given state and
+    one specific action in that state, you need to visit all possible states the system
+    may transition to as a result of the action, taking the overall complexity to
+    *O*(|*A*| ∗ |*S*|²).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You started with policy iteration under which you carried out multiple iterations
+    as part of evaluation step for the state values to converge. The second control
+    method was value iteration. You then reduced the evaluation iterations to only
+    one step by leveraging Bellman optimality equations. All these were synchronous
+    dynamic programming algorithms under which all states are updated using Bellmen
+    backup Equations [3-1](#Equ1) to [3-4](#Equ4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, there is no need to update each state in every iteration. You could
+    update and/or optimize in any order covering only partial parts of the total states
+    in the system. All such methods to sweep over states yield optimal state values
+    and optimal policies as long as each state is visited often enough. There are
+    various approaches to making a sweep, as shown in Table [3-2](#Tab2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Flavors of Dynamic Programming Sweeps
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Approach | Pros | Cons |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Dynamic Programming | Scales better than linear programming | Requires multiple
+    passes for convergence |'
+  prefs: []
+  type: TYPE_TB
+- en: '| In-Place Dynamic Programming | Lower memory footprint | Same scaling issues
+    as DP |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Dynamic Programming with Prioritized Sweeping | Faster convergence | Some
+    states may take longer to converge due to infrequent updates |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Real-time Dynamic Programming | Most scalable | Offers only asymptotic convergence
+    if each state is updated enough times (infinite in asymptotic limit) |'
+  prefs: []
+  type: TYPE_TB
+- en: The first one is *in-place dynamic programming*. Up until now, you have maintained
+    two copies of the states. The first copy holds the existing state values, and
+    the second copy holds the new state values after the update. An *in-place* strategy
+    uses only a copy of the state value array. The same array is used for reading
+    old and updating new state values. As an example, let’s look at the value iteration
+    in Equation [3-8](#Equ7) and rewrite the version for an in-place update. Note
+    the subtle difference in the subindices on state values on the right and left
+    sides of original value iteration equation, as compared to those in-place versions.
+    The original version uses the array *V*[*k*] to update a new array *V*[*k* + 1],
+    while the in-place edit updates the same array.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is the original update Equation [3-8](#Equ7):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{k+1}(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The in-place version of the same is shown here. It’s same array of *v*(*s*)
+    on both sides of the arrow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ v(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r\ \right|s,a\Big)\ \left[r+\gamma\ v\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Experiments have shown that in-place edits offer faster convergence as the values
+    move up even midway of an iteration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second idea revolves around the order in which states should be updated.
+    In synchronous programing, you update all the states in a single iteration. However,
+    values may converge faster if you use *prioritized sweeping*. Prioritized sweeping
+    requires knowledge of the predecessors of a state. Suppose you have just updated
+    a state *S* = *s* and the value changed by an amount Δ. All the predecessor states
+    of state *S* = *s* are added to a priority queue with a priority of Δ. If a specific
+    predecessor state is already there in the priority queue with a priority more
+    than Δ, it is left untouched. In the next iteration, a new state with the highest
+    priority is taken out of the queue and updated, taking you back to the beginning
+    of the loop. The strategy of priority sweeping *requires knowledge of reverse
+    dynamics*—that is, the predecessors of a given state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third idea is *real-time dynamic programming*. With this approach, you only
+    update the value of the states that the agent has currently seen—that is, the
+    states that are relevant to the agent and use its current path of exploration
+    to prioritize the updates. The approach avoids wasteful updates to the states
+    that are not on the horizon of the agent’s current path and hence mostly irrelevant.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dynamic programming, both synchronous and asynchronous, uses full-width backups
+    like the one shown in Figure [3-3](#Fig3). For a given state, you need to know
+    every action possible and every successor state *S* = *s*^′. You also need to
+    know the environment dynamics *p*(*s*^′, *r*| *s*, *a*). However, using an asynchronous
+    approach does not completely solve the scalability issue. It only extends the
+    scalability a bit. In other words, dynamic programming is feasible only for midsize
+    problems even with asynchronous updates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The big assumption that breaks down for most of the real-life problems is that
+    of having prior knowledge of the transition function or environment dynamics *p*(*s*^′,
+    *r*| *s*, *a*). This chapter assumed knowledge of dynamics to introduce Bellman
+    equations and the core foundation of how dynamic programming is used for solving
+    problems in RL. Starting with the next chapter, I explain a more scalable approach
+    to solving reinforcement learning problems using sample-based methods. Under sample-based
+    methods, you drop the assumption of prior and complete knowledge of the environment
+    dynamics. Also, to build scalability, you’ll find efficient ways to avoid carrying
+    out full-width sweeps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter introduced the concept of dynamics programming and explained how
+    it is applied to the field of reinforcement learning. In order to facilitate this
+    discussion, I made an assumption of knowing the dynamics of the system *p*(*s*^′,
+    *r*| *s*, *a*). The chapter first looked at policy evaluation for prediction—that
+    is, to calculate the state values for a given policy. Next, the chapter looked
+    at policy iteration for control—that is, to find a better policy than the current
+    one if the current policy is not already optimal. This was followed by exploring
+    the concept of value iteration, which was obtained by combining evaluation and
+    improvement into a single equation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: These approaches then led to the topic of generalized policy iteration. You
+    looked at the convergence path that generalized policy iteration follows. Throughout
+    the chapter, I used a running example of grid world, which had a 4x4 grid with
+    simple dynamics. Finally, the chapter covered various shortcuts you can take to
+    speed up the algorithms under the topic of asynchronous dynamic programming.
+  prefs: []
+  type: TYPE_NORMAL

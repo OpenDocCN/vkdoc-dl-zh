@@ -1,0 +1,437 @@
+- en: 10. Logistic Regression from Scratch
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In Chapter [2](463356_1_En_2_Chapter.xhtml), we developed a logistic regression
+    model for binary classification with one neuron and applied it to two digits of
+    the MNIST dataset. The actual Python code for the computational graph construction
+    was just ten lines of code (excluding the part that performs the training of the
+    model; review Chapter [2](463356_1_En_2_Chapter.xhtml), if you don’t remember
+    what we did there).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code is very compact and very quick to write. There is really a lot going
+    on behind the scenes that you don’t see with this Python code. TensorFlow does
+    a lot of things in the background that you may not be aware of. It will be very
+    instructive to try to develop this exact model completely from scratch, mathematically
+    and in Python, without using TensorFlow, to observe what is really going on. The
+    next sections lay out the entire mathematical formulation required, and its implementation
+    in Python (with just `numpy`). The goal is to build a model that we can train
+    for binary classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I will not spend too much time on the notation or the ideas behind the mathematics,
+    because you have seen these several times in previous chapters. The discussion
+    of dataset preparation will also be very brief, as it has already been described
+    in Chapter [2](463356_1_En_2_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: I will not go through all the Python code line by line, because, if you read
+    the previous chapters, you should have quite a good grasp of the practices and
+    ideas used here. There are no real new concepts; you have already seen almost
+    everything. Consider this chapter as a reference, to learn how to implement a
+    logistic model completely from scratch. I strongly suggest that you try to understand
+    all the mathematics and implement it in Python once. It is very instructive and
+    will teach you a lot about debugging, about how important it is to write good
+    code, and how comfortable libraries such as TensorFlow are.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mathematics Behind Logistic Regression
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s start with some notation and a reminder of what we are going to do. Our
+    prediction will be a variable ![$$ \widehat{y} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_IEq1.png)
+    that can only be 0 or 1\. (We will indicate with 0 and 1 the two classes we are
+    trying to predict.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Prediction\to \widehat{y}\in \left\{0,1\right\} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: What our method will give as output, or as a prediction, will be the probability
+    of ![$$ \widehat{y} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_IEq2.png)
+    being 1, given the input case *x*. Or, in a more mathematical form,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \widehat{y}=P\left(y=1|x\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We will then define an input observation to be of class 1, if ![$$ \widehat{y}\ge
+    0.5, $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_IEq3.png)
+    and of class 0, if ![$$ \widehat{y}&lt;0.5 $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_IEq4.png).
+    As we have in Chapter [2](463356_1_En_2_Chapter.xhtml) (see Figure [2-2](463356_1_En_2_Chapter.xhtml#Fig2)),
+    we will consider *n*[*x*] inputs and one neuron with the sigmoid (indicated with
+    *σ*) activation function . Our neuron output ![$$ \widehat{y} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_IEq5.png)
+    can be easily written for observation *i* as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\widehat{y}}^{\left[i\right]}=\sigma \left({z}^{\left[i\right]}\right)=\sigma
+    \left({\boldsymbol{w}}^T{\boldsymbol{x}}^{\left[i\right]}+b\right)=\sigma \left({w}_1{x}_1^{\left[i\right]}+{w}_2{x}_2^{\left[i\right]}+\dots
+    +{w}_{n_x}{x}_{n_x}^{\left[i\right]}+b\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: To find the best weights and bias , we will minimize the cost function that
+    is written here for one observation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{\mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)=-\left({y}^{\left[i\right]}\log
+    {\widehat{y}}^{\left[i\right]}+\left(1-{y}^{\left[i\right]}\right)\log \left(1-{\widehat{y}}^{\left[i\right]}\right)\right)
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where, with *y*, we have indicated our labels. We will use the gradient descent
+    algorithm, as described in Chapter [2](463356_1_En_2_Chapter.xhtml), so we will
+    need the partial derivatives of our cost function with respect to the weights
+    and the bias. You will remember that at iteration *n* + 1 (we will indicate here
+    the iteration with an index in square brackets as subscript), we will update our
+    weights from iteration *n* with the equations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '!['
+  prefs: []
+  type: TYPE_NORMAL
+- en: $$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}-\gamma \frac{\partial \mathcal{L}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    {w}_j} $$
+  prefs: []
+  type: TYPE_NORMAL
+- en: '](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: and, for the bias,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '!['
+  prefs: []
+  type: TYPE_NORMAL
+- en: $$ {b}_{\left[n+1\right]}={b}_{j,\left[n\right]}-\gamma \frac{\partial \mathcal{L}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    b} $$
+  prefs: []
+  type: TYPE_NORMAL
+- en: '](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: where *γ* is the learning rate. The derivatives are not so complicated and can
+    be calculated easily with the chain rule
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    {w}_j}=\frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    {\widehat{y}}^{\left[i\right]}}\frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}\frac{\partial
+    {z}^{\left[i\right]}}{\partial {w}_j} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: as can *b*
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    b}=\frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    {\widehat{y}}^{\left[i\right]}}\frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}\frac{\partial
+    {z}^{\left[i\right]}}{\partial b} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now, calculating the derivatives, you can verify that
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    {\widehat{y}}^{\left[i\right]}}=-\frac{y^{\left[i\right]}}{{\widehat{y}}^{\left[i\right]}}+\frac{1-{y}^{\left[i\right]}}{1-{\widehat{y}}^{\left[i\right]}}
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}={\widehat{y}}^{\left[i\right]}\left(1-{\widehat{y}}^{\left[i\right]}\right)
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \frac{\partial {z}^{\left[i\right]}}{\partial {w}_j}={x}_j^{\left[i\right]}
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \frac{\partial {z}^{\left[i\right]}}{\partial b}=1 $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: When we put all this together, we get
+  prefs: []
+  type: TYPE_NORMAL
+- en: '!['
+  prefs: []
+  type: TYPE_NORMAL
+- en: $$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}-\gamma \frac{\partial \mathcal{L}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    {w}_j}={w}_{j,\left[n\right]}-\gamma \left(1-{\widehat{y}}^{\left[i\right]}\right){x}_j^{\left[i\right]}
+    $$
+  prefs: []
+  type: TYPE_NORMAL
+- en: '](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma \frac{\mathrm{\partial
+    \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    b}={b}_{j,\left[n\right]}-\gamma \left(1-{\widehat{y}}^{\left[i\right]}\right)
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: These equations are valid only for one training case; therefore, as we have
+    already done, let’s generalize them to many training cases, remembering that we
+    define our cost function *J* for many observations as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\boldsymbol{w},b\right)\kern0.6em =\frac{1}{m}\sum \limits_{i=1}^m\mathrm{\mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where, as usual, we have indicated the number of observations with *m*. The
+    bold ***w*** is simply a vector of all the weights ![$$ \boldsymbol{w}=\left({w}_1,{w}_2,\dots,
+    {w}_{n_x}\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_IEq6.png).
+    We will also need our beloved matrix formalism here (which you have seen several
+    times in previous chapters)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Z={W}^TX+B $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where we have indicated with *B* a matrix of dimensions (1, *n*[*x*]) (to make
+    it consistent with the notation we are using now here) and with all elements equal
+    to *b* (in Python, we will not have to define it, because broadcasting will take
+    care of it for us). *X* will contain our observations and features and have dimensions
+    (*n*[*x*], *m*) (observations on columns, features on rows), and *W*^(*T*) will
+    be the transpose of the matrix containing all the weights, which, in our cases,
+    has the dimensions (1, *n*[*x*]), because it is transposed. Our neuron output
+    in matrix form will be
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \widehat{Y}=\sigma (Z) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where the sigmoid function acts element by element. The equations for the partial
+    derivatives now become
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial J\left(w,b\right)}{\partial {w}_j}=\frac{1}{m}\sum \limits_{i=1}^m\frac{\partial
+    \mathcal{L}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    {w}_j}=\frac{1}{m}\sum \limits_{i=1}^m\frac{\partial \mathcal{L}\left({\widehat{y}}^{\left[i\right]},\kern0.375em
+    {y}^{\left[i\right]}\right)}{\partial {\widehat{y}}^{\left[i\right]}}\frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}\frac{\partial
+    {z}^{\left[i\right]}}{\partial {w}_j}=\frac{1}{m}\sum \limits_{i=1}^m\left(1-{\widehat{y}}^{\left[i\right]}\right){x}_j^{\left[i\right]}
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and for *b*
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial J\left(w,b\right)}{\partial b}=\frac{1}{m}\sum \limits_{i=1}^m\frac{\partial
+    \mathcal{L}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial
+    b}=\frac{1}{m}\sum \limits_{i=1}^m\frac{\partial \mathcal{L}\left({\widehat{y}}^{\left[i\right]},\kern0.375em
+    {y}^{\left[i\right]}\right)}{\partial {\widehat{y}}^{\left[i\right]}}\frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}\frac{\partial
+    {z}^{\left[i\right]}}{\partial b}=\frac{1}{m}\sum \limits_{i=1}^m\left(1-{\widehat{y}}^{\left[i\right]}\right)
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: These equations can be written in matrix form (where ∇[***w***] indicates the
+    gradient with respect to ***w***) as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\boldsymbol{w}}J\left(\boldsymbol{w},b\right)=\frac{1}{m}X{\left(\widehat{Y}-Y\right)}^T
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and for *b*,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial J\left(\boldsymbol{w},b\right)}{\partial b}=\frac{1}{m}\sum
+    \limits_{i=1}^m\left({\widehat{Y}}_i-{Y}_i\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Finally, the equation we need to implement for the gradient descent algorithm
+    is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{w}}_{\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-\gamma
+    \frac{1}{m}X{\left(\widehat{Y}-Y\right)}^T $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and for *b*,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma \frac{1}{m}\sum \limits_{i=1}^m\left({\widehat{Y}}_i-{Y}_i\right)
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'At this point, you should already have gained a completely new appreciation
+    of TensorFlow. The library does all this for you in the background, and, more
+    important, all automatically. Remember: We are dealing here with just one neuron.
+    You can easily see how complicated it can get when you want to calculate the same
+    equations for networks with many layers and neurons, or for something as a convolutional
+    or recurrent neural network.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We now have all the mathematics we need to implement logistic regression completely
+    from scratch. Let’s move on to some Python.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Python Implementation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s start importing the necessary libraries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that we don’t import TensorFlow. We will not need it here. Let’s write
+    a function for the sigmoid activation function `sigmoid(z)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will also require a function to initialize the weights. In this basic case,
+    we can simply initialize everything with zeros. Logistic regression will work
+    anyway.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then we must implement the following equations, which we have calculated in
+    the previous section:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\boldsymbol{w}}J\left(\boldsymbol{w},b\right)=\frac{1}{m}X{\left(\widehat{Y}-Y\right)}^T
+    $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial J\left(\boldsymbol{w},b\right)}{\partial b}=\frac{1}{m}\sum
+    \limits_{i=1}^m\left({\widehat{Y}}_i-{Y}_i\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we need the function that will update the weights.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The next function , `predict()`, creates a matrix of dimensions (1, *m*) that
+    contains the predictions of the model given the inputs ***w*** and *b*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, let’s put everything together in the `model()` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Test of the Model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: After building the model, we must see what results it can achieve with some
+    data. In the next section, I will first prepare the dataset we have already used
+    in Chapter [2](463356_1_En_2_Chapter.xhtml), the two digits one and two from the
+    MNIST dataset, and then train our neuron on the dataset and check what results
+    we get.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dataset Preparation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'As an optimizing metric, we chose accuracy, so let’s see what value we can
+    reach with our model. We will use the same dataset as in Chapter [2](463356_1_En_2_Chapter.xhtml):
+    a subset of the MNIST dataset consisting of the digits one and two. Here, you
+    can find the code to get the data without explanation, because we have already
+    dissected it extensively in Chapter [2](463356_1_En_2_Chapter.xhtml).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The code we require is the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Because we loaded all images in one block, we must create a dev and a train
+    dataset (the split being 80% train and 20% dev), as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: As usual, we normalize the inputs,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: bring the matrices in the right format,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: and define some constants.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s shift our labels (remember this from Chapter [2](463356_1_En_2_Chapter.xhtml)?).
+    We have here 1 and 2, and we need 0 and 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Running the Test
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Finally, we can test the model with the call
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Although your numbers may vary, you should get an output similar to the following,
+    in which I have omitted a few iterations for space reasons:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Not so bad for a result.^([1](#Fn1))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'You should really try to understand all the steps I have outlined in this chapter,
+    to understand how much is done for you by a library. Remember: We have here an
+    incredibly simple model with just one neuron. Theoretically, you could write all
+    the equations for more complex network architectures, but this would be very difficult
+    and extremely error-prone. TensorFlow calculates all the derivatives for you,
+    regardless of the complexity of the network. In case you are interested in learning
+    what TensorFlow can do, I suggest you read the official documentation, available
+    at [`https://goo.gl/E5DpHK`](https://goo.gl/E5DpHK) .'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You should now appreciate a library such as TensorFlow and realize how much
+    is going on in the background when you use it. You should also be aware of the
+    complexity of the calculations and the importance of understanding the details
+    of the algorithm and how these are implemented, to optimize and debug your models.
+  prefs: []
+  type: TYPE_NORMAL

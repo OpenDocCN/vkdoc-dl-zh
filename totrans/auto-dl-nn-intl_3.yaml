@@ -1,0 +1,2361 @@
+- en: 3. Hyperparameter Optimization Under Shell
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In the previous chapter, we saw that simple HPO techniques could produce very
+    impressive results. Hyperparameter Optimization not only optimizes a specific
+    model for a dataset but can even construct new architectures. But the fact is
+    that we have used an elementary set of tools for HPO tasks so far. Indeed, up
+    to this point, we have only used the primitive Random Search Tuner and Grid Search
+    Tuner. We learned from the previous chapter that search spaces could contain millions
+    and hundreds of millions of parameters. And if we had unlimited time, we could
+    always use the Grid Search Tuner. But unfortunately, this approach is not applicable
+    in reality. We need Tuners that strike a good balance between speed and quality
+    in finding the best hyperparameters. Another helpful technique is Early Stopping
+    algorithms. Early Stopping algorithms analyze the model training process based
+    on intermediate results and decide whether to continue training or stop it to
+    save time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter will study various HPO Tuners and tell about their basic features.
+    We will explore the use of Early Stopping algorithms that speed up the experiment
+    stopping trials with an unpromising training process. And also, consider creating
+    a custom HPO Tuner for a particular task. This chapter will greatly enhance the
+    practical application of the Hyperparameter Optimization approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tuners
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We begin this chapter by examining the various HPO Tuners. As you remember,
+    Tuner receives metrics from Trial after evaluating a particular search space parameter.
+    Based on the existing result history of all completed Trials, Tuner decides which
+    hyperparameter configuration to test next. The main task of the Tuner is to find
+    the best hyperparameters as quickly as possible. The choice of a suitable tuner
+    can significantly improve the result of an experiment. Let’s take a closer look
+    at how Random Search Tuner and Grid Search Tuner act.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider a two-variable black-box function which is expressed in Listing [3-1](#PC1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'I deliberately do not give an analytical formula for this function. `black_box_f1`
+    is just a black-box function, and we know nothing about its internal logic. In
+    real life, black-box functions have the following properties:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: They are not continuous
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: They have random noise
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'All black-box functions that we will examine in this chapter will satisfy these
+    properties. But anyway, we can cheat a little and plot this function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [3-1](#Fig1) shows that the red area is where the black-box function
+    `black_box_f1` reaches its maximum values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Black-box function plot
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this chapter, we will examine only problems of finding the maxima of the
+    black-box function ***f***. The problem of finding the maxima of the function
+    f is equivalent to the problem of finding the minima of the function -***f***.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Of course, it would be great to be able to visualize a black-box function before
+    research, but there are two main problems here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Most of the black-box functions have a large number of variables.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Calculating one function value with specific parameters can take minutes and
+    even hours.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Therefore, of course, the choice of a Tuner has great importance. Let’s take
+    a look at how Random Search Tuner explores the `black_box_f1` function. We are
+    implementing an embedded experiment to visualize the trial parameters that the
+    tuner has selected during the experiment in Listing [3-2](#PC3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The search space for `black_box_f1` contains all integer pairs in [-10, 10]
+    × [-10, 10]. There are 441 elements in the search space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The experiment will have 100 trials:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: We pick Random Search Tuner
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and start the experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define the main event loop:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When the experiment is finished, we display all the trials that were created
+    during the experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s examine all the trials that Random Search Tuner generated during the experiment
+    in Listing [3-2](#PC3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-2](#Fig2) shows that the trials generated by Random Search Tuner are
+    simple random dots scattering. In some cases, the dot (trial) may successfully
+    fall into the area of maximum values, but in many cases, the area of maximum values
+    ​​remains unexplored properly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Random Search Tuner Trials
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now look at the trials that the Grid Search Tuner generates by exploring
+    the `black_box_f1` function in Listing [3-3](#PC10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The Grid Search experiment looks much like the Random Search experiment in
+    Listing [3-2](#PC3). We only use Grid Search Tuner here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-3](#Fig3) demonstrates the trials generated by the Grid Search Tuner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Grid Search Tuner Trials
+  prefs: []
+  type: TYPE_NORMAL
+- en: We see that the Grid Search Tuner simply iterates through all the values ​​in
+    the search space in a particular order. This approach can be helpful when dealing
+    with a small search space when it is possible to iterate over all the values ​​in
+    the search space. Otherwise, the trials generated by Grid Search Tuner may not
+    even get close to the area of maximum values ​​of the black-box function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The main problem with Random and Grid tuners is that they don’t interact with
+    their trial results in any way. They do not have any “memory” that would allow
+    them to highlight promising areas in the search space and concentrate their search
+    on them. We will now begin to study tuners that have “memory” and which can explore
+    the search space more efficiently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Evolution Tuner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Evolution Tuner search is based on the principles of natural evolution. It
+    implements two fundamental principles of evolution: selection and mutation. Evolution
+    Tuner initializes a population of a specific size. Each population individual
+    represents a particular set of parameters in the search space. Each individual
+    has a fitness property that indicates the Trial result. We say that individual
+    `A` is better than individual `B`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If `A.fitness` > `B.fitness` when the Tuner runs in maximization mode
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If `A.fitness` < `B.fitness` when the Tuner runs in minimization mode
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Evolution Tuner takes the best individual from a random pair of individuals
+    and mutates it randomly by replacing the value of its parameter with another value
+    from the search space. After that, the mutated individual replaces the original
+    one, and the process is repeated again. Figure [3-4](#Fig4) illustrates this search
+    principle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Evolution Tuner
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the big problems with Evolution Tuner is that mutation doesn’t always
+    improve an individual’s fitness. Mutation operation only executes a random change
+    in parameter values, and usually, mutation degrades an individual’s performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The experienced reader may notice that evolutionary algorithms based on the
+    principles of natural selection have another key method – *crossover*. But many
+    studies show that most evolutionary problems can be solved without the *crossover*
+    operation. This implementation of Evolution Tuner does not contain *crossover*
+    operation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is an example of Evolution Tuner configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Evolution Tuner supports all search space types: `choice`, `choice(nested)`,
+    `randint`, `uniform`, `quniform`, `loguniform`, `qloguniform`, `normal`, `qnormal`,
+    `lognormal`, and `qlognormal`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s take a look at Evolution Tuner in action optimizing `black_box_f1` function
+    in Listing [3-4](#PC13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch3/tuners/evolution_tuner/run_experiment.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Setting population size:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Picking the Evolution Tuner for the Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Unlike Grid Search Tuner and Random Search Tuner, an Evolution Tuner has “memory.”
+    That is why it is more attractive to analyze the search process progress. We will
+    show the history of the allocation of trial parameters in the search space by
+    generations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**1st generation**: From 1st trial to 25th trial'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**2nd generation**: From 26th trial to 50th trial'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**3rd generation**: From 51st trial to 75th trial'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**4th generation**: From 76th trial to 100th trial'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This approach will allow us to observe the search progress in action:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The history of trials:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Splitting trial history by generations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualizing each generation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s analyze how the position of individuals changed during the evolutionary
+    search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Evolution Tuner. Generation: 1'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-5](#Fig5) shows that the allocation of trial parameters is close to
+    random distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Evolution Tuner. Generation: 2'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [3-6](#Fig6), we see that most of the individuals are already in the
+    red zone, which means that the population is moving smoothly toward the highest
+    values ​​of the function. And the last generation shown in Figure [3-7](#Fig7)
+    has at least one individual at the top of the red zone.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Evolution Tuner. Generation: 4'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Not all built-in NNI tuners support random seed setting. Hence, the experiments
+    are not reproducible. Therefore, the results you get on your local machine may
+    differ from those shown in this chapter. However, the general behavior of tuners
+    remains the same on all machines, so the results of the same tuner on the same
+    search space are similar.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can consider the Evolution Tuner as a directed random search. It is slightly
+    better than random search but still has many problems due to the too random nature
+    of this algorithm. Evolution Tuner usually requires many trials but is usually
+    selected due to its simplicity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Anneal Tuner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Anneal Tuner is based on the Simulated Annealing algorithm. Simulated Annealing
+    is a method for solving optimization problems. The algorithm models the physical
+    process of heating a material and slowly lowering the temperature to decrease
+    defects, thus minimizing the system energy. Annealing Tuner uses randomness as
+    part of the search process like Evolution Tuner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The annealing algorithm consists of the following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1. The annealing algorithm selects a random element X in the search space, and
+    the f(X) value is calculated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2. The algorithm performs a random mutation on element X producing X’ element
+    from the search space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If X is a real value, then X’ can be calculated as X’ = X + ΔX, where ΔX is
+    a random variable. Next, we compare f(X’) and f(X).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 3a. If f(X’) < f(X), then the mutation is considered as negative.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 3b. If f(X’) ≥ f(X), then the mutation is considered as positive and X value
+    is updated by X’.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '4. If the mutation is negative, then the algorithm calculates the following
+    values:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*r*: Uniform random value on (0, 1).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Δ: f(X) - f(X’).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*σ* is standard deviation of all explored values during the search: f(X[1]),
+    ..., f(X[n]) multiplied by degradation ratio *c*^(*i*), where *c* is the positive
+    value lower than 1 and *i* is the number of iteration, σ = *c*^(*i*) *std*([f(X[1]),
+    …, f(X[n])]).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Next, we compare *r* and ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq1.png),
+    where *e* is the exponential.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '5a. If *r* < ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq2.png),
+    then the algorithm degrades from X to X’: X ← X’. This is done hoping that it
+    will be possible to reach a new peak in the next iteration and the transition
+    to X’ is only an intermediate step. We can consider this as an exploration step
+    that explores an area near X in the search space.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 5b. If *r* > ![$$ {e}^{\frac{\Delta  }{\sigma }} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq3.png),
+    then the algorithm doesn’t update X.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The closer f(X) is to f(X’), the more likely an exploration step would be taken.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Steps from 2 to 5 are repeated *n* times. Figure [3-8](#Fig8) demonstrates the
+    annealing algorithm flow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Annealing algorithm flow
+  prefs: []
+  type: TYPE_NORMAL
+- en: The essence of the annealing algorithm is to get to the “hills” of the surface
+    of the black-box function *f* and study the area of this “hill.” In some cases,
+    the algorithm may descend from “hills” hoping to climb to a higher one. The disadvantage
+    of this algorithm is that it cannot cover large distances between different “hills”
+    of the surface of the function f. Figure [3-9](#Fig9) demonstrates the annealing
+    algorithm in action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Annealing algorithm in action
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is an example of Anneal Tuner configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Anneal Tuner supports all search space types: `choice`, `choice(nested)`, `randint`,
+    `uniform`, `quniform`, `loguniform`, `qloguniform`, `normal`, `qnormal`, `lognormal`,
+    and `qlognormal`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [3-5](#PC20) illustrates another black-box function `holder_function`,
+    based on Holder’s function. We will use it for testing Anneal Tuner performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`holder_function` can be plotted the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [3-10](#Fig10) shows the surface of `holder_function` function. This
+    surface is much more challenging to explore. It has many hills that are evenly
+    spaced on the surface. The highest peaks are in the left corners.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Holder’s function
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s examine how Anneal Tuner performs optimizing `holder_function` in Listing
+    [3-6](#PC22).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch3/tuners/anneal_tuner/run_experiment.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Picking the Anneal Tuner for the Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: After the experiment is completed, we can analyze the progress of the search
+    for Anneal Tuner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Anneal Tuner. Generation: 1'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [3-11](#Fig11), we can see that Anneal Tuner is starting to study
+    the “hills” in the lower-left corner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Anneal Tuner. Generation: 2'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-12](#Fig12) demonstrates that the second generation of trials is completely
+    focused on the two “hills” in the lower-left corner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: And as we can see in Figure [3-13](#Fig13), Anneal Tuner is completely concentrated
+    on exploring only one “hill.” Anneal Tuner found a local maxima but could not
+    find global maxima at the bottom of the left corner, close to the solution Anneal
+    Tuner found.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Anneal Tuner. Generation: 4'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Anneal Tuner and Evolution Tuner are variants of directed random search. They
+    are intuitive and straightforward, but they may not always explore the search
+    space effectively. Let’s study more advanced tuners based on the Bayesian optimization
+    approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sequential Model-Based Optimization Tuners
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this section, we will examine tuners that are based on Sequential Model-Based
+    Optimization (SMBO). SMBO is a formulation of the Bayesian Optimization approach.
+    SMBO implements the following technique: building a probability model p(y|x) of
+    the black-box function *f* and use it to pick the most promising elements in the
+    search space to evaluate in the black-box function *f*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examine the SMBO method in action. Say we have some trial results we obtained:
+    (x[1], f(x[1])), (x[2], f(x[2]), (x[3], f(x[3])), as is shown in Figure [3-14](#Fig14).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig14_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trial results
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next step is to create a probability function p(y|x) based on the data:
+    (x[1], f(x[1])), (x[2], f(x[2]), (x[3], f(x[3])). p(y|x) is called a “surrogate”
+    for the objective (or black-box) function. The surrogate function determines the
+    probability distribution of the objective (or black-box) function for any element
+    x[i] in the search space. This means that for any x[*i*], we can say that with
+    a *p* probability, the value f(x[*i*]) = y[*i*] lies in the (a, b) interval. This
+    concept is demonstrated in Figure [3-15](#Fig15).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Probability distributions for x[i] and x[j]
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Having surrogate function p(x|y), we can extrapolate it on the whole search
+    space. Figure [3-16](#Fig16) gives a visual description of the surrogate model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig16_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Surrogate model for three trials: (x[1], f(x[1])), (x[2], f(x[2])), (x[3],
+    f(x[3]))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Red dashed line shows the actual black-box function.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Black solid line shows the expected mean of the surrogate function p(y|x).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Purple dashed line shows the variance of the surrogate function p(y|x).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Based on the constructed surrogate model, the SMBO algorithm makes its prediction
+    regarding the potential maxima of the black-box function. The next goal of the
+    algorithm is to find a higher value of the black-box function than the current
+    maximum value f(x[2]). The following trial parameters are determined using the
+    Expected Improvement function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: EI[y*](x) = ![$$ {\int}_{-\infty}^{+\infty}\max \left({y}^{\ast }-y,0\right)p\left(y|x\right)\  dy
+    $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq4.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: If we assume that f(x[*2*]) = y[2], then SMBO will choose x[4] as the next trial
+    parameter if the EI[y2](x) will be maximum with x[4]. Figure [3-17](#Fig17) illustrates
+    the next trial selection by SMBO algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig17_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Expected Improvement
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After selecting the x[*4*] as the next trial value, we evaluate f(x[*4*]) and
+    rebuild the surrogate model concerning the new data: *(x*[*1*]*, f(x*[*1*]*)),
+    (x*[*2*]*, f(x*[*2*]*)), (x*[*3*]*, f(x*[*3*]*)), (x*[*4*]*, f(x*[*4*]*))* as
+    shown in Figure [3-18](#Fig18).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig18_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Surrogate model for four trials: (x[1], f(x[1])), (x[2], f(x[2])), (x[3], f(x[3])),
+    (x[4], f(x[4]))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: SMBO aims to converge the surrogate model to the objective function with more
+    data, which these approaches do by continually updating the surrogate probability
+    model after each objective function evaluation. SMBO Tuners are efficient because
+    they choose the next parameters in an informed way.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'SMBO Tuner performs the following steps in a cycle until the maximum number
+    of trials is reached:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Construct surrogate model based on surrogate probability p(y|x).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Determine next trial parameter x using the Estimated Improvement function.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Evaluate black-box function f(x).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Append *(x, f(x))* pair to historical dataset.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This is the framework for all SMBO Tuners. The only difference between them
+    is the p(y|x) function definition. Different SMBO Tuners have different approaches
+    to estimating the probability function p(y|x) based on a historical dataset. This
+    chapter will cover the following SMBO Tuners: Tree-Structured Parzen Estimator
+    Tuner and Gaussian Process Tuner.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tree-Structured Parzen Estimator Tuner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The Tree-Structured Parzen Estimator Tuner (TPE) description may take one or
+    several separate chapters. In this section, we will describe the main idea behind
+    the use of this Tuner:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the beginning, TPE Tuner performs *N* random trials while exploring the search
+    space.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Next, the Tuner sorts the executed trials by their values ​​and divides them
+    into “good” and “bad” groups based on some quantile - γ. The first group, “good”
+    group, contains trials that gave the best results and the “bad” one, all other
+    trials.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Figure [3-19](#Fig19) depicts the TPE model after the first two steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: TPE Tuner. “Good” and “bad” separation
+  prefs: []
+  type: TYPE_NORMAL
+- en: Densities *l*(x) and *g*(x) are calculated using Parzen Estimators (also known
+    as kernel density estimators) for “bad” and “good” groups, respectively. Parzen
+    Estimators are a simple average of kernels centered on existing data points.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: After, the TPE tuner generates *n* random candidates according to the *g*(x)
+    density function. Each of these candidates is sorted by *g*(x)/*l*(x) ratio, and
+    the first one is picked as the next trial. This means that the TPE tuner allows
+    the selection of random candidates in an area where “good” trials are more common.
+    At the same time, all candidates are sorted according to *g*(x)/*l*(x), which
+    means that a candidate with a high density of good trials and a low density of
+    bad trials will be selected. This approach strikes a good balance between exploration
+    and exploitation.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Figure [3-20](#Fig20) illustrates the algorithm of selecting the next trial
+    parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: TPE Tuner. Next candidate selection
+  prefs: []
+  type: TYPE_NORMAL
+- en: Repeat steps 2–5 until maximum number of trials is reached.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Here is an example of TPE Tuner configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following is the description of TPE Tuner parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tpe_args.constant_liar_type`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `''best'' | ''worst'' | ''mean'' | null`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `''best''`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: TPE algorithm itself does not support parallel tuning. This parameter specifies
+    how to optimize for `trial_concurrency` > 1\. In general, `best` suit for small
+    trial number and `worst` suit for large trial number.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tpe_args.n_startup_jobs`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**`: 20`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first *N* random trials are generated for warming up in Step 1\. If the
+    search space is large, this value should be increased.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tpe_args.n_ei_candidates`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `24`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*n* random candidates generated in Step 4.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tpe_args.linear_forgetting`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `25`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: TPE lowers the weights of old trials. This parameter controls how many iterations
+    it takes for a trial to start decay.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tpe_args.prior_weight`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `float`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `1.0`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Determines the weight of trial configuration in the history trial configurations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tpe_args.gamma`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `float`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `0.25`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Controls how many trials are considered “good.” Represents γ parameter from
+    Step 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: TPE Tuner configuration parameters mentioned above are only valid from NNI version
+    2.6\. They will not work on previous versions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TPE Tuner supports all search space types: `choice`, `choice(nested)`, `randint`,
+    `uniform`, `quniform`, `loguniform`, `qloguniform`, `normal`, `qnormal`, `lognormal`,
+    and `qlognormal`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can see from Listing [3-7](#PC24) how TPE Tuner performs optimizing `holder_function`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch3/tuners/tpe_tuner/run_experiment.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Setting the TPE Tuner for the Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: After the experiment is completed, we can analyze the progress of the search
+    for TPE Tuner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig21_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TPE Tuner. Generation: 1'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Figure [3-21](#Fig21) shows that the distribution of points is more like a
+    random scattering, which makes sense because, in the tuner setup, we specified
+    `''n_startup_jobs'': 20`, which means that the first 20 trials will be completely
+    random.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig22_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: TPE Tuner. Last generation
+  prefs: []
+  type: TYPE_NORMAL
+- en: But as we see in Figure [3-22](#Fig22), the TPE Tuner finds the global maxima
+    of `holder_function`, thanks to a probabilistic exploration model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The TPE Tuner is intuitively clear, based on a solid probability ground, and
+    has a good balance between exploration and exploitation policy. Another nice feature
+    is that it supports `choice(nested)` search type, which can be critical in some
+    research.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gaussian Process Tuner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Gaussian Process (GP) Tuner is another SMBO Tuner based on Multivariate Normal
+    Distribution. This tuner is similar to the TPE Tuner but uses a Gaussian distribution
+    to build the p(y|x) surrogate. A full description of this method lies outside
+    of this book, but the reader can learn how this method works here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '“Using Gaussian Processes to Optimize Expensive Functions”: [`https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.139.9315&rep=rep1&type=pdf`](https://citeseerx.ist.psu.edu/viewdoc/download%253Fdoi%253D10.1.1.139.9315%2526rep%253Drep1%2526type%253Dpdf)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '“Gaussian Processes and Bayesian Optimization”: [`www.cs.cornell.edu/courses/cs4787/2019sp/notes/lecture16.pdf`](http://www.cs.cornell.edu/courses/cs4787/2019sp/notes/lecture16.pdf)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Here is an example of GP Tuner configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following is the description of GP Tuner parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`utility`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `''ei'' | ''ucb'' | ''poi''`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `''ei''`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The utility functions `ei`, `ucb`, and `poi` correspond to Expected Improvement,
+    Upper Confidence Bound, and Probability of Improvement, respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`kappa`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `float`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `5`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Used by the `ucb` utility function. The bigger the `kappa` is, the more exploratory
+    the tuner will be.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`xi`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `float`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `0`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Used by the `ei` and `poi` utility functions. The bigger the `xi` is, the more
+    exploratory the tuner will be.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`nu`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `float`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `2.5`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sets the Matern kernel. The smaller the nu is, the less smooth the approximated
+    function will be.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`alpha`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `float`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `1e-6`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sets the Gaussian Process Regressor. Larger values correspond to an increased
+    noise level in the observations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`cold_start_num`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `10`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Number of random explorations to perform before the Gaussian Process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`selection_num_warm_up`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `1e5`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Number of random points to evaluate when getting the point which maximizes the
+    acquisition function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`selection_num_starting_points`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `250`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Number of times to run L-BFGS-B from a random starting point after the warm-up.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'GP Tuner supports the following search space types: `choice`, `randint`, `uniform`,
+    `quniform`, `loguniform`, and `qloguniform`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: GP Tuner suffers a lot from parallelization issues. If you run an experiment
+    in concurrency mode (i.e., `trial_concurrency` > 1), multiple processes simultaneously
+    decide on their next trial candidate based on the same historical data. Therefore,
+    different processes are testing the same parameters at the same time. This is
+    a big problem with all SMBO tuners. But TPE Tuner can get around this problem
+    with the Constant Liar technique, while for GP Tuner, this problem remains serious.
+    In Figure [3-23](#Fig23), we can see the Trial Metric panel for GP Tuner with
+    `trial_concurrency = 8`. It shows that GP Tuner contains chunks of the same trials,
+    which does not speed up the process of exploring the search space in any way.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig23_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-23
+  prefs: []
+  type: TYPE_NORMAL
+- en: GP Tuner. Concurrency issue
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [3-8](#PC26) implements GP Tuner for `holder_function` optimization
+    task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch3/tuners/gp_tuner/run_experiment.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Disabling concurrency:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting the GP Tuner for the Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: GP Tuner shows excellent results. Figure [3-24](#Fig24) shows the coordinates
+    of all trials during the experiment. GP Tuner found both global maxima and evenly
+    explored the entire search space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig24_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: GP Tuner. Holder’s black-box function optimization
+  prefs: []
+  type: TYPE_NORMAL
+- en: GP Tuner suggests taking search space elements to find a suitable solution in
+    a small number of black-box function evaluations. GP Tuner carries about the surrogate
+    model instead of the black-box function itself, using the conjugate gradient method
+    to find the highest expected improvement candidates. GP Tuner shows good exploratory
+    behavior in testing out areas that seem promising under the current surrogate
+    model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Which Tuner to Choose?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this section, we’ve put a lot of effort into learning about the different
+    tuners, and the fair question might be: *Hey, so which tuner should I choose?*
+    And the answer to this question is disappointing: according to the **No Free Lunch
+    Theorem**, which we already considered in Chapter [1](526245_1_En_1_Chapter.xhtml),
+    ***there is no search algorithm (Tuner) that would have any advantages over other
+    Tuners for an arbitrary search space***. Indeed, for an arbitrary search space,
+    the expectation of the TPE Tuner does not exceed the Random Tuner expectation.
+    So why do we need any Tuners at all if all of them are equal to Random Tuner on
+    an arbitrary search space?!'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'And the answer is as follows: search spaces have a specific structure and dependencies
+    that allow certain Tuners to outperform others for many kinds of problems. Therefore,
+    if we know that we are optimizing a model for an image classification problem,
+    this can give us some insight into the search space structure. Consequently, we
+    can choose a Tuner that is more likely to show good results than others.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There is a separate area of ​​research in which scientists arrange battles
+    of search algorithms to determine the best one for a particular class of problems.
+    Scientists use benchmarks to estimate the characteristics of the search algorithm.
+    The benchmark algorithm evaluates the search algorithm several times for different
+    search spaces. For example, the benchmark pseudo-code might look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Table [3-1](#Tab1), I provide a sample benchmark result obtained using NNI
+    [`https://nni.readthedocs.io/en/v2.7/hpo/hpo_benchmark_stats.html`](https://nni.readthedocs.io/en/v2.7/hpo/hpo_benchmark_stats.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 3-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Average rankings for classification tasks
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Tuner Name | Average Ranking |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| GP Tuner | 4.00 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Evolution | 4.22 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Anneal | 4.39 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| TPE | 4.67 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Random | 5.33 |'
+  prefs: []
+  type: TYPE_TB
+- en: Some benchmarks can last several days or even weeks. Therefore, it is always
+    more convenient to borrow the results obtained and published after research. In
+    many cases, you can execute a mini-research yourself, which will help determine
+    the characteristics of the search space structure. In any case, understanding
+    the deep learning model optimization problem and principles of the Search Tuner
+    is very helpful in choosing the right strategy for solving the HPO problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Custom Tuner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Built-in tuners are suitable for most tasks. But there are situations when you
+    need to add some custom logic to improve the quality of the HPO Experiment. Indeed,
+    sometimes, we may know specific properties of the search space that the built-in
+    tuner does not take into account. Also, the developer can implement their original
+    idea and test it on real problems. For such cases, NNI allows you to implement
+    a Custom Tuner. Custom Tuner can be used in an experiment and shared with other
+    developers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tuner Internals
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Each Tuner class should inherit `nni.tuner.Tuner` and implement the following
+    methods: `__init__`, `update_search_space`, `generate_parameters`, `receive_trial_result`.
+    Any Tuner can be implemented based on the self-describing sample presented in
+    Listing [3-9](#PC29).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Tuner interacts with Experiment the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment calls `update_search_space` at the startup.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Experiment requests search space parameters for Trial calling `generate_parameters`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Experiment returns Trial results to Tuner calling `recieve_trial_result.`
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (Steps 2 and 3 are repeated until `max_trial_number` is reached or Experiment
+    is stopped.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-25](#Fig25) shows Tuner–Experiment interaction as a sequence diagram.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig25_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tuner–Experiment sequence diagram
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Custom Tuner is integrated into the experiment using the following config:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Or it can be integrated into Python embedded experiment as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: New Evolution Custom Tuner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Let’s try to develop our Сustom Tuner. This Tuner will be based on the evolutionary
+    concepts we examined exploring the Evolution Tuner. We’ll call it `NewEvolutionTuner`.
+    `NewEvolutionTuner` will initialize the population and act according to the following
+    algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Take the best individual: X[best]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Mutate the best individual in a random way: *mutate*(X[best]) → Y'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Replace the worst individual in the population X[worst] with a mutant of the
+    best individual Y: X[worst] ← Y'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Figure [3-26](#Fig26) demonstrates the search approach of `NewEvolutionTuner`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig26_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-26
+  prefs: []
+  type: TYPE_NORMAL
+- en: New Evolution Tuner
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`NewEvolutionTuner` implements a greedy “hill-climbing” approach. The Tuner
+    takes the best individual (the highest one) and mutates it (hoping that the new
+    individual will climb higher). Listing [3-10](#PC32) use `NewEvolutionTuner` to
+    find the maxima of Ackley’s function.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And here is Ackley’s function visualization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can see in Figure [3-27](#Fig27) the surface of Ackley’s function. It has
+    one highest hill and several smaller hills nearby.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig27_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-27
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ackley’s function
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before we check how `NewEvolutionTuner` solves the problem of finding the maxima
+    of Ackley’s function, we need to implement it in Listing [3-11](#PC34).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Population consists of individuals. Each individual has DNA that represents
+    a search space parameter. Also, individual has a result field that contains Trial
+    result. New Evolution individual has the following properties:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`x`: Search space *x* coordinate'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`y`: Search space *y* coordinate'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`param_id`: Trial number'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`result`: Trial result'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Population class is a wrapper that manipulates all individuals as a whole:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'All individuals are stored in `individuals` property:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then, we need to add a method that will return an individual by its `param_id`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'At the start of the experiment, the Tuner will create *N* individuals who will
+    not have a trial number. We will call these individuals virgins. `get_first_virgin`
+    method returns the first virgin found in population:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following method – `get_population_with_result` – returns all individuals
+    that already received a trial result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The next method returns the best individual from the whole population, that
+    is, an individual that has the highest `result`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And here, we come to our primary evolution method `replace_worst`, which will
+    develop the population:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We take the best individual from the population.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Mutate the best individual.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Add the mutant of the best individual to the population instead of the worst
+    one.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can start implementing the tuner after defining the `Individual` and `Population`
+    classes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The Tuner has two parameters, `optimize_mode` and `population size`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, Tuner initializes properties related to the search space it is working
+    with:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When the Tuner starts, the `update_search_space` method is invoked. It generates
+    the Population of Random Individuals:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Experiment calls `generate_parameters` method to get new parameters for the
+    subsequent Trial. Initially, we have a set of individuals generated at the startup
+    and not passed to the Tuner (virgins). We take virgins and pass them to Tuner
+    one by one. When no virgins are left, we are generating new individuals.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When the Experiment returns the Trial’s result, we save it to an individual
+    object:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Well, our `NewEvolutionTuner` is ready for action! We can launch the experiment
+    using the following config file shown in Listing [3-12](#PC49).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: The experiment with custom `NewEvolutionTuner` can also be run in Python embedded
+    mode as it is implemented in Listing [3-13](#PC50).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch3/tuners/custom_tuner/run_experiment.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s launch the Experiment and analyze its results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [3-28](#Fig28) shows the locations visited by the `NewEvolutionTuner`
+    population. We see that the population has found the global function’s maxima
+    and began to explore it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig28_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-28
+  prefs: []
+  type: TYPE_NORMAL
+- en: Locations visited by population of NewEvolutionTuner
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trial Metric panel in Figure [3-29](#Fig29) demonstrates the “hill-climbing”
+    approach in action. The main problem with this approach is that it quickly finds
+    a local maxima and stops exploring other search space areas.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig29_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-29
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trial Metric panel
+  prefs: []
+  type: TYPE_NORMAL
+- en: Of course, developing a custom Tuner is not always an easy task. Still, the
+    ability to implement your search algorithm and integrate it into the HPO process
+    can greatly increase the experiment results. In this section, we have provided
+    an example of how you can do this. If necessary, you can implement your ideas
+    based on the illustration given in this section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Early Stopping
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Some parameters in the search space produce very low Trial results. And this
+    is normal because the Tuner may not always know in advance which areas of the
+    search space to explore and which not to explore. Tuner often tries parameters
+    that give very low results. The Trial itself is expensive because a lot of time
+    is spent on it. For example, training a neural network with a complex architecture
+    on a large dataset can take hours. And it would be helpful not to spend a lot
+    of time on trials that show poor results in their execution. NNI uses Early Stopping
+    algorithms to solve that issue. Early Stopping algorithms analyze the intermediate
+    trial results and compare them with the intermediate results of other trials.
+    If the algorithm decides that the intermediate results of the current Trial are
+    too low, then it stops the Trial so as not to waste time on it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [3-30](#Fig30) explains Early Stopping approach. Trial 3 early stopped
+    at step N because intermediate results of this Trial were significantly worse
+    than the other trials’ intermediate results at step N.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig30_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-30
+  prefs: []
+  type: TYPE_NORMAL
+- en: HPO Early Stopping
+  prefs: []
+  type: TYPE_NORMAL
+- en: The deep learning training algorithms also have Early Stop policies. Training
+    Early Stopping policу stops model training when the model starts to degrade or
+    there is no improvement for a long time. Do not confuse Training Early Stopping
+    with HPO Early Stopping. They are not related in any way. Indeed, take a look
+    at Figure [3-31](#Fig31). Training progress is good, and there is no reason to
+    stop the training. But if we compare the training process with other trials, it
+    is apparent that it is much worse, and the HPO Early Stopping algorithm can stop
+    this Trial.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig31_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-31
+  prefs: []
+  type: TYPE_NORMAL
+- en: HPO Early Stopping vs. Training Early Stopping
+  prefs: []
+  type: TYPE_NORMAL
+- en: And Figure [3-32](#Fig32) demonstrates the opposite situation. The training
+    process begins to degrade, and the Training Early Stopping algorithm terminates
+    the training process. In contrast, the HPO Early Stopping algorithm may consider
+    the current Trail very promising because its intermediate results are significantly
+    superior compared to other trials.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig32_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-32
+  prefs: []
+  type: TYPE_NORMAL
+- en: HPO Early Stopping vs. Training Early Stopping
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please keep in mind designing a deep learning model and the HPO Experiment that
+    Training Early Stopping and HPO Early Stopping are not correlated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Median Stop
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Median Stop is a straightforward, early stopping rule that stops a pending Trial
+    after step N if the Trial’s best objective value by step N is strictly worse than
+    the median value of the running averages of all completed trials’ objectives reported
+    up to step N.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Median Stop algorithm can be implemented in Experiment with the following experiment
+    configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s look at a synthetic problem to see the Median Stop algorithm in action.
+    Say, we have the following identity function, f: x → x, with the training progress
+    containing 100 epochs (steps) and expressed by the following rule: ![$$ \frac{x}{10}\
+    \sqrt{epoch} $$](../images/526245_1_En_3_Chapter/526245_1_En_3_Chapter_TeX_IEq5.png)
+    + *r,* where *r* is a random variable on (-1, 1)*.* We can characterize the function
+    f as an identity function with parabolic training progress. Listing [3-14](#PC53)
+    contains the implementation of function f.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s visualize the training process of the following set of functions: f(0),
+    f(10), f(20), ..., f(100).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [3-33](#Fig33) shows various training curves. This plot illustrates that
+    the lower training curves are unpromising. Unpromising training can be stopped
+    in advance according to the Early Stopping algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig33_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-33
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parabolic training
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s launch an experiment that will use the Median Stop algorithm. The trial
+    script is defined in Listing [3-15](#PC55).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Trial header with imported modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Executing Trial:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [3-16](#PC57) defines the Experiment with Median Stop algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now we are ready to run the Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: After the experiment is completed, we can observe in Figure [3-34](#Fig34) that
+    many trials have the `EARLY_STOPPED` status, as expected.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig34_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-34
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trials detail panel
+  prefs: []
+  type: TYPE_NORMAL
+- en: Curve Fitting
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Curve Fitting Assessor is an LPA (learning, predicting, assessing) algorithm
+    that stops a pending Trial at step *N* if the prediction of the final epoch’s
+    performance is worse than the best final performance in the trial history. Curve
+    Fitting Assessor makes a prediction about the final result of the Trial’s training
+    and compares it with the completed ones. This algorithm treats the Early Stopping
+    task as a time series forecasting problem. If the training prediction is pessimistic,
+    then the algorithm stops the trial. Figure [3-35](#Fig35) explains the Curve Fitting
+    Early Stopping approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig35_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-35
+  prefs: []
+  type: TYPE_NORMAL
+- en: Curve Fitting prediction
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Curve Fitting algorithm can be implemented in Experiment with the following
+    experiment configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will not study the principles of the Curve Fitting Early Stopping algorithm
+    in this book. You can refer to the official documentation ([`https://nni.readthedocs.io/en/v2.7/reference/hpo.html#nni.algorithms.hpo.curvefitting_assessor.CurvefittingAssessor`](https://nni.readthedocs.io/en/v2.7/reference/hpo.html%2523nni.algorithms.hpo.curvefitting_assessor.CurvefittingAssessor))
+    or review a paper dedicated to “Speeding up Automatic Hyperparameter Optimization
+    of Deep Neural Networks by Extrapolation of Learning Curves” ([`https://ml.informatik.uni-freiburg.de/wp-content/uploads/papers/15-IJCAI-Extrapolation_of_Learning_Curves.pdf`](https://ml.informatik.uni-freiburg.de/wp-content/uploads/papers/15-IJCAI-Extrapolation_of_Learning_Curves.pdf)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Risk to Stop a Good Trial
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The Early Stopping algorithm can significantly speed up the completion of an
+    experiment and save computational resources. But there is always a risk of stopping
+    a good trial too early, which would probably mean rejecting very good parameters
+    in the search space. Look at Figure [3-36](#Fig36), early stopped trial could
+    show good performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig36_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-36
+  prefs: []
+  type: TYPE_NORMAL
+- en: Good trial early stopped
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, there is a very tiny chance of stopping a trial that can give good
+    results too early. Usually, the training curves of deep learning models behave
+    similarly, so if the trials’ intermediate results were significantly worse than
+    those of other trials, you probably should not expect anything good, but complete
+    the trial and move on to the next one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Searching for Optimal Functional Pipeline and Classical AutoML
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Libraries: Scikit-learn'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s go back to the problem we studied in the “From LeNet to AlexNet” section
+    of Chapter [2](526245_1_En_2_Chapter.xhtml). In this task, we built a functional
+    pipeline that would optimally solve the image classification problem. Indeed,
+    each layer of deep learning is a particular functional operator, and we tried
+    to find the best pipeline of these operators using the HPO approach. Figure [3-37](#Fig37)
+    presents neural network architecture as a functional pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig37_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-37
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural network architecture as functional pipeline
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s convert the problem into a more strict mathematical language. We need
+    to find a model *M* that consists of compositions of functions *F*[*i*] ∈ {*F*}
+    and maximizes the value *L*(*M*, *D*), where *L* evaluates the performance of
+    model *M* on dataset *D*. *Figure* [*3-38*](#Fig38) *formulates the optimal functional
+    pipeline problem:*
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig38_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-38
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optimal functional pipeline problem
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s study how this problem can be solved with NNI. As an example, I want to
+    use the classic AutoML task, which searches for the optimal pipeline of classical
+    shallow machine learning methods to solve a supervised learning problem. In this
+    section, I would like to pay tribute to classical machine learning, which increasingly
+    gives way to deep learning. This approach can be applied to any problem of searching
+    the optimal functional pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Problem
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s examine binary classification problem with Gamma Telescope Dataset ([`https://archive.ics.uci.edu/ml/datasets/magic+gamma+telescope`](https://archive.ics.uci.edu/ml/datasets/magic%252Bgamma%252Btelescope)).
+    This dataset contains data of signals received by the telescope. The task is to
+    discriminate signals caused by primary **gammas** (signal) from the images of
+    **hadronic** showers initiated by cosmic rays in the upper atmosphere (background).
+    This dataset contains 19020 instances and the following columns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`fLength`: Type: real. Major axis of ellipse (mm)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fWidth`: Type: real. Minor axis of ellipse (mm])'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fSize`: Type: real. 10-log of sum of content of all pixels (photons)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fConc`: Type: real. Ratio of sum of two highest pixels over `fSize` (ratio)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fConc1`: Type: real. Ratio of highest pixel over `fSize` (ratio)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fAsym`: Type: real. Distance from highest pixel to center, projected onto
+    major axis (mm)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fM3Long`: Type: real. Third root of third moment along major axis (mm)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fM3Trans`: Type: real. Third root of third moment along minor axis (mm)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fAlpha`: Type: real. Angle of major axis with vector to origin (deg)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`fDist`: Type: real. Distance from origin to center of ellipse (mm)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`class`: Values: `''g''`, `''h''`. Gamma (signal), Hadron (background). g =
+    gamma (signal): 12332\. h = hadron (background): 6688'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Perhaps the reader understands something in these physical data, but I do not
+    understand anything about them. But that’s exactly what we need machine learning
+    for – to find patterns and dependencies where we cannot see them ourselves.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The dataset is located in ch3/ml_pipeline/data/magic04.data and is converted
+    to a supervised learning problem in Listing [3-17](#PC60).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading dataset from the file:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Dropping `na` values:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting column names:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Shuffling dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Class labeling:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Splitting dataset on train and test datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we have identified the problem and prepared the dataset, we can begin
+    to determine the machine learning methods that our model will consist of.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Operators
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Now let’s define the functions that will make up the functional pipeline. We
+    will call them Operators in the machine learning context. Machine learning operators
+    for a classification problem can be separated into three types:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Selectors**: Choose the most significant features (columns) from the dataset,
+    removing dependent features. Usually reduces the input size. The selected features
+    remain unchanged.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Transformers**: Convert input according to some mathematical function without
+    changing the input size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Classifiers**: Solve the classification problem itself.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Figure [3-39](#Fig39) shows a machine learning pipeline: selector, transformer,
+    and classifier.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig39_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-39
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Machine learning operators: selector, transformer, and classifier'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each operator has its own parameters, such as `max_depth` in the `DecisionTreeClassifier`.
+    Listing [3-18](#PC67) creates an operator space that will be used for the AutoML
+    pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch3/ml_pipeline/operator.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Each operator is an object that has a name, implementation, and parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define the operator space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Selector list:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: (For full selector list, please refer to the source code.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Transformer list:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: (For full transformer list, please refer to the source code.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Classifier list:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: (For full classifier list, please refer to the source code.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Finally, we add an additional auxiliary method `get_operator_by_name`, which
+    returns the operator by its name:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: Search Space
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s define search space for the classifier. We assume that the classifier’s
+    operator pipeline will have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Selectors**: From 0 to 1 (selector is advised but not required)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Transformers**: From 0 to 3 (selector is advised but not required)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Classifier**: 1 (is required)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Therefore, a pipeline can have from one to five operators. Please take a look
+    at Figure [3-40](#Fig40).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig40_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-40
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pipeline cells
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The pipeline has five cells. Each cell can be filled with some value from the
+    corresponding operator space. The cell can be empty if `none` value is selected.
+    For example, the following pipeline might be selected: `Selector3` → `none` →
+    `Transformer1` → `none` → `Classifier2`, which is equal to `Selector3` → `Transformer1`
+    → `Classifier2`. This search space definition is huge and challenging to construct
+    manually, so we will add a special class in Listing [3-19](#PC73) that will create
+    an operator search space definition according to the NNI specification.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: Each cell has an operator type that can be filled by `selector`, `transformer`,
+    and `classifier`. The `operator_search_space` method creates a search space for
+    each cell type.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define a method `build` that constructs a search space of all cells
+    according to the NNI specification:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Even though the search space definition is quite large, we can print it out:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will use dynamic search space construction to launch the experiment in embedded
+    mode, although this technique can also be applied to build a static JSON file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: So, what do we have by now? We have an operator space and a search space. Let’s
+    now implement a model that converts the pipeline configuration into a real machine
+    learning classifier. Listing [3-20](#PC77) introduces `MlPipelineClassifier`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Model receives pipeline configuration and converts it to the actual Scikit-learn
+    pipeline:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Model training method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Computing the accuracy:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Since the model is ready, let’s try to initialize it using the sample pipeline
+    parameter and apply it to the classification problem:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model demonstrates **64%** accuracy. This is definitely not the result we
+    expect, so let’s use the HPO techniques to construct a better-performance model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tuner
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Now everything is ready to start the experiment. But I would like to focus
+    on the search space that we use. The trial parameter is a sequence of operators,
+    which may contain empty operators, that is, `S3(p3)` → `none` → `T1(p1)` → `none`
+    → `C2(p2)`. But at the same time, the following parameter exists too: `S3(p3)`
+    → `none` → `none` → `T1(p1)` → `C2(p2)`. They are different parameters in the
+    search space but generate the same classifier model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`S3(p3)` → `none` → `T1(p1)` → `none` → `C2(p2)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`S3(p3)` → `none` → `none` → `T1(p1)` → `C2(p2)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`S3(p3)` → `T1(p1)` → `C2(p2).`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Keep in mind that the same two identical operators with different parameters
+    are not equal, that is, `SelectFwe(alpha=0)` is not equal to `SelectFwe(alpha=0.05)`.
+    Let’s customize Tuner by forbidding it to create parameters that will generate
+    equivalent models concerning the parameters already tried, that is, if we already
+    tried parameter `P`[`1`] = `SelectPercentile(percentile = 2)` → `none` → `Normalizer(norm='l1')`
+    → `none` → `DecisionTreeClassifier(max_depth=8)`, then parameter `P`[`2`] = `SelectPercentile(percentile
+    = 2)` → `none` → `none` → `Normalizer(norm='l1')` → `DecisionTreeClassifier(max_depth=8)`
+    will not be passed to Experiment, because the model generated by `P`[`2`] equals
+    to the model generated by `P`[`1`]. Let’s create `EvolutionShrinkTuner`, which
+    inherits `EvolutionTuner` and tracks all executed pipelines forbidding passing
+    the equal ones to the Experiment. We can see `EvolutionShrinkTuner` implementation
+    in Listing [3-21](#PC82).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We define registry property that will track all created pipelines:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: If the `super().generate_parameters` method of the parent `EvolutionTuner` object
+    returns a parameter that has already been tried, then the `super().generate_parameters`
+    method is called again until a unique parameter is generated. Because `EvolutionTuner`
+    has random behavior, `super().generate_parameters` can be expected to return different
+    parameters on subsequent calls.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following `is_valid` method converts the parameter to the canonical form
+    by removing `none` operators and checks if it has already been tried: if it has,
+    then returns `False`; if not, then saves it and returns `True`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: This simple technique introduces the concept of equivalence between the elements
+    of the search space and can significantly shrink the search space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: And now, we are finally ready to launch an experiment to find the optimal functional
+    pipeline for solving the AutoML problem. The trial script in Listing [3-22](#PC86)
+    initializes the model, prepares datasets, trains the model, tests it, and returns
+    model accuracy to NNI Experiment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch3/ml_pipeline/trial.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [3-23](#PC87) puts everything together and runs the experiment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Import modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Common Experiment configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Generating search space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Trial configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting the custom `EvolutionShrinkTuner`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [3-41](#Fig41) shows top trials of the AutoML Experiment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig41_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-41
+  prefs: []
+  type: TYPE_NORMAL
+- en: AutoML Experiment best Trials
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The best Trial demonstrates **0.89143** accuracy and has the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The best Trial can be converted to the functional pipeline:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In fact, the classifier we have built shows very good results, which are close
+    to optimal. The best classifier for this model performs with the following accuracy:
+    `0.898` (“Multi-Task Architecture with Attention for Imaging Atmospheric Cherenkov
+    Telescope Data Analysis,” [`www.scitepress.org/Papers/2021/102974/102974.pdf`](http://www.scitepress.org/Papers/2021/102974/102974.pdf)).
+    We have just built the custom AutoML toolkit based on NNI. This approach can also
+    be applied to any functional pipeline optimization. Similarly, you can automatically
+    design deep learning models with a sequential layer layout. Indeed, operator space
+    can consist of deep learning layers, and the model can be a neural network based
+    on the sequence of layers pipeline. Of course, we could dive deeper into applying
+    this approach to Neural Architecture Search, but it has significant drawbacks,
+    which we will discuss in the next section.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Limits of HPO Applying to Neural Architecture Search
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The approach described in this section can be successfully applied to the search
+    for neural network architectures but with a significant limitation. Using HPO
+    techniques described in this section, we can only get an architecture with a sequential
+    layer stack, that is, an architecture in which each layer connects to another
+    one sequentially. This is a significant limitation since many modern neural network
+    architectures use multiple connections between their layers, as shown in Figure
+    [3-42](#Fig42).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_3_Chapter/526245_1_En_3_Fig42_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 3-42
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multi-connected neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: We need some different and special techniques to search for efficient neural
+    network architectures. And we will begin to explore them in the next chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hyperparameters for Hyperparameter Optimization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When we talked about automated deep learning, we mentioned that AutoDL solves
+    the problem of finding optimal architectures and hyperparameters. But each AutoDL
+    technique has many parameters on its own! For example, we need to define the search
+    space, a maximum number of trials, find a suitable Tuner, define Tuner parameters,
+    etc. It turns out that the problem that solves the hyperparameter selection problem
+    itself has even more hyperparameters! What is the point of using the HPO approach
+    and other AutoDL methods then? This is a fair question. The answer is that even
+    a poorly configured HPO Experiment produces a significantly better model than
+    a model with a poorly configured architecture or hyperparameters. We can never
+    be sure in advance what the best settings for an AutoDL method are. However, we
+    can be confident that the AutoDL method will surely produce a model close to the
+    optimal one and significantly better than the one we would build manually.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'This chapter has taken a deep dive into Tuner internals and various black-box
+    function optimization algorithms. Understanding the principles of Tuners’ behavior
+    and their practical application can remarkably improve the design of NNI experiments
+    and HPO results. In the next chapter, we’ll move on to the most exciting and interesting
+    part of our book: Neural Architecture Search. We will study the latest techniques
+    to find the optimal design of neural networks for a specific task.'
+  prefs: []
+  type: TYPE_NORMAL

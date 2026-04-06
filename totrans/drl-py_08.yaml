@@ -1,0 +1,2550 @@
+- en: 8. Policy Gradient Algorithms
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Up to now, the book has focused on model-based and model-free methods. All the
+    algorithms using these methods estimate the state or state-action values for a
+    given current policy as the first step. In the second step, these estimated values
+    are used to find a better policy by choosing the best action in a given state.
+    These two steps are carried out in a loop until no further improvement in values
+    is observed. In this chapter, you look at a different approach for learning optimal
+    policies, by directly operating in the policy space. You will learn to improve
+    the policies without explicitly learning or using state or state-action values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will also learn that the policy-based approach and the value-based approach
+    are not two disjoint approaches. There are approaches that combine the value-based
+    and policy-based approaches such as the actor-critic methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The core of the chapter establishes the definition and mathematically derives
+    the key parts of policy-based optimization. The policy-based approach is currently
+    one of the most popular family of approaches for solving large and continuous
+    space problems in reinforcement learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: You started your journey by first looking at simple model-based approaches wherein
+    you solved small, discrete state space problems by iterating over Bellman equations.
+    Following this, the book discussed a model-free setup using the Monte Carlo and
+    temporal difference approaches. I then extended the analysis to cover large or
+    continuous state spaces using function approximation. In particular, you learned
+    about DQN and many of its variants as the way to go for policy learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The core idea of all these approaches is to first learn the value of the current
+    policy and then make iterative improvements to the policy to get better rewards.
+    This is done using the general framework of *Generalized Policy Iteration* (GPI)*.*
+    If you think for a minute, you will realize that the real objective is to learn
+    a good policy. You use value functions as an intermediary step to finding a good
+    policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This approach of learning value functions to improve a policy is an indirect
+    one. It is not always easy to learn values as compared to learning good policies
+    directly. Consider the case of encountering a bear on a jogging trail. What comes
+    to your mind first? Does your brain try to evaluate the state (the bear in front
+    of you) and the possible actions (“freeze,” “pet the bear,” “run for your life,”
+    or “attack the bear”)? Or do you “run” with almost certainty, that is, follow
+    a policy of `action="run"` with a probability of 1.0? I am sure the answer is
+    the latter one. Consider another example of playing a game of Atari Breakout,
+    the one used in the DQN examples in the previous chapter. Consider the situation
+    where the ball is near the right edge of your paddle and moving away from the
+    paddle (the “state”). As a human player, what do you do? Do you try to evaluate
+    *Q*(*s*, *a*), the state-action values for the two actions, to decide whether
+    the paddle needs to move right or left? Or do you just look at the state and learn
+    to move the paddle toward the right to avoid having the ball fall? Again, I am
+    sure the answer is the second one. In both of these examples, the latter and easier
+    alternative is learning to act directly instead of learning the value first, followed
+    by use of the state value to find the best action among the possible choices.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pros and Cons of Policy-Based Methods
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The previous examples show that in many cases, it is easier to learn the policy
+    (which action to take in a given state) as compared to learning the value functions
+    and then using them to learn a policy. Why then did I go through the approach
+    of value methods like SARSA, Q-learning, DQN, and so on, at all? Because policy
+    learning, while easier, is not a bed of roses. It has its own set of challenges,
+    especially based on your current knowledge and available algorithms, which are
+    listed here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Advantages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Better convergence****:** The convergence during training toward an intended
+    behavior is better for policy-based methods, as they directly optimize the policy
+    instead of value-based algorithms that go through two step process of value function
+    learning to policy optimization.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Effective in high-dimensional and continuous action spaces:** Policy-based
+    methods can handle high dimensional and continuous action spaces.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Adaptability to complex environments:** Policy-based methods are adaptive
+    to complex and dynamic environments, allowing for effective decision-making in
+    situations where the optimal policy may change over time.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Learn stochastic policies:** Policy-based methods that are learning stochastic
+    policies inherently incorporate exploration, thereby offering a better balance
+    between exploration and exploitation.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Disadvantages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Sample inefficiency and computational overload:** Policy-based methods require
+    many more episodes to learn optimal behavior. Therefore, these methods may need
+    longer runtime and extra computational load.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Convergence issues:** Vanilla policy-based methods at times converge to local
+    maximums instead of global ones. However, to a large extent these can be addressed
+    with methods like PPO.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Policy evaluation inefficient and with high variance:** Vanilla policy-based
+    methods do not maintain value functions, causing policy evaluation to be inefficient.
+    Therefore, evaluation must be carried out over high number of episodes to keep
+    the variance of policy estimate within a reasonable variance.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Elaborating on these points, remember the DQN learning curves? You saw how the
+    value of policy varied a lot during training. In the “cart pole” problem, you
+    saw that the score (as shown in the left graph of all the training progress diagrams
+    in the previous chapter) fluctuated a lot. There was no steady convergence toward
+    a better policy. Policy-based methods, especially with some additional controls
+    that I cover toward the end of the chapter, ensure a smooth and steady progress
+    toward better policies as you move through the learning process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The action space has always been a small set of possible actions. Even in the
+    case of function approximation coupled with deep learning like DQN, the action
+    spaces were limited to single digits. The actions were unidimensional. Imagine
+    trying to control various joins of a walking robot together. You would need to
+    make decisions about each of the joints of the robot, and these individual choices
+    together would make a complete action in a given state of the robot. Further,
+    the individual actions of each joint are not going to be discrete ones. Most likely,
+    the actions, such as speed of motors or angles by which an arm or a leg needs
+    to move, are going to be in a continuous range. Policy-based methods are more
+    suited to handle these actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In all the value-based methods you have seen so far, you always learned an optimal
+    policy—a deterministic one where you knew with certainty the best action to take
+    in a given state. I had to introduce the concept of exploration to try different
+    actions using *ε*-greedy policies, where you started with a non-zero exploration
+    probability, which steadily reduced to a very small value as training progressed
+    and the agent learned to act with better actions. The final output was always
+    a deterministic policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, deterministic policies are not always *optimal*. There are situations
+    where the optimal policy is to take multiple actions with some probability distribution,
+    especially in multi-agent environments. If you have some experience with game
+    theory, you will realize this immediately from setups like prisoner’s dilemma
+    and the corresponding Nash equilibrium. Anyway, let’s look at a simple situation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Have you ever played the game of rock-paper-scissors? It is a two-player game.
+    In a single turn, each player must choose one of the three options—scissors, rock,
+    or paper. Both players do so at the same time and reveal their choice at the same
+    time. The rules state that scissors beat paper because scissors can cut paper,
+    rock beats scissors because a rock can be used to smash the scissors, and paper
+    beats rock because the paper can cover the rock.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is the best policy? There are no clear winners. If you always choose, let’s
+    say, rock, then I as your opponent will exploit that knowledge and always choose
+    paper. Can you think of any other deterministic policy (i.e., of choosing one
+    of the three all the time)? To prevent the opponent from exploiting your strategy,
+    you must be completely random in making the choice. You must choose scissors or
+    rock or paper randomly with equal probability, that is, use a stochastic policy.
+    Deterministic policies are a specialized form of stochastic policies in which
+    one choice has a probability of 1.0 with all other actions having a 0 probability.
+    Stochastic policies are more general, and that’s what the policy-based approach
+    learns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is the deterministic policy:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ a={\uppi}_{\uptheta}(s) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In other words, this is the specific action *a* to be taken when in state *s*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is the stochastic policy:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ a\sim {\uppi}_{\uptheta}\left(a|s\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In other words, this is the distribution of action probability in a given state
+    *s*. To choose an action, you sample from this probability the distribution of
+    the actions in a given state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are disadvantages as well. Policy-based approaches, while having good
+    convergence, can converge into local maxima. The second big disadvantage is that
+    policy-based methods do not learn any direct representation of value functions,
+    making evaluating the value of a given policy inefficient. Evaluating the policy
+    usually requires rolling out multiple episodes of an agent using a policy and
+    summing up the reward sequence of each rollout to form an estimate of the state
+    or state-action value, essentially the MC approach. The MC approach comes with
+    the issue of high variance in estimates that require multiple rollouts to take
+    an average and get an estimate with lower variance. I discuss ways to address
+    this concern by combining the best of both worlds of value-based methods and policy-based
+    methods. This is known as the *actor-critic* family of algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Representation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In Chapter [5](502835_2_En_5_Chapter.xhtml), which covered model-free setups
+    with function approximation, I represented value functions in Equation [5-1](502835_2_En_5_Chapter.xhtml#Equ1)
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{v}\left(s;w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'There was a model (a linear model or a neural network) with weights *w*. It
+    represented the state value *v* and state-action value *q* with functions parameterized
+    by weights *w*. Instead, you will now parameterize the policy directly as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uppi \left(a|s;\uptheta \right)\approx {\uppi}_{\uptheta}\left(a|s\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: θ is the parameter of the function that defines the policy function, and what
+    the learning algorithm will tune to make the agent learn to act in a meaningful
+    way, generating desired rewards. Next you’ll see how this parameterization is
+    done for cases when actions are discrete and when actions form a continuous range
+    of values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Discrete Cases
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: For not-too-large a discrete action space, you can parameterize another function
+    *h*(*s*, *a*; *θ*) for the state-action pairs. The probability distribution is
+    formed using a soft-max of *h*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uppi \left(a|s;\uptheta \right)=\frac{e^{h\left(s,a;\uptheta \right)}}{\sum_b{e}^{h\left(s,b;\uptheta
+    \right)}} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The value *h*(*s*, *a*; *θ*) is known as *logits* or *action preferences*. It
+    is like the approach used in the supervised classification case. In supervised
+    learning, you input *X*, the observations. Here in RL, you input the state *S*
+    to the model. The outputs of the model in supervised cases are the logits of input
+    *X* belonging to different classes. And in RL, the output of the model is *action
+    preference h* for taking that specific action, *a*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Continuous Cases
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In continuous action spaces, the Gaussian representation of a policy is a natural
+    choice. Suppose the action space is continuous and multidimensional with a dimension
+    of, say, *d*. The model will take state *S* as input and produce the multidimensional
+    mean vector μ ∈ *R*^(*d*). Variance σ²*I*[*d*] can also be parameterized or can
+    be kept constant. The policy the agent will follow is a Gaussian policy with mean
+    μ and a variance σ²*I*[*d*]. The agent will poll actions from this probability
+    distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \pi \left(a|s;\theta \right)\sim N\left(\mu, {\sigma}^2{I}_d\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Here, action *a* & μ ∈ *R*^(*d*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having formulated the notations of how policy is represented as a parameterized
+    function, you will now shift your focus to the way the policy is learned by the
+    agent directly, without resorting to learning state and state-action values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Gradient Derivation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The approach to deriving a policy-based algorithm is similar to what you do
+    in supervised learning. Here is the outline of steps to follow to come up with
+    the algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Form an objective that you want to maximize, just like in supervised learning.
+    It will be the total reward received by following a policy. That is the objective
+    you want to maximize.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Derive the gradient update rule to carry out the gradient ascent. You are doing
+    gradient ascent and not gradient descent, as the objective is to maximize the
+    total average return per episode/rollout.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: You need to recast the gradient update formula into an expectation so that the
+    gradient update can be approximated using samples, such as an Monte Carlo estimate
+    of an expectation.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Now you formally convert the update rule into an algorithm that can be used
+    with auto-differentiation libraries like PyTorch, JAX, or TensorFlow.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Objective Function
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s start with the objective you want to maximize. As mentioned, it will
+    be the value of the policy, that is, the return an agent can get by following
+    a policy. There are many variations to the expected return representation. You
+    will look at some of these and learn briefly about the context of when to use
+    which representation. However, the detailed derivation of the algorithm is done
+    using one of the variants, as the derivations for other reward formulations are
+    similar. The reward function and its variants are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Episodic undiscounted: ![$$ J\left(\theta \right)={\sum}_{t=0}^{T-1}{r}_r $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq1.png)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Episodic discounted: ![$$ J\left(\uptheta \right)={\sum}_{t=0}^{T-1}{\upgamma}^t{r}_t
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq2.png)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Infinite horizon discounted: ![$$ J\left(\uptheta \right)={\sum}_{t=0}^{\infty
+    }{\upgamma}^t{r}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq3.png)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Average reward: ![$$ J\left(\uptheta \right)=\underset{T\to \infty }{\mathit{\lim}}\frac{1}{T}\sum
+    {r}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq4.png)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Most of this derivation will follow an episodic undiscounted structure of reward,
+    just to keep the math simple and focus on the key aspects of the derivation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: WHAT ROLE DOES **γ** PLAY?
+  prefs: []
+  type: TYPE_NORMAL
+- en: I also want to give you a feel for the discount factor, γ. The discount is used
+    in infinite formulation to keep the sum bounded. Usually, you use a discount value
+    of 0.99 or something similar to keep the sum theoretically bounded. In some formulations,
+    the discount factor also determines what role the rate of interest plays in financial
+    markets—that is, a reward today is worth more than the same reward tomorrow. Using
+    a discount factor brings in the concept of favoring the reward today.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The discount factor is also used to reduce the variance in the estimation by
+    providing a soft cutoff of the time horizon. Suppose you get a reward of 1 at
+    every time step and you use the discount factor of γ. The sum of this infinite
+    series is ![$$ \frac{1}{1-\upgamma} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq5.png).
+    Say you have γ = 0.99\. The infinite series sum is then equal to 100\. Therefore,
+    you can think of a discount of 0.99 as limiting your horizon to 100 steps, in
+    which you collected a reward of 1 in each of the 100 steps, to give you a total
+    return of 100.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To summarize, a discount of γ implies a time horizon of ![$$ \frac{1}{1-\upgamma}
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq6.png) steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using *γ* also ensures that the impact of changing policy actions in the initial
+    part of the trajectory has a higher impact on the overall quality of the policy
+    versus the impact of decisions in the later part of the trajectory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moving back to derivation, you can now calculate the gradient update for improving
+    a policy. The agent follows a policy as parameterized by *θ*. This involves a
+    bit of math and if you want to skip ahead, skip to Equations [8-16](#Equ16) and
+    [8-17](#Equ17), and follow along from that point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uppi}_{\uptheta}\left({a}_t|{s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The agent follows the policy and generates the trajectory *τ* as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {s}_1\to {a}_1\to {s}_2\to {a}_2\to \dots .\to {s}_{T-1}\to {a}_{T-1}\to
+    {s}_T\to {a}_T $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Here, *s*[*T*] is not necessarily the terminal state but some time horizon *T*
+    up to which you are considering the trajectory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The probability of observing trajectory *τ* during a rollout depends on the
+    transition probabilities *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*]) and the policy
+    *π*[*θ*](*a*[*t*]| *s*[*t*]). It is given by the following expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {p}_{\uptheta}\left(\uptau \right)={p}_{\uptheta}\left({s}_1,{a}_1,{s}_2,{a}_2,\cdots,
+    {s}_T,{a}_T\right)=p\left({s}_1\right){\prod}_{t=1}^T{\uppi}_{\uptheta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The expected return from following the policy is given by the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You want to find the *θ* that maximizes the expected return *J*(*θ*). In other
+    words, the optimal θ = θ^∗ is given by the following expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uptheta}^{\ast }={\mathit{\arg}\mathit{\max}}_{\uptheta}{E}_{\uptau
+    \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Before moving forward, consider how you will evaluate the objective *J*(θ).
+    You convert the expectation in Equation [8-3](#Equ3) to an average over samples,
+    that is, you run the agent through the policy multiple times, collecting *N* trajectories.
+    You calculate the total reward (total reward in a trajectory is also called the
+    return of an episode or a single rollout) in each trajectory and take an average
+    of the return across *N* trajectories. This is a Monte Carlo (MC) estimation of
+    the expectation. This is what is meant when I talked about evaluating a policy.
+    The expression you obtain is the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the notation in Equation [8-5](#Equ5), ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq7.png)
+    represents the state *s* in step *t* of rollout instance *i*. There are *T* steps
+    in a rollout and there are *N* rollouts in total.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Derivative Update Rule
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Moving on, let’s try to find the optimal *θ*. To keep the notations easier
+    to understand, I replace ∑[*t*]*r*(*s*[*t*], *a*[*t*]) with *r*(τ). Rewriting
+    Equation [8-3](#Equ3), you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\theta \right)={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[r\left(\tau
+    \right)\right]=\int {p}_{\theta}\left(\tau \right)r\left(\tau \right)\  d\tau
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Take the gradient/derivative of Equation [8-6](#Equ6) with respect to *θ*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\theta }J\left(\theta \right)={\nabla}_{\theta}\int {p}_{\theta}\left(\tau
+    \right)r\left(\tau \right) d\tau $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using linearity, you can move the gradient inside the integral.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\int {\nabla}_{\uptheta}{p}_{\uptheta}\left(\uptau
+    \right)r\left(\uptau \right)d\uptau $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With the log derivative trick, you know that ∇[*x*]*f*(*x*) = *f*(*x*)∇[*x*] log *f*(*x*).
+    Using this, you can write the previous Equation [8-8](#Equ8) as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\int {p}_{\uptheta}\left(\uptau
+    \right)\left[{\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)r\left(\uptau
+    \right)\right]d\uptau $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-9)THE LOG DERIVATIVE TRICK
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Start with a probability distribution *p*[θ](*x*), where x is the random variable
+    and θ represents the parameters of the probability distribution. Say you have
+    this expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ G\left(\uptheta \right)={E}_{x\sim {p}_{\uptheta}(x)}\left[f(x)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'You now want to calculate the derivate of *G*(θ) w.r.t \theta. For simplicity’s
+    sake, assume that *x* and θ are both single dimensional variables. You write *G*(θ)
+    by converting expectation to an integral. You can rewrite *G*(θ) as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ G\left(\uptheta \right)=\int {p}_{\uptheta}(x)f(x) dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Taking a derivative w.r.t θ on both sides, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\frac{d}{d\uptheta}\int {p}_{\uptheta}(x)f(x)
+    dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Taking a derivative inside due to linearity property, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\int \left(\frac{d}{d\uptheta}{p}_{\uptheta}(x)\right)f(x)
+    dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now multiply and divide the right side by *p*[*θ*](*x*):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\int \left(\frac{p_{\uptheta}(x)}{p_{\uptheta}(x)}\frac{d}{d\uptheta}{p}_{\uptheta}(x)\right)f(x)
+    dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'This gives:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)=\int {p}_{\uptheta}(x)\left(\frac{1}{p_{\uptheta}(x)}\frac{d}{d\uptheta}{p}_{\uptheta}(x)\right)f(x)
+    dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The expression inside the brackets on the left side is the derivative of log*p*[θ](*x*):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{d}{d\theta}G\left(\theta \right)=\int {p}_{\theta }(x)\left(\frac{d}{d\theta}\mathit{\log}{p}_{\theta
+    }(x)\right)f(x) dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now convert the integral back to expectation over *p*[*θ*](*x*):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{d}{d\uptheta}G\left(\uptheta \right)={E}_{\uptheta \sim {p}_{\uptheta}(x)}\left[\frac{d}{d\uptheta}\log
+    {p}_{\uptheta}(x)f(x)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is log derivative trick, where the derivative of a function is the function
+    in an expectation and you want to take the derivate of the function with respect
+    to the parameters of the probability distribution over which the expectation has
+    been taken. The log derivative trick allows you to represent the derivative, which
+    in turn allows you to take Monte Carlo estimates of the derivative expression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can now write the integral back as the expectation, which gives the following
+    expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[{\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)r\left(\uptau
+    \right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ10.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now expand the term ∇[*θ*] log *p*[*θ*](*τ*) by writing out the full expression
+    of *p*[*θ*](*τ*) from Equation [8-2](#Equ2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\theta}\log {p}_{\theta}\left(\tau \right)={\nabla}_{\theta}\mathit{\log}\left[p\left({s}_1\right){\prod}_{t=1}^T{\pi}_{\theta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ11.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-11)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You know that the log of the product of terms can be written as a sum of the
+    log of terms. In other words:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \log {\prod}_i{f}_i(x)={\sum}_i\log {f}_i(x) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ12.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-12)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Substituting Equation [8-12](#Equ12) in Equation [8-11](#Equ11), you get the
+    following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\nabla}_{\uptheta}\left[\log
+    p\left({s}_1\right)+{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)+\log
+    p\left({s}_{t+1}|{s}_t,{a}_t\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ13.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-13)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The only term in Equation [8-13](#Equ13) dependent on *θ* is *π*[*θ*](*a*[*t*]|
+    *s*[*t*]). The other two terms—log*p*(*s*[1]) and log*p*(*s*[*t* + 1]| *s*[*t*],
+    *a*[*t*])—do not depend on *θ*. Accordingly, you can simplify Equation [8-13](#Equ13)
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-14)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'By substituting Equation [8-14](#Equ14) into the expression for ∇[*θ*]*J*(*θ*)
+    in Equation [8-10](#Equ10), as well as expanding *r*(*τ*) as ∑[*t*]*r*(*s*[*t*],
+    *a*[*t*]), you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ15.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-15)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can now replace the outer expectation with an estimate/average over multiple
+    trajectories to get the following expression for the *gradient of policy objective*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ16.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-16)
+  prefs: []
+  type: TYPE_NORMAL
+- en: where superscript index *i* denotes the *i*^(th) trajectory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To improve the policy, take a +ve step in the direction of ∇[*θ*]*J*(*θ*) with
+    a learning rate α.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uptheta =\uptheta +\upalpha {\nabla}_{\uptheta}J\left(\uptheta \right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ17.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-17)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summarizing, you have designed a model that takes state *s* as the input and
+    produces the policy distribution *π*[*θ*](*a*| *s*) as the output of the model.
+    You use a policy as determined by cthe urrent model parameters *θ* to generate
+    trajectories and calculate the total return of each trajectory. You then calculate
+    ∇[*θ*]*J*(*θ*) using Equation [8-16](#Equ16) and change the model parameters *θ*
+    using the expression *θ* = *θ* + *α*∇[*θ*]*J*(*θ*) in Equation [8-17](#Equ17).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Intuition Behind the Update Rule
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This section develops some intuition behind Equation [8-16](#Equ16) by explaining
+    the equation in words. You carry out an average over *N* trajectories and that
+    is the outermost sum. What is it that you average over the trajectories? For each
+    trajectory, you look at the total reward obtained in that trajectory, that is,
+    the second term inside the summation. This return is multiplied with the first
+    term, which is the sum of log probabilities of all the actions along that trajectory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Suppose the total reward *r*(*τ*^(*i*)) of a trajectory was +ve. Each gradient
+    inside the first inner sum, ![$$ {\nabla}_{\theta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq8.png), which
+    is the gradient of the log probability of that action—gets multiplied by the total
+    reward *r*(*τ*^(*i*)). It results in an individual *gradient-log* term being amplified
+    by the total reward of the trajectory, and in Equation [8-17](#Equ17), its contribution
+    is to move the model parameters *θ* in the +ve direction of ![$$ {\nabla}_{\theta}\log
+    {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq9.png),
+    that is, increase the probability of taking action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq10.png)
+    when the system was in state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq11.png).
+    However, for the case when *r*(*τ*^(*i*)) was a -ve quantity, Equations [8-16](#Equ16)
+    and [8-17](#Equ17) lead to moving *θ* in the -ve direction, resulting in a decrease
+    of the probability of taking action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq12.png)
+    when the system is in state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq13.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You could summarize the whole explanation by saying that policy optimization
+    is all about trial and error. You roll out multiple trajectories. The probability
+    of all the actions along the trajectory is increased for those trajectories that
+    are good. For the trajectories that are bad, the probability of all the actions
+    along those bad trajectories are reduced, as depicted in Figure [8-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of trajectory rollouts. It represents the multiple trajectories
+    of reward versus time. Trajectory 3 has a lower probability while Trajectory 1
+    and Trajectory 2 have higher probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trajectory rollouts. Trajectory 1 is good, so you want the model to produce
+    more of these. Trajectory 2 is neither good nor bad, and the model should not
+    worry too much about it. Trajectory 3 is bad, so you want the model to reduce
+    the probability of it
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider this interpretation by comparing the expression in Equation [8-17](#Equ17)
+    with that of maximum likelihood. If you just wanted to model the probability of
+    seeing the trajectories you saw, you would get the maximum likelihood estimation—you
+    observe some data (trajectories), and you want to build a model with the highest
+    probability of producing the observed data/trajectory. This is the maximum likelihood
+    model building. Under that, you would get an equation as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}{J}_{MLE}\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ18.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-18)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Equation [8-18](#Equ18), you are just increasing the probability of the actions
+    to increase the overall probability of trajectories that were observed. You are
+    not making any differentiation for the good vs bad trajectories. In the case of
+    policy gradients in Equation [8-16](#Equ16), you are doing something similar to
+    the maximum likelihood estimation (MLE), but with the addition that you are weighing
+    the log probability gradients with the return of the trajectory so that the probability
+    of good trajectories is increased, and the probability of bad trajectories is
+    decreased.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before concluding this section, one observation I want to make is regarding
+    the Markov property and partial observability. You have not really used the Markov
+    assumption in the derivation. In the end, Equation [8-16](#Equ16) just increases
+    the probability of good stuff and reduces the probability of bad stuff. You have
+    not used Bellman equations so far. Therefore, a policy gradient approach can also
+    work for non-Markovian setups.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The REINFORCE Algorithm
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: You’ll now convert Equation [8-16](#Equ16) into an algorithm for policy optimization.
+    The basic algorithm is shown in Figure [8-2](#Fig2). It is known as REINFORCE.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm for R E I N F O R C E for policy optimization. It includes input,
+    initialize, other parameters, and a loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The REINFORCE algorithm
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider some implementation-level details. Suppose you use a neural network
+    as a model that takes a state value as input and produces the *logit* (log probability)
+    of taking all possible actions in that state. Figure [8-3](#Fig3) shows a diagram
+    of such a model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network model for the predicting policy of neural networks. The state value
+    is provided as an input and the log probability is provided for the possible actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural network model for predicting policy
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can use auto-differentiation libraries such as PyTorch, JAX, or TensorFlow.
+    You do not explicitly calculate the differentiation. Equation [8-16](#Equ16) gives
+    you the expression for ∇[θ]*J*(θ). With PyTorch or such other libraries, you need
+    an expression *J*(θ) which, during backward propagation, will use auto differentiation
+    to calculate ∇[θ]*J*(θ) and then update the weights θ of the neural network using
+    Equation [8-17](#Equ17). The neural network model will take state *s* as input
+    and produce π[θ](*a*[*t*]| *s*[*t*]). Therefore, you need to use this output and
+    carry out further computation to arrive at an expression for *J*(θ). The auto-differential
+    packages like PyTorch or TensorFlow will automatically calculate the gradient
+    ∇[θ]*J*(θ) from the expression for *J*(θ). The correct expression for *J*(θ) is
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ19.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-19)
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can check and confirm that the gradient of this expression will give you
+    the correct value for ∇[*θ*]*J*(*θ*), as shown in Equation [8-16](#Equ16). Start
+    with Equation [8-19](#Equ19) for *J*(*θ*) and take a derivative with respect to
+    *θ*. It will give you an expression for ∇[*θ*]*J*(*θ*) that matches the Equation
+    [8-16](#Equ16).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that the expression *J*(*θ*) in Equation [8-19](#Equ19) is not same as
+    the one in Equation [8-6](#Equ6). While moving from expression of *J*(*θ*) in
+    Equation [8-6](#Equ6) to the derivative ∇[θ]*J*(θ) in Equation [8-16](#Equ16)
+    and then back to an expression of *J*(*θ*) in Equation [8-19](#Equ19), you introduced
+    the log trick. You removed the terms from probability that were not dependent
+    on θ and rather were the properties of the environment, the state transition probabilities
+    in form of *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*]). The expression *J*(*θ*) is known
+    as a *pseudo-objective*. It is an expression whose derivate matches the correct
+    derivative expression ∇[θ]*J*(θ), shown in Equation [8-16](#Equ16). This expression
+    implements in auto-diff libraries like PyTorch. It is just being used to tune
+    the agent and, as such, has no physical significance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You then calculate the log probabilities ![$$ \log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq14.png), weigh
+    the probabilities with the total reward of the trajectory ![$$ {\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq15.png), and
+    then calculate the negative log likelihood (NLL, or cross-entropy loss) of the
+    weighted quantity, giving you the expression in Equation [8-20](#Equ20). It is
+    similar to the approach for training a multiclass classification model in a supervised
+    learning setup. The only difference is weighing the log probability by the trajectory
+    reward. This is the approach you will take when actions are discrete. The loss
+    you implement in PyTorch is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}_{\mathrm{cross}-\mathrm{entropy}}\left(\uptheta \right)=-1\cdotp \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ20.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-20)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that PyTorch (and other auto-diff libraries) minimize the loss by taking
+    a step in a negative direction of the loss. And note that the -ve gradient of
+    Equation [8-20](#Equ20) is a +ve gradient of Equation [8-19](#Equ19) due to the
+    presence of a factor of -1 in Equation [8-20](#Equ20). Therefore, a step in the
+    negative direction of the gradient of *L*[cross − entropy] is a step in the direction
+    that increases the value of *J*[(θ)] in Equation [8-19](#Equ19). By extension,
+    this increases the value of the actual objective *J*(θ), as shown in Equation
+    [8-6](#Equ6), which is the average of the return per episode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having looked at the formulation when action space is discrete, you can now
+    turn your attention to the formulation under continuous action space. As discussed
+    earlier in this chapter, the model parameterized by *θ* will take state *s* as
+    input and produce the mean *μ* of a multivariate normal distribution. This considers
+    the case where the variance of the normal distribution is known and fixed to some
+    small value, say σ²*I*[*d*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uppi \left(a|s;\uptheta \right)\sim N\left(\upmu, {\upsigma}^2{I}_d\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Say for state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq16.png)
+    the mean that the model produces is ![$$ {\upmu}_{\theta}\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq17.png). The
+    value of ![$$ \log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq18.png)
+    is then given by the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)=\log \frac{1}{\sqrt{2\pi}\sigma
+    }{e}^{-\frac{1}{2{\sigma}^2}{\left({a}_t^i-{\mu}_{\theta}\right)}^2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =-\frac{1}{2}\ \log 2\pi -\log \sigma -\frac{1}{2{\sigma}^2}{\left({a}_t^i-{\mu}_{\theta}\right)}^2
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ21.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-21)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The only value in the previous expression that depends on model parameters
+    *θ* is ![$$ {\mu}_{\theta}\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq19.png).
+    Now take a gradient of Equation [8-21](#Equ21) with regard to *θ*. You obtain
+    the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)=\mathrm{const}\cdotp
+    \left({a}_t^i-{\mu}_{\theta}\right)\ {\nabla}_{\theta }{\mu}_{\theta}\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ22.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-22)
+  prefs: []
+  type: TYPE_NORMAL
+- en: To implement this in PyTorch, JAX or TensorFlow, you will form a modified mean
+    squared error, just like the approach you took with the previous case of discrete
+    actions. You find an expression whose derivative will yield the above expression
+    of ![$$ {\nabla}_{\uptheta}\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq20.png).
+    By observation of Equation [8-22](#Equ22), you can find an expression, as shown
+    in Equation [8-23](#Equ23), whose derivative will be equal to the one in Equation
+    [8-22](#Equ22).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\left({a}_t^i-{\mu}_{\theta}\right)}^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ23.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-23)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now you weigh the mean squared error with the trajectory return and that will
+    form the loss equation you implement in PyTorch, which is given in Equation [8-24](#Equ24).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\left({a}_t^i-{\mu}_{\theta}\right)}^2\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ24.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-24)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Again, note that using gradient of *L*[*MSE*](θ) and then taking a step in
+    the -ve direction of the gradient will produce the following expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ -{\nabla}_{\theta }{L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\left({a}_t^i-{\mu}_{\theta}\right)\
+    {\nabla}_{\theta }\ {\mu}_{\theta}\left({s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ25.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-25)
+  prefs: []
+  type: TYPE_NORMAL
+- en: A step in the direction of −∇[*θ*]*L*[*MSE*](θ) is a step in the direction of
+    ∇[θ]*J*(θ), as given in Equation [8-19](#Equ19). This step increases the value
+    of *J*(*θ*) from Equation [8-6](#Equ6), that is, maximizing the return from the
+    policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To summarize, implementations in auto-diff libraries like PyTorch require you
+    to form cross-entropy loss in discrete action space and mean squared loss in the
+    case of continuous action space, where the loss term is weighted by the total
+    return of that trajectory to which a specific pair ![$$ \left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq21.png) belongs.
+    This is similar to the approach you take in supervised learning, except for the
+    extra step of weighing by the trajectory return ![$$ r\left({\uptau}^i\right)={\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq22.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: To reiterate, remember that *weighted cross-entropy loss* or *weighted mean-squared
+    loss* has no physical meaning or significance. It is just a convenient expression
+    that allows you to use auto-diff capabilities of PyTorch to calculate the gradients
+    using back propagation and then take a step to improve the policy. Compared to
+    this, in supervised learning, the losses do signify the quality of prediction.
+    In supervised learning, lower loss means that the model can make accurate predictions.
+    However, there is no such inference or meaning that can be attached to the weighted
+    loss in the case of the policy gradient scenario in reinforcement learning. That’s
+    why they are called pseudo-loss/objectives.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variance Reduction with Rewards-to-Go
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The expression derived in Equation [8-16](#Equ16), if used in its current form,
+    has an issue. It has high variance. You will now leverage the temporal nature
+    of the problem to do some variance reduction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When you roll out the policy (i.e., take actions as per the policy) to produce
+    a trajectory, you calculate the total reward of the trajectory *r*(τ). As shown
+    in Equation [8-16](#Equ16), each of the action probability terms for the actions
+    in the trajectory are weighted by this trajectory reward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, the world is causal when the agent interacts with the environment.
+    An action taken in a time step, say *t*, can only impact the reward you see after
+    that action. The reward you see prior to time step *t* is not impacted by the
+    action you take at time step *t* or any subsequent actions. Future actions cannot
+    impact past rewards. You will use this property to drop certain terms in Equation
+    [8-16](#Equ16). This will help you reduce the variance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may ask why? Remember that you are using the sample trajectories as the
+    Monte Carlo estimate of the expected trajectory reward. Each action in the trajectory
+    comes from a probability distribution. The first sum inside Equation [8-16](#Equ16)
+    is adding all these samples of the random variables. From basic probability, you
+    know that as you add more random variables to an existing sequence of random variables,
+    the total variance of the sum will grow linearly. Therefore, by dropping irrelevant
+    terms, you help reduce the length of the sequence and hence the variance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The steps that derive the revised formula under the causal world assumption
+    are shown here. Note that it is not a rigorous mathematical proof.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Start with Equation [8-15](#Equ15).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now change the index of summation for the reward term from *t* to *t*^′ and
+    move the reward sum term inside the first summation over actions from policy π[θ].
+    This gives you the following expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime
+    }=1}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Inside the summation over index *t*, you drop the reward terms that came before
+    time *t*. At time *t*, the action you take can only impact the reward that comes
+    at time *t as well as those that come later*. This leads to changing the second
+    inner sum starting from *t*^′ = *t* instead of *t*^′ = 1\. The revised expression
+    is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime
+    }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The inner sum ![$$ {\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime
+    }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq23.png)
+    is no longer the total reward of the trajectory. Rather, it is the reward of the
+    remaining trajectory that you see from *time* = *t* to *T*. As you may recall,
+    this is nothing but a sample of the q-value for the current policy when in state-action
+    pair ![$$ \left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq24.png).
+    The q-value for a policy is the expected reward you get from time *t* until the
+    end, after you take a step/action *a*[*t*] at time *t* while in state *s*[*t*].
+    You can also call it *reward-to-go*. Since the expression ![$$ {\sum}_{t^{\prime
+    }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq25.png)
+    is for only one trajectory, you denote it is a single sample estimate of the expected
+    reward-to-go. The updated gradient equations are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{Q}}_t^i={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime
+    }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ26.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-26)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ {\hat{Q}}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ27.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-27)
+  prefs: []
+  type: TYPE_NORMAL
+- en: To use this equation in PyTorch, you just need to make a minor modification
+    to the naive REINFORCE algorithm from Figure [8-2](#Fig2). Instead of weighing
+    each log probability term with the total trajectory reward, you will now weigh
+    it with the reward-to-go from that time step. Figure [8-4](#Fig4) shows the revised
+    REINFORCE algorithm using reward-to-go.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm of R E I N F O R C E variance reduction with reward to go. It includes
+    input, initialize, loop, and model parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: The REINFORCE algorithm using reward-to-go
+  prefs: []
+  type: TYPE_NORMAL
+- en: You have been doing a lot of theory so far in this chapter, and there is a bit
+    of overload of mathematical formula. I have tried to keep it minimal, and if there
+    is one takeaway from the chapter thus far, it is that of the REINFORCE algorithm
+    in Figure [8-4](#Fig4). Let’s now put this equation into practice. You will implement
+    REINFORCE from Figure [8-4](#Fig4) to the usual `CartPole` problem with continuous
+    state space and discrete actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before you do, I want to introduce one last mathematical term. The exploration
+    of state-action space in policy gradient algorithms comes from the fact that you
+    learn a stochastic policy that assigns some probability to all the actions for
+    a given state instead of choosing the best possible action using DQN. To ensure
+    that exploration is maintained and to ensure that π[θ](*a*| *s*) does not collapse
+    into a single action with high probability, you introduce a regularization term
+    known as *entropy*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Entropy of a distribution *X* ∼ *p*(*X*) is defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ H(X)={\sum}_x-p(x).\mathit{\log}\ p(x) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ28.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-28)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To keep enough exploration, you will want the probability to have a spread-out
+    distribution and not let the probability distribution peak around a single value
+    or a small region too soon. The bigger the spread of a distribution, the higher
+    the entropy H(x) of a distribution. Accordingly, the term fed into the PyTorch
+    minimizer is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Loss\left(\uptheta \right)=-J\left(\uptheta \right)-H\left({\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =-\frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right){\sum}_{t^{\prime
+    }=t}^T{\upgamma}^{t^{\prime }-t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)\right)-\upbeta
+    {\sum}_{a_i}{\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right).\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ29.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-29)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this code example, you are taking only one trajectory, that is, *N* = 1\.
+    You will, however, average it over the number of actions to get the average loss.
+    The function you will implement is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Loss\left(\uptheta \right)=-J\left(\uptheta \right)-H\left({\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =-\frac{1}{T}{\sum}_{t=1}^T\left(\log {\pi}_{\theta}\left({a}_t|{s}_t\right)G\left({s}_t\right)-\beta
+    {\sum}_{a_i}{\pi}_{\theta}\left({a}_t|{s}_t\right).\log {\pi}_{\theta}\left({a}_t|{s}_t\right)\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ30.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-30)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Where,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ G\left({s}_t\right)={\sum}_{t^{\prime }=t}^T{\upgamma}^{t-{t}^{\prime
+    }}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that the discount factor γ was reintroduced in the previous expressions.
+    You had dropped γ to reduce overload of terms in the derivations and now have
+    brought it back for actual implementation. The purpose that γ serves was explained
+    in the beginning of the chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With this complete all the machinery required to implement this first policy
+    gradient algorithm in the form of REINFORCE with reward-to-go. Now you’ll look
+    at an implementation and how it can be used to train an agent in cart-world gymnasium
+    environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now walk through the implementation. You can find the complete code in
+    the `8.a-reinforce.ipynb` notebook. I explained the environment `CartPole` in
+    earlier chapters. It has a four-dimensional continuous state space and a discrete
+    action space of two actions:—move left and move right. You first define a simple
+    policy network with one hidden layer of 192 units and ReLU activation. The final
+    output has no activation. Listing [8-1](#PC1) shows the code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, you define a `generate_trajectory` function that takes the current policy
+    to generate a trajectory of `(states, actions, rewards)` for one episode. It uses
+    a helper function called `predict_probs` to do so. You’ll use `torch.no_grad`
+    in the `predict_probs` function to avoid extra accumulation of gradients in the
+    PyTorch training step. Listing [8-2](#PC2) shows the code. It starts with initializing
+    the environment and then successively takes steps following the current policy
+    until there are 1,000 steps or until the current episode is terminated, whichever
+    is earlier. It returns the list of `(states, actions, rewards)` tuples observed
+    during the episode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You also have another helper function to convert the individual step returns
+    ![$$ r\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq26.png)
+    to reward-to-go as per the expression: ![$$ G\left({s}_t\right)={\sum}_{t^{\prime
+    }=t}^T{\gamma}^{t-{t}^{\prime }}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq27.png). You
+    use a loop that starts from the end and calculates the cumulative sum with a discount
+    factor at each step, while going from the end of the list to the beginning. There
+    are many other efficient ways to do this. See if you can think of other vectorized
+    ways to do this. As a hint, check the documentation of the `cumsum` function in
+    PyTorch. Listing [8-3](#PC3) contains the implementation of this function.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: You are now ready to implement the training. You build the loss function that
+    you are going to feed into the PyTorch optimizer. As explained, you are going
+    to implement the expression given in Equation [8-29](#Equ29). Listing [8-4](#PC4)
+    contains the code used for a single step of training. As discussed earlier, I
+    have added an additional term representing the entropy of the action probability
+    distribution. This prevents the policy from collapsing into a single action. Entropy
+    is calculated using the expression *H*(*X*) = ∑[*x*] − *p*(*x*). *log p*(*x*).
+    The function takes a tuple of (`states, actions, rewards`) observed during a trajectory,
+    calculates the rewards-to-go followed, then calculates the training loss, which
+    is comprised of weighted cross-entropy loss and entropy. The optimizer uses the
+    loss to inprove the parameters of the neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: You are now ready to carry out the training. Listing [8-5](#PC5) shows how to
+    train the agent for 10,000 steps, plotting the progress as training progresses.
+    You can stop the training once you achieve a mean reward of 500\. The code initializes
+    two arrays to keep track of the per-episode return and loss. Inside the loop,
+    it follows a simple process, as explained in the algorithm for REINFORCE with
+    rewards-to-go shown in Figure [8-4](#Fig4). Toward the end of the loop, the code
+    periodically checks the performance of the agent and stops the training if the
+    average score per episode has crossed 500\. There is also code that plots the
+    performance by showing graphs of return per episode and the training loss during
+    the course of the training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: By the end of training, the agent has learned to balance the pole well. You
+    will also notice that the program needed fewer iterations and less time to achieve
+    this result as compared to the DQN-based approach. Figure [8-5](#Fig5) shows the
+    graphs observed during training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 line graphs. Left, plots the mean return episode, The y axis ranges from 0
+    to 2000 and x axis ranges from 0 to 300\. Right, plots the loss history. The y
+    axis ranges from 0 to 30 and x axis ranges from 0 to 3000\. They exhibit a fluctuating
+    trend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training progess from 8.a-reinforce.ipynb
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can observe from Figure [8-5](#Fig5), the training is very unstable and
+    the return per episode fluctuates a lot. You could try to tune the hyperparameters,
+    such as relative weight given entropy of the action, probability distribution
+    in function via `entropy_coef`, number of training steps, network, and so on.
+    You could tune these manually or using the Optuna as explained Chapter [6](502835_2_En_6_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: This brings you to the end of section on the REINFORCE algorithm. Note that
+    REINFORCE is an *on-policy* algorithm. After every step of training, you regenerate
+    a new trajectory, throwing away the observations from the previous trajectory.
+    For an environment like `CartPole`, it is inconsequential. However, for environments
+    where it is expensive to generate samples, throwing away observations at the end
+    of each trajectory is very inefficient. You’ll need to look further and define
+    off-policy approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Further Variance Reduction with Baselines
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Strating with the original policy gradient update expression in Equation [8-15](#Equ15),
+    you converted the expectation to an estimate using the average in Equation [8-16](#Equ16).
+    Following this, you learned how the variance could be reduced by considering rewards-to-go
+    instead of full trajectory rewards. The expression with the rewards-to-go was
+    given in Equation [8-27](#Equ27).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this section, you look at yet another change that makes the policy gradient
+    even more stable. Consider the motivation. Assume you have performed three rollouts
+    of the trajectory following a policy. And let’s say the trajectory returns were
+    300, 200, and 100\. To keep the explanation simple, consider the case of total
+    rewards and total trajectory probability of the gradient update equation, as given
+    in Equation [8-10](#Equ10), reproduced here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[{\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)r\left(\uptau
+    \right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: What will the gradient update do? It will weigh the gradient of the log probability
+    of the first trajectory with 300, the second trajectory with 200, and the third
+    trajectory with 100\. This means that the probability of each of these three trajectories
+    is being increased by some different amount. Figure [8-6](#Fig6) shows a pictorial
+    representation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A multiline graph plots the actual trajectory rewards to time. The episode returns
+    are 300, 200, and 100\. Probability and probability after update curves has increasing
+    trends initially and then decrease.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: The gradient update for a policy with actual trajectory rewards
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see in Figure [8-6](#Fig6), you are increasing the probability of
+    all three trajectories with different weighting factors, all +ve weights, making
+    the probability of all trajectories go up. Ideally, you would increase the probability
+    of the trajectory with a return of 300 and reduce the probability of the trajectory
+    with a return of 100, as it is not a very good trajectory. You would want the
+    policy to change such that it does not generate the trajectory with a return of
+    100 too often. However, using the current approach, the revised probability curve
+    is becoming flatter, as it is trying to increase the probability of all three
+    trajectories and the total area under the probability curve must be 1 given that
+    it is a probability curve.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s consider a scenario in which you subtract the average return of three
+    trajectories, (300 + 200 + 100)/3 = 200 from each of the three rewards. You get
+    the revised trajectory returns of 100, 0, and -100 (300-200; 200-200; 100-200).
+    Let’s use the revised trajectory returns as the weights to carry out the gradient
+    update. Figure [8-7](#Fig7) shows the outcome of such an update. You can see that
+    the probability curve is becoming narrower and sharper as its spread reduces along
+    the x-axis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A multiline graph plots the actual trajectory rewards to time. The episode returns
+    are 100, 0, and negative 100\. Probability and probability after update curves
+    has increasing trends initially and then decrease.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The gradient update for a policy with trajectory rewards reduced by a baseline
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reducing the rewards with a baseline reduces the variance of the update. In
+    the limit, whether you use or do not use a baseline, the outcome will be same.
+    The introduction of a baseline does not alter the optimal solution. It just reduces
+    the variance and speeds up the learning. I will show mathematically that the introduction
+    of a baseline does not alter the expected value of the gradient update. The baseline
+    can be a fixed baseline across all trajectories and all steps in the trajectory,
+    or it can be a changing quantity that depends on the state. *However, it cannot
+    depend on the action.* Let’s first go through the derivation in which the baseline
+    is a function of the state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq28.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Update Equation [8-15](#Equ15) to introduce a baseline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left(r\left(\tau
+    \right)-\mathrm{b}\Big({\mathrm{s}}_t\right)\Big)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Separate out the term of *b*(*s*[*t*]) and evaluate what the expectation would
+    be.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)b\left({s}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now move the first inner sum out due to the property of linearity of expectation
+    to obtain the expression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\sum}_{t=1}^T{E}_{{\mathrm{a}}_t\sim {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}\left[{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equab.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You have switched the expectation from τ ∼ *p*[θ](τ) to a[*t*] ∼ π[θ](*a*[*t*]|
+    *s*[*t*]). This is because you moved the first inner sum outside the expectation,
+    and after that, the only term that depends on a probability distribution is the
+    action *a*[*t*] with probability π[θ](*a*[*t*]| *s*[*t*]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now just focus on the inner expectation: ![$$ {E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq29.png). You
+    can write this as an integral, as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {E}_{{\mathrm{a}}_t\sim {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}\left[{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equac.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.5em \left({\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\ b\left({s}_t\right)\ d{a}_t
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equad.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.5em \frac{\nabla_{\uptheta}{\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}{\uppi_{\uptheta}\left({a}_t|{s}_t\right)}\kern0.5em
+    b\left({s}_t\right)\ d{a}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equae.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {\nabla}_{\uptheta}{\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.5em
+    b\left({s}_t\right)\ d{a}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =b\left({s}_t\right)\ {\nabla}_{\uptheta}\int {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\kern0.75em
+    d{a}_t $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equag.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'As *b*(*s*[*t*]) does not depend on *a*[*t*], you can take it out. Again, due
+    to the linearity of the integral, you can swap the gradient and the integral.
+    Now the integral will evaluate to 1, as that is the total probability using the
+    curve for π[θ](*a*[*t*]| *s*[*t*]). Accordingly, you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {E}_{{\mathrm{a}}_t\sim {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)}\left[{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)b\left({s}_{t\prime}\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equah.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =b\left({s}_t\right){\nabla}_{\uptheta}(1)=b\left({s}_t\right).0 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equai.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =0 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The previous derivation shows that subtracting a baseline that depends on the
+    state or on a constant will not change the expectation. *The condition is that
+    it should not depend on the action a*[*t*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Therefore, REINFORCE with the baseline will go through the updates as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau
+    \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left(r\left(\tau
+    \right)-\mathrm{b}\Big({\mathrm{s}}_t\right)\Big)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ31.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-31)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can further modify and combine the rewards-to-go using the same rationale
+    of causal world where actions today do not influence the rewards in the past,
+    rather only the current and future rewards. You can combine Equations [8-31](#Equ31)
+    and [8-27](#Equ27) to get the following set of equations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^T{\upgamma}^{t^{\prime
+    }-t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equak.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ32.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-32)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equation [8-32](#Equ32) is REINFORCE with a baseline and rewards-to-go. You
+    have used two tricks to reduce the variance of the vanilla REINFORCE. You used
+    a temporal structure to remove the rewards that are in the past and not impacted
+    by the actions in the present. Then you used the baseline to have the bad policies
+    get -ve rewards and the good policies +ve rewards. Both these tricks lead to lower
+    variance as you go through the learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that REINFORCE and all its variations are *on-policy algorithms*. After
+    the weights of the policy are updated, you need to roll out new trajectories.
+    The old trajectories are no longer representative of the old policy. This is one
+    of the reasons that, like the value-based on-policy methods, REINFORCE is also
+    sample inefficient. You cannot use transitions from earlier policies. You must
+    discard them and generate new transitions after each weight update.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Actor-Critic Methods
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, you’ll further refine the algorithm by combining the policy
+    gradient with the value functions to get something called the *actor-critic* family
+    of algorithms (A2C/A3C). You’ll first define a term called *advantage A*(*s*,
+    *a*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining Advantage
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'I first talk about the expression ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq30.png) in Equation
+    [8-32](#Equ32). It is the reward-to-go in a given trajectory (*i*) and in a given
+    state *s*[*t*]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equal.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: To evaluate the ![$$ \hat{Q} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq31.png)
+    value in this expression, you use the Monte Carlo simulation. In other words,
+    you are adding all the rewards from that time step *t* until the end, that is,
+    until *T*. It will again have high variance, as it is only one trajectory estimate
+    of the expectation. In a previous chapter on model-free policy learning, you saw
+    that MC methods have zero bias but high variance. Comparatively, TD methods have
+    some bias but low variance and can lead to faster convergence due to lower variance.
+    Could you do something similar here also? What is this reward-to-go? What is the
+    expectation of the expression ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq32.png)?
+    It is nothing but the q-value of the state-action pair (*s*[*t*], *a*[*t*]). If
+    you had access to the q-value, you could replace the summation of individual rewards
+    with the q-estimate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=q\left({s}_t^i,{a}_t^i;\phi \right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ33.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-33)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s roll the value of *q*(*s*[*t*], *a*[*t*]) by one time step. This is similar
+    to the *TD*(0) approach in Chapter [5](502835_2_En_5_Chapter.xhtml). You can write
+    ![$$ {\hat{Q}}^i\left({s}_t,{a}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq33.png)
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ34.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-34)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is the undiscounted rollout. As discussed at the beginning of the chapter,
+    you will do all the derivations in the context of the finite horizon undiscounted
+    setting. The analysis can be easily extended to other settings. You will switch
+    to a more general case in the final pseudocode for the algorithm while restricting
+    the analysis to the undiscounted case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Looking at Equation [8-33](#Equ33) again, can you think of a good baseline ![$$
+    b\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq34.png)
+    that could be used? How about using the state value ![$$ V\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq35.png)? As explained,
+    you can use any value, as the baseline provided it does not depend on the action
+    ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq36.png).![$$
+    V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq37.png)
+    is one such quantity that depends on the state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq38.png)
+    but does not depend on the action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq39.png)
+    since the action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq40.png)
+    is taken once the agent reaches the agent in state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq41.png).
+    In other words, ![$$ V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq42.png)
+    depends on the policy you follow, which impacts the actions in general you take
+    in that state, but it does not depend on the specific action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq43.png)
+    you want to take.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ b\left({s}_t^i\right)=V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ35.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-35)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using the previous expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)=\hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ36.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-36)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The right side is known as the advantage ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq44.png). It is
+    the extra benefit/reward you get by following a policy at state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq45.png)
+    to take step ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq46.png),
+    which gives a reward of ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq47.png)
+    versus the average reward you get in state ![$$ {s}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq48.png)
+    under a given policy as denoted by ![$$ V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq49.png).
+    You can now substitute Equation [8-34](#Equ34) in 8-36 to get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)-V\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ37.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-37)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The changes you have made to the basic reinforce algorithm equation will bring
+    significant benefits to the learning process. These changes form the basis for
+    the set of algorithms known as *Advantage Actor-Critic* algorithms, which you
+    will study next.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Advantage Actor-Critic (A2C)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Continuing from the previous section, you can rewrite the gradient update given
+    in Equation [8-32](#Equ32). Here is the original gradient update from Equation
+    [8-32](#Equ32):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equam.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Substituting, ![$$ b\left({s}_t^i\right)=V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq50.png)
+    from Equation [8-35](#Equ35), you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ38.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-38)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Look at the inner expression ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq51.png). *Q*
+    is the value of following a specific step *a*[*t*] using the current policy. In
+    other words, the actor and *V* is the average value of the following current policy,
+    that is, the critic. The actor is trying to maximize the reward, and the critic
+    is telling the algorithm how good or bad that specific step was, compared to the
+    current average. The *actor-critic* approach is a family of algorithms with an
+    *actor* using policy gradients to improve actions, and a *critic* informing the
+    algorithm about the goodness of current policy. You have ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq52.png) ![$$
+    \hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq53.png)
+    as the advantage of a specific action ![$$ {a}_t^i $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq54.png)
+    over the general state value under current policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two ways to handle ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq55.png).
+    You can use the original definition of:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equan.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'This is the MC approach, where you evaluate the rewards-to-go ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq56.png) as a
+    sample estimate of one rollout. This has high variance, as you are making an estimate
+    based on a single rollout. Under the MC approach the gradient update for the Actor-Critic
+    algorithm takes the following form:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[{\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)-V\left({s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ39.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-39)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Or you could take the *TD*(0) approach, as shown in Equation [8-34](#Equ34),
+    where ![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)=r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)+V\left({s}_{t+1}^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq57.png). The
+    *TD*(0) approach will take you to Equation [8-37](#Equ37), as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)-V\left({s}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equao.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'You substitute this into the gradient update Equation [8-32](#Equ32) to get
+    the gradient update for Actor-Critic, as the following update equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log
+    {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[r\left({s}_t^i,{a}_t^i\right)+V\left({s}_{t+1}^i\right)-V\left({s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ40.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-40)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This expression is the update reason you will implement and it’s known as *advantage
+    actor-critic* (A2C). Note that the actor-critic is a family of approaches, with
+    A2C and A3C being two specific instances of it. Sometimes in the literature, actor-critic
+    is also interchangeably referred to as A2C. At the same time, some papers refer
+    to A2C as a synchronous version of A3C, which I will talk about in the next section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You must have two estimators. One is a policy network π[θ](*a*| *s*) with parameters
+    θ and another network with parameters ϕ to estimate the *V*[ϕ](*s*[*t*]). The
+    general approach to design a single network with two heads having a small subnet—one
+    head for outputting the policy π and another to output the state-value *V*. Figure
+    [8-8](#Fig8) shows a sample of such a network. This is the architecture you will
+    be implementing in the code walkthrough.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network diagram of the actor-critic network. It begins with state S with C
+    N N dense, a final dense common layer for A 2 C pseudo code advantage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Actor-critic network with common weights in the initial layers
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now look at the pseudocode. Figure [8-9](#Fig9) shows the complete pseudocode
+    for the actor-critic (also known as A2C for advantage actor-critic) of the Actor-Critic
+    algorithm. In a loop, you sample a trajectory. You use this trajectory to calculate
+    the rewards-to-go, which will act as a target value for the *V*(*s*) head of the
+    neural network shown in Figure [8-8](#Fig8). The second head producing the policy
+    π(*a*| *s*) is tuned using the cross-entropy loss weighted by the advantage, as
+    per Equation [8-40](#Equ40). Note that while forming the cross-entropy loss for
+    policy, you also use the output of the *V*(*s*) produced by the other head.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the advantages of actor critic algorithm. It includes an
+    input, initialize, loop, fit value function, update policy model parameters, and
+    carry out a stochastic gradient step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Advantage actor-critic algorithm
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The pseudocode in Figure [8-9](#Fig9) uses one-step undiscounted return for
+    advantage ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq58.png):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+{V}_{\varnothing}\left({s}_{t+1}\right)-{V}_{\varnothing}\left({s}_t\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equap.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'There are many other ways to formulate the advantage ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq59.png). The
+    discounted one-step version is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ r\left({s}_t^i,{a}_t^i\right)+\gamma {V}_{\varnothing}\left({s}_{t+1}\right)-{V}_{\varnothing}\left({s}_t\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Similarly, the discounted n-step return version is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left(\sum \limits_{t^{\prime }=t}^{t+n-1}{\gamma}^{t\prime -t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)\right)+{\gamma}^n{V}_{\varnothing}\left({s}_{t+n}\right)-{V}_{\varnothing}\left({s}_t\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equar.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'There is also one more way, that is, using the MC approach. In that approach,
+    you directly use rewards-to-go. The advantage is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)={\sum}_{t^{\prime }=t}^T{\gamma}^{t\prime
+    -t}r\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)-V\left({s}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equas.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: So, you have many ways to formulate the advantage function—you can choose to
+    use discount *γ* or use it undiscounted, which is the version you will implement
+    in this code. You will be implementing the version given in Equation [8-40](#Equ40)
+    with a discount and the one explained in the pseudocode in Figure [8-9](#Fig9).
+    That brings you to the next section, which covers the code walkthrough of the
+    A2C implementation in PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementation of the A2C Algorithm
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In this code walkthrough, you will make the following changes to the actor-critic
+    algorithm given in Figure [8-9](#Fig9):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like you did with REINFORCE, you will introduce the entropy regularizer.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You will use the reward-to-go MC approach, that is, ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=\hat{Q}\left({s}_t^i,{a}_t^i\right)-{V}_{\varnothing}\left({s}_t\right)={\sum}_{t^{\prime
+    }=t}^Tr\left({s}_{t^{\prime}}^i,{a}_{t^{\prime}}^i\right)-{V}_{\varnothing}\left({s}_t\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq60.png) instead
+    of the TD(0) approach of ![$$ \hat{A}\left({s}_t^i,{a}_t^i\right)=r\left({s}_t^i,{a}_t^i\right)+{V}_{\varnothing}\left({s}_{t+1}\right)-{V}_{\varnothing}\left({s}_t\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq61.png)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Instead of training two separate loss training steps of the first fitting *V*(*s*)
+    and then doing the policy gradient, you will form a single loss objective that
+    will carry out the *V*(*s*) fitting as well as the policy gradient step together
+    with the entropy regularizer.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The loss using actor-critic with the previous modifications is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Loss\left(\uptheta, \upphi \right)=-J\left(\uptheta, \upphi \right)-H\left({\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equat.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =-\frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T\left(\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)\left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-{V}_{\phi}\left({s}_t^i\right)\right]\right)-\beta
+    {\sum}_a{\pi}_{\theta}\left(a|{s}_t^i\right).\log {\pi}_{\theta}\left(a|{s}_t^i\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equau.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'As with REINFORCE, you will carry out weight updates after each trajectory.
+    Therefore, N will be equal to 1 in the previous equation. Instead, you will average
+    it over the number of actions to get the average loss. The function you will implement
+    is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Loss\left(\uptheta, \upphi \right)=-\frac{1}{T}\left[{\sum}_{t=1}^T\left(\log
+    {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\left[\hat{Q}\left({s}_t,{a}_t\right)-{V}_{\upphi}\left({s}_t\right)\right]\right)-\upbeta
+    {\sum}_a{\uppi}_{\uptheta}\left(a|{s}_t\right).\log {\uppi}_{\uptheta}\left(a|{s}_t\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equav.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now turn your attention to the actual PyTorch code, which you can find in `8.b-action_critic.ipynb`.
+    Let’s first talk about the network. You will have a joint network with shared
+    weights, one producing the policy action probabilities and another the value of
+    state. For `CartPole`, it is a simple network and is shown in Figure [8-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network diagram for state s for dense in batch 1 and batch 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Actor-critic network for the CartPole enviroment from 8.b-action_critic.ipynb
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [8-6](#PC6) shows the implementation of this network in PyTorch. It
+    is a straight implementation of the network, as shown in Figure [8-10](#Fig10).
+    `CartPole` has a state dimension of 4\. This input is passed through a common
+    layer of 128 units in output, as represented by `self.fc1` in the code. The output
+    of this layer is then passed through two separate networks. One is a linear layer
+    with output dimension matching the number of actions as denoted by the `self.actor`
+    dense layer in the code. The other output produces state value V(s) and has a
+    dimension of 1 since state value is a scaler quantity. This layer is denoted as
+    `self.critic` in the listing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The other change big change is the way you implement the training code for one
+    episode. It is similar to the code in Listing [8-4](#PC4) for REINFORCE; however,
+    with a change to introduce *V*(*s*[*t*]) as a baseline value. Listing [8-7](#PC7)
+    gives the complete code for `train_one_episode`. You first calculate the reward-to-go.
+    Next, you convert the list of tuples (`state, action, rewards`) to the appropriate
+    tensor formats. The state is then passed through the network, producing the state-value
+    *V*(*s*) and logπ[θ](*a*| *s*). These values are used to calculate the loss, as
+    explained previously. You also add the entropy of the action distribution as a
+    penalty to ensure that the action probabilities do not collapse into a single
+    action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the code to train over multiple trajectories is the same as before.
+    The curves of the episode return and loss during training are shown in Figure
+    [8-11](#Fig11). Comparing the graphs in this figure with the previous ones for
+    REINFORCE in Figure [8-5](#Fig5), you can see that the training using A2C happens
+    faster with steady progress toward a better policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 line graphs. Left, plots the mean return episode. The y-axis ranges from 0
+    to 3000 and the x-axis from 0 to 70\. It exhibits a fluctuation upward trend.
+    Right, plots the loss history. The y-axis ranges from negative 10 to 20 and the
+    x-axis ranges from 0 to 600\. It exhibits a fluctuation upward trend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training progess A2C from 8.a-action_critic.ipynb
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that actor-critic is also an *on-policy* approach, just like with REINFORCE.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Asynchronous Advantage Actor-Critic
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In 2016, the authors of the paper “Asynchronous Methods for Deep Reinforcement
+    Learning,”^([1](#Fn1)) introduced the asynchronous version of A2C. The basic idea
+    is simple. You have a global server that is the “parameter” server providing the
+    network parameters, *θ* and *ϕ*. There are multiple actor-critic agents running
+    in parallel. Each actor-critic agent obtains the parameter from the server, carries
+    out trajectory rollouts, and does the gradient update on *θ*, *ϕ*. The agent updates
+    the parameter back to the server. It allows for faster learning, especially in
+    an environment that uses simulators, such as robotic environments. You can first
+    train an algorithm using A3C on multiple instances of the simulator. A subsequent
+    learning would be to further fine-tune/train the algorithm on a physical robot
+    in the real environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [8-12](#Fig12) shows a high-level schematic of A3C. Note that it is a
+    simplistic explanation of the approach. For actual implementation details, you
+    are advised to refer to the referenced paper in detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of asynchronous advantage actor critic of a global server. It
+    consists of a network at state s, agent 1, agent i, agent n, stimulator 1, stimulator
+    i, and stimulator n.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Asynchronous advantage actor-critic (A3C)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As explained, some papers refer to the synchronous version with multiple agents
+    training together as the A2C version of A3C, that is, A3C without the asynchronous
+    part. However, at times, the actor-critic with one agent is also referred to as
+    *advantage actor-critic* (A2C). In the end, the actor-critic is a family of algorithms
+    where you use two networks together: a value network to estimate the *V*(*s*)
+    and a policy network to estimate the policy π[θ](*a*| *s*). You are leveraging
+    the best of both worlds: value-based methods and policy gradient methods.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you will look at some other approaches to the policy algorithm. These
+    approaches, with their variants, are considered state of the art, especially the
+    PPO algorithm. PPO has been used in Large Language Models to fine-tune the models
+    for safety, instructions, and for mimicking human preferences. This approach is
+    called RLHF (Reinforcement Learning with Human Feedback). I cover this in detail
+    in a future chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trust Region Policy Optimization Algorithm
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The methods detailed so far in this chapter are also known as *vanilla policy
+    gradients* (VPG). The policy trained using VPG is a stochastic one that offers
+    exploration on its own without explicitly using an ε-greedy exploration. As the
+    training progresses, the policy distribution becomes sharper, centering on optimal
+    actions. This could happen despite the use of entropy penalty term, since there
+    is only so much you add it as penalty. If you add too much weight to the entropy
+    penalty term, the model will be significantly constrained and will start producing
+    uniform distribution probability across all possible actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The peaking of policy starts to reduce the exploration, making the algorithm
+    exploit more and more what it has learned. It can cause the policy to get stuck
+    at a local maxima. Using entropy as a regularizer/penalty is not the only approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As you saw in the policy gradient approach in previous sections, specifically
+    in Equation [8-17](#Equ17), you update the policy parameters by a small amount
+    given by the following equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uptheta}_{\mathrm{new}}={\uptheta}_{\mathrm{old}}+\upalpha \cdotp {\nabla}_{\uptheta}J\left(\uptheta
+    \right){\left.\kern0em \right|}_{\uptheta ={\uptheta}_{\mathrm{old}}} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In other words, the gradient is evaluated at the old policy parameter θ = θ[old]
+    and then updated by taking a small step determined by the step size *α*. VPG tries
+    to keep the new and old policies near to each other in the parameter space by
+    restricting the change in policy parameters from θ[old] to θ[new] using a learning
+    rate *α*. However, just because policy parameters are nearby, that does not guarantee
+    that old and new policies (i.e., the action probability distribution) are close
+    to each other. A small change in parameter θ could lead to significant divergence
+    in the policy probabilities. Ideally, you should keep the old and new policies
+    close to each other in the probability space and not in the parameter space. This
+    is the key insight as detailed by authors of the 2015 paper titled “Trust Region
+    Policy Optimization.”^([2](#Fn2)) Before diving into the details, I spend a few
+    minutes talking about a metric called the Kullback-Liebler divergence (KL divergence).
+  prefs: []
+  type: TYPE_NORMAL
+- en: KULLBACK-LIEBLER DIVERGENCE (KL DIVERGENCE)
+  prefs: []
+  type: TYPE_NORMAL
+- en: KL divergence is a measure of how different the two probabilities are. It comes
+    from the field of information theory, and diving deep into it would require a
+    book of its own. I only attempt to explain the formula and some intuition behind
+    it without getting into the mathematical proof.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Suppose you have two discrete probability distributions, *P* and *Q* defined
+    over some range of values (called *support*). Let the support be “*x*” going from
+    1 to 6—just like the case of a rolling die. *P*[*X*](*X* = *x*) defines the probability
+    of *X* = *x* using the probability distribution *P*. Similarly, you have another
+    probability distribution *Q* defined over the same support. As an example, consider
+    a die with six faces with a probability distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| *x* | 1 | 2 | 3 | 4 | 5 | 6 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| *P*(*x*) | 1/6 | 1/6 | 1/6 | 1/6 | 1/6 | 1/6 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| *Q*(*x*) | 2/9 | 1/6 | 1/6 | 1/6 | 1/6 | 1/9 |'
+  prefs: []
+  type: TYPE_TB
+- en: The die *Q* is loaded to show less of 6 and more of 1, while *P* is a fair die
+    with equal probabilities of showing any face of the dice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The KL divergence between *P* and *Q* is expressed as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\sum \limits_xP(x)\log \frac{P(x)}{Q(x)}
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ41.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-41)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calculate *D*[*KL*](*P*‖*Q*) for the previous table.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\frac{1}{6}\log \frac{1/6}{2/9}+\frac{1}{6}\log
+    \frac{1/6}{1/6}+\frac{1}{6}\log \frac{1/6}{1/6}\kern0.5em +\frac{1}{6}\log \frac{1/6}{1/6}+\frac{1}{6}\log
+    \frac{1/6}{1/6}+\frac{1}{6}\log \frac{1/6}{1/9} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equax.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{6}\log \frac{3}{4}+\frac{1}{6}\log 1+\frac{1}{6}\log 1\kern0.5em
+    +\frac{1}{6}\log 1+\frac{1}{6}\log 1+\frac{1}{6}\log \frac{3}{2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equay.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{6}\log \frac{3}{4}+\frac{1}{6}x\ 0+\frac{1}{6}x\ 0+\frac{1}{6}x\
+    0+\frac{1}{6}x0+\frac{1}{6}\log \frac{3}{2} $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equaz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{6}\left(\log \frac{3}{4}+\log \frac{3}{2}\ \right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equba.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{6}\log \left(\frac{3}{4}x\ \frac{3}{2}\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{6}\log \left(\frac{9}{8}\right)=0.0196 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You can satisfy yourself by putting P = Q to obtain *D*[*KL*](*P*‖*Q*) = 0\.
+    When two probabilities are equal, the KL divergence is 0\. For any other two unequal
+    probability distributions, you will always get a +ve KL divergence. The farther
+    apart the distribution is, the higher the KL divergence value. There is a rigorous
+    mathematical proof to show that KL divergence is always +ve and 0 only when the
+    two distributions are equal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Also note that KL divergence is not symmetric.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)\ne {D}_{KL}\left(Q\Big\Vert P\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'KL divergence is a kind of pseudo-measure of distance between two probability
+    distributions in probability space. The KL divergence formula for continuous probability
+    distributions is given as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {D}_{KL}\left(P\Big\Vert Q\right)=\int P(x)\log \frac{P(x)}{Q(x)} dx $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ42.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-42)
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the basics of KL divergence defined, it's time to move back to the discussion
+    of TRPO algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Coming back to TRPO, you need to keep the new and old policies close to each
+    other, not in parameter space but in probability space. This is the same as saying
+    that you want the KL divergence to be bounded in each update step to ensure that
+    the new and old policies do not diverge too far.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {D}_{KL}\left(\theta \Big\Vert {\theta}_k\right)\le \delta $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Eqube.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Here, θ[*k*] is the current policy parameter, and θ is the parameter for the
+    updated policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now turn your attention to the objective that you are trying to maximize. The
+    previous metric *J*(*θ*) did not have any explicit dependence on new and old policy
+    parameters, say θ[*k* + 1] and θ[*k*], respectively. There is an alternative formulation
+    for the policy objective using importance sampling. You can state this without
+    mathematical derivation, as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta, {\uptheta}_k\right)={E}_{a\sim {\uppi}_{\uptheta_k}\left(a|s\right)}\left[\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ43.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (8-43)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here, *θ* is the parameter of the revised/updated policy, and *θ*[*k*] is the
+    parameter of the old policy. You are trying to take the largest possible step
+    to go from the old policy parameter *θ*[*k*] to the revised policy with the parameter
+    *θ*, such that the KL divergence between the new and old policies is not too large.
+    Rephrasing, you need to find a new policy that increases the objective to the
+    maximum extent without going out of the trust region around the old policy, as
+    defined by *D*[*KL*](*θ*‖*θ*[*k*]) ≤ *δ*. In mathematical terms, you can summarize
+    the maximization problem as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uptheta}_{k+1}=\underset{\uptheta}{\arg\ \max }\ J\left(\uptheta, {\uptheta}_k\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ s.t.{D}_{KL}\left(\uptheta \Big\Vert {\theta}_k\right)\le \updelta $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ where,J\left(\uptheta, {\uptheta}_k\right)={E}_{a\sim {\uppi}_{\uptheta_k}\left(a|s\right)}\left[\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right]
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The advantage ![$$ {A}^{\uppi_{\uptheta_k}}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq62.png)
+    is defined as before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {A}^{\uppi_{\uptheta_k}}\left(s,a\right)={Q}^{\uppi_{\uptheta_k}}\left(s,a\right)-{V}^{\uppi_{\uptheta_k}}(s)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Or, when you roll out by one step and *V* is parameterized by another network
+    with parameter *ϕ*, here is the equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {A}^{\uppi_{\uptheta_k}}\left({s}_t,{a}_t\right)=r\left({s}_t,{a}_t\right)+{V}^{\uppi_{\uptheta_k}}\left({s}_{t+1};\upphi
+    \right)-{V}^{\uppi_{\uptheta_k}}\left({s}_t;\upphi \right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is the theoretical representation of the objective maximization in TRPO.
+    However, with the Taylor series expansion of the objective ![$$ {\theta}_{k+1}=\underset{\uptheta}{\arg\
+    \max }\ J\left(\theta, {\theta}_k\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq63.png)
+    and the KL constraint *D*[*KL*](*θ*‖*θ*[*k*]) ≤ *δ*, coupled with Lagrangian duality
+    using convex optimization, you can get an approximate update expression. The approximation
+    can break the guarantee of KL divergence being bounded, for which a backtracking
+    line search is added to the update rule. Lastly, it involves the inversion of
+    an *n x n* matrix, which is not easier to compute. In that case, the conjugate
+    gradient algorithm is used. At this point, you have a practical algorithm to calculate
+    the update using TRPO.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The mathematical derivation of the approach is fairly involved, and the final
+    algorithm has many tweaks to make it efficient. I am not getting into the details,
+    as this is beyond the scope of this book. Interested readers can refer to the
+    original paper for more.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Proximal Policy Optimization Algorithm (PPO)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Proximal policy optimization (PPO) is also motivated by the same question as
+    TRPO. “How can we take the maximum possible step size in policy parameters without
+    going too far and getting to a worse policy than the original one before the update?”
+  prefs: []
+  type: TYPE_NORMAL
+- en: The PPO-clip variant does not have KL divergence. It depends on clipping the
+    gradients in the objective function such that the update has no incentive to move
+    the policy too far from the original step. The exact details of how this clipping
+    works are explained in the next chapter, which does a deep dive into the PPO algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PPO is simpler to implement and has empirically been shown to perform as good
+    as TRPO. The details are in the 2017 paper titled “Proximal Policy Optimization
+    Algorithms.”^([3](#Fn3))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The objective using the PPO-clip variant is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta, {\uptheta}_k\right)=\mathit{\min}\left(\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)}{A}^{\uppi_{\uptheta_k}}\left(s,a\right),g\left(\upvarepsilon,
+    {A}^{\uppi_{\uptheta_k}}\left(s,a\right)\right)\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ g\left(\upvarepsilon, A\right)=\kern0.5em \left\{\begin{array}{c}\left(1+\epsilon
+    \right)A,\kern0.5em A\ge 0\\ {}\left(1-\epsilon \right)A,\kern0.5em A&lt;0\end{array}\right.
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Rewrite *J*(*θ*, *θ*[*k*]), when advantage *A* is +ve, as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta, {\uptheta}_k\right)=\mathit{\min}\left(\frac{\uppi_{\uptheta}\left(a|s\right)}{\uppi_{\uptheta_k}\left(a|s\right)},\left(1+\upvarepsilon
+    \right)\right){A}^{\uppi_{\uptheta_k}}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: When the advantage is +ve, you want to update the parameters so that the new
+    policy *π*[*θ*](*a*| *s*) is higher than the old policy ![$$ {\pi}_{\theta_k}\left(a|s\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq64.png). But
+    instead of increasing it too far, you clip the gradients to ensure that the new
+    policy increase is within 1 + *ε* times the old policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Similarly, when the advantage is -ve, you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\theta, {\theta}_k\right)=\mathit{\min}\left(\frac{\pi_{\theta}\left(a|s\right)}{\pi_{\theta_k}\left(a|s\right)},\left(1-\epsilon
+    \right)\right){A}^{\pi_{\theta_k}}\left(s,a\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In other words, when the advantage is -ve, you want the parameters to be updated
+    so that you decrease the policy probability for that (*s*, *a*) pair. However,
+    instead of decreasing all the way, you clip the gradients so that the new policy
+    probability does not go down below (1 − *ε*) times the old policy probability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In other words, you are clipping the gradients to ensure that the policy updates
+    leave the policy probability distribution to be within (1 − *ε*) to (1 + *ε*)
+    times the old probability distribution. *ϵ* acts as a regularizer. It is easy
+    to implement PPO as compared to TRPO. You can follow the same pseudocode given
+    in Figure [8-9](#Fig9) for A2C with just one change, to swap the objective *J*(*θ*)
+    with the objective in the previous paragraphs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This time, instead of coding it, you can use SB3 (`stable-Baselines3`), which
+    was introduced previously. As discussed earlier, SB3 has implementations for many
+    of the popular and newest algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This code will follow the same pattern as before, except that you will not be
+    explicitly defining the policy network. You will also not write the training step
+    of calculating loss and stepping through the gradient. You can find the complete
+    code to train and record the performance of `CartPole` training using PPO in `8.c-ppo_sb3.ipynb`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'I will now walk through the code snippet of creating an agent, training it
+    on `CartPole`, and evaluating the performance, as given in Listing [8-8](#PC8).
+    You will use almost everything from SB3 library. First, you import the required
+    packages. This is followed by creating the environment. Next, you create an MLP
+    policy that comes as a default in SB3\. In a previous chapter, you learned how
+    to customize the policy if a need arises. At this point, you just call the `learn`
+    function on the model, which spins up all the required machinery to train and
+    optionally log the progress in many different ways. Once the agent is trained,
+    you evaluate the agent by again using the SB3 provided `evaluate_policy` function.
+    The `evaluate_policy` function runs the agent over 100 episodes (`n_eval_episodes=100`)
+    and calculates two metrics: 1) the mean value of return per episode, signifying
+    the overall quality of the agent’s performance, and 2) the standard deviation
+    signifying the variability of the first metric, that is, the mean value of return
+    per episode.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You want the mean value to be as high as possible and sthe tandard deviation
+    to be as low as possible, which will signal a high quality (high mean value) and
+    consistent (low standard deviation) performance of the agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Listing [8-8](#PC8), you can see that the agent has trained well. The accompanying
+    notebook carries the usual additional code to record a video in order to share
+    the trained model on the HuggingFace hub.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you want to know more about the details of PPO, continue to read. I have
+    a full chapter devoted to PPO, as this is a state-of-the-art algorithm and has
+    recently been used to fine-tune Large Language Models under the RLHF approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I want to also use this opportunity to stress once more the point of getting
+    to know the popular RL libraries well. While walking through the implementations
+    of various algorithms in this book, you should note that it is equally important
+    to get comfortable with the popular RL implementations and to learn to use them
+    for your specific needs. The code in this chapter highlights the key concepts
+    and the notebooks accompanying this book help you do a deep dive into the concepts
+    along with a complete end-to-end training process. However, these are by no means
+    production grade. Libraries like SB3 and others introduced previously have highly
+    optimized code with the ability to leverage the GPU and multiple cores to run
+    many agents in parallel.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Curiosity-Driven Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Having studied most of the popular policy gradient algorithms, you can now focus
+    on how reward quality impacts the learning in all these algorithms. You have seen
+    that all algorithms use reward-to-go to shape the policy, whether it be REINFORCE,
+    actor-critic, TRPO, or PPO.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sometimes, these *extrinsic rewards* are given all the time, like the score
+    in a video game or how close a robotic arm is to an object it’s trying to reach.
+    But often, especially in real-life situations, these outside rewards are rare
+    or don’t exist, making it hard for the agent to learn because it only gets feedback
+    when it reaches a specific goal. This is like trying to find a goal by randomly
+    guessing, which usually doesn’t work unless the environment is very simple.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Humans also deal with rare rewards. For example, an entrepreneur’s ultimate
+    reward is making a profit, but that might take years. Yet, they keep going, driven
+    by their own motivation or curiosity. This inner drive helps them explore and
+    learn new things, even if the reward is far off. In the same way, in reinforcement
+    learning, when outside rewards are rare, the agent’s own/intrinsic motivation
+    or curiosity becomes vital. This *intrinsic reward* encourages the agent to explore
+    and learn, which might help it achieve rewards later. This the what the authors
+    of a 2017 paper titled “Curiosity-driven Exploration by Self-Supervised Prediction”^([4](#Fn4))
+    showed as to how adding intrinsic rewards can help improve learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are two common ways to model these intrinsic rewards 1) encourage agents
+    to explore unseen/novel states, or 2) encourage the agent to perform actions that
+    reduce the error/uncertainty in the agent’s ability to predict the consequence
+    of its own actions (i.e., its knowledge about the environment or transition function
+    *p*(*s*[*t* + 1]| *s*[*t*], *a*[*t*])).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The authors proposed a very interesting approach, as shown in Figure [8-13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_8_Chapter/502835_2_En_8_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A model diagram of the Intrinsic Curiosity Module formulation. The I C M includes
+    the connection of the following components. Forward model, features, inverse model
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 8-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Intrinsic Curiosity Module (ICM) formulationSource: [https://​arxiv.​org/​pdf/​1705.​05363.​pdf](https://arxiv.org/pdf/1705.05363.pdf)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'I first focus on the Intrinsic Curiosity Module (ICM) on the right side of
+    Figure [8-13](#Fig13). ICM takes the current state *s*[*t*], the action *a*[*t*]
+    and the next state observed *s*[*t* + 1] as input. It converts the high dimensional
+    state—the image of a game—and passes both the current and the next state through
+    a network to map the high dimensional space to a smaller dimension feature space.
+    The state *s*[*t*] is mapped to ϕ(*s*[*t*]) and the state *s*[*t* + 1] is mapped
+    to ϕ(*s*[*t* + 1]) using the same feature extractor. ϕ(*s*[*t*]) *and* ϕ(*s*[*t* + 1]) are
+    fed as inputs to another network, called the *Inverse Model**,* which uses these
+    two inputs to predict the action *a*[*t*] that made the system transition from
+    *s*[*t*] to *s*[*t* + 1]. This way, the feature extractor learns to represent
+    the states into a smaller dimension space, focusing only on the parts of the state
+    that are most relevant or influenced by the action *a*[*t*]. The irrelevant parts
+    of *s*[*t*], which would not have had any influence in making system transition
+    from *s*[*t*] to *s*[*t* + 1] due to the action *a*[*t*], are weeded out from
+    the feature extractor submodule during training. Mathematically, this can be expressed
+    by a set of equations as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{a}}_t=g\left({s}_t,{s}_{t+1};{\uptheta}_I\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \underset{\uptheta_I}{\min }{L}_I\left({\hat{a}}_t,{a}_t\right) $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where θ[*I*] are the parameters of the feature extractor and inverse model jointly,
+    as shown in Figure [8-13](#Fig13). *L*[*I*] is a loss that depends on the nature
+    of action. For example, for a discrete action space, it will be the usual cross-entropy
+    loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The third submodule is called the forward model and it takes the feature ϕ(*s*[*t*])
+    and the action *a*[*t*] to predict the next state ![$$ \hat{\upphi}\left({s}_{t+1}\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_IEq65.png) feature
+    of the next state *s*[*t* + 1]. The error between the predicated next state feature
+    and the actual next state feature is minimized and called intrinsic reward *r*^(*i*).
+    This error or intrinsic reward will be lower for the states already visited and
+    higher for unvisited states. The higher the error, the higher the intrinsic reward
+    to the agent to explore the new state *s*[*t* + 1] via action *a*[*t*]. Mathematically,
+    this can be represented as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{\upphi}\left({s}_{t+1}\right)=f\left(\upphi \left({s}_t\right),{a}_t;{\uptheta}_F\right)
+    $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where θ[*F*] are the parameters of the forward model inside the ICM. The loss
+    you minimize and the intrinsic reward are represented as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}_F=\frac{1}{2}{\left\Vert \hat{\upphi}\left({s}_{t+1}\right)-\upphi
+    \left({s}_{t+1}\right)\right\Vert}_2^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {r}_t^i=\frac{\upeta}{2}{\left\Vert \hat{\upphi}\left({s}_{t+1}\right)-\upphi
+    \left({s}_{t+1}\right)\right\Vert}_2^2 $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: They are the same quantities, except for a scaling factor η for intrinsic reward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The usual policy gradient algorithm is now trained, not just on the extrinsic
+    reward *r*^(*e*) from the environment, but on a combined extrinsic and intrinsic
+    reward *r*^(*e*) + *r*^(*i*). In practice, all three submodules of the ICM module
+    and the policy parameters are trained together via a combined loss using this
+    equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{\uptheta_P,{\uptheta}_I,{\uptheta}_F}{\min}\left[-\uplambda
+    {E}_{\uppi \left({s}_t;{\uptheta}_P\right)}\left[{\Sigma}_t{r}_t\right]+\left(1-\upbeta
+    \right){L}_I+\upbeta {L}_F\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where 0 ≤ *β* ≤ 1 is a scalar that weighs the inverse model loss against the
+    forward model loss and *λ* > 0 is a scalar that weighs the importance of the policy
+    gradient loss against the importance of learning the intrinsic reward signal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure 5 of the paper, the authors show that curiosity-driven exploration
+    learning offers much better performance in all the settings of dense rewards,
+    sparse rewards, and very sparse rewards. Interested readers can refer to the paper
+    for more details. The [https://​pathak22.​github.​io/​noreward-rl/​](https://pathak22.github.io/noreward-rl/)
+    website has a demo and source code implementation using TensorFlow and OpenAI
+    Gym environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A year after this paper came out, a team from OpenAI published a paper in 2018
+    titled “Large-Scale Study of Curiosity-Driven Learning”^([5](#Fn5)) which further
+    extends the results to even more extreme situations of zero extrinsic rewards.
+    The paper, based on a large-scale study, narrowed down a few qualities that a
+    good feature space should have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Compact:** The features should be low dimensional and filter out irrelevant
+    parts of the observation space.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Sufficient:** The features should contain all the important information.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Stable:** Non-stationary rewards make it difficult for reinforcement agents
+    to learn. Exploration bonuses introduce non-stationarity since what is new becomes
+    old and boring with time. In a dynamics-based curiosity formulation such as the
+    ICM approach, there are two sources of non-stationarity: the forward dynamics
+    model is evolving over time as it is trained, and the features are changing as
+    they learn. The former is intrinsic to the method, and the latter should be minimized
+    where possible.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The feature space was represented by a model that learned to follow the random
+    initialized model. The error between the feature space value produced via a random
+    model and the learned model acts as guidance on whether the state is a new one
+    or something that the agent has already visited. The error will be lower for old
+    states and higher for newer states. As before, while you reduce this error to
+    train the feature space model, you also use the error as a form of intrinsic reward.
+    This approach works even in environments with no extrinsic rewards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This brings you to the end of this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter introduced the alternate approach of directly learning a policy
+    instead of going through the learning state/action values first and then using
+    these values to find the optimal policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, thew chapter looked at the derivation of REINFORCE, the most basic of
+    the policy gradient methods. After the initial derivation, you looked at a couple
+    of variance reduction techniques such as rewards-to-go and the use of baselines.
+    You also implemented a version of REINFORCE from scratch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This led you to look at the actor-critic family, which combined value-based
+    methods to learn state values acting as baselines inside REINFORCE with rewards-to-go.
+    The chapter showed two approaches for reward-to-go estimation—one used the MC
+    estimation and the other was the approach of *TD*(0). The policy network (actor)
+    with the state value network (critic) gives you the ability to combine the best
+    of value-based methods and policy gradient methods. The chapter briefly touched
+    on the asynchronous version known as A3C. You implemented actor-critic from scratch.
+    The chapter also showed the improved learning stability that actor-critic algorithms
+    have compared to REINFORCE.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After discussing the vanilla policy gradient approaches, you looked at a couple
+    of advanced policy optimization techniques, such as trust region policy optimization
+    (TRPO) and proximal policy optimization (PPO). I talked about the key motivations
+    and approaches using each of these two techniques and demonstrated how these can
+    be leveraged using standard RL libraries such as SB3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, you turned your attention to the setting when extrinsic rewards may
+    be sparse or completely absent. I discussed two papers that applied the concept
+    of curiosity-driven learning to use intrinsic rewards in addition to the external
+    extrinsic rewards. I discussed the formulation of this approach in detail and
+    explained how the performance of the agent improves significantly, especially
+    when extrinsic rewards are sparse.
+  prefs: []
+  type: TYPE_NORMAL

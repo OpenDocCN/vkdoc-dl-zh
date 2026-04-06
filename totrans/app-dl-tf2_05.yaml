@@ -1,0 +1,639 @@
+- en: 5. Advanced Optimizers
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In general, *optimizers* are algorithms that minimize a given function. Remember
+    that training a neural network means simply minimizing the loss function. Chapter
+    [1](463356_2_En_1_Chapter.xhtml) looked at the gradient descent optimizer and
+    its variations (mini-batch and stochastic). In this chapter, we look at more advanced
+    and efficient optimizers. We look in particular at *Momentum*, *RMSProp,* and
+    *Adam*. We cover the mathematics behind them and then explain how to implement
+    and use them in Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Available Optimizers in Keras in TensorFlow 2.5
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'TensorFlow has evolved a lot in the last few years. In the beginning, you could
+    find gradient descent as a class, but it is not available anymore (not directly).
+    Keras offers as of TensorFlow version 2.5 only advanced algorithms. In particular,
+    you will find the following: Adadelta, Adagrad, Adam. Adamax, Ftrl, Nadam, RMSProp,
+    and SGD (gradient descent with momentum). So plain gradient descent is not available
+    anymore out of the box from Keras.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In general, you should determine which optimizers work best for your problem,
+    but if you don’t know where to start, Adam is always a good choice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Advanced Optimizers
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Up to now we have only discussed how gradient descent works. That is not the
+    most efficient optimizer (although it’s the easiest to understand), and there
+    are some modifications to the algorithm that can make it faster and more efficient.
+    This is a very active area of research, and you will find an incredible number
+    of algorithms based on different ideas. This chapter looks at the most instructive
+    and famous ones: Momentum, RMSProp, and Adam.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additional material that investigates the more exotic optimizers has been written
+    by S. Ruder in a paper called “An overview of gradient descent optimization algorithms”
+    (see [`https://goo.gl/KgKVgG`](https://goo.gl/KgKVgG)). The paper is not for beginners
+    and requires a strong mathematical background, but it provides an overview of
+    the more exotic algorithms, including Adagrad, Adadelta, and Nadam. Additionally,
+    it reviews weight-update schemes applicable in distributed environments like Hogwild!,
+    Downpour SGD, and many more. Surely a read worth your time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To understand the basic idea of *momentum* (and partially also of RMSProp and
+    Adam), you first need to understand what exponentially weighted averages are.
+    So, let’s start with some mathematics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exponentially Weighted Averages
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s suppose you are measuring a quantity *θ* (it could be the temperature
+    where you live, for example) over time—once a day, for example. You will have
+    a series of measurements that you can indicate with *θ*[*i*], where *i* goes from
+    1 to a certain number *N*. Now bear with me if this does not make much sense at
+    first. Let’s define recursively a quantity *v*[*n*], as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{l}{v}_0=1\\ {}{v}_1=\beta {v}_0+\left(1-\beta
+    \right){\theta}_1\\ {}{v}_2=\beta {v}_1+\left(1-\beta \right){\theta}_2\end{array}}
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and so on with *β* a real number and 0 < *β* < 1\. Generally, we could write
+    the *n*^(*th*) term with a recursive formula, as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_n=\beta {v}_{n-1}+\left(1-\beta \right){\theta}_n $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now let’s write all the terms *v*[1], *v*[2] and so on as a function of *β*
+    and *θ*[*i*] (so not recursively). For *v*[2] we have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_2=\beta \left(\beta {v}_0+\left(1-\beta \right){\theta}_1\right)+\left(1-\beta
+    \right){\theta}_2={\beta}^2+\left(1-\beta \right)\left(\beta {\theta}_1+{\theta}_2\right)
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: For *v*[3] we have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_3={\beta}^3+\left(1-\beta \right)\left[{\beta}^2{\theta}_1+\beta {\theta}_2+{\theta}_3\right]
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Generalizing, we obtain
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_n={\beta}^n+\left(1-\beta \right)\left[{\beta}^{n-1}{\theta}_1+{\beta}^{n-2}{\theta}_2+\dots
+    +{\theta}_n\right] $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Or in a more elegant way (without the three dots), we get
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_n={\beta}^n+\left(1-\beta \right)\sum \limits_{i=1}^n{\beta}^{n-i}{\theta}_i
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now let’s try to understand what this formula means. First of all, note that
+    the term *β*^(*n*) disappears when you choose *v*[0] = 0\. Let’s do that (set
+    *v*[0] = 0) and consider what remains
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_n=\left(1-\beta \right)\sum \limits_{i=1}^n{\beta}^{n-i}{\theta}_i
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Are you still with me? Now comes the interesting part. Let’s define the *convolution*
+    between two sequences.^([1](#Fn1)) Let’s consider two sequences, *x*[*n*] and
+    *h*[*n*]. The convolution between the two (which we indicate with the symbol ∗)
+    is defined by
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {x}_n\ast {h}_n=\sum \limits_{k=-\infty}^{\infty }{x}_k{h}_{n-k} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Since we only have a finite number of measurements for our quantity *θ*[*i*],
+    we can define
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\theta}_k=0\kern1.5em k&gt;n,k\le 0 $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Therefore, we can write *v*[*n*] as a convolution as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_n={\theta}_n\ast {b}_n $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where we have defined
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {b}_n=\left(1-\beta \right){\beta}^n $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: To get an idea of what that means, let’s plot *θ*[*n*], *b*[*n*], and *v*[*n*].
+    To do that, let’s assume *θ*[*n*] has a Gaussian shape (the exact form is not
+    relevant, is just for illustrative purposes), and let’s use *β* = 0.9 (see Figure
+    [5-1](#Fig1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The left side is a plot showing *θ*[*n*] (solid line) and *b*[*n*] (dotted line)
+    together. The right side is a plot showing the points that need to be summed to
+    obtain *v*[*n*] for *n* = 50
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s discuss briefly Figure [5-1](#Fig1). The Gaussian curve (*θ*[*n*]) will
+    be convoluted with *b*[*n*] to obtain *v*[*n*]. The result can be seen in the
+    right plot. All those terms (1 − *β*)*β*^(*n* − *i*)*θ*[*i*] for *i* = 1, …, 50 (plotted
+    in the right plot) will be summed to obtain *v*[50]. Note that *v*[*n*] is the
+    average of all *θ*[*n*] for *n* = 1, …, 50\. Each term is multiplied by a term
+    (*b*[*n*]); that is, 1 for *n* = 50 and then this decreases rapidly for *n* decreasing
+    toward 1\. Basically, this is a weighted average, with an exponentially decreasing
+    weight. The terms farther from *n* = 50 are less and less relevant, while the
+    terms close to *n* = 50 get more weight. This is also a moving average. For each
+    *n*, all the preceding terms are added and multiplied by a weight (*b*[*n*]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: I would like now to show you why there is this factor 1 − *β* in *b*[*n*]. Why
+    not just choose *β*^(*n*)? The reason is very simple. The sum of *b*[*n*] over
+    all positive *n*s is equal to 1\. Let’s see why.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \sum \limits_{k=1}^{\infty }{b}_k=\left(1-\beta \right)\sum \limits_{k=1}^{\infty
+    }{\beta}^n=\left(1-\beta \right)\underset{N\to \infty }{\lim}\frac{1-{\beta}^{N+1}}{1-\beta
+    }=\left(1-\beta \right)\frac{1}{1-\beta }=1 $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We used the fact that for *β* < 1 we have ![$$ \underset{N\to \infty }{\lim
+    }{\beta}^{N+1}=0 $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq1.png)
+    and that for a geometric series we have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \sum \limits_{k=1}^na{r}^{k-1}=\frac{a\left(1-{r}^n\right)}{1-r} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The algorithm we described to calculate *v*[*n*] is nothing else than the convolution
+    of our quantity *θ*[*i*], with a series that has a sum equal to one and has the
+    form (1 − *β*)*β*^(*i*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The exponentially weighted average *v*[*n*] of a series of a quantity *θ*[*n*]
+    is the convolution *v*[*n*] = *θ*[*n*] ∗ *b*[*n*] of our quantity *θ*[*i*] with
+    *b*[*n*] = (1 − *β*)*β*^(*n*), where *b*[*n*] has the property that its sum over
+    the positive values of *n* is equal to 1\. It is the moving average, where each
+    term is multiplied by the weights given by the sequence *b*[*n*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you choose smaller and smaller *β* values, the number of points *θ*[*n*]
+    that have a weight that’s significantly different than zero decreases, as you
+    can see in Figure [5-2](#Fig2), where we have plotted the series *b*[*n*] for
+    different values of *β*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ n=0\. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The series *b*[*n*] for three values of *β*: 0.9, 0.8, and 0.3\. Note that
+    as *β* gets smaller, the series is significantly different than zero for an increasingly
+    smaller number of values'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method is at the very core of the Momentum optimizer and more advanced
+    learning algorithms, and you will see in the next sections how it works in practice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Momentum
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Recall that in plain gradient descent the weight updates are calculated with
+    these equations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}{\boldsymbol{w}}_{\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-\gamma
+    {\nabla}_{\mathbf{w}}L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)\\
+    {}{b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma \frac{\partial L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)}{\partial
+    b}\end{array}\right. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where the subscript in square brackets indicates the iteration. The idea behind
+    the Momentum optimizer is to use exponentially weighted averages of the corrections
+    of the gradient for the weight updates. Mathematically, we formulate the previous
+    statement as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}{\boldsymbol{v}}_{w,\left[n+1\right]}=\beta {\boldsymbol{v}}_{w,\left[n\right]}+\left(1-\beta
+    \right){\nabla}_{\mathbf{w}}L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)\\
+    {}{v}_{b,\left[n+1\right]}=\beta {v}_{b,\left[n\right]}+\left(1-\beta \right)\frac{\partial
+    L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)}{\partial
+    b}\end{array}\right. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Then perform the weight and bias updates with these equations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}{\boldsymbol{w}}_{\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-\gamma
+    {\boldsymbol{v}}_{w,\left[n\right]}\\ {}{b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma
+    {v}_{b,\left[n\right]}\end{array}\right. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where ***v***[*w*, [0]] = **0** and *v*[*b*, [0]] = 0 are usually chosen. Now
+    that means, instead of using the derivatives of the cost functions with respect
+    to the weights, we update the weights with a moving average of the derivatives.
+    Usually, experience shows that a bias correction could theoretically be neglected.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Momentum algorithm uses an exponential weighted average of the derivates
+    of the cost function with respect to the weights for the weight updates. This
+    way, in addition to the derivatives at a given iteration being used, *the past
+    behavior is also considered.* It may happen that the algorithm oscillates around
+    the minimum instead of converging directly. This algorithm can escape from plateaus
+    much more efficiently than standard gradient descent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sometimes you find a slightly different formulation in books or blogs, which
+    is (we report only the equation for the weights ***w*** for brevity)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{v}}_{w,\left[n+1\right]}=\gamma {\boldsymbol{v}}_{w,\left[n\right]}+\eta
+    {\nabla}_{\mathbf{w}}L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The idea and meaning remain the same; it’s simply a slightly different mathematical
+    formulation. We find that the method described is easier to understand with the
+    notion of sequence convolution and of weighted averages than this second formulation.
+    Another formulation that you will find (the one that TensorFlow uses) is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {v}_{w,\left[n+1\right]}={\eta}^t{v}_{w,\left[n\right]}+{\nabla}_{\mathbf{w}}L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where *η*^(*t*) is called by TensorFlow momentum (the superscript *t* indicates
+    that this variable is used by TensorFlow). In this formulation, the weight update
+    assumes the form
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{w}}_{\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-{\gamma}^t{v}_{w,\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-{\gamma}^t\left({\eta}^t{v}_{w,\left[n\right]}+{\nabla}_{\mathbf{w}}L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)\right)={\boldsymbol{w}}_{\left[n\right]}-{\gamma}^t{\eta}^t{v}_{w,\left[n\right]}-{\gamma}^t{\nabla}_{\mathbf{w}}L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Where again the superscript *t* indicates that the variable is the one used
+    by TensorFlow. Although it seems different, this formulation is equivalent to
+    the formulation shown earlier:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{w}}_{\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-\gamma
+    \beta {v}_{w,\left[n\right]}-\gamma \left(1-\beta \right){\nabla}_{\mathbf{w}}L\left({\boldsymbol{w}}_{\left[n\right]},{b}_{\left[n\right]}\right)
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The TensorFlow formulation and the one discussed earlier are equivalent if we
+    choose
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}\eta =\frac{\beta }{1-\beta}\\ {}{\gamma}^t=\gamma
+    \left(1-\beta \right)\end{array}\right. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This can be seen by simply comparing the two different equations for the weight
+    updates. Values around *η* = 0.9 in TensorFlow implementations are used and they
+    typically work well. The momentum almost always converges faster than with plain
+    gradient descent .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing the different parameters in the different optimizers is wrong. When
+    talking about the learning rate, for example, it has a different meaning in the
+    different algorithms. What you should compare is the best convergence speed you
+    can achieve with several optimizers, regardless of the choice of parameters. Comparing
+    the GD for a learning rate of 0.01 with Adam (you will see it later) for the same
+    learning rate does not make much sense. You should compare the optimizers with
+    the parameters to see which gives you the best and fastest convergence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RMSProp
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s move on to something a bit more complex, but usually more efficient. Let’s
+    look at the mathematical equations and then we will compare them to the others
+    we have seen so far. At each iteration, we need to calculate
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}{\boldsymbol{S}}_{\boldsymbol{w},\left[n+1\right]}={\beta}_2{\boldsymbol{S}}_{\boldsymbol{w},\left[n\right]}+\left(1-{\beta}_2\right){\nabla}_{\boldsymbol{w}}J\left(\boldsymbol{w},b\right)\circ
+    {\nabla}_{\boldsymbol{w}}L\left(\boldsymbol{w},b\right)\\ {}{S}_{b,\left[n+1\right]}={\beta}_2{S}_{b,\left[n\right]}+\left(1-{\beta}_2\right)\frac{\partial
+    L\left(w,b\right)}{\partial b}\circ \frac{\partial L\left(w,b\right)}{\partial
+    b}\end{array}\right. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where the symbol ∘ indicates an element-wise product. Then we will update our
+    weights with the equations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}{\boldsymbol{w}}_{\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-\frac{\gamma
+    {\nabla}_{\boldsymbol{w}}L\left(\boldsymbol{w},b\right)}{\sqrt{{\boldsymbol{S}}_{\boldsymbol{w},\left[n+1\right]}+\epsilon
+    }}\ \\ {}{b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma \frac{\partial L\left(w,b\right)}{\partial
+    b}\frac{1}{\sqrt{S_{b,\left[n\right]}+\epsilon }}\end{array}\right. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'So first you do an exponential weighted average of the quantities ***S***[***w***,
+    [*n* + 1]] and *S*[*b*, [*n* + 1]] and then you use them to modify the derivates
+    that you use to do your weight updates. The *ϵ*, which is usually *ϵ* = 10^(−8),
+    is there to prevent the denominator from going to `0` when the quantities ***S***[***w***,
+    [*n* + 1]] and *S*[*b*, [*n* + 1]] go to `0`. The idea is that if the derivative
+    is big, the *S* quantities are big. Therefore, the factors ![$$ 1/\sqrt{{\boldsymbol{S}}_{\boldsymbol{w},\left[n+1\right]}+\epsilon
+    } $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq2.png) and
+    ![$$ 1/\sqrt{S_{b,\left[n\right]}+\epsilon } $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq3.png)
+    will be smaller and therefore the learning will slow down. The other way around
+    is also true, so if the derivatives are small, the learning will be faster. This
+    algorithm will make the learning faster for the parameters that are slowing it
+    down. In TensorFlow is particular easy to use it simply with this code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Adam
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The last algorithm we look at is called Adam (Adaptive Moment estimation) .
+    It combines the ideas of RMSProp and Momentum into one optimizer. Like Momentum,
+    it uses an exponential weighted average of past derivatives and, like RMSProp,
+    it uses the exponentially weighted averages of past squared derivatives.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You need to calculate the same quantities that you need for Momentum and for
+    RMSProp and then calculate the following quantities
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{c}{\boldsymbol{v}}_{\boldsymbol{w},\left[n\right]}^{corrected}=\frac{{\boldsymbol{v}}_{\boldsymbol{w},\left[n\right]}}{1-{\beta}_1^n}\\
+    {}{v}_{b,\left[n\right]}^{corrected}=\frac{v_{b,\left[n\right]}}{1-{\beta}_1^n}\end{array}}
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: And in the same way
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{c}{\boldsymbol{S}}_{\boldsymbol{w},\left[n\right]}^{corrected}=\frac{{\boldsymbol{S}}_{\boldsymbol{w},\left[n\right]}}{1-{\beta}_2^n}\\
+    {}{S}_{b,\left[n\right]}^{corrected}=\frac{S_{b,\left[n\right]}}{1-{\beta}_2^n}\end{array}}
+    $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where we use *β*[1] for the hyper-parameter, used in Momentum, and *β*[2] for
+    the one we used in RMSProp. Then, similar to what we did in RMSProp, we update
+    our weights with the equations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}{\boldsymbol{w}}_{\left[n+1\right]}={\boldsymbol{w}}_{\left[n\right]}-\frac{\gamma
+    {\boldsymbol{v}}_{\boldsymbol{w},\left[n\right]}^{corrected}}{\sqrt{{\boldsymbol{S}}_{\boldsymbol{w},\left[n+1\right]}^{corrected}+\epsilon
+    }}\ \\ {}{b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma \frac{v_{b,\left[n\right]}^{corrected}}{\sqrt{S_{b,\left[n\right]}^{corrected}+\epsilon
+    }}\end{array}\right. $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: TensorFlow does everything for you if you simply use the following line
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'where in this case the typical values for the parameters have been chosen:
+    *γ* = 0.001, *β*[1] = 0.9, *β*[2] = 0.999, and *ϵ* = 10^(−7). Note how, since
+    this algorithm adapts the learning rate to the situation, we can start with a
+    bigger learning rate to speed up the convergence.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparison of the Optimizers’ Performance
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: It is interesting to see how the optimizers behave to better understand why,
+    for example, Adam is so efficient. To do that, let’s create a toy problem. Let’s
+    consider a dataset of 30 tuples (*x*[*i*], *y*[*i*]) with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {x}_i=-1+\frac{2}{30}i $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equab.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: And
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}_i=2+\frac{1}{2}{x}_i $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equac.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Let’s compare gradient descent, Adam, and RMSProp. The goal of the problem is,
+    starting from the 30 data points, to determine the linear relationships between
+    *x*[*i*] and *y*[*i*]. In other words, to determine the two parameters—2 and 1/2—in
+    the last equation. For this example, we can write the linear relation as follows
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}_i={w}_0+{w}_1{x}_i $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_Equad.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The optimizers will try to minimize the MSE with respect to *w*[0] and *w*[1].
+    You will find the entire code to do this comparison in the online version of the
+    book at [`https://adl.toelt.ai`](https://adl.toelt.ai)`.` In the online code,
+    you will see an implementation of the gradient descent from scratch. In Figure
+    [5-3](#Fig3), you can see the path that the GD algorithm takes in parameter space
+    to reach the minimum of the MSE function in 200 iterations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The path that the GD algorithm follows in parameter spaces while minimizing
+    the MSE when starting from (0,0). The number of iterations used for this plot
+    is 200
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [5-4](#Fig4) shows the different paths taken by the different optimizers
+    when solving the same problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: The path that the GD algorithm, Adam, and RMSProp optimizers follow in parameter
+    spaces while minimizing the MSE when starting from (0,0). The number of iterations
+    used for this plot is 200
+  prefs: []
+  type: TYPE_NORMAL
+- en: One striking difference in Figure [5-4](#Fig4) is that while the GD path is
+    rather direct, the others tends to be less direct, with Adam making loops around
+    the minimum and RMSProp oscillating when close to the minimum. From the plot,
+    it’s difficult to see which one is faster, and the best way of checking that is
+    to plot ![$$ {w}_0^{\left[i\right]} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq4.png)
+    and ![$$ {w}_1^{\left[i\right]} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq5.png)
+    vs. *i*, where *i* indicates the iteration number. In Figure [5-5](#Fig5), you
+    can see how quickly ![$$ {w}_0^{\left[i\right]} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq6.png)
+    converges to the expected value of 2.0 with the different algorithms. In this
+    case, Adam and GD are on par, while RMSProp seems to be slower.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: The plot of ![$$ {w}_0^{\left[i\right]} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq7.png)
+    vs. the number of iterations with different optimizers
+  prefs: []
+  type: TYPE_NORMAL
+- en: A different picture emerges when considering ![$$ {w}_1^{\left[i\right]} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq8.png).
+    Figure [5-6](#Fig6) shows how quickly the different algorithms converge.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: The plot of ![$$ {w}_1^{\left[i\right]} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq9.png)
+    vs. the number of iterations with different optimizers
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this case, you can see how much faster Adam and RMSProp are in converging.
+    It is interesting to note how Adam oscillates around the expected value of 0.5\.
+    This property makes Adam very efficient in escaping areas in parameters’ space,
+    where training can get stuck. But you should notice something else that is very
+    interesting if you zoom in on the picture after iteration 150, as you can see
+    in Figure [5-7](#Fig7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Zoom of Figure 6-5\. Plot of ![$$ {w}_1^{\left[i\right]} $$](../images/463356_2_En_5_Chapter/463356_2_En_5_Chapter_TeX_IEq10.png)
+    vs. the number of iterations with different optimizers
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [5-7](#Fig7), you can see how, while GD is still converging, Adam
+    is already at the expected value, and RMSProp oscillates around it, since probably
+    it cannot converge completely. This should convince you how efficient Adam is
+    in comparison with other optimizers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Small Coding Digression
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: I want to briefly explain how to set up the optimizers to use (0,0) as a starting
+    point for the updates. To do that, after you have created and compiled the model,
+    you can set the weights of the model with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: where `w0_start = 2.0` and `w1_start = 0.5.`
+  prefs: []
+  type: TYPE_NORMAL
+- en: After doing that, you need to save the value of the weights after each iteration.
+    The easiest way to do that is to implement your update as a custom training loop
+    by using `GradientTape()`. You will find the entire code online, but your training
+    loops will look like this
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: where `w1_rmsprop_list` and `w0_rmsprop_list` are lists that contain the values
+    of the weights for each iteration. In this way, you can test any other optimizer
+    you are interested in.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Which Optimizer Should You Use?
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To make the story short, you should use Adam , as it is generally considered
+    faster and better than the other methods. That does not mean that this is always
+    the case. There are recent research papers that indicate how such optimizers could
+    generalize poorly on new datasets (check out, for example, [`https://goo.gl/Nzc8bQ`](https://goo.gl/Nzc8bQ)).
+    And there are other papers that simply use GD with a dynamical learning rate decay.
+    It mostly depends on your problem. But generally, Adam is a very good starting
+    point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you are unsure which optimizer to start with, use Adam. It’s generally considered
+    faster and better than the other methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To give you an idea of how good it can be, let’s apply it to the Zalando dataset.
+    We will use a network with four hidden layers, each with 20 neurons. The model
+    we use is the one discussed at the end of Chapter [3](463356_2_En_3_Chapter.xhtml).
+    Figure [5-8](#Fig8) shows that the cost function converges faster when using Adam
+    optimization in comparison to GD. Additionally, in 100 epochs, GD reaches an accuracy
+    of 86%, while Adam reaches 90%. Note that we have not changed anything in the
+    model except the optimizer!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_5_Chapter/463356_2_En_5_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cost function for the Zalando dataset for a network with four hidden layers,
+    each with 20 neurons. The continous line is plain GD with a learning rate of *γ* = 0.01,
+    and the dashed line is Adam optimization with *γ* = 0.1, *β*[1] = 0.9, *β*[2] = 0.999,
+    and *ϵ* = 10^(−8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As suggested, when testing complex networks on big datasets, the Adam optimizer
+    is a good place to start. But you should not limit your tests to this optimizer
+    alone. A test of other methods is always worthwhile. Maybe for your problem other
+    approaches will work better!
+  prefs: []
+  type: TYPE_NORMAL

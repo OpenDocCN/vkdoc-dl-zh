@@ -1,0 +1,861 @@
+- en: 9. Time series forecasting and text generation with recurrent neural networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Think of your morning routine. You wake up, grab your phone, and check your
+    messages, emails, and others. Minutes after, you go to the bathroom, take a shower,
+    and brush your teeth (maybe while showering?). After those blissful minutes under
+    the water, you get breakfast, probably a coffee, and get ready to seize the day.
+    Those are the basics. Now, look back at this list and tell me, does it resemble
+    a **sequence**? It sure looks like one. If so, would it be possible to predict
+    the next step(s) using past actions as the predictors? With the right model, yes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A machine learning architecture capable of predicting or anticipating the future
+    is the **recurrent neural network** (RNN). These networks take as input a sequence
+    of arbitrary length and try to predict the next action. Generally speaking, RNNs
+    can predict many steps in the future, allowing us to know not just what comes
+    after current timestep *t* but also what follows *t*, a feature that serves to
+    do forecasting and to generate sequences. This latest point makes RNN an excellent
+    architecture for natural language processing applications. As we will soon see,
+    RNNs can memorize order, making them suitable at identifying parts of a sentence,
+    translation, and even generating creative content. For example, if you feed an
+    RNN with a dataset made of lyrics of your favorite artist, it could learn how
+    to create songs that follow the same pattern or style as the input data. Other
+    RNN applications include identifying spam users using a sequence of events (Jugel
+    et al., 2019), traffic forecasting (Zhao et al., 2017), and analyzing time series
+    data, as we will do here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the first part of this chapter, we will go through the steps of creating
+    and training two recurrent neural networks to do **time series forecasting** using
+    the steps dataset introduced earlier in the book. The first RNN forecasts a single
+    point in the future, while the second forecasts multiple steps. Then, we will
+    create a second app that loads an ml5.js’ RNN trained on a corpus of Shakespeare’s
+    works to **generate** “Shakespeare-like” texts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Understanding RNN and LSTM
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To understand the idea behind a sentence, you, the reader, must have understood
+    the words that came before. Do you agree?
+  prefs: []
+  type: TYPE_NORMAL
+- en: As we read, we inadvertently connect the meaning of the current word with the
+    past ones to comprehend what the complete text says. In other words, the data
+    we just read does not vanish from our heads—we preserve it. Recurrent neural networks
+    do this too. Unlike other artificial neural networks, RNNs have the capability
+    of persisting information inside them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The networks we have used so far share the characteristic that the activations
+    (tensors) flow in one direction: forward. For instance, in an epoch of a CNN training,
+    the data flows from a convolutional layer to a max pooling layer. RNNs are not
+    like this. Their basic unit, a recurrent neuron, has an input that connects back
+    to the neuron, creating a loop in which the neuron sends outputs back to itself.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-1](#Fig1) presents an example of a simple recurrent neuron, where
+    *x* is the input and *y* the output. At each timestep *t* of the training, the
+    node receives an input *X*^(*t*) (the sequence) and the output from the previous
+    time step *t* − 1 (see the loop?) to produce a new output *y*^(*t*). As a result,
+    because of this iterative behavior, the neuron outputs become a function of the
+    past ones. So, we could say that this function has an internal state (or memory)
+    denoted by *h* and mathematically defined as *h*^(*t*) = *f*(*h*^((*t* − 1)),
+    *x*^(*t*)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig1_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: A recurrent neuron
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pop quiz time. Let me ask, do you remember the first sentence of this section?
+    (Please say no because otherwise the example will not work). Right? I do not remember
+    it either. It’s been quite some time since we read it, and thus we forgot about
+    it. Recurrent neural networks also experience this problem. The longer the sequence
+    is, the harder it is for the network to remember what came first. Simply said,
+    it becomes harder to keep “long-term dependencies” (Bengio et al., 1994).
+  prefs: []
+  type: TYPE_NORMAL
+- en: To address this drawback, in 1997, *Sepp Hochreiter* and *Jürgen Schmidhuber*
+    introduced an RNN architecture named “Long Short-Term Memory” or LSTM (Hochreiter
+    & Schmidhuber, 1997). The details of the algorithm are well beyond the scope of
+    the book. However, to get an idea, let’s briefly review its principal feature.
+    Simply said, an LSTM is a cell (we can also call it node) that remembers by keeping
+    data within it. To regulate what information it preserves, that is, what is added
+    and what is removed, it uses three units known as **gates**.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An LSTM cell has three gates: the *forget*, *input*, and *output* gates. The
+    forget gate decides what information gets discarded from the cell. Conversely,
+    the input gate controls what data enters the cell, and the output gate decides
+    whether the value in the cell is to be used when calculating the unit’s output.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For a complete explanation of LSTM and RNN, refer to the book *Deep Learning*
+    by Goodfellow et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: About the data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The forecasting app uses a modified version of the steps’ dataset used in Chapter
+    [1](494424_1_En_1_Chapter.xhtml). This dataset contains the (normalized) number
+    of steps I took from July 9, 2019, to July 31, 2019, grouped in 15-minute intervals.
+    Its shape is [933, 61], where the first 60 columns are the steps taken at an arbitrary
+    timestep *t*, all the way to timestep *t* + 59, and each row is a sequence. So,
+    we have a sequence of 60 values. The last column is the target value we want to
+    forecast in the first RNN. For the second RNN, we will use a different shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For context, Figure [9-2](#Fig2) illustrates the original dataset. On the x-axis
+    is the timestep *t*, and on the y-axis, the footsteps taken in that interval.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig2_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building RNNs for time series forecasting
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The chapter’s first application is a web app that trains an LSTM to forecast
+    the time step *t* + 1 of a sequence. This application, and the code, follows a
+    similar structure to those done in the first chapters of the book. It loads the
+    data, constructs the model, trains it, and visualizes the training stage using
+    tfjs-vis. To test the model, we will use a separate test dataset made of eight
+    testing cases. The testing involves visualizing the sample sequences, their predicted
+    value, and actual value. To create this plot, you will use Plotly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ready? Let’s go. We will start by creating a directory, and inside it, create
+    a second one named “time-series.” Then create the *index.html*, *index.js*, and
+    *style.css* files.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preparing the app’s interface
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Figure [9-3](#Fig3) presents a screenshot of the app.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig3_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The app. On the top part are the training visualizations and at the lower part,
+    the test cases
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It has a button that starts the training, a canvas holding the tfjs-vis plots
+    (no visor this time), the test case buttons, and the Plotly visualization presenting
+    the data. The following is the complete HTML:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: First, we have the `<head>` node loading the required packages. Following it
+    is the body, made up of one large `<div>` with three `<h2>` headers, the “Train!”
+    button, the canvas for the tfjs-vis graphs, and the divisions for the test buttons
+    and the Plotly plot. At the bottom is the script tag that loads the *index.js*
+    script. Copy this code into *index.html*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the styling department, add the following CSS into *style.css*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you wish to see how it looks, start a local server using *http-server* on
+    the project’s directory and access the address provided. Once done, close *index.html*
+    and prepare yourself to transform the dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transforming the dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Even though the dataset is already pre-processed, you need to do further work
+    on it to transform it into a format compatible with the LSTM. As before, we will
+    use the function `tf.data.csv()` to load the CSV dataset as a `tf.data.Dataset`
+    object. But RNNs do not use this format. They require a tensor of rank 3 with
+    shape (`batch_size`, `timesteps`, `input_dim`), where `batch_size` is the number
+    of examples, `timesteps` the length of the sequence, and `input_dim` the number
+    of features. In our case, with the dataset we have at hand, the batch size should
+    be 933 (but let’s use 900 since it is a nice round number), `timesteps` 60, and
+    `input_dim` 1, because we are only using one sequence feature (the number of steps).
+    In conclusion, the shape of the input tensor should be [900, 60, 1]. How do we
+    do this in code? Open *index.js* and follow me.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Start by defining the following variables at the top of the file:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first two are the paths to the training and test dataset. You can either
+    use the remote version of the datasets or the version located in the book’s repository
+    (directory *9/time-series/data/*). Then come `TIMESTEPS`, the datasets’ sizes,
+    and the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, create a function that loads both the training and test datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Followed by a second one responsible for preparing the dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`prepareDataset()` has two parameters, `dataset` (a `tf.data.Dataset` object)
+    and `size`, the length of the dataset. It starts with calls to `tf.buffer()` to
+    create two `TensorBuffers`—a mutable object that you can insert values to before
+    converting it to a tensor—that you will use to assign the sequence data to `sequences`
+    (a rank 3 tensor) and the target values (what we want to predict) to `targets`
+    (a rank 2 value). The function uses two loops to set the values in the buffers.
+    The inner loop which iterates over each element of a single sequence (one row)
+    sets these values to the sequence buffer, while the other one sets the target
+    value. This method `set()` sets a value at a given location. In both cases, the
+    last argument of `set()` is 0 because the last dimension of the buffer is of size
+    1\. `prepareDataset()` returns an object where the key `xs` is the sequence tensor
+    and `ys` the targets. And just like that, the LSTM is ready to accept the data!'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Before proceeding to the next section, let’s run the app and verify that it
+    works. So, under `prepareDataset()`, create an `init()` function and call `loadData()`
+    and `prepareDataset()` twice to prepare the training and test datasets. To double-check
+    their shapes, use `console.log(train.xs.shape), console.log(set.xs.shape).` Their
+    respective values should be [900, 60, 1] and [8, 60, 1]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Back at the browser, hit the refresh button to reload the app. Open the developer
+    console and verify that the shape is the same as the one earlier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Designing the model and training it
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Time for the fun part (I know I keep saying that): creating the model. This
+    forecasting model is a small recurrent neural network of one LSTM layer of 32
+    cells and a dense layer of one unit:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: The preceding example is `defineModel()` , responsible for constructing and
+    compiling the model. The initial line creates an instance of a Sequential model.
+    Next are the layers, starting with the LSTM. Since it is the model’s initial layer,
+    it specifies the `inputShape`, whose value is the shape of the training dataset’s
+    last two dimensions. A second hyperparameter we need to define is `units`, which
+    refers to the LSTM cells. The last attribute of the layer is `returnSequences`,
+    a property of the RNN-related layers. This attribute specifies whether to return
+    the last output of the sequence or the entire sequence. By default, its value
+    is `false`, but for demonstration, let’s explicitly define it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Then, we compile. On this occasion, use the mean squared error loss function
+    since the target output is a continuous variable. As for the optimizer, use Adam.
+    Model finished!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'On to the training. Under the previous function, create a new one named `trainModel()`
+    with one parameter `trainingSet`. In the function, use `getElementById()` to get
+    the canvas element that holds the tfjs-vis visualizations. After, call `model.fit()`
+    using `trainingSet.xs` and `trainingSet.ys` as the first two arguments and a configuration
+    object using the following attributes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: batchSize = 64.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: epochs = 25.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: validationSplit = 0.1 to use 10% of the data to validate the training.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: As for the callbacks, use tfvis.show.fitCallbacks() to visualize the loss and
+    validation loss values onEpochEnd and onBatchEnd.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Predicting and testing the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: By this point, you have loaded the data and created the model. So, the only
+    missing step is implementing the testing functionality to assess its performance
+    empirically. To test it, we will use a small dataset made of eight observations
+    that do not appear in the training set. As displayed in Figure [9-3](#Fig3), the
+    testing part of the application involves using one of eight buttons (one per testing
+    case) to visualize the sequence and its predicted and actual values. With this
+    approach, the user can visually assess how far the predictions are from the real
+    value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Developing this feature involves three different components, one for predicting,
+    another for plotting the predictions, and another one for creating the buttons.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The first, `predict()` , is a function that uses `model.predict()` and returns
+    its value. Instead of predicting each case individually, use the entire test dataset
+    to obtain the eight predictions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The second function, named `plotPrediction()`, plots the predictions. It has
+    three parameters, the test case’s number, the test dataset, and the predictions
+    array:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first line of the function converts the values part of the test data (`xs`)
+    to a nested array where each element is a test case. This test case array is also
+    a nested one where each of the elements is another array. So, we need `flat()`
+    to flatten it. After that, the same “range-like” function (defined after `plotPrediction()`)
+    we used in Chapter [2](494424_1_En_2_Chapter.xhtml) generates an array of values
+    from 0 to 59 (the sequence length). Then comes the Plotly visualization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this visualization, you need three Plotly traces, one for the sequence,
+    the predicted value, and the true value. But we also want the traces to look different.
+    Therefore, we will specify their style. For instance, the sequence is represented
+    with a line, and the other values with markers; feel free to customize it to your
+    liking. After defining the traces, append them to the same array. Then call `Plotly.newPlot()`
+    with the argument `'plot'` (the id of the `<div>`) and the `traces` array.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Last, use the same `createButton()` from the earlier chapters to create the
+    buttons:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: To put it all together, return to the `init()` function . There, use `range()`
+    to create an array and iterate over it to create the eight buttons and their callback
+    function that plot the prediction once clicked (which by default are disabled).
+    Following this, use once again `getElementById()` to get the button that starts
+    the training. Assign to it a “click” event listener that calls `defineModel()`,
+    `trainModel()`, and `predict()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Replace the old `init()` function with this one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Running the app
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s forecast. If the local web server is not up, please start it. Then launch
+    the application and click “Train!” to start the training. Below the button, you
+    will see two graphs displaying the *onBatchEnd* loss and the *onEpochEnd* training
+    and validation loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The average loss value (calculated after 10 tries) was around 0.02, and the
+    average training time 3 minutes long (on a MacBook Pro 2018). With the training
+    done, the eight testing buttons should be activated. Three of the test cases (1,
+    2, and 4) have an actual value of 0, so the predictions should at least be close
+    to 0\. In my tests, the outcomes of cases 3 (Figure [9-4](#Fig4)), 6 (Figure [9-5](#Fig5)),
+    and 7 were very accurate, while case 8 showed the most inaccurate result (the
+    actual value is 0.90, and the predicted is 0.51).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig5_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Test case #6'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig4_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Test case #3'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multiple timestep forecasting
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: But wait a second? What about predicting a timestep *t* + 2? Is it possible?
+    Yes, it is. Forecasting only one step in the future is limiting and, honestly,
+    not that insightful. For example, you want a weather report that predicts the
+    complete trajectory of the hurricane and not just its position in the next minute.
+    Therefore, we will extend our forecasting model to predict the next *N* future
+    steps of the time series.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Extending the app implies two things: reshaping the data and, of course, updating
+    the model’s architecture. As it is right now, our training dataset’s shape is
+    [900, 60] and uses as target one of shape [900, 1]. But we want to expand the
+    target data to predict *N* values instead of 1\. To do so, we will vertically
+    slice the training dataset to create a new one of size [900, 60 - *N*] and a target
+    tensor with shape [900, *N*]. For this example, we will set *N*, now called `FUTURE_TIMESTEPS`,
+    to 5 to predict the next five steps. Let’s start by creating the data (you can
+    add the following code snippets in the same file):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The function `prepareMultiDataset()` takes the training and test data and slices
+    them to create four: the new training and testing set and their labels. `yTrain`
+    requires `tf.squeeze()` to remove the last dimension ([900, `FUTURE_TIMESTEPS`,
+    1] →[900, `FUTURE_TIMESTEPS`]).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Then comes the model training and designing function. Since our problem is
+    not as simple as the previous one, let’s add an extra LSTM layer to the model
+    and set the `returnSequences` attribute of the first layer to `true`. Unlike last
+    time, we will call `model.fit()` from this function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We also need the function to perform the predictions. On this occasion, we
+    will use `tf.Tensor.arraySync()` —a method that converts a tensor to a nested
+    array—instead of `tf.Tensor.dataSync()`, because the returned prediction tensor
+    has the shape [8,5]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next is the drawing function. Because now the app produces a predicted sequence
+    and not a single point, we need to change the traces to draw lines instead of
+    points:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Last is the new *init* function, now named `initMultiModel()`, followed by
+    a call to it (make sure you comment out the previous call to “normal” `init()`):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now refresh the app and start the training. This time, because we have a larger
+    model, the training is longer. Besides this, you will note that the loss value
+    barely changes (Figure [9-6](#Fig6)); there is not a sudden drop like the one
+    before. It starts around 0.035 and converges at 0.025—not a significant change.
+    This behavior implies that there might be some problems with the model. Let’s
+    see some test cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig6_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: The training's loss value
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Figure [9-7](#Fig7) shows test case #3\. The solid line is the test data, the
+    dashed line the actual value, and the dashed-dotted line the predicted one. Here,
+    the prediction does not fit the actual data that well, but in overall, it follows
+    the same pattern.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig7_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Multimodel''s test case #3'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'But now it gets worse. Next is test case #6 (Figure [9-8](#Fig8)), and its
+    forecast resembles a *smoothed* form of the actual value—not a great outcome,
+    but not an awful one.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Last, we have test case #8 (Figure [9-9](#Fig9)), the worse of them. In this
+    example, the forecasted line trends downward, while the real value increases.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig9_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Multimodel''s test case #8'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig8_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Multimodel''s test case #6'
+  prefs: []
+  type: TYPE_NORMAL
+- en: From these examples, we could conclude that the model is not as good as the
+    first one—or at least not at predicting that far in the future. You might have
+    noticed that in most of the examples, the first three predicted points were similar
+    to the actual one, a sign that the model might be good at predicting the near
+    future, but not a far one. One of the exercises invites you to try distinct `FUTURE_TIMESTEPS`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It is sad to admit this, but sometimes a model does not work. The reasons could
+    be many: not enough data, not the correct data, poor choice of a model, suboptimal
+    hyperparameters, or a not suitable architecture. In this case, the dataset is
+    very volatile and has many fluctuations, which might affect the training. Use
+    this as a takeaway and a reminder that with all advances behind machine learning,
+    it is not (yet) a perfect science.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: But I refuse to end this section in such a low note. To experience a good multistep
+    model, I will introduce a modified version of Jena weather dataset (Max Planck
+    Institute for Biogeochemistry, n.d.). This dataset—typically used to showcase
+    time series—contains weather information from the city of Jena, Germany, from
+    the year 2009 to 2016\. We will use the data to forecast the temperature. The
+    dataset has the same structure as the previous one, so we do not need to modify
+    the functionality of the program. But we need some small changes. To start with,
+    we have to change the URLs of the training and test datasets to [`https://raw.githubusercontent.com/Apress/Practical-TensorFlow.js/master/9/time-series/multiple-steps-jena/data/sequences.csv`](https://raw.githubusercontent.com/Apress/Practical-TensorFlow.js/master/9/time-series/multiple-steps-jena/data/sequences.csv)
+    and [`https://raw.githubusercontent.com/Apress/Practical-TensorFlow.js/master/9/time-series/multiple-steps-jena/data/test.csv`](https://raw.githubusercontent.com/Apress/Practical-TensorFlow.js/master/9/time-series/multiple-steps-jena/data/test.csv).
+    Alternatively, I would recommend getting the dataset from the repository because
+    of its large size. You can find it at *9/time-series/multiple-steps-jena/data/*.
+    Also, since the dataset is significantly larger, change `TRAINING_DATASET_SIZE`
+    to 65000 and `FUTURE_TIMESTEPS` to 40, `batchSize` to 512, and `epochs` to 3\.
+    Then, launch the app and train as usual. But beware! A larger dataset implies
+    having to wait longer to load the data and to train the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-10](#Fig10) presents the loss values after training the model for
+    five epochs. The top chart, *onBatchEnd* shows that after just 50 batches, the
+    loss drops to almost zero, while the second one, *onEpochEnd*, reveals that two
+    epochs are enough. To see how the model performs, see Figures [9-11](#Fig11),
+    [9-12](#Fig12), and [9-13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig13_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Test case #5'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig12_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Test case #4'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig11_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Test case #2'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig10_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Loss value during training
+  prefs: []
+  type: TYPE_NORMAL
+- en: Way better than the last model. In all figures, the predicted forecast is very
+    close to the actual one. If you look at the y-axis, you will see that the difference
+    between the values is less than 0.01—a very accurate prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generating text using a pre-trained LSTM with ml5.js
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A task where recurrent neural networks are great and shine at is text generation.
+    If you look online or in the literature for RNNs’ generative examples, you will
+    be surprised by the number of unique, funny, and original applications people
+    have developed. Some create lyrics, other musical chords, movie scripts, source
+    code, and text that mirrors the writing style of classic authors of old, as we
+    will do in this exercise.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training these networks is not trivial. Behind them are an extensive architecture,
+    an even larger training set, and a considerable amount of computational resources
+    poured into it. As a result, we will skip the training on this one, not only because
+    of the length or its complexity but also to have the chance of using a “battle-tested”
+    model able to generate coherent text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model we will use is a pre-trained one provided by the ml5.js library. On
+    its models’ repository,^([1](#Fn1)) you can find several LSTM models trained on
+    corpora containing the works of writers like *Shakespeare* and *Hemingway*. For
+    this example, I will use the Shakespeare model. However, you can choose another
+    one. The app itself is our simplest yet. Its purpose? Generating. The interface
+    (Figure [9-14](#Fig14)) consists of one text field used to write the model “seed,”
+    an initial piece of text from which the model generates its text. Also, there
+    is an input slider that sets the prediction **temperature** , a value between
+    0 and 1 that controls the generated text “randomness.” A low-temperature prediction
+    gives a more “conservative” or confident output, while a high temperature produces
+    more “creative” content (Karpathy, 2015).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig14_HTML.jpg](../images/494424_1_En_9_Chapter/494424_1_En_9_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: A screenshot of the app. The box on top is the seed input, and the text below,
+    the generated text
+  prefs: []
+  type: TYPE_NORMAL
+- en: Developing the app
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Start by cloning the ml5.js models’ repository, available here: [`https://github.com/ml5js/ml5-data-and-models`](https://github.com/ml5js/ml5-data-and-models).
+    While it clones, create a directory named *ml5js-text-generation*. When the download
+    finishes, go to the *models/lstm/* directory and copy the “shakespeare” directory
+    to your working directory. Then create the *index.html* and *index.js* files.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Since the app code is minimal, I will present its entirety in this section,
+    starting with *index.html*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The HTML’s body has five main elements: a range for setting the temperature,
+    a `<p>` for displaying it, a `<textarea>` for defining the seed, a button to predict,
+    and another `<p>` to display the generated text. That’s the complete file—you
+    may close it and open *index.js*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the first lines of *index.js*, declare a variable `model` and `temperature`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After them, create the function `processInput()`. In the function, use `getElementById()`
+    to get the “predict” button and the output `<p>` element. To the button, assign
+    a click event listener that gets the seed from the text area and uses it as one
+    attribute of `model.generate()`, the method that generates this text. Besides
+    the seed, use the `temperature` attribute and `length` to set the temperature
+    and the desired length of the generated sequence. This example uses a length of
+    100, but you may adjust it to your liking. `model.generate()` has an optional
+    callback that executes when the model generates the sequence. Use it to assign
+    the generated content to the `<textarea>` element:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To get the slider’s value, use the same `updateSliders()` function from Chapter
+    [7](494424_1_En_7_Chapter.xhtml). In its callback, update the `temperature` value:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Last comes the `init()` function . Here, call `ml5.charRNN()` and use as its
+    argument the path to the model and a callback that prints “Model loaded” once
+    it loads. After this line, call `updateSlider()` and `processInput()`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: With that, we conclude the app.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Testing the app
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s generate classic literature. Like you, this is also my first time testing
+    the model, so I am a bit excited. Before running the app, remember to start the
+    local server on the project’s location. Now run it. As a first example, I used
+    as seed a classic Shakespeare quote, “all that glitters is not gold,” and the
+    default temperature of 0.75\. The outcome was the following statement:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*to s ch death,*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '*And so very heart they be this igland,*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '*In this wisdom, to tell p in his cast.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '*VOL*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'I do not know much about classic English literature, but I would say that it
+    does sound very classic and dramatic (or at least the words I could discern from
+    the text). But, overall, it is not a great text. It lacks coherence, structure,
+    and correct grammar. Granted that, it is a fun and original line to read. But
+    what if we lower the temperature to 0? See for yourself:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*With the windows with the people, and let him here,*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '*The command''d as the life and she shall be so s*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: With a temperature of 0, the generated text corrects most of the mistakes found
+    in the last one. For instance, it resembles a complete sentence, starts with a
+    capital letter, and it even has a meaning. But is it better? In some sense, yes.
+    However, in my opinion, it is not as surprising as the other. For other examples,
+    see Table [9-1](#Tab1). I would suggest trying the same seeds to discover how
+    your results differ from mine. Last, if you wish to have shorter or longer texts,
+    change the length attribute. Enjoy!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples of generated text
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Seed | Temperature | Generated Text |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| *To be, or not to be: that is the question* | 0.50 | *of the**bowls and the
+    goodly seat of his hands.**First Senator:**Come, sir, then, good now yo have n*
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| *A man can die but once* | 0.25 | *That we m st be so well as the sea**That
+    the matter of the s n that hath dead**I cannot s ppose the p* |'
+  prefs: []
+  type: TYPE_TB
+- en: '| *Nothing will come of nothing* | 1.00 | *That is lives to remons have sea
+    and a idle not take**Where I mine elsel that heaven, whence thirtle* |'
+  prefs: []
+  type: TYPE_TB
+- en: Recap and conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'An LSTM is a unique and versatile neural network architecture. It has loops,
+    it remembers, and it generates. For example, with the right data, you could turn
+    a model into a music producer or into one that foresees whether you will take
+    a shower this morning. In this chapter, we experimented with four LSTMs for two
+    tasks: time series forecasting and text generation. For the time series exercise,
+    we created two LSTMs, one for predicting a single point in the future and another
+    for predicting multiple steps. The first model performed satisfactorily. In our
+    tests, we saw that many of its predicted values were near the actual one. Regarding
+    the multiple-step model, the first one could somehow predict the general trend
+    of the data, but not at a precise level, while the Jena model forecasted 20 steps
+    in the future with high precision. For the second task, we used ml5.js and a pre-trained
+    model to generate text that depicts the writing style of Shakespeare.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next chapter, we will continue with the theme of generative AI. But instead
+    of text, we will create images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is a recurrent neural network? What makes it unique?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What is the "long-term dependencies" problem?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What would be another suitable application where the input is a sequence and
+    the output is a single value? Or a sequence-to-sequence example?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Another type of cell for RNN is the **Gated Recurrent Unit** (Cho et al., 2014)
+    or GRU, a simpler cell that combined the forget and input gates into one structure,
+    named update gate. In TensorFlow.js, you can add a GRU layer using `tf.layers.gru()`.
+    Replace the LSTM with GRU and compare their performance.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Try different values of `FUTURE_TIMESTEPS` and re-train the multistep model.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Fit an LSTM with a dataset of your choice. A good place to start searching is
+    [`www.kaggle.com/tags/time-series`](http://www.kaggle.com/tags/time-series). I'd
+    recommend starting with weather or stocks dataset.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

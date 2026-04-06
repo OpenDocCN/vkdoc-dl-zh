@@ -1,0 +1,1018 @@
+- en: 12. Neural Network Interpretability
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: I have always thought the actions of men the best interpreters of their thoughts.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —John Locke, Political Theorist
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Neural networks are powerful tools that can be used to solve a host of difficult
+    tabular data modeling challenges. However, they’re also less obviously interpretable
+    than other alternatives to modeling tabular data, like Linear Regression or decision
+    trees – from which the model’s processing of the data can be more or less directly
+    read off of the learned parameters. The same is not true for neural network architectures,
+    which are significantly more complex and therefore more difficult to interpret.
+    At the same time, it is important to interpret any model used in production to
+    verify that it is not using cheap tricks or other exploitative measures, which
+    can lead to poor behavior in production.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this chapter, we will briefly explore three techniques for interpreting
+    neural networks: SHAP, LIME, and Activation Maximization. The first two techniques
+    are *model agnostic*, meaning that they can be used to explain the decisions of
+    any model, not just neural networks. The last – Activation Maximization – can
+    only be used on neural networks. A well-informed interpretability analysis considers
+    multiple different techniques.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: SHAP
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: SHAP, which stands for SHapley Additive exPlanations,^([1](#Fn1)) is a popular
+    framework for model explainability. The framework is based on the game theory
+    concept of a Shapley value, which quantifies how much each player contributes
+    to the overall value in a collaborative game.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For instance, let’s say you’re trying to analyze players in a three-person basketball
+    team (perhaps for some 3-on-3 ball). The overall reward of the three-person team
+    is trivial to obtain – it’s simply the difference between the team’s score and
+    the other team’s score, or how many more balls they scored in the hoop than the
+    other team. However, the contribution of individual players is less simple to
+    quantify. We could calculate the individual contribution of each player simply
+    by how many balls they scored, but this obscures the role of a defensive player
+    that blocks the other team from making shots. Alternatively, perhaps player B
+    performs well only when player C is present, or player A and player C have a complementary
+    performance relationship (only one of them can perform well; the other performs
+    poorly). Ultimately, there is no easy way to estimate each individual player’s
+    contributions from just looking at the raw game data itself because of the complex
+    interdependencies that often manifest in real-world collaborative games (Figure
+    [12-1](#Fig1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of individual contributions of players A, B, and C, that adds
+    to the overall team reward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: A game schematic with individual players each contributing an unknown individual
+    contribution to a known overall team reward
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The key idea of a Shapley value is that we must consider each possible combination
+    of players in order to determine how important any one individual player is. In
+    the case of three players, there are seven combinations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: One player
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player A}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player B}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Two players
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Three players
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B, C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For reference, if we had five players, we would need 31 combinations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: One player
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player A}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player B}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player D}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Player E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Two players
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, D}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, D}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players C, D}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players C, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Three players
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players C, D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, C, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, C D}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, C, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, C, D}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B, C}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Four players
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B, C, D}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B, C, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B, D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, C, D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players B, C, D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Five players
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '{Players A, B, C, D, E}'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: (The mathematically inclined reader will notice that the number of nonempty
+    subsets in a set with *n* elements is 2^(*n*) − 1.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Then, we evaluate the performance of each of these teams. We have player A play
+    against the other team and evaluate its performance and then player B, followed
+    by player C, followed by a two-person team consisting of players A and B, and
+    so on. At the end, we have collected a significant amount of data on the rewards
+    obtained by different subsets of players.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The important attribute of this dataset is that we can compare the difference
+    obtained in reward when some player is or is not present across several different
+    contexts. For instance, if we want to evaluate the individual contribution or
+    importance of player A, we can aggregate the increase in overall team reward in
+    the following contexts:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Between the set {Player B} and the set {Players A, B}
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Between the set {Player C} and the set {Players A, C}
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Between the set {Players B, C} and the set {Players A, B, C}
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: These constitute the *marginal contributions* of player A to the game. Each
+    of these marginal contributions is then weighted by relevance to the overall problem
+    and summed to form a Shapley value for player A. We can repeat the same with other
+    players to obtain Shapley values for the other players.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In machine learning, the features are the players, and the game reward is the
+    score of the model! We want to understand which features influence the performance
+    of the model in accurately modeling the dataset by shuffling out combinations
+    of features and measuring the marginal contribution of each feature. Note that
+    this means computing SHAP values can be expensive, since in their pure form 2^(*n*) − 1
+    models need to be trained, where *n* is the number of features. Luckily, the `shap`
+    python library has tricks to improve the efficiency of computing the relevance
+    of a feature.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can begin by importing `shap` and initializing the JavaScript back end required
+    for visualization with `shap.initjs()`; this is required to produce many of the
+    visualizations (these rely upon JavaScript inside the Jupyter Notebook). `shap`
+    can be installed with `pip install shap` (Listing [12-1](#PC1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: For demonstration, we’ll load the Adult Census dataset directly from SHAP, which
+    is a preprocessed quasi-dummy dataset containing demographic information (which
+    is usually ripe for interesting interpretability analysis) (Listing [12-2](#PC2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ll use AutoKeras to quickly find a decent model on this dataset and export
+    the Keras neural network to a variable appropriately named `model` (Listing [12-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In order to generate feature relevance values, we will use `shap.KernelExplainer`.
+    This is the most standard model-agnostic object in `shap`. It accepts two mandatory
+    arguments: a function returning the model predictions given some input and a set
+    of data to evaluate the model’s performance on. In Listing [12-4](#PC4), we initialize
+    the kernel explainer on the first 100 rows of the dataset.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once the SHAP kernel explainer object has been initialized, we can use it to
+    explain how a model arrives at a prediction for a single sample. Listing [12-5](#PC5)
+    demonstrates a *force plot* visualization (shown in Figure [12-2](#Fig2)), in
+    which various features are shown as vectors demonstrating the direction and magnitude
+    effect on the target (Listing [12-5](#PC5), Figure [12-2](#Fig2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of base line is numbered from lower to higher, with decimal
+    values, and a f x value highlighted as 0.99\. Below the baseline, values are displayed
+    for relationships, marital status, occupation, and capital gain.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: A force plot generated with the sample at `i = 100`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: By changing the index i of the selected sample to explain, we can obtain force
+    plots to explain how the model approaches other samples. The force plot shows
+    us how different features are weighted and in which direction they act. Figure
+    [12-3](#Fig3) demonstrates an example in which the model output is a probability
+    very close to 0\. In this case, there are no factors acting in the positive direction.
+    Figure [12-4](#Fig4) demonstrates a case in which features have values that act
+    both positively and negatively on the target output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of base line is numbered from lower to higher, with decimal
+    values. A f of x value is highlighted as 0.34\. Below the baseline, values are
+    displayed for age, relationship, marital status, occupation, and capital gain.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: A force plot generated with the sample at `i = 102`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of base line is numbered from lower to higher, with decimal
+    values. A f of x value is highlighted as 0.01\. Below the baseline, values are
+    displayed for occupation, capital gain, relationship, marital status, and education.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: A force plot generated with the sample at `i = 101`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moreover, SHAP allows you to view multiple force plots for several samples altogether
+    in one convenient interactive visualization. Listing [12-6](#PC6) demonstrates
+    the code to produce multiple force plots (Figure [12-5](#Fig5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An area graph illustrates a sample order by similarity. 2 shaded samples are
+    displayed in a fluctuating trend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: An aggregated force plot visualization
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This is an interactive application: you can view the force plot and responsible
+    features for a particular sample by hovering over a horizontal rule (Figure [12-6](#Fig6)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An area graph of a sample order by similarity. 2 numbers highlighted on x y
+    axis are 51 and 0.1394\. 2 shaded samples are displayed in a fluctuating trend.
+    Values for relationship, marital status, and education number are displayed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since SHAP produces JS visualization embedded in the notebook, you can hover
+    over and see the most significant impacting factors for each sample
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another clean visualization is to plot out the SHAP values for each column across
+    multiple different samples. This allows us to understand the distribution of effects
+    each feature has on the predicted output (Listing [12-7](#PC7), Figure [12-7](#Fig7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph of S H A P value impact on model output for different samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another visualization of SHAP values to help us understand the distribution
+    of feature importance and influence
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: The kernel explainer is model agnostic, which means that it only interprets
+    the model’s behavior based on the inputs and the outputs. That is, it treats the
+    model as a black box function and thus can be applied to any model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: SHAP also implements model-specific explainers that look “inside” the model
+    to calculate SHAP values informed not only by the predicted output but also the
+    internal parameters and processes used to derive the prediction. The `TreeExplainer`,
+    for instance, can be applied to tree-based models (e.g., `sklearn.tree.DecisionTree`)
+    by “reading” the learned criteria. SHAP provides the `GradientExplainer` to provide
+    better interpretations of neural networks by exploiting their differentiability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [12-8](#PC8) demonstrates the construction of a simple neural network
+    trained on the Mice Protein Expression dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since neural networks are pretty complicated, it is often valuable not just
+    to explain the output of the entire model but also that of intermediate layers.
+    Recall a similar analysis we performed in Chapter [4](525591_1_En_4_Chapter.xhtml),
+    when we visualized how learned convolutional kernels convolved feature maps to
+    understand which features were being amplified and which were being dimmed. In
+    order to link an input to the output of a certain layer, we need to construct
+    a submodel.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin by just explaining the last output layer, which has eight nodes
+    for classification into one of the ten classes. We index the desired layer, create
+    a `submodel` linking the input to that layer, and pass the model in addition to
+    a dataset of features to the `GradientExplainer` (Listing [12-9](#PC9)). (In this
+    case, the submodel construction is somewhat redundant because it is identical
+    to the model. However, such a formulation allows us to generalize gradient explanations
+    to other intermediate layers.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can obtain the SHAP values from the explainer on a certain data subset (Listing
+    [12-10](#PC10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Calling `values.shape` yields `(8, 200, 80)`. You can understand this as taking
+    the format `(# neurons in layer, # samples evaluated across, # features)`. SHAP
+    tells us how much impact each feature has on each output for each sample. That’s
+    a lot of information!'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can derive a lot of meaningful insights from these SHAP values. An obvious
+    aggregation method is to measure the mean SHAP value for each feature across all
+    samples and outputs (Listing [12-11](#PC11), Figure [12-8](#Fig8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of mean S H A P values for the various features. A shaded scale
+    depicts the numbers from negative 0.5 to negative 3.5 from the top.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Importance of each feature calculated using mean SHAP with respect to the last
+    output layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternatively, we can visualize the overall impact of each feature on the output
+    of the second-to-last layer (Figure [12-9](#Fig9)) and third-to-last layer (Figure
+    [12-10](#Fig10)) to understand the dynamics of internal network computation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig10_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the mean S H A P values for the various features. A shaded
+    scale depicts the numbers from negative 1 to negative 4 from the bottom.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Importance of each feature calculated using mean SHAP with respect to the third-to-last
+    output layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the mean S H A P values for the various features. A shaded
+    scale depicts the numbers from negative 0.225 to negative 0.025 from the top.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Importance of each feature calculated using mean SHAP with respect to the second-to-last
+    output layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can also take the standard deviation of SHAP values across all outputs and
+    samples to understand the variability in feature impact (Figure [12-11](#Fig11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig11_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of standard deviation of S H A P values for the various features
+    in the output layer. A shaded scale depicts the numbers from negative 0.5 to negative
+    2.5 from the bottom.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Standard deviation of SHAP values for each feature with respect to the last
+    output layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: Of course, one can perform much more fine-grained and detailed analyses by isolating
+    a particular feature or set of features of interest and tracking how the impact
+    varies and/or trends throughout samples and outputs. SHAP is an extraordinarily
+    useful tool, and lots of new research are continually pushing at the boundaries
+    of how useful, efficient, and informative SHAP-based methods can be (especially
+    for deep learning!).
+  prefs: []
+  type: TYPE_NORMAL
+- en: LIME
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: LIME, an acronym for Local Interpretable Model-Agnostic Explanations,^([2](#Fn2))
+    is another model interpretation method. LIME relies and operates on the same idea
+    as SHAP as it is also model agnostic. LIME interprets or approximates any machine
+    learning model as a black box function and then explains its behavior and predictions
+    with a local, interpretable model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The idea of LIME is simple and intuitive. Unlike SHAP, which uses different
+    sets of features, LIME inputs different sets of *samples* into the black box model
+    that it’s trying to interpret. However, instead of simply calculating the importance
+    of features from the outputs of the altered dataset, LIME generates a brand-new
+    dataset that’s comprised of the perturbed samples along with their prediction
+    from the black box model. When LIME perturbs the dataset, continuous samples are
+    randomly chosen from a normal distribution; then the inverse operation of mean-centering
+    and scaling is performed on the selected samples. In contrast, for categorical
+    features, they’re perturbed by training distributions. Then, on the generated
+    dataset, LIME trains an interpretable model weighted by the proximity of sampled
+    instances to the instance of interest. As the name describes, the trained model
+    on the modified dataset won’t be a good approximation of the black box function
+    globally, but it should be accurate within a local scope. Here, the instance of
+    interest refers to the sample that you want LIME to interpret as it can explain
+    how each feature contributes to the sample prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The key point that differs LIME from SHAP is that LIME focuses on local interpretability,
+    explaining the impact that one prediction has, while SHAP is more global, interpreting
+    the model with respect to the entire model and dataset. Additionally, LIME has
+    a feature called SP-LIME, which lets the model produce an explained subset of
+    the original dataset that would produce a global understanding of the model. Here
+    is a basic overview of LIME’s explanation process:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Choose one sample of interest that you would like to be analyzed and its prediction
+    explained by LIME.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Generate a perturbed dataset based on different sets of features that create
+    a representative subset of the data. The target of these features will be the
+    black box model’s prediction of these samples.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The samples are assigned a weight according to their distance or proximity to
+    the instance of interest.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Train a model that’s interpretable, such as LASSO or a decision tree, on the
+    perturbed dataset. LIME uses Ridge as a default model, but any sklearn-like model
+    objects can be passed in.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Explain predictions by analyzing the model output.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Although LIME shines in text analysis and image recognition, for the context
+    of this book, we will only explore its application to tabular data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LIME comes implemented in its own library. For consistency and comparison purposes,
+    we’re going to utilize LIME on the same dataset used previously in the “SHAP”
+    section. We can retrieve the dataset and define an AutoKeras model (Listing [12-12](#PC12))
+    as described previously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the basic syntax for initializing a LIME explainable object
+    in Listing [12-13](#PC13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Most of the parameters are self-explanatory, but one might get confused with
+    the parameter “`class_name`”. Shown previously is a list of strings passed in
+    as the name of each class that LIME will use during its explanation. According
+    to our dataset, for a classification result of 0, it represents the person with
+    those demographic features has an income less than $50,000 per year and vice versa
+    for class 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After initialization, we can simply call the method `explain_instance` shown
+    in Listing [12-14](#PC14) to let LIME do all the heavy computation and explanation
+    work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here, the `data_row` parameter specifies which “sample of interest” LIME will
+    attempt to explain, the `model_fn` parameter provides the model prediction function
+    that LIME will use, and finally both `num_features` and `num_samples` give the
+    number of features and samples that LIME will consider during the explanation,
+    respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since the Keras `model.predict` function only returns the probability of the
+    predicted class in binary classification, LIME only displays the influence that
+    the various features had on that specific classified class. For a better visual
+    and interpretation, we can create a custom prediction function, which returns
+    both the probability for the predicted class and the probability for the other
+    class by subtracting the returned value from 1 (Listing [12-15](#PC15)). Then,
+    the function is simply passed into the `predict_fn` parameter. As mentioned previously,
+    the base, interpretable model is set to Ridge, but it can be changed with setting
+    the `model_regressor` parameter in the `explain_instance` method to a sklearn
+    model object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of L I M E explanation for the feature value dataset, prediction
+    probabilities, and income that is more than and less than 50000.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: LIME explanation for the fourth sample in the validation dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this prediction sample (Figure [12-12](#Fig12)), the confidence, or the probability
+    that the model has for “Income > 50k”, is 66% or 0.66\. Each feature on the bar
+    chart to the left is color-coded according to the color of each class. In the
+    bar graph, those orange “bars” that are extended to the left represent how much
+    those features contribute to classifying the target as “Income > 50k”. The preceding
+    table is colored-coded as well, with the value column depicting the value of the
+    feature and the color representing which feature contributes to which class’s
+    predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Furthermore, there’s a little trick in LIME that can improve the bar plot’s
+    quality. By calling `as_pyploy_figure` on the explanation, the object returned
+    will plot the bar plot as a matplotlib figure (Listing [12-16](#PC16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig13_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph with pyplot presents a local explanation for class income less than
+    50000\. Values are estimated. Data for relationship is a negative 0.10, and education
+    number is 0.15.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bar plot plotted with the pyplot method
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: The plot (Figure [12-13](#Fig13)) essentially displays the same information
+    as the smaller plot shown in the first figure but with a better formatting and
+    a clearer comparison between the influence of each feature.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compared with SHAP, LIME is more popular in terms of presentation and used by
+    people who may be less familiar with the inner workings surrounding the model;
+    SHAP is more popular among professional data scientists. Although LIME isn’t necessarily
+    better than SHAP, but for quick interpretation of the model that comes with intuitive
+    visualizations, LIME is definitely the tool to go.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Activation Maximization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Activation Maximization^([3](#Fn3)) is a clever technique that can be used to
+    understand what components a network is specifically “looking for.” In standard
+    model training, we optimize the set of weights in the neural network such that
+    the difference between the prediction and the true output is minimized (or some
+    variation of this difference). In Activation Maximization, we hold the weights
+    fixed and optimize the input such that the activations in some selected weights
+    are maximized. That is, we perform gradient *ascent* to artificially construct
+    the optimal input to maximize a set of model activations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why is this valuable? Model activations are representations of what factors
+    the network considers during feed-forward prediction. Using Activation Maximization,
+    you can see which extreme cases “most satisfy” “conditions” or features the network
+    is “looking” for – and therefore implicitly understand how the network is interpreting
+    different features and patterns in your dataset broadly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The library `tf_keras_vis`, which can be installed with `pip install tf_keras_vis`,
+    can be used to execute Activation Maximization on Keras/TensorFlow models. We
+    begin by defining a *loss* – this allows us to specify the optimization objective.
+    We can return a tuple traveling along the output matrix diagonal, representing
+    the model outputs for each of the eight classes. Next, we define a `model_modifier`
+    that changes the last activation to a linear rather than softmax layer (Listing
+    [12-17](#PC17)). This makes the Activation Maximization procedure easier, since
+    it is more difficult to navigate the softmax layer than a set of independent linear
+    activations. Since the weights of the network itself are fixed, this does not
+    change the network’s fundamental predictive properties.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Additionally, `tf_keras_vis` implements Activation Maximization for image-based
+    neural networks (this is the dominant application of Activation Maximization),
+    but our data is tabular and therefore of a different spatial dimensionality. We
+    can address this by creating a new model that accepts data that is technically
+    in the shape of an image, reshaping it into tabular form, and then passing it
+    into our model (Listing [12-18](#PC18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: To run the Activation Maximization procedure, we pass in the model and the model
+    modifier function into the `ActivationMaximization` object (Listing [12-19](#PC19)).
+    Then, we define a `seed_input` that constitutes the initial “guess.” The Activation
+    Maximization procedure then iteratively updates this initial input across `steps,`
+    the number of steps, to maximize the loss defined by `loss`. In this case, we
+    are trying to find the inputs that are the “most defining” of each of the eight
+    classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once we have obtained the maps, we can visualize the inputs for each class (shown
+    in Listing [12-20](#PC20) and Figure [12-14](#Fig14)). We have obtained synthetically
+    constructed inputs that the network considers to be “the most representative”
+    of each class!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_12_Chapter/525591_1_En_12_Fig14_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 8 images. They present the resolution created by the activation maximization.
+    The images are labeled as target 0 to 7, respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualizations produced by Activation Maximization
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Of course, you’ll want to run this procedure multiple times, since the possible
+    space is very complex and the results are highly dependent upon the initialization.
+    The resulting synthetically constructed inputs can be analyzed to understand which
+    column values and/or column value groups are most characteristic of each class.
+    Moreover, you can run Activation Maximization on intermediate layers by replacing
+    the complete model with a submodel (as demonstrated previously).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this brief chapter, we discussed three deep learning interpretability methods:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: SHAP is a model-agnostic suite of interpretability methods that estimate the
+    individual contribution of each feature to the output of the neural network by
+    considering large numbers of feature subsets. SHAP also has adaptations to exploit
+    the gradients of neural networks.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: LIME is also a model-agnostic tool targeted toward model interpretation, especially
+    for tabular and text data. LIME utilizes a representative perturbed dataset and
+    produces explainable results by training an additional interpretable model. LIME
+    is generally used for quicker and more intuitive representation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Activation Maximization is a neural network–specific technique, in which the
+    input is optimized to maximize the activations in a certain layer of the neural
+    network. Multiple “optimal inputs” can be generated and compared to form an analysis
+    of what certain activations are “looked for” or are “triggered” by.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This chapter has just scraped the surface of deep learning interpretability,
+    to demonstrate where one might start to interpret their tabular deep learning
+    model. In addition to these three methods, we encourage you to explore other deep
+    learning interpretability methods developed for tabular contexts. A sample of
+    interesting papers is presented in the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Agarwal, R., Frosst, N., Zhang, X., Caruana, R., & Hinton, G.E. (2021). Neural
+    Additive Models: Interpretable Machine Learning with Neural Nets. *ArXiv, abs/2004.13912*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Chang, C., Caruana, R., & Goldenberg, A. (2021). NODE-GAM: Neural Generalized
+    Additive Model for Interpretable Deep Learning. *ArXiv, abs/2106.01613*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Liu, X., Wang, X., & Matwin, S. (2018). Improving the Interpretability of Deep
+    Neural Networks with Knowledge Distillation. *2018 IEEE International Conference
+    on Data Mining Workshops (ICDMW)*, 905–912.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Novakovsky, G., Fornes, O., Saraswat, M., Mostafavi, S., & Wasserman, W.W.
+    (2022). ExplaiNN: Interpretable and transparent neural networks for genomics.
+    *bioRxiv*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Radenović, F., Dubey, A., & Mahajan, D.K. (2022). Neural Basis Models for Interpretability.
+    *ArXiv, abs/2205.14120*.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Ranjbar, N., & Safabakhsh, R. (2022). Using Decision Tree as Local Interpretable
+    Model in Autoencoder-based LIME. *2022 27th International Computer Conference,
+    Computer Society of Iran (CSICC)*, 1–7.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Richman, R., & Wüthrich, M.V. (2021). LocalGLMnet: Interpretable deep learning
+    for tabular data. *DecisionSciRN: Methods of Forecasting (Sub-Topic)*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This concludes the last part and chapter of the book.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Closing Remarks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We have covered a tremendous amount of ground throughout this book. We began
+    in Part 1 with a thorough overview of machine learning and the data preprocessing
+    pipeline; key machine learning concepts and principles; several classical machine
+    learning algorithms, including Gradient Boosting models – deep learning’s dominant
+    competitor on tabular data problems; different data storage and delivery structures;
+    and a variety of data encoding and transformation techniques. In Part 2, we built
+    an expansive knowledge of deep learning across five chapters – artificial neural
+    networks, convolutional neural networks, recurrent neural networks, attention
+    and transformations, and tree-based neural networks. This part covered dozens
+    of deep learning modeling approaches, applied to a variety of data types and contexts,
+    and explored almost 20 research papers. In Part 3, we further expanded our toolkit
+    not only to model tabular data but to pretrain models, develop noise- and perturbation-robust
+    models, generate tabular data, optimize the modeling pipeline, link together models
+    into ensembles and self-aware systems, and interpret models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We hope that this book has been thought-provoking to those looking to better
+    understand the role of deep learning in tabular data and a helpful resource to
+    those looking to use deep learning in their respective domains. The guiding principle
+    at the forefront of this book was accessibility, and we hope the explanations,
+    diagrams, code, and research walk-throughs supported this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As the problems we face become more advanced and the data we collect from them
+    become correspondingly more intricate and complex, we find a greater divergence
+    – rather than convergence – in problems and the models that we use to approach
+    them. Thus, the question of “which model performs the best on tabular data” –
+    while admittedly being an efficient question – is a question that already shapes
+    its own obscured answer. We should always keep our minds open and our fingers
+    agile, ready to acquire, test, and synthesize the old and the new. We must strive
+    to be driven less wholly by necessary but restrictive benchmarks and more by the
+    diversity of the problem multiverse.
+  prefs: []
+  type: TYPE_NORMAL

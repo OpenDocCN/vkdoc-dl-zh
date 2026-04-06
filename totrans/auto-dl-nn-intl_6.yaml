@@ -1,0 +1,1386 @@
+- en: 6. Model Pruning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Deep learning models have reached significant success in many real-life problems.
+    A lot of devices use neural networks to perform everyday tasks. However, complex
+    neural networks are computationally expensive. And not all devices have GPU processors
+    to run deep learning models. Therefore, it would be helpful to perform model compression
+    methods to reduce the model size and accelerate model performance without losing
+    accuracy significantly. One of the main model compression techniques is model
+    pruning. Pruning optimizes the model by eliminating some model weights. It can
+    eliminate a significant amount of model weights with no negligible damage to model
+    performance. A pruned model is lighter and faster. Pruning is a straightforward
+    approach that can give nice model speedup results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NNI provides a toolkit to help users to execute model pruning algorithms. `NNI
+    2.7` version (which is used in this book) supports pruning for the PyTorch framework
+    only. This chapter will study several pruning algorithms and learn how to apply
+    them in practice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What Is Model Pruning?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Complex neural networks have a lot of layers and many weights. ResNet, DenseNet,
+    and VGGNet take up tens of megabytes to store their weights. Developers often
+    use these architectures to solve many practical problems. But the chosen architecture
+    is often too redundant for the problem being solved, and it contains a lot of
+    extra weights and even extra layers. In practice, you can remove excess weights
+    from the model, which will significantly speed up calculations in the neural network.
+    Sometimes, deep learning models perfectly fit the problem, and they do not have
+    explicit redundancy. Still, they are too computationally heavy to be deployed
+    to the special device they need to act in. In such cases, developers may sacrifice
+    the model accuracy for acceleration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s describe how the pruning algorithm acts:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We take a ready-to-use pre-trained deep learning model we want to prune.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Pruning algorithm eliminates (prunes) several weights in the neural network.
+    By eliminating, we mean that the algorithm zeroes these weights. Zeroing the weights
+    significantly speeds up calculations since multiplying by 0 is always 0, and there
+    is no need to do complex calculations. Usually, candidates for elimination are
+    already close to zero, so their zeroing should not seriously affect the model’s
+    performance.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Pruned model is retrained (fine-tuned) on the same dataset as the original model,
+    but zeroed weights no longer change their values and remain zero all the time.
+    During retraining, active weights try to take over the functions of the removed
+    neurons to continue solving the problem successfully.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Figure [6-1](#Fig1) illustrates the pruning algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning algorithm application
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruning is a great technique, but sometimes, it degrades the model. It is not
+    always possible to remove weights without compromising the model’s accuracy in
+    complex neural networks. However, model accuracy degradation can be minimal, and
+    we’ll see further that it is possible to compress a model by 80% with almost no
+    accuracy decrease.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Term **fine-tuning** means retraining technique that trains the unpruned weights
+    from their final trained values. In this chapter, we will use the terms **fine-tuning**
+    and **retraining** interchangeably.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LeNet Model Pruning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The best way to understand the concept of model pruning is to put it into practice.
+    Let’s get back to the well-known LeNet model and the classic MNIST problem. The
+    LeNet model design is shown in Listing [6-1](#PC1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: ch6/model/pt_lenet.py.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`PtLeNetModel` provides familiar model design:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we add two helper methods that we will need in the future: `count_total_weights`
+    and `count_total_weights`. `count_nonzero_weights` is a helper method that counts
+    the number of zeros in the neural network’s weights, and `count_total_weights`
+    counts the total number of neural network weights.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The trained `PtLeNetModel` is saved in the following file: ch6/data/lenet.pth`.`
+    It shows `0.991` accuracy on the test MNIST dataset. Listing [6-2](#PC3) demonstrates
+    how original pre-trained `PtLeNetModel` can be pruned.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Making script reproducible:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading pre-trained `PtLeNetModel`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading MNIST dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Storing `accuracy` of original model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Storing nonzero weights of original model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we are pruning original model with one-shot `LevelPruner` (pruning algorithm
+    internals will be explained in the next section):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Compressing the original model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Fine-tuning (retraining compressed model):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Since the compressed model is fine-tuned, let’s visualize retraining progress:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualization result is shown in Figure [6-2](#Fig2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: LeNet retraining progress
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [6-2](#Fig2) illustrates fine-tuning of the compressed model. Original
+    trained LeNet model has 59,786 nonzero weights, and compressed LeNetModel has
+    12,107 nonzero weights only. At the beginning of the retraining, the compressed
+    model is less accurate than the original model. But after 10 training epochs,
+    the compressed model achieves the same accuracy as the original model, having
+    only 12,107 active weights out of 59,780\. Obviously, the original LeNet model
+    was redundant and could be replaced by pruned one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Finally, let’s save the pruned model for future usage:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: NNI provides a special wrapper that allows loading pruned models `nni.compression.pytorch.ModelSpeedup`
+    and use them after. In Listing [6-3](#PC14), we load pruned LeNet model and analyze
+    its characteristics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Please install the following package to run this script: `torchsummary`.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading pruned model using `ModelSpeedup` wrapper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s check the accuracy of the pruned model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The pruned model returns `0.9916` accuracy, the same as the original unpruned
+    model. Also, the pruned model actually shrinks its layers deleting unnecessary
+    weights. The pruned model is less than the original one, and let’s examine the
+    difference between them:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Table [6-1](#Tab1) compares original model and pruned one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original and pruned model comparison
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | OriginalOutput Shape | OriginalSize | PrunedOutput Shape | PrunedSize
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-1` | `[16,24,24]` | `416` | `[14,24,24]` | `364` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-2` | `[32,20,20]` | `12,832` | `[32,20,20]` | `11,232` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-3` | `[32,6,6]` | `25,632` | `[30,6,6]` | `24,030` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-4` | `[64]` | `18,496` | `[61]` | `16,531` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-5` | `[32]` | `2,080` | `[25]` | `1,550` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-6` | `[10]` | `330` | `[10]` | `260` |'
+  prefs: []
+  type: TYPE_TB
+- en: As shown in Table [6-1](#Tab1), pruned model shrinks `Conv2d-1`, `Conv2d-3`,
+    `Linear-4`, and `Linear-5` layers. And this is the primary goal of the pruning
+    algorithm, which eliminates redundancy from the neural network. The earlier example
+    illustrates how we can prune a pre-trained model using NNI. Let’s move forward
+    and study pruning algorithms in more detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-Shot Pruners
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'One-shot pruning algorithms prune weights only once based on a specific metric.
+    Usually, pruned weights are close to zero, and pruner suggests that their removal
+    will not impact the model’s accuracy. One-shot pruners act the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruner accepts a model and selects active weights and the weights to be pruned.
+    As a result, the pruner returns a model and a binary mask, where 1 means active
+    weight and 0 means weight to be pruned.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Original model is speeded up by pruning redundant weights resulting a compressed
+    model.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Fine-tuning algorithm retrains the compressed model to adjust its weights.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This pruner flow algorithm is depicted in Figure [6-3](#Fig3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-shot pruning
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can define the main steps to implement one-shot pruning algorithms using
+    NNI the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Load a pre-trained model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Initialize pruner
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Compress original model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Retrain compressed model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Save compressed model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Load and speed up compressed model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '**Step 1**. Model loading is a native PyTorch operation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 2**. To initialize the pruner, we must specify the pruner configuration
+    (we will study the pruner configuration in the next section). Here is an example
+    of pruner initialization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 3**. Pruner compresses original model applying its logic to reduce model
+    weights:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 4**. Compressed model is being retrained according to the same training
+    algorithm as the original one:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 5**. Compressed model is stored using `pruner.export_model` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 6**. Saved model is loaded and wrapped by `nni.compression.pytorch.ModelSpeedup`
+    class:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: And that’s it. The compressed model is ready to use! Let’s create a helper script
+    that will apply steps 2–6 we defined earlier. Listing [6-4](#PC24) applies a pruning
+    algorithm and returns a compressed model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`oneshot_prune` method accepts the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`model_original:` Pre-trained original model'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`pruner_cls:` Pruner class'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`pruner_config:` Pruner configuration'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`train_ds:` Train dataset'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`epochs:` Number of training epochs'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`model_input_shape:` Shape of model input'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 2**. Initializing pruner:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 3**. Compressing original model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 4**. Retraining compressed model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 5**. Saving compressed model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Step 6**. Loading and speeding up compressed model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: Fine. Since we know how to apply one-shot pruning algorithms, let’s go further
+    and study some of them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruner Configuration
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Each pruner accepts configuration, which specifies its internal logic. Pruner
+    configuration is a `List` of `Dict` entries, and each entry specifies a pruning
+    strategy applied to a specified layer set. Table [6-2](#Tab2) describes pruner
+    configuration parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pruner configuration
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Key | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `sparsity` | Specifies the sparsity for each layer in this configuration
+    entry to be compressed. If `sparsity = 0.8`, then 80% of layer weights will be
+    pruned, and 20% will be left active |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `op_types` | Specifies what types of operations to compress. `''default''`
+    means following the algorithm’s default setting. All supported module types for
+    PyTorch are defined package file `nni/compression/pytorch/default_layers.py:``''Conv1d'',
+    ''Conv2d'', ''Conv3d'', ''ConvTranspose1d'', ''ConvTranspose2d'', ''ConvTranspose3d'',
+    ''Linear'', ''Bilinear'',   ''PReLU'', ''Embedding'', ''EmbeddingBag''` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `op_names` | Specifies names of operations to be compressed. If this field
+    is omitted, operations will not be filtered by it |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `op_partial_names` | Operation partial names to be compressed. If `op_partial_names
+    = ''fc_''`, then all layers with the following mask `''fc_*''` will be pruned
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `exclude` | Default is False. If this field is True, it means the operations
+    with specified types and names will be excluded from the compression |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Here is an example of the pruning configuration of a one-shot pruner applied
+    to the LeNet model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'If you don’t want to specify a special pruning strategy for each layer type,
+    then you can use the following configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Level Pruner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Level pruner is a straightforward one-shot pruner. Sparsity level means prune
+    ratio, that is, `sparsity=0.7` means that 70% of model weight parameters will
+    be pruned. Level pruner sorts the weights in the specified layer by their absolute
+    values. And then mask to zero the smallest magnitude weights until the desired
+    sparsity level is reached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Level pruner is applied the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s apply `LevelPruner` to prune the LeNet model using Listing [6-5](#PC34).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading pre-trained model and MNIST dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will prune `Conv2d` layers with `0.8` sparsity and `Linear` layers with `0.6`
+    sparsity. Also, we will exclude the final classifier linear layer `fc3` from pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining pruner:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Compressing original model using `LevelPruner`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualizing prune mask:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [6-4](#Fig4) shows the mask of a pruned model. We see that the mask leaves
+    40% active weights for linear layers and 20% active weights for convolutional
+    layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: LevelPruner active weights
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Comparing original model and compressed one:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: The original model has `0.991` accuracy, and the compressed one has the same
+    `0.991` accuracy. Table [6-3](#Tab3) compares the architectures of original and
+    compressed models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original and level pruned model comparison
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | Original OutputShape | OriginalSize | Pruned OutputShape | PrunedSize
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-1` | `[16,24,24]` | `416` | `[14,24,24]` | `364` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-2` | `[32,20,20]` | `12,832` | `[32,20,20]` | `11,232` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-3` | `[32,6,6]` | `25,632` | `[30,6,6]` | `24,030` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-4` | `[64]` | `18,496` | `[64]` | `17,344` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-5` | `[32]` | `2,080` | `[32]` | `2,080` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-6` | `[10]` | `330` | `[10]` | `330` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Total` |   | `59,786` |   | `55,380` |'
+  prefs: []
+  type: TYPE_TB
+- en: Level pruner compressed the original LeNet model without decreasing its accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: FPGM Pruner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: FPGM (Filter Pruning via Geometric Median) Pruner is a one-shot pruner that
+    prunes filters with the smallest geometric median. For more details, please refer
+    to the original paper “Filter Pruning via Geometric Median for Deep Convolutional
+    Neural Networks Acceleration” ([`https://arxiv.org/pdf/1811.00250.pdf`](https://arxiv.org/pdf/1811.00250.pdf)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'FPGM Pruner supports `Conv2d`, `Linear` as layers for pruning operation. FPGM
+    Pruner is applied the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here is an example of `FPGMPruner` application.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading pre-trained model and MNIST dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Pruning convolutional layers of original model using `FPGMPruner` with `0.5`
+    sparsity:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualizing prune mask:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [6-5](#Fig5) shows the mask of the compressed model. We see that the
+    mask leaves 50% active weights for `Conv2d` layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: FPGMPruner active weights
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Comparing original model and compressed one:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: Original model has `0.991` accuracy, while the compressed one has close accuracy
+    `0.9894`. Table [6-4](#Tab4) compares the architectures of original and compressed
+    models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original and FPGM pruned model comparison
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | OriginalOutput Shape | OriginalSize | PrunedOutput Shape | PrunedSize
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-1` | `[16,24,24]` | `416` | `[8,24,24]` | `208` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-2` | `[32,20,20]` | `12,832` | `[16,20,20]` | `3,216` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-3` | `[32,6,6]` | `25,632` | `[16,6,6]` | `6,416` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-4` | `[64]` | `18,496` | `[64]` | `9,280` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-5` | `[32]` | `2,080` | `[32]` | `2,080` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-6` | `[10]` | `330` | `[10]` | `330` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Total` |   | `59,786` |   | `21,530` |'
+  prefs: []
+  type: TYPE_TB
+- en: Table [6-4](#Tab4) shows that `FPGMPruner` compressed the original model very
+    heavily with almost no loss of accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: L1Norm and L2Norm Pruners
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: L1Norm Pruner and L2Norm Pruner are one-shot pruners that prune layers according
+    to *L*[*1*]*-norm* and *L*[*2*]*-norm*, respectively. For more details, please
+    refer to the original paper “Pruning Filters for Efficient ConvNets” ([`https://arxiv.org/pdf/1608.08710.pdf`](https://arxiv.org/pdf/1608.08710.pdf)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'L1Norm and L2Norm pruners support `Conv2d`, `Linear` as a layer for pruning
+    operation. `L1NormPruner` and `L2NormPruner` are applied the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here is an example of `L2NormPruner` application.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading pre-trained model and MNIST dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Pruning convolutional layers of original model using `L2NormPruner` with `0.7`
+    sparsity:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Visualizing prune mask:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [6-6](#Fig6) visualizes the mask of the compressed model. We see that
+    the mask leaves 30% active weights for `Conv2d` layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: L2NormPruner active weights
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'And let’s compare the architectures of the original and compressed model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: Original model has `0.991` accuracy, while the compressed one degrades to `0.98`
+    accuracy. Table [6-5](#Tab5) compares the architectures of original and compressed
+    models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original and L2Norm pruned model comparison
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | OriginalOutput Shape | OriginalSize | PrunedOutput Shape | PrunedSize
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-1` | `[16,24,24]` | `416` | `[5,24,24]` | `130` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-2` | `[32,20,20]` | `12,832` | `[10,20,20]` | `1,260` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-3` | `[32,6,6]` | `25,632` | `[10,6,6]` | `2,510` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-4` | `[64]` | `18,496` | `[64]` | `5,824` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-5` | `[32]` | `2,080` | `[32]` | `2,080` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-6` | `[10]` | `330` | `[10]` | `330` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Total` |   | `59,786` |   | `12,134` |'
+  prefs: []
+  type: TYPE_TB
+- en: Table [6-5](#Tab5) shows that L2Norm Pruner compressed the original model almost
+    five times, degrading from `0.991` to `0.98` accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iterative Pruners
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One-shot pruners are easy to use but have one major drawback. We must guess
+    the optimal sparsity values ​​in advance. We usually want to maximize model compression
+    without decreasing accuracy significantly. The natural solution would be to iterate
+    several sparsity values ​​to find the optimal one. This is exactly what iterative
+    pruners were designed for. Pruning algorithms iteratively prune weights during
+    optimization, which control the pruning schedule, including some automatic pruning
+    algorithms. After the iterative pruning algorithm completes all iterations, it
+    selects the best pruned model according to specified score (it is not a necessary
+    accuracy score). Figure [6-7](#Fig7) demonstrates iterative pruning in action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iterative pruning
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This section will examine two popular iterative tuners: linear pruner and AGP
+    pruner.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linear Pruner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Linear pruner is an iterative pruner. It will increase sparsity evenly from
+    zero during each iteration. For example, the final sparsity is set as 0.5, and
+    the iteration number is 5, and then the sparsity used in each iteration is [`0.1,
+    0.2, 0.3, 0.4, 0.5`].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`LinearPruner` is applied as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will detail the Iterative Tuner configuration parameters in the “Iterative
+    Pruner Configuration” section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: AGP Pruner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'AGP is an iterative pruner, in which the sparsity is increased from an initial
+    sparsity value *s*[*i*] = 0 to a final sparsity value *s*[*f*] over a span of
+    *n* pruning iterations, starting at training step *t*[*0*] and with pruning frequency
+    Δ*t*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Figa_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: For more details, please refer to the original paper “Exploring the efficacy
+    of pruning for model compression” ([`https://arxiv.org/pdf/1710.01878.pdf`](https://arxiv.org/pdf/1710.01878.pdf)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`AGPPruner` is applied as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will detail the Iterative Tuner configuration parameters in the “Iterative
+    Pruner Configuration” section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iterative Pruner Configuration
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Linear pruner and AGP pruner configuration is presented in Table [6-6](#Tab6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Iterative pruner configuration
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Key | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `model` | Original PyTorch model |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `config_list` | Pruning configuration |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `pruning_algorithm` | `(str)` Specifies pruning algorithm.Supported choices:
+    `level, l1, l2, fpgm, slim, apoz, mean_activation, taylorfo, admm` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `total_iteration` | `(int)` Total number of iterations |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `log_dir` | `(str)` Specifies log directory to save results. You can find
+    the best model `pth` files in this folder |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `keep_intermediate_result` | `(bool)` If keeping the intermediate result,
+    including intermediate model and masks during each iteration |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `finetuner` | `(Optional[Callable[[Module], None]])` Fine-tuner function
+    that retrains model after each pruning iteration |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `speedup` | `(bool)` If set True, speed up the model at the end of each iteration
+    to make the pruned model compact |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `dummy_input` | `(Optional[torch.Tensor])` If `speedup` is True, `dummy_input`
+    is required for tracing the model in speed up |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `evaluator` | `(Optional[Callable[[Module], float]])` Evaluate the pruned
+    model and give a score. If evaluator is None, the best result refers to the latest
+    result |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `pruning_params` | `(Dict)` Extra parameters for `pruning_algorithm` implementation
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: Iterative Pruning Scenarios
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section will study two common use cases for iterative pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Best Accuracy Under Size Threshold Scenario
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A common problem is when we need to compress a model not to exceed a specified
+    size threshold. In this case, it is necessary to choose the best model, which
+    will be less than the specified size threshold. Figure [6-8](#Fig8) illustrates
+    how this can be done using iterative pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Best accuracy under size threshold scenario
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s handle this scenario to find the best compressed LeNet model that fits
+    30,000 model size (original size is 59,786) using iterative `LinearPruner`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading original model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Specifying maximal sparsity for `Conv2d` and `Linear` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we need to define a method that calculates the model’s score. All models
+    whose size exceeds 30,000 will have a 0 score because we do not accept models
+    larger than the specified size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `LinearPruner` with `10` iterations and `L1Norm` pruning algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Running iterative compression cycle:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Receiving results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The best pruned model is saved in ch6/algos/iter:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now let’s analyze results returned by `LinearPruner`. First, let’s display
+    a sparsity of each layer of the best pruned model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: Table [6-7](#Tab7) shows the sparsity of the best pruned model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparsity of the best pruned model for best accuracy under size threshold scenario
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | Sparsity |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `conv1 (Conv2d)` | `0.19` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `conv2 (Conv2d)` | `0.003` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `conv3 (Conv2d)` | `0.16` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `fc1 (Linear)` | `0` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `fc2 (Linear)` | `0.085` |'
+  prefs: []
+  type: TYPE_TB
+- en: 'And finally, let’s compare the original and the best pruned model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: Original model has `0.991` accuracy, while the best compressed one that fits
+    30,000 size has `0.9913` accuracy. Table [6-8](#Tab8) compares the architectures
+    of original and compressed models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original and iteratively pruned by LinearPruner model comparison
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | OriginalOutput Shape | OriginalSize | PrunedOutput Shape | PrunedSize
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-1` | `[16,24,24]` | `416` | `[7,24,24]` | `182` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-2` | `[32,20,20]` | `12,832` | `[26,20,20]` | `4,576` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-3` | `[32,6,6]` | `25,632` | `[16,6,6]` | `10,416` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-4` | `[64]` | `18,496` | `[62]` | `8,990` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-5` | `[32]` | `2,080` | `[24]` | `1,512` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-6` | `[10]` | `330` | `[10]` | `250` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Total` |   | `59,786` |   | `25,926` |'
+  prefs: []
+  type: TYPE_TB
+- en: Great! We have significantly compressed the original LeNet model more than twice
+    without losing accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Minimal Size Above Accuracy Threshold Scenario
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Another case is to compress the model as much as possible while staying above
+    the specified accuracy threshold. Figure [6-9](#Fig9) illustrates how this can
+    be done using iterative pruning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_6_Chapter/526245_1_En_6_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Minimal size above specified accuracy threshold scenario
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [6-9](#PC65) handles this scenario to find the minimal compressed LeNet
+    model that gives > `0.98` accuracy (original accuracy is `0.991`) using iterative
+    `AGPPruner`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading original model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Specifying maximal sparsity for `Conv2d` and `Linear` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now we need to define a method that calculates the model’s score. All models
+    whose accuracy is lower than `0.98` will have a `-inf` score because we do not
+    accept such poor models. If the model performs better than `0.98`, then its score
+    is `(-count_total_weights)`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `AGPPruner` with `20` iterations and `L2Norm` pruning algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Running iterative compression cycle:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Receiving results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The best pruned model is saved in ch6/algos/iter:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now let’s analyze results returned by `AGPPruner`. First, let’s display a sparsity
+    of each layer of the best pruned model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: Table [6-9](#Tab9) shows the sparsity of the best pruned model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparsity of the best pruned model for minimal size above accuracy threshold
+    scenario
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | Sparsity |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `conv1 (Conv2d)` | `0.13` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `conv2 (Conv2d)` | `0` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `conv3 (Conv2d)` | `0.13` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `fc1 (Linear)` | `0` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `fc2 (Linear)` | `0.03` |'
+  prefs: []
+  type: TYPE_TB
+- en: 'And finally, let’s compare the original and the best pruned model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: Original model has `0.991` accuracy and 59,786 size, while the minimal model
+    that exceeds `0.98` accuracy has `0.9883` accuracy and 11,535 size. Table [6-10](#Tab10)
+    compares the architectures of original and compressed models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original and iteratively pruned by AGPPruner model comparison
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | OriginalOutput Shape | OriginalSize | PrunedOutput Shape | PrunedSize
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-1` | `[16,24,24]` | `416` | `[3,24,24]` | `78` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-2` | `[32,20,20]` | `12,832` | `[24,20,20]` | `1,824` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Conv2d-3` | `[32,6,6]` | `25,632` | `[7,6,6]` | `4,207` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-4` | `[64]` | `18,496` | `[61]` | `3,904` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-5` | `[32]` | `2,080` | `[21]` | `1,302` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Linear-6` | `[10]` | `330` | `[10]` | `220` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `Total` |   | `59,786` |   | `11,535` |'
+  prefs: []
+  type: TYPE_TB
+- en: Yes, the accuracy of the original model degraded from 0.991 to 0.9883, but we
+    compressed the original model more than five times! We made our model lightweight,
+    and now it is more attractive for economical usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this section, we have demonstrated the practical use of iterative pruners
+    in real-world cases. We see that iterative pruning significantly benefits practical
+    deep learning deployment problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NNI provides a rich set of pruning algorithms:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Slim Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Activation APoZ Rank Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Activation Mean Rank Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Taylor FO Weight Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ADMM Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Movement Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Lottery Ticket Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Simulated Annealing Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Auto Compress Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: AMC Pruner
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Please refer to the official documentation for more details: [`https://nni.readthedocs.io`](https://nni.readthedocs.io).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Pruning is an essential part of automated deep learning. It denotes the neural
+    network complexity problem. In addition to the fact that we need an accurate neural
+    network, we also need a lightweight neural network. We will always prefer a neural
+    network with 1M parameters over a neural network with 10M parameters if they have
+    the same accuracy. In this chapter, we have covered the basic principles of model
+    pruning using NNI. Model pruning is a significant direction of ​​neural network
+    optimization that allows the integration of machine learning models into simple
+    devices.
+  prefs: []
+  type: TYPE_NORMAL

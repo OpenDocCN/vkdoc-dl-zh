@@ -1,0 +1,2633 @@
+- en: 5. Applying Recurrent Structures to Tabular Data
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*I have to write in sequence and only in sequence.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Andrew Scott, Actor
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Chapter [4](525591_1_En_4_Chapter.xhtml) demonstrated the application of convolutional
+    neural networks both to images and signals (their “natural” data domain), as well
+    as to tabular data through clever tricks – soft ordering, DeepInsight, and IGTD.
+    This chapter will pursue a similar path of exploration: exploring the application
+    of *recurrent networks*, traditionally applied to sequences like text and signals,
+    to tabular data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This chapter opens with a discussion of the theory underlying recurrent neural
+    networks, with a focus on understanding the paradigm mechanics of the recurrent
+    operation and the three primary recurrent model designs: “vanilla” recurrent neural
+    networks (RNNs), Long Short-Term Memory (LSTM) networks, and Gated Recurrent Unit
+    (GRU) networks. Then, you’ll use these recurrent models in their “natural” data
+    domain with three key applications – text modeling, audio modeling, and time-series
+    modeling. Finally, similarly to the previous chapter, we will demonstrate multimodal
+    usage and methods of directly applying recurrent layers to tabular data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The last section in particular may seem foreign or controversial, just as the
+    last section of Chapter [4](525591_1_En_4_Chapter.xhtml) may have seemed counterintuitive.
+    We encourage you to approach it with an open mind.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recurrent Models Theory
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In the upcoming sections, three different types of recurrent-based models are
+    introduced through visualization along with their mathematical theory. You will
+    acquire adequate foundation knowledge to apply the theories into modeling tabular
+    and sequence data using recurrent models in Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why Are Recurrent Models Necessary?
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In the previous chapter, we learned that standard ANNs have difficulties handling
+    flattened image data because of the sheer number of trainable parameters that
+    the network may contain. As a result, CNNs are introduced to scale down parameter
+    size by replacing fully connected layers with 2D convolutions; this also allows
+    the network to search for 2D patterns and structures that feed-forward networks
+    cannot recognize.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another common type of tabular data is sequence-based data. Generally, this
+    refers to datasets that are in a particular order, with each sample having a specific
+    label indicating its position in the data. One common example is the time-series
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Say that we are given the task of predicting an arbitrary company’s stock prices
+    over time. Each sample contains various features containing information about
+    the stock each day, such as its high, low, open, and close prices. Then, each
+    sample is assigned a timestamp representing the day the data is obtained. We’re
+    asked to predict the stock’s opening price at the next future timestamp (Figure
+    [5-1](#Fig1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration consists the details of samples in table format. It exhibits
+    the sample's date, high, low, and volume. High and low refer to prices.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example of time-series/sequential data
+  prefs: []
+  type: TYPE_NORMAL
+- en: With a normal, fully connected network, one might propose the solution of having
+    the next day’s opening price as the target for the previous day’s data and dropping
+    the last data row (since it wouldn’t be possible for the previous data row to
+    have a target as there are no future data points assuming that the dataset is
+    arranged chronologically). Then, treating each row as one single training sample,
+    we can pass in the dataset to a fully connected network as a regression task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Despite this seemingly viable workaround to the problem, using a standard ANN
+    for time-series prediction in this fashion does raise a few issues. When each
+    timestamp and associated data are treated as a single sample, the entire data
+    is shuffled during training or cross-validation across multiple folds. Shuffles
+    are applied to the dataset prior to cross-validation for more robust results.
+    However, shuffling can result in look-ahead in the case of time-series data where
+    data ordering is not arbitrary. The model may see future data for training and
+    past data for validation during one fold while seeing past data in training and
+    future data for validation in another fold. Due to the inherent chronological
+    relationship between samples in time-series datasets, it is most likely that future
+    data points can hint at the trend in the past. After all, time-series data is
+    ordered chronologically, and each row of data is built from or in relation to
+    the previous sample. This is commonly referred to as look-ahead or data leakage,
+    causing surprisingly outstanding but false validation scores (Figure [5-2](#Fig2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A process of 4-fold cross-validation of data in chronological order exhibits
+    validation and training. An arrow from training to validation indicates the validation
+    of past data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example of data leakage
+  prefs: []
+  type: TYPE_NORMAL
+- en: Furthermore, time-series data is usually structured where each new sample in
+    the time span is affected by the sample or samples in past timestamps. Simply
+    training and making predictions from one row of data can be insufficient since
+    data in previous rows can contain valuable information for predicting the current
+    sample. Instead of processing and treating each sample individually, recurrent
+    networks process each sample at the current timestamp along with signals learned
+    from past timestamps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although RNNs may be best suited for sequence and time-related data, we can
+    also take advantage of the unique structure and improve its performance over standard
+    ANNs on tabular modeling tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recurrent Neurons and Memory Cells
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: RNNs typically solve problems that involve sequence modeling or predictions
+    in time-series datasets. The stock prediction example mentioned previously can
+    be categorized into time-series modeling. The autocomplete feature in most document
+    and writing software attempts to predict the next word that the user will type
+    based on their previous behaviors. Tasks like these are referred to as sequence
+    modeling. RNN relies on the concept that it can obtain and store information not
+    only from the current sample but data from the previous sample relative to the
+    ordering of the dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the simplest examples of sequence modeling can be a literal sequence
+    prediction. Given a sequence set, the goal is to predict the next term according
+    to what was presented (Figure [5-3](#Fig3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence of data is represented. Given, open bracket 1, 3, 5, 7, close bracket.
+    Next term(s), question mark, open bracket, 3, 5, 7, question mark, question mark,
+    ellipses close bracket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example of sequence data
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For readers, it’s simple to recognize the pattern: each preceding term is 2
+    less than the current term. We can obtain the next term by adding 2 to the current
+    number. We can discover the pattern because we have access to historical data
+    or numbers before the current term. RNN operates on a similar concept, utilizing
+    “memory cells” that can essentially remember previously fed-in information stored
+    for later predictions.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A normal ANN neuron, shown in Figure [5-4](#Fig4), receives the input and outputs
+    a value processed by the weights associated with the neuron.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A Process of A N N neuron: Three same inputs, asterisk weight leads to f of
+    x, sigma x subscript 1, weight subscript 1, plus bias produces the output.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: ANN neuron example
+  prefs: []
+  type: TYPE_NORMAL
+- en: RNN, however, introduces a loop within the neuron to achieve a “memory” effect
+    that can include data from previous timestamps during the prediction or training
+    of the current sample. Using the example from earlier, the entire sequence, from
+    elements 0 to 4, would be inputted into the network as a sequence. The first element
+    is processed, and an output is produced. Since there’s no previous timestamp on
+    which the model can base its prediction, the calculation and process would be
+    the same as a standard ANN. Next, the second element would be passed into the
+    same neuron, retaining its state from the previous element’s pass-through (meaning
+    that the parameters are not updated). The output from the first element would
+    be inputted along with the second element. Reasonably, the third element would
+    be inputted along with the prediction or the output from the second element, whose
+    prediction was based on the output of the first element. In a sense, the looping
+    process mimics a chain connecting every element's influence in past timestamps
+    (Figure [5-5](#Fig5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A Process of recurrent neuron: The input open bracket, 1, 3, 5, 7, ellipses
+    close bracket leads to f of x, output feeding back into the input and produces
+    the final output.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recurrent neuron example
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once the neuron reaches the last element to make its final prediction for the
+    next unknown term, not only samples at the current timestamp will be given, but
+    also an aggregation of all past timestamps’ influence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For a more visual and intuitive representation, we can attempt to “unwrap” a
+    recurrent neuron into a link of multiple aggregations or calculations done on
+    a single neuron (Figure [5-6](#Fig6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 images. First image. Input open bracket 1, 3, 5, 7, ellipses close bracket
+    leads to f of x output feeding back into input and produces the final output.
+    Second image. Input t minus 1 and output at t minus 1 leads to input at t. Input
+    at t and output at t leads to input at t plus 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example of an “unrolled” recurrent neuron
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will denote the current timestamp as *t*, the previous timestamp as *t* − 1,
+    and the next timestamp (the term that the model is tasked to predict) as *t* + 1\.
+    When the sequence of terms is fed into the model, the term at *t* − 1 is inputted,
+    and an output is produced from it. Then, an aggregation between the term at timestamp
+    t and the output from *t* − 1 is fed into the same neuron. We vaguely use “aggregation”
+    here, but the details of how to “combine” hidden states and inputs from the current
+    timestamp will be explained in the next section. The output of that calculation
+    using features *t* and memory from term *t* − 1 would then become the final prediction
+    for the next term in the sequence. This process continues for sequences with more
+    than two terms as historical data in the same fashion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The idea of a “memory neuron” or “memory cell” by utilizing a loop predict sequence
+    can be easily expanded into layers stacked with multiple of these “memory cells”
+    (Figure [5-7](#Fig7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration represents the process of recurrent neurons. Input data passes
+    through three layers of output from previous timestamp and produces the final
+    output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recurrent neurons in layers
+  prefs: []
+  type: TYPE_NORMAL
+- en: These work the same way as single neurons; instead of one output, layer outputs
+    from previous timestamps are passed back into the layer along with the following
+    input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The feed-forward operation in RNNs is exactly like what was shown previously
+    since making a prediction requires a forward pass through the network. However,
+    backpropagation in RNNs is slightly different from standard ANN backpropagation
+    since multiple inputs and outputs are processed through a neuron retaining the
+    same parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the clarity of terms here, the “memory” outputted from the model based on
+    the previous timestamp is usually referred to as the “hidden state” of the recurrent
+    neuron or the memory cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backpropagation Through Time (BPTT) and Vanishing Gradients
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Backpropagation Through Time, or BPTT, as the name suggests, is the algorithm
+    for backpropagation in RNN dealing with sequential data such as time series. RNNs
+    cannot adapt to the standard ANN backpropagation algorithm since different timestamps
+    within one neuron are not considered. BPTT not only adjusts parameters based on
+    the influence from the current timestamp but also takes account of what had happened
+    before the timestamp. Remember that the output (whether it’s a new hidden state
+    or the final output) computed at the current timestamp does not entirely rely
+    on the past results; new features at that time are also passed into the model.
+    Thus, BPTT only partially considers the “influence” that past hidden states have
+    on the final output. Consider the following representation of an unrolled RNN
+    neuron in Figure [5-8](#Fig8). To simplify matters, the model is tasked with predicting
+    only one output based on a string of sequences, commonly referred to as a many-to-one
+    prediction task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Three terms X subscript t minus 2, X subscript t minus 1, and X subscript t,
+    depict the outputs t minus 2, t minus 1, t, and final output through different
+    inputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: An unrolled RNN neuron with an input of a sequence containing three terms
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The hidden state of the recurrent neuron is determined by two factors: the
+    output from the last timestamp (the hidden state) and the current timestamp’s
+    input. Each input is associated with a different weight matrix. We can denote
+    the weights assigned to the current timestamp’s input as *W*[*x*] and the weights
+    assigned to process the hidden states as *W*[*h*]. The aggregation between the
+    hidden state and *X*[*t* − *n*] is defined by the equation *h*[*t* − 1] = *σ*(*W*[*x*]*X*[*t* − 1] + *W*[*h*]*h*[*t* − 2])
+    where *h* represents the hidden state produced by the aggregation and *σ* is the
+    activation function. Activation functions will be ignored in later calculations
+    for explanatory purposes and simplicity. The final output can be calculated by
+    Predictions = *Y* = *σ*(*W*[*y*]*h*[*t*]) .'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Suppose the sequence has three total timestamps, *t* − 2, *t* − 1, and *t*
+    as shown in Figure [5-8](#Fig8). Backpropagation computes the gradient of the
+    loss function with respect to all the parameters in the network or, in our example,
+    all the parameters in the recurrent neuron. In a many-to-one sequence prediction
+    task, typically, only the loss at the last timestamp would be calculated instead
+    of computing the loss separately for every timestamp. Denote the loss/cost function
+    as *L* where for each neuron, the loss is accumulated acrossall timestamps: ![$$
+    L=\sum \limits_{t=1}^T{L}_t $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq1.png).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Differentiating *W*[*y*] is straightforward since changing the value of it
+    only influences the final output: this differential is not associated with the
+    previous intertwined loops of the recurrent neuron. Its differentiation is as
+    such: ![$$ \frac{\partial L}{\partial {W}_y}=\frac{\partial L}{\partial Y}\frac{\partial
+    Y}{\partial {W}_y} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq2.png).
+    Here, *Y* represents the final output.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As their influence stretches across the entire sequence span, things get tricky
+    with *W*[*h*] and *W*[*x*]. We’d not only have to consider the changes in the
+    current timestamp but also those that occurred in previous timestamps. Consider
+    the following diagram where the inputs and their weights are truncated from the
+    picture for clarity (Figure [5-9](#Fig9)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A process of unrolled R N N without inputs. The outputs t minus 2, t minus 1,
+    and t are calculated with the influences W subscript h, and the final output is
+    through the W subscript y influence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unrolled RNN excluding the inputs
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Recall from Chapter [3](525591_1_En_3_Chapter.xhtml) that to “sum” up all the
+    influence that one parameter has, we need to find the affected values if the parameter
+    that we’re differentiating changes. For a normal ANN, the backpropagation process
+    for *W*[*h*] would be as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial L}{\partial {W}_h}=\frac{\partial L}{\partial Y}\frac{\partial
+    Y}{\partial {h}_t}\frac{\partial {h}_t}{\partial {W}_h} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: But remember changing the value of *W*[*h*] not only alters the value of the
+    current hidden state but also all previous “hidden states” or timestamps. Hence,
+    we can partially differentiate the loss function to previous hidden states. For
+    *t* − 1 the differentiation is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial L}{\partial Y}\frac{\partial Y}{\partial {h}_t}\frac{\partial
+    {h}_t}{\partial {h}_{t-1}}\frac{\partial {h}_{t-1}}{\partial {W}_h} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Similarly, for timestamp *t* − 2, the differentiation will be the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial L}{\partial Y}\frac{\partial Y}{\partial {h}_t}\frac{\partial
+    {h}_t}{\partial {h}_{t-1}}\frac{\partial {h}_{t-1}}{\partial {h}_{t-2}}\frac{\partial
+    {h}_{t-2}}{\partial {W}_h} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Finally, these are summed up to “add up” the influence that the weight *W*[*h*]
+    has on the neuron:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial L}{\partial {W}_h}=\left(\frac{\partial L}{\partial Y}\frac{\partial
+    Y}{\partial {h}_t}\frac{\partial {h}_t}{\partial {W}_h}\right)+\left(\frac{\partial
+    L}{\partial Y}\frac{\partial Y}{\partial {h}_t}\frac{\partial {h}_t}{\partial
+    {h}_{t-1}}\frac{\partial {h}_{t-1}}{\partial {W}_h}\right)+\left(\ \frac{\partial
+    L}{\partial Y}\frac{\partial Y}{\partial {h}_t}\frac{\partial {h}_t}{\partial
+    {h}_{t-1}}\frac{\partial {h}_{t-1}}{\partial {h}_{t-2}}\frac{\partial {h}_{t-2}}{\partial
+    {W}_h}\right). $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The preceding equation can be generalized to any neuron with any sequence length
+    as input, and it can be written compactly as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial L}{\partial {W}_h}=\frac{\partial L}{\partial Y}\frac{\partial
+    Y}{\partial {h}_t}\left(\sum \limits_{i=1}^t\frac{\partial {h}_t}{\partial {h}_i}\frac{\partial
+    {h}_i}{\partial {W}_h}\right) $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where the term ![$$ \frac{\partial {h}_t}{\partial {h}_i} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq3.png)
+    equals to the product between all adjacent timestamps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial {h}_t}{\partial {h}_i}=\prod \limits_{j=i+1}^t\frac{\partial
+    {h}_j}{\partial {h}_{j-1}} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The differentiation for *W*[*x*] is identical to *W*[*h*] as changing the parameter
+    *W*[*x*] influences all the values that *W*[*h*] influences when it changes. Simply
+    replace the *W*[*h*] term in the formula, and we can obtain the differentiation
+    rule for *W*[*x*]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial L}{\partial {W}_x}=\frac{\partial L}{\partial Y}\frac{\partial
+    Y}{\partial {h}_t}\left(\sum \limits_{i=1}^t\frac{\partial {h}_t}{\partial {h}_i}\frac{\partial
+    {h}_i}{\partial {W}_x}\right) $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In cases of many-to-many prediction tasks (Figure [5-10](#Fig10)), the process
+    of backpropagation is slightly different. Instead of retrieving the loss after
+    the final timestamp, for each output, the loss is calculated separately up to
+    that timestamp. The same concept applies to differentiation: we only differentiate
+    up to the timestamp of the current output with the loss calculated specifically
+    for that output. Then the steps are repeated for each output “branch.”'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Three terms, X subscript t minus 2, X subscript t minus 1, and X subscript t,
+    contain the inputs with weight W subscript x, produce the output with weight W
+    subscript y, and lead to each term through the weight W subscript h.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: A “many-to-many” prediction task represented in the “unrolled” RNN neuron
+  prefs: []
+  type: TYPE_NORMAL
+- en: Standard RNN architecture and neurons are only suitable for relatively short
+    sequences due to vanishing gradients. In standard ANNs, vanishing gradients occur
+    when the number of layers in a network becomes too deep. During backpropagation,
+    when derivatives are calculated, the closer we get to the front, the smaller the
+    gradient tends to be. This is due to the fact that each parameter is a function
+    of the updates made previously during backpropagation. In other words, one tiny
+    change in a parameter toward the front of the network can affect much more values
+    than changing a parameter toward the back of the network. As we accumulate the
+    gradient, the multiplication can likely reduce its value significantly to the
+    point where when the algorithm gets toward the front of the network, each parameter
+    would only update by a little or even close to none. This can lead to slow or
+    even impossible convergence. Usually, for networks with large numbers of hidden
+    layers, skip connections are implemented into the architecture, as seen in Figure
+    [5-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network of hidden layers with seven steps. Input, layer hash 1, layer hash
+    2, concatenation, layer hash 4, concatenation, and output. Layers 1 and 2 are
+    skip connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: A network with skip connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: Skip connections allow the network to pass gradients from the back directly
+    to layers ahead during backpropagation. Essentially, skip connections act as “transporters”
+    that transport gradients with more considerable influences into those layers where
+    the size of the gradient is extremely small, thus reducing the effect of vanishing
+    gradients. Also mentioned in Chapter [3](525591_1_En_3_Chapter.xhtml), batch normalization
+    can reduce the effect of vanishing gradients and activation functions such as
+    LeakyReLU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, in RNNs, the vanishing gradient problem is much more apparent and severe,
+    since not only does the number of hidden layers affect the size of the gradient
+    but also the length of the inputted sequence. As the size of sequences increases,
+    so does the number of terms in ![$$ \sum \limits_{i=1}^t\frac{\partial {h}_t}{\partial
+    {h}_i}\frac{\partial {h}_i}{\partial {W}_h} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq4.png)
+    . Again, this can lead togradients becoming extremely small. Adding on to the
+    large number of hidden layers that can also cause vanishing gradients, it makes
+    training standard RNNs with longer sequence data extremely difficult to impossible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LSTMs and Exploding Gradients
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Long Short-Term Memory (LSTM) networks effectively solve the issue as they use
+    a gated structure that allows them to directly access data stored in memory units
+    instead of traveling back through each hidden state. The key difference between
+    LSTMs and standard RNNs is that LSTMs have the ability to retain past information
+    for longer periods of time and they can more holistically understand sequences
+    rather than treating each value in the sequence as an independent point. Furthermore,
+    LSTMs keep track of larger patterns over longer periods of time; they can retrieve
+    information further back than simply the previous timestamp, thus the name “Long
+    Short-Term Memory.” On the other hand, past information stored in RNN tends to
+    be “forgotten” after processing longer sequences as information is lost at each
+    step. Compared with RNNs, LSTMs are generally better at discovering patterns that
+    span across long periods of time since, as mentioned before, they have access
+    to “long-term memories” – this allows them to base their predictions not only
+    on short-term data but also on overarching patterns discovered in the long run.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall that a standard RNN neuron receives the previous hidden state of the
+    neuron along with the current timestamp’s input. Then, an aggregation of the two
+    is applied and passed through an activation function to produce the next hidden
+    state (Figure [5-12](#Fig12)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of a standard R N N neuron depicts the output at t minus 1 pass
+    through the input at t, and produces the output at t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Standard RNN neuron
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, in an LSTM cell, an additional storage component that acts as long-term
+    memory – preserving information from further back in time – is fed along with
+    the hidden state. Shown in Figure [5-13](#Fig13) is a representation of an LSTM
+    cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig13_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of L S T M cell. Long-term memory at t minus 1 and hidden state
+    at t minus 1 pass through input at t and produces output at t through long-term
+    memory at t and hidden state at t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: LSTM cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the context of RNNs, the “short-term memory” in LSTM is the hidden state
+    of the neuron or information from the immediate past. The LSTM cell comprises
+    four components: the forget gate, the input gate, the output gate, and the update
+    gate. The forget gate and the update gate deal with the “memory” of the network,
+    such as deciding whether to forget or replace a piece of information stored in
+    long-term memory. The input and output gates control what is fed into the network
+    and what is outputted. For clarity, we can denote the long-term memory (the *cell
+    state*) as *C*, the short-term memory (the *hidden state*) as *h*, and the input
+    as *x*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The long-term memory runs through the entire neuron like a conveyor belt. Unlike
+    hidden states, it carries information without fading as the timestamp progresses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LSTM utilizes gates that control which information to be added to or removed
+    from the “conveyor belt” of the long-term memory. Gates in LSTMs are composed
+    of a sigmoid layer that restricts the amount of information that passes through
+    them. A value of zero means that nothing is passed through, while a value of one
+    means everything is passed through (Figure [5-14](#Fig14)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration represents a gate. Information passes through sigma with the
+    condition 0 less than or equal to out less than or equal to 1 and produces partial
+    information is let though.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of a gate where the amount of information that’s let pass is
+    decided by a number between 1 and 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first step of an LSTM is to decide what information will be thrown away
+    from the cell state or the long-term memory *C*[*t* − 1], based on the inputs.
+    The previously hidden state, *h*[*t* − 1], and the current timestamp’s input,
+    *x*[*t*], are used to train a forget gate layer *f*[*t*] (Figure [5-15](#Fig15)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the forget gate. Long memory at t minus 1 and hidden state
+    of the input at t minus 1 via the layer f subscript t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Forget gate and long-term memory
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The forget gate outputs a value between 0 and 1 squished by the sigmoid activation
+    function; these are multiplied by the cell state. Intuitively, a value closer
+    to 0 will tell the network to “forget” most parts of the current cell state and
+    vice versa. In the forget gate layer, both *h*[*t* − 1] and *x*[*t*] are associated
+    with the same weight, *W*[*f*]. The output of *f*[*t*] is determined from the
+    following equation: *f*[*t*] = *σ*(*W*[*f*] ∙ [*h*[*t* − 1], *x*[*t*]] + *b*[*f*]).
+    Here, *b*[*f*] is the bias of the layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next step is creating new information to add to the long-term memory. Again,
+    the amount of information and its values are calculated based on the hidden state
+    and the current timestamp’s inputs. Before producing any new long-term memories,
+    the LSTM cell computes how many of these “memories” will be updated. This is accomplished
+    using the exact mechanism as the forget gate by introducing an input gate (Figure
+    [5-16](#Fig16)). Values between zero and one are produced with the equation *i*[*t*] = *σ*(*W*[*i*] ∙ [*h*[*t* − 1],
+    *x*[*t*]] + *b*[*i*]).Then a vector of possible candidate values, ![$$ {\overset{\sim
+    }{C}}_t $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq5.png),
+    is generated. Thus, another layer of weights and biases are trained to produce
+    these possible “new memories”: ![$$ {\overset{\sim }{C}}_t=\mathit{\tanh}\left({W}_c\bullet
+    \left[{h}_{t-1},{x}_c\right]+{b}_c\right) $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq6.png).
+    Note that the hyperbolic tangent activation function is used to restrict output
+    values between –1 and 1.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig16_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input gate. Long-term memory at t minus 1 and hidden
+    state at t minus 1 through the input at t. The input gates are i subscript t and
+    C over infinity subscript t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Input gate and new memories
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With all this work done on creating and calculating long-term memories, it’s
+    finally time to update the cell state *C*[*t* − 1] into the new cell state *C*[*t*].
+    This represents the new long-term memory of the neuron (Figure [5-17](#Fig17)).
+    The new cell state is simply a linear combination of the terms we’ve calculated
+    before: ![$$ {C}_t={f}_t\ast {C}_{t-1}+{i}_t\ast {\overset{\sim }{C}}_t $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq7.png)
+    . For a better understanding of this equation, treat it as a weighted average
+    between the old memory *C*[*t* − 1] and the newly calculated memory ![$$ {\overset{\sim
+    }{C}}_t $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq8.png)
+    where its weights are *f*[*t*] and *i*[*t*], respectively.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig17_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the updated gate. Long-term memory at t minus 1 and hidden
+    state at t minus 1 through the input at t, produce long-term memory at t and hidden
+    state at t. The input gates are f subscript t, i subscript t, and C over infinity
+    subscript t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Updating the long-term memory
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The final step in the process is generating a prediction along with the next
+    hidden state (not the cell state since that was already done previously). It will
+    be based on a partial version of the current, updated cell state. Again, a gate
+    is implemented to decide which part of the cell state to use for prediction and
+    which are thrown out. An output gate layer is trained on *h*[*t* − 1] and *x*[*t*],
+    fed through the gate with a sigmoid function: *o*[*t*] = *σ*(*W*[*o*] ∙ [*h*[*t* − 1],
+    *x*[*t*]] + *b*[*o*]). The current cell state is put through the tanh activation
+    function and finallymultiplied with the output from the output gate: *h*[*t*] = *o*[*t*] ∗  tanh (*C*[*t*])
+    (Figure [5-18](#Fig18)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of an output gate. Long-term memory at t minus 1 and hidden
+    state at t minus 1 of the input at t produces long-term memory at t and hidden
+    state at t of the output at t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Output gate and updating the hidden state
+  prefs: []
+  type: TYPE_NORMAL
+- en: The hidden state *h*[*t*] will be the final output if the sequence reaches its
+    end but a hidden state if the sequence passed in does not reach its end. It can
+    also be both in a many-to-many prediction task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although LSTMs solved the vanishing gradient problem, the opposite can also
+    happen – gradients become exceedingly large, and the loss reaches infinity. Exploding
+    gradients can happen in both RNNs and LSTMs due to similar reasons as the vanishing
+    gradient problem. It can generally be reliably addressed by gradient clipping
+    during the gradient descent update. By restricting the gradient to be always between
+    two values, large gradient values will never cause infinite losses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gated Recurrent Units (GRUs)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Gated Recurrent Units, or GRUs, are a popular variant of LSTMs that reduces
+    the complexity of various gates and layers while keeping the performance of LSTMs
+    if not better. The key to eliminating vanishing gradients in GRU lies in its update
+    gate and reset gate, which function a bit differently compared with standard LSTMs.
+    The forget and input gates in LSTM are combined into one single component known
+    as the update gate. Following, the reset gate acts similar to the operation done
+    on the long-term memory in LSTM – deciding which piece or pieces of information
+    to forget and which gets carried on to the next timestamp. Shown in Figure [5-19](#Fig19)
+    is a representation of a single GRU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of G R U cell. Hidden state at t minus 1 of input at t produces
+    hidden state at t of output at t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of a GRU cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Entering the GRU are the current timestamp’s inputs and the hidden state obtained
+    from the previous timestamp. Note that GRU removed the long-term memory part of
+    LSTM. The update gate handles how much information the network is going to keep
+    from the previous hidden state. Instead of having the same parameters as the LSTM,
+    the input and the hidden state are both multiplied by their own individual trained
+    weights. The result of both is added up and then passed through the sigmoid activation
+    function: *z*[*t*] = *σ*(*W*^((*z*))*x*[*t*] + *U*^((*z*))*h*[*t* − 1]) where
+    *W*^((*z*)) is the weight matrix for the input *x*[*t*] and *U*^((*z*)) is the
+    weight matrix for the hidden state *h*[*t* − 1] . By implementing a gate here,
+    we can decide how much information are we going to keep and how much are we going
+    to pass on to the future (Figure [5-20](#Fig20)). The cleverness of GRU lies in
+    its ability to simply carry entire chunks of information from the past without
+    having the risk of vanishing gradients.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the update gate. Hidden state at t minus 1 of input at t
+    produces hidden state at t of output at t through the layer z subscript t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Update gate
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The reset gate decides how much information to forget. This essentially performs
+    the opposite job compared with the update gate (Figure [5-21](#Fig21)). The computation
+    of the reset gate value *r*[*t*] is the exact same compared to the update gate
+    simply trained with different weights: *r*[*t*] = *σ*(*W*^((*r*))*x*[*t*] + *U*^((*r*))*h*[*t* − 1]).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig21_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the reset gate. Hidden state at t minus 1 of input at t produces
+    hidden state at t of output at t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reset gate
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'That was all that we needed in terms of gates in GRU. The structure and complexity
+    of GRUs compared with LSTMs is much simpler. Now we can piece together the information
+    gathered through the update and reset gates, keeping some part of *h*[*t* − 1]
+    while forgetting other parts. This creates a new memory content specific to the
+    current timestamp, which will serve as an intermediate result to computing the
+    new hidden state. Again, like the preceding reset and update gates, we train two
+    distinct sets of weights for the current timestamp’s feature and the hidden state
+    or memory from the past timestamp. By taking the Hadamard product (element-wise
+    matrix multiplication) between the reset gate value and the hidden state, parts
+    of the hidden state are “forgotten”:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \overset{\sim }{h_t}=\tanh \left(W{x}_t+U\left({r}_t\bigodot {h}_{t-1}\right)\right)
+    $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The result of *U*(*r*[*t*] ⨀ *h*[*t* − 1]) is then summed with *Wx*[*t*] to
+    produce ![$$ \overset{\sim }{h_t} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq9.png).
+    Finally, the sum is passed through the hyperbolic tangent activation function
+    (Figure [5-22](#Fig22)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig22_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the update gate. Hidden state at t minus 1 of input at t
+    produces hidden state at t of output at t through the layer z subscript t, h subscript
+    t minus 1, r subscript t, x subscript t, and h over infinity subscript t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: Components to produce the new hidden states and output
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Lastly, the model needs to compute the hidden state that will be passed onto
+    the next timestamp, *h*[*t*]. This is simply calculated as a weighted average
+    between the current memory content ![$$ \overset{\sim }{h_t} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq10.png)
+    and the previous hidden state *h*[*t* − 1] passed in as input. Utilizing the update
+    gate that is trained to decide how much information is going to be kept from *h*[*t* − 1],
+    we can piece together *h*[*t*] as such: ![$$ {h}_t={z}_t\bigodot {h}_{t-1}+\left(1-{z}_t\right)\bigodot
+    \overset{\sim }{h_t} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq11.png).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The hidden state that’s passed onto the network also serves as an output. For
+    example, on the last timestamp when *h*[*t*] is produced, usually a nonlinear
+    activation function is applied and then a linear layer, which matches the shape
+    of the output. Unlike LSTM, there’s no specific step to separately calculate an
+    output. The hidden state and output in GRU are synonymous. GRU does not provide
+    as much memory manipulation as LSTM does with its long-term memory. However, in
+    most cases GRU performs similarly compared to LSTM, if not better, due to its
+    reduced training complexity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bidirectionality
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The standard recurrent, LSTM, and GRU layers all allow future timesteps in a
+    sequence to be informed by previous timesteps, to differing degrees of effectiveness
+    at differing levels of sophistication. However, in many cases we also want the
+    *past* to be informed by the *future*. For instance, consider the sentence “John
+    Doe – shaken and emotional – cried tears of joy.” If we are to process this in
+    the standard sequential paradigm of recurrent modeling, the model – up to the
+    last word – reasons that this sentence is associated with sadness, negative sentiment,
+    and so on. It will be very difficult for the last word to completely change the
+    character of the hidden (and cell, if using an LSTM) state. In reality, however,
+    that last word has a profound effect on how we interpret the beginning of the
+    sentence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To address this, we can use bidirectionality. A bidirectional recurrent layer
+    is really a stack of two recurrent layers; one is applied in the forward direction
+    and the other in the backward direction. The hidden states of each are then combined,
+    either through addition or concatenation. The output of the bidirectional recurrent
+    layer at any timestep, therefore, is informed by the entire sequence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is generally not necessary to stack multiple bidirectional recurrent layers
+    on top of each other in a stack. A bidirectional recurrent layer is often placed
+    as the first recurrent layer, which already produces a sequence informed by all
+    elements of the sequence, not just the timesteps before it. We can continue to
+    process the resulting sequence in a standard sequential manner in later layers
+    of the recurrent stack.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction to Recurrent Layers in Keras
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before diving into real-world applications of recurrent modeling, this section
+    serves as a brief introduction to the syntax of recurrent and sequence modeling.
+    Due to the special nature of recurrent networks and the way they handle data,
+    the syntax for modeling these situations is going to be a bit different from tabular
+    data models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preprocessing data for a recurrent model can be done in various ways depending
+    on the data type. Tabular data or time-series data are typically simpler to preprocess,
+    while language data is more difficult to deal with. This introductory section
+    will only cover the major components surrounding recurrent modeling, including
+    input shape and recurrent batch sizes. More advanced preprocessing techniques
+    will have to depend on the application. Such usages will be demonstrated to you
+    in later sections where recurrent models are applied in various scenarios.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can start with one of the simplest representations of a time-series dataset:
+    a list of numbers following a pattern. Specifically, we’ll use the sequence shown
+    in Figure [5-23](#Fig23).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig23_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence of numbers, lists 100 elements and depicts the patterns 1, 2, 3,
+    4, 1, 2, 3, 4, 1, 2, and ellipses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-23
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example sequence with length 100
+  prefs: []
+  type: TYPE_NORMAL
+- en: The pattern present in the sequence can easily be identified as it is plainly
+    the numbers 1, 2, 3, and 4 repeating in that order. The major difference between
+    a typical tabular data prediction task and time-series prediction is that in tabular
+    models sets of features are given corresponding to a different set of targets,
+    while this is not the case in time-series prediction. In a time-series prediction,
+    features are assigned to timestamps. When building the training set, chunks of
+    the data are split into past and future based on its timestamps where the past
+    is trained to predict the future. In a time-series prediction task, features and
+    labels come from the same variable/column of data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is a lot of flexibility in time-series prediction tasks in terms of how
+    many “labels” should be predicted or how much training data should be used. There’s
+    typically no set amount on how much training data should be portioned from the
+    dataset. However, one general rule of thumb is that the training data should be
+    large enough to capture any periodic trends relevant to predicting future trends.
+    This also applies to how much training data should be fed into the network at
+    one batch. In our preceding example, we might decide that the first 80 terms will
+    be used for training, while the last 20 terms will be testing or validation data
+    (Figure [5-24](#Fig24)). We can arbitrarily decide to feed in eight data points
+    during model training while only letting the model predict one output into the
+    future. The length of the sequence we feed in is referred to as the “window size.”
+    We can modify this value based on training results or domain knowledge to improve
+    model accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig24_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of timestamps contains training data and testing data. Training
+    data lists the number from 1 to 10, ellipses and testing data lists the numbers
+    81, 82, ellipses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of time-series training and testing data
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are multiple ways to set up a time-series dataset with Keras. One of the
+    easiest methods is using the `TimeseriesGenerator` class.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can start off by defining our preceding toy dataset in NumPy arrays. Then
+    we import the `TimeseriesGenerator` class from `tensorflow.keras.preprocessing.sequence`
+    as shown in Listing [5-1](#PC1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: When the class is instantiated, there are a few important parameters that should
+    be set. Like any other machine learning model or dataset class, we need to pass
+    in the features and targets. In our case, they would be the same NumPy array,
+    since our features and targets come from the same column of data. Next, the `length`
+    parameter defines the number of samples that the model will use as features to
+    predict values in the next timestamp. Finally, the `batch_size` represents the
+    number of time-series samples per batch. Usually for smaller datasets like ours,
+    a batch size of 1 will do. Listing [5-2](#PC2) defines a `TimeseriesGenerator`
+    with a length of 8 and a batch size of 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Remember that the length of the generator will be 8 less than our 80-element
+    training data since the last eight values do not have a corresponding target.
+    In the following code snippet, we imported the SimpleRNN, LSTM, and GRU layers
+    corresponding to RNN layers, LSTM layers, and GRU layers (Listing [5-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can first start off by constructing a basic RNN model with the Keras functional
+    API (Listing [5-4](#PC4)). Our dataset is a univariate time series, or in other
+    words, there’s only one feature. Thus, our input shape would be `(length, 1)`.
+    Notice here that we’re skipping the extra dimension created by batches; it’s not
+    necessary for the argument `input_shape`. The actual input shape would be `(batch_size,
+    length, n_features)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: By default, we compile the model with the Mean Squared Error loss function while
+    using the Adam optimizer. Note that our dataset is a generator instead of a plain
+    NumPy array. We need to call `fit_generator` instead of `fit` to initiate the
+    training process (Listing [5-5](#PC5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: For prediction on testing data, the process again is slightly different from
+    standard tabular model predictions. To achieve time-series prediction, we need
+    to use data from the immediate past. To put it more concisely, some of our future
+    prediction will be based on past predictions in previous timestamps. Shown in
+    the following diagram is the logic behind time-series forecasting (Figure [5-25](#Fig25)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig25_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A Training data from 73 to 80 predicts the number prediction 81\. Training plus
+    previous prediction data from 74 to 81 predicts the number prediction 82.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: Logic for time-series prediction
+  prefs: []
+  type: TYPE_NORMAL
+- en: In our example, we have a portioned test data, meaning that we can just create
+    a generator the same way as we instantiated the training one. Then we can obtain
+    predictions by simply passing in the test generator to `predict_generator`. However,
+    during real-time forecasting, we don’t have a “test dataset,” which can feed in
+    the correct values that precede the timestamp we’re going to predict. Our trained
+    model predicts one future value based on eight values from past timestamps. During
+    real-time forecasting, we need to get the last eight samples of data that precede
+    the timestamp of the sample that we’re going to predict. Then for predicting the
+    next sample, we will need seven samples from the past along with the sample that
+    we just predicted. This process continues until we have predicted our desired
+    number of timestamps. One drawback that comes with time-series forecasting is
+    that predictions tend to get more inaccurate as the timestamp moves forward. This
+    occurs since predictions in the far future will likely be based on predictions
+    in the near future. No model is perfect, and there may be slight errors to our
+    prediction for the near future, even if it might not make a difference at that
+    point. But as our prediction continues, the error will be amplified, thus making
+    predictions into the far future less accurate than one might expect from their
+    models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The usage of LSTM and GRU layers is like that of `SimpleRNN`; they can be used
+    the same way as `SimpleRNN` by replacing the layer call with LSTM or GRU (Listing
+    [5-6](#PC6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Additionally, to make any recurrent layer bidirectional, add a `keras.layers.Bidirectional`
+    wrapper around the layer. For instance, the following code creates a bidirectional
+    LSTM layer: `x = L.Bidirectional(L.LSTM(...))(x)`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return Sequences and Return State
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In all recurrent layers, there are two additional arguments that are crucially
+    important: `return_sequences` and `return_state`. For a better explanation, we
+    can refer to the LSTM diagram as an example shown in the previous section in Figure
+    [5-26](#Fig26).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig26_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of L S T M. Long-term memory at t minus 1 and hidden state at
+    t minus 1 of input at t produces long-term memory at t and hidden state at t of
+    output at t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-26
+  prefs: []
+  type: TYPE_NORMAL
+- en: A visual representation of LSTM taken from the “LSTMs and Exploding Gradients”
+    section
+  prefs: []
+  type: TYPE_NORMAL
+- en: By default, both `return_sequences` and `return_state` are set to false.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return sequences output all hidden states at every timestamp. Currently, with
+    the default parameter in the LSTM layer, only the hidden state at the last timestamp
+    is returned as the final output. Return sequences will return all hidden states
+    from every timestamp in the “unrolled” LSTM cell. Setting this parameter to true
+    allows for stacking LSTMs as it can “start off from before” by receiving the result
+    from the previous LSTM in the correct data and shape format. The following code
+    shows stacking LSTMs as well as the `model.summary` for a clearer understanding
+    of the LSTM output shape (Listing [5-7](#PC7)) . The second dimension of the LSTM
+    layer output is where the hidden state from every timestamp is stored, and it
+    serves as an input to the next LSTM layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: On the other hand, return state outputs the hidden state of the last timestamp,
+    equivalent to the output, twice, as two separate NumPy arrays. Then the long-term
+    memory, or the cell state of the last timestamp, is also outputted as a separate
+    NumPy array. In total, by setting the return state argument to true, three separate
+    NumPy arrays (two for RNN and GRUs since there’s no cell state) will be outputted.
+    Notice in `model.summary` there are three output shapes corresponding to three
+    output values (Listing [5-8](#PC8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Both `return_sequences` and `return_state` come in handy during complex RNN
+    manipulation as they can retrieve intermediate results also allowing RNN stacking,
+    which, when used correctly without stacking too many layers as it can cause exploding
+    gradients, can be very powerful. Such examples will be demonstrated in later sections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Standard Recurrent Model Applications
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this section, we will look at two important applications of recurrent models:
+    natural language and time series. Recall that recurrent layers can be reasonably
+    applied to most sequential data; natural language and time-series data are some
+    of the most common forms of data ordered along a sequential or temporal axis.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Natural Language
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In this subsection, we’ll consider the example of building recurrent models
+    for text classification/regression, a commonly encountered problem in a variety
+    of contexts. We will use a software product reviews subset of the US Amazon Reviews
+    dataset (Figure [5-27](#Fig27)), which is a large corpus of Amazon product reviews
+    and associated data like the star rating, the date of the review, the number of
+    upvotes, whether the review was associated with a verified purchase, etc. We will
+    try to build a model to predict the star rating of a review given the review text.
+    Such a model could be used to automatically extract a quantity metric of customer
+    satisfaction given customer input in natural language form, which could be used
+    to gauge customer satisfaction in contexts where natural language is available
+    but a concrete star rating isn’t (e.g., discussions about a product on social
+    media).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig27_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A dataset consists the review and rating of Amazon U S software in table format.
+    It contains three columns and 11 rows. The column headers are data or review underscore
+    body and data or star underscore rating.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-27
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Amazon US Software Reviews dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, we will vectorize the data by using ordinal encoding (Listing [5-9](#PC9),
+    Figure [5-28](#Fig28)). After a sequence is converted to lowercase and punctuation
+    is removed, each token is associated with an integer, and a passage of text is
+    represented as a sequence of tokens. To ensure that all sequences are of the same
+    length, we add padding tokens at the end (Figure [5-29](#Fig29)). This is all
+    taken care for us with TensorFlow’s `TextVectorization` layer. After instantiating
+    the vectorizer with our desired parameters, we adapt it to our dataset so it learns
+    a mapping from tokens to integers. Once adapted, we can call the vectorizer on
+    our text to obtain a set of tensors that can be passed directly for training into
+    our model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig29_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Three sets of data. First set, first row. 0 1 5 6, second row: 0 1 5 6 7 7
+    7 7\. Second set, first row: 5 2 4 3 1 0 0, second row: 5 2 4 3 1 0 0 7\. Third
+    set, first and second rows are same: 1 5 3 2 6 5 2 4.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-29
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adding an additional token to serve as a padding token such that all sequences
+    are the same length
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig28_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Three steps of encoding data contain the inputs "the", "product", "was", and
+    "good" are mapped with the integers individually and produce the output 0, 10,
+    58, and 89\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-28
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mapping each token in the input to a word-specific integer
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Recall that in Chapter [2](525591_1_En_2_Chapter.xhtml) we discussed different
+    ways of encoding data. We don’t need that here because we have learnable embeddings.
+    When we construct a natural language model (Listing [5-10](#PC10), Figure [5-30](#Fig30)),
+    the first step is to build an embedding layer. The embedding layer, as previously
+    discussed in Chapters [3](525591_1_En_3_Chapter.xhtml) and [4](525591_1_En_4_Chapter.xhtml),
+    learns to associate separate tokens represented by integers with fixed vectors.
+    The embedding layer requires us to specify the vocabulary size and the embedding
+    dimension, or the dimensionality of the vector each token will be associated with.
+    After embedding, the data will have shape (SEQ_LEN, EMBEDDING_DIM). We can pass
+    this through a “vanilla” recurrent layer (keras.layers.SimpleRNN) with 32 recurrent
+    units. The output vector will thus be 32-dimensional. We can pass this through
+    several dense layers to process or “interpret” the result and then map it to a
+    softmax output for classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig30_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart depicts the input and output data of the recurrent text model as
+    follows. Input layer, embedding, simple R N N, dense, dense 1, and dense 2\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-30
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of a simple recurrent text model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: To be completely clear about what’s going on, let’s track how a sample sequence
+    of tokens [0, 1, 2, 3, 4] gets processed by this model. First, each of the tokens
+    is mapped to a learned embedding vector ![$$ \overrightarrow{e_n} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq12.png)
+    (Figure [5-31](#Fig31)). This embedding vector contains important latent features
+    that capture the meaning/essence of each word among many dimensions relative to
+    the problem at hand.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig31_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence data of embedding layer. 0 1 2 3 4 lead to embedding layer and produce
+    vector e subscript 0, vector e subscript 1, vector e subscript 2, vector e subscript
+    3, and vector e subscript 4\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-31
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example of sequence data
+  prefs: []
+  type: TYPE_NORMAL
+- en: Then, each embedding vector in the embedding layer is processed sequentially
+    by a recurrent cell, which begins with an initialized hidden state and takes in
+    the first element (Figure [5-32](#Fig32)). The hidden state produced by this recurrent
+    cell is fed back into the recurrent cell, which then takes the second element.
+    This proceeds for each element in the sequence until the final output ![$$ \overrightarrow{h}
+    $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq13.png) is produced.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig32_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration depicts the process of embedding layer vector e subscript 0
+    to vector e subscript 4 pass through the recurrent cell individually. Recurrent
+    cell of vector e subscript 4 produces vector 0\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-32
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recurrent cell processing each embedding vector
+  prefs: []
+  type: TYPE_NORMAL
+- en: This vector ![$$ \overrightarrow{o} $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq14.png)
+    contains relevant information that has theoretically been informed by all elements
+    of the sequence in a sequential manner. We can then pass ![$$ \overrightarrow{o}
+    $$](../images/525591_1_En_5_Chapter/525591_1_En_5_Chapter_TeX_IEq15.png) through
+    several fully connected layers to further interpret this information with respect
+    to optimizing performance on the prediction task and then finally apply a softmax
+    layer such that each output indicates the probability prediction for each class
+    (Figure [5-33](#Fig33)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig33_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a class. Vector 0 passes through dense layers and produces
+    P of c subscript 0, P of c subscript 1, P of c subscript 2, P of c subscript 3,
+    and P of c subscript 4\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-33
+  prefs: []
+  type: TYPE_NORMAL
+- en: Probability prediction for each class derived from a recurrently generated information
+    vector, or hidden state
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the model has been defined, we can compile and fit the model on our dataset.
+    This is fairly straightforward and similar to previous models we have built in
+    Keras.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that Keras’s syntax for recurrent layers is especially convenient (especially
+    in comparison with other popular deep learning frameworks, such as PyTorch). To
+    use an LSTM or GRU layer instead of the vanilla recurrent layer, replace `L.SimpleRNN`
+    with `L.LSTM` and `L.GRU`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, a recurrent layer can only capture so many relationships. Ideally,
+    we would want to be able to capture multiple layers of depth and complexity in
+    language. To make our model more complex, we can stack multiple recurrent layers
+    on top of each other.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall that in a standard recurrent layer, we retain the hidden state of the
+    current timestep for consideration in the following timestep, but the outputs
+    of the cell at each timestep are ignored except at the last timestep. If we instead
+    collect the outputs at each timestep, however, we obtain another sequence (Figure
+    [5-34](#Fig34)), which we can recurrently process again (Figure [5-35](#Fig35)).
+    This allows for the model to learn multiple layers of complexity that may require
+    deeper recurrent sequence processing to uncover.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig35_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Vector i subscript 0 to vector i subscript 4 pass through the recurrent cell
+    individually and produce the final output of 0 vector at vector i subscript 4.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-35
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accepting the sequence of states from a previous hidden layer and passing it
+    through another layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig34_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of recurrent layer. Vector e subscript 0 to vector e subscript
+    4 passes through the recurrent cell individually and produce vector i subscript
+    0 to vector i subscript 4\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-34
+  prefs: []
+  type: TYPE_NORMAL
+- en: A recurrent layer in which all states are collected (as opposed to just the
+    last)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall from earlier that to collect the outputs at each timestep, we set `return_sequences=True`
+    and continue to stack additional layers (Listing [5-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you observe your network is overfitting, one approach is to increase recurrent
+    dropout. In recurrent dropout, a certain proportion of the hidden vector is dropped
+    at each timestep. Note that this is different from applying dropout as a separate
+    layer after processing with a recurrent layer; recurrent dropout is applied “within”
+    the recurrent layer at every timestep, whereas standard dropout is applied only
+    to its final output. This can be set by passing `recurrent_dropout=...` into a
+    recurrent layer’s instantiation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [10](525591_1_En_10_Chapter.xhtml) will discuss the Neural Architecture
+    Search library AutoKeras. AutoKeras supports working with high-level blocks that
+    make modeling text data simpler to work with.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Time Series
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Time-series data can come in many forms. In general, it is data that is taken
+    sequentially at equal time intervals. The objective is usually either next-timestep
+    forecasting (predict *t*[*n*] from {*t*[*n* − *w*], *t*[*t* − *w* + 1], ..., *t*[*n* − 1]}
+    for some window length *w*, Figure [5-36](#Fig36)), time-dependent target prediction
+    (predict some time-dependent target *y*[*n*] from {*t*[*n* − *w* + 1], *t*[*t* − *w* + 2],
+    ..., *t*[*n*]} for some window length *w*, Figure [5-37](#Fig37)), or time-independent
+    target prediction (predict some time-independent target *y* from {*t*[*n* − *l* + 1],
+    *t*[*t* − *l* + 2], ..., *t*[*n*]} for some sequence interval length *l*, Figures
+    [5-38](#Fig38) and [5-39](#Fig39)). The difference between the tasks is largely
+    a difference in the data rather than the model: you can still define a recurrent
+    model with the same structure (adjusting the input and output sizes as appropriate),
+    and most of the work will be in preparing the format of the data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig39_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence of numbers 0 to 23\. Numbers 0 to 5 lead to model A, numbers 9 to
+    14 lead to model A, and numbers 18 to 23 lead to model A.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-39
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another mode of time-independent prediction
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig38_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence of data from numbers 0 to 23\. Number 11 leads to the model A.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-38
+  prefs: []
+  type: TYPE_NORMAL
+- en: One mode of time-independent prediction
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig37_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence of numbers 0 to 23 on the top and alphabets from a to x at the bottom.
+    Numbers 0 to 5 lead to model f, numbers 9 to 14 lead to model o, and numbers 18
+    to 23 lead to model x.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-37
+  prefs: []
+  type: TYPE_NORMAL
+- en: Time-dependent prediction
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig36_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence of numbers 0 to 23\. In the second step, numbers 0 to 4 lead to model
+    5, numbers 9 to 13 lead to model 14, and numbers 18 to 22 lead to model 23\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-36
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next-timestep forecasting
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Some examples of time-series problems include the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Stock forecasting*: Predict the next day’s stock given the previous *w* days’
+    worth of stock data (next-timestep forecasting).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Epidemic forecasting*: Predict the next day’s number of infections given the
+    previous *w* days’ worth of infection data (next-timestep forecasting).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Political sentiment forecasting*: Predict the mean sentiment of a political
+    community (social platforms, parties, figures, etc.) at some timestep given a
+    window of previous political activity (legislative activity, electoral results,
+    etc.) (time-dependent target prediction).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Voice accent classification*: Predict the accent (British, American, Australian,
+    etc.) of the audio file (time-independent target prediction).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Recurrent layers do not always do well by their own on time-series data. Often,
+    time-series data has a very large sampling frequency (consider: an audio file,
+    high-frequency stock data), yet recurrent layers still process this information
+    on a timestep-by-timestep basis. This is equivalent to listening to music by hearing
+    its constituent elements on a 1/16000th-of-a-second basis (assuming a sampling
+    rate of 16000 elements per second). Even advanced memory-equipped recurrent models
+    fail to retain information over just a few seconds because there are so many elements
+    per second of audio. The same applies for other forms of high-frequency data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this reason, it is often a successful strategy to use one-dimensional convolutional
+    layers in conjunction with recurrent layers. These layers can, if well-designed,
+    systematically extract relevant sequentially ordered features, which can be more
+    effectively processed by recurrent layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Speech Accent Archive dataset ([www.​kaggle.​com/​datasets/​rtatman/​speech-accent-archive](https://www.kaggle.com/datasets/rtatman/speech-accent-archive))
+    contains many audio files of the same phrase being spoken by people with different
+    accents. We will attempt to build a time-independent target prediction model that
+    predicts the accent of the speaker from the audio file. The directory contains
+    several files organized as such:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [5-12](#PC13) is a helper function to extract the accent class from
+    the filename.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Listing [5-13](#PC14) identifies the top five accents by frequency (we want
+    to predict on classes with sufficient training data) and stores the corresponding
+    audio files and labels (ordinal-encoded).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Audio files are long strings of floats (Figure [5-40](#Fig40)). We will use
+    the `librosa` library to read the `.wav` files into a NumPy array. When loading,
+    we need to provide a sampling rate – the number of data points sampled each second.
+    If you use a sampling rate of 1000, then a 5-second audio clip will have 5000
+    elements in array form. Choosing the sampling rate is a balancing problem: if
+    the sampling rate is too large, the audio quality is optimal, but it may be too
+    long and cause training issues; if the sampling rate is too small, it may be a
+    feasible size, but the audio quality is too degraded to perform the task. A sampling
+    rate in between 3,000 and 10,000 is a good range to look for when dealing with
+    human voice audio. (To play around with the optimal rate, try loading with a certain
+    sampling rate, save the audio file with that sampling rate, and then listen to
+    the altered audio.) In this case, we choose a sampling rate of 6,000.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig40_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration depicts the sequence of numbers from 0 to 29\. A wave from a
+    string fluctuates between the numbers 0 to 29.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-40
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of mapping audio to a sequence of values
+  prefs: []
+  type: TYPE_NORMAL
+- en: The audio files vary in length, but we need a uniform interval length to feed
+    into the model. We will choose a 5-second window length, which should be enough
+    context to classify the accent of the speaker (Figure [5-41](#Fig41), Listing
+    [5-14](#PC15)). Moreover, we will choose a 5-second window shift length, which
+    means that the start times of adjacent windows are 5 seconds apart. This means
+    that there is no overlap in audio, which is fine in this case because we have
+    sufficient training data. (One strategy to address limited audio data is to decrease
+    the shift size such that samples overlap with each other.) We store each of the
+    windows and their associated targets in `audio` and `target`, respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig41_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A sequence of data from 0 to 29\. Sequence 1: from 0 to 4\. Sequence 2 starts
+    at 5: from 3 to 7\. Sequence 3 starts at 8: 6 to 10\. Sequence 4 starts at 11:
+    from 9 to 13\. Sequence 5 starts at 14: from 12 to 16\. Sequence 6 starts at 17:
+    from 15 to 19\. Sequence 7 starts at 20: from 18 to 22\. Sequence 8 starts at
+    23: from 21 to 25\. Sequence 9: from 24 to 28\.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-41
+  prefs: []
+  type: TYPE_NORMAL
+- en: Windowing data across a sequence with an overlap of two elements
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let us construct the model (Listing [5-15](#PC16), Figure [5-42](#Fig42)). We
+    will begin by reshaping the input into a two-dimensional array, which should be
+    interpreted as a sequence with one feature map representation. Then, we apply
+    a series of one-dimensional convolutions; these increase the number of feature
+    map representations and decrease the length of sequence by making large strides.
+    Since the four convolutions use strides of 8, 8, 4, and 4, the original sequence
+    length is cut down by a factor of 8 × 8 × 4 × 4 = 1024 (in actuality, a little
+    bit more, due to the kernel size; we don’t use padding here). This helps reduce
+    the 30,000-length input to an information-dense 25-length sequence of size-8 vectors,
+    which are processed recurrently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig42_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A network of audio model contains the input and output of the following data.
+    Input layer, reshape, ConvID, ConvID 1, ConvID 2, ConvID 3, L S T M, L S T M 1,
+    dense, dense 1, and dense 2\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-42
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of the audio model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'An advantage of using deep learning to model time-series data is the ability
+    to jointly model multiple time series. For instance, rather than modeling a single
+    stock price, a neural network can simultaneously model dozens or even hundreds
+    of stock prices throughout time: each additional stock is just another channel.
+    This allows for jointly informed modeling – for instance, the prices of stocks
+    in a similar industry likely have strong relationships with each other, and joint
+    modeling is likely to yield superior performance to independent modeling.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: While recurrent models are good for high-frequency and high-complexity time-series
+    data (audio, high-frequency stock market data), they can be overkill for simpler
+    time-series problems. Domain-specific time-series problems often have a long history
+    of research that has yielded tried-and-true modeling techniques that should not
+    be overlooked. Moreover, more “classical” or “manual” approaches in signal processing
+    may be useful, with or without the involvement of deep learning models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multimodal Recurrent Modeling
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Another application of recurrent layers is in multimodal recurrent modeling.
+    We can process sequences in recurrent fashion and tabular data in standard feed-forward
+    fashion and then combine the extracted information in the universal form of the
+    vector such that a jointly informed prediction can be made (Figure [5-43](#Fig43)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig43_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of recurrent models depicts the process of tabular input and sequential
+    input to produce the jointly informed output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-43
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example multimodal usage of recurrent models
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sequential input, in this case, could be one of the two natural applications
+    discussed in the previous section (natural language or a signal). With a multimodal
+    architecture, you can make predictions informed by both the sequential input and
+    the tabular input, as opposed to isolated models that only predict on the basis
+    of one or the other.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall the software reviews dataset, which contains a tabular component and
+    two text components. Consider the design for a model that takes in all three components
+    to make a jointly informed prediction (Listing [5-16](#PC17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: We begin by vectorizing both corpuses of text (Listing [5-17](#PC18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Afterward, we can split the dataset into appropriate training and validation
+    datasets (Listing [5-18](#PC19)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: To construct the model (Listing [5-19](#PC20), Figure [5-44](#Fig44)), we build
+    several heads to process each of the components independently, followed by vector
+    concatenation and continued processing. We use a shared embedding between the
+    review body text input and the review heading text input for simplicity. While
+    the two are embedded with the same embeddings, they are processed independently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig44_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of the multimodel recurrent model depicts the input and output of
+    the following data. InputLayer, embedding, G R U, dense, G R U 1, G R U 2, dense
+    1, concatenate, dense 2, dense 3, and dense 4.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-44
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of the multimodal recurrent model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s consider another example: news-informed stock prediction. Stock prediction
+    is often treated as a direct forecasting problem, in which the model attempts
+    to predict the value at *t*[*n*] given {*t*[*n* − *w*], *t*[*t* − *w* + 1], ...,
+    *t*[*n* − 1]} for some window size *w*. However, predicting time series in this
+    manner is difficult. More recent research shows that incorporating other data
+    sources describing the state of consumer sentiment and related factors significantly
+    helps improve stock prediction (as one would expect it to, since it captures external
+    influential factors). Thus, many stock models incorporate consumer sentiment indices
+    and other painstakingly acquired measurements. However, with deep learning, we
+    can construct models that directly interpret and understand text data in relation
+    to stock prices.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Daily News for Stock Market Prediction dataset on Kaggle ([www.​kaggle.​com/​datasets/​aaron7sun/​stocknews](https://www.kaggle.com/datasets/aaron7sun/stocknews))
+    provides the top headlines in the r/worldnews subreddit with the associated Dow
+    Jones Industrial Average (DJIA) that day. We will provide the model not only the
+    DJIA at the previous *w* timesteps {*t*[*n* − *w*], *t*[*t* − *w* + 1], ..., *t*[*n* − 1]}
+    but also the top three headlines at timestep *t*[*n*]. The objective is to predict
+    the DJIA at *t*[*n*]. In this particular example, all our inputs are sequential
+    – but the sequences are not uniform in type or context.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To prepare the dataset, we will read the datasets, select only the top three
+    headlines for that day, and merge (Listing [5-20](#PC21), Figure [5-45](#Fig45)).
+    Because the DJIA value ranges across a very wide range of values, we will scale
+    the target by 100.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig45_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table format depicts the list of top news. The table contains five columns
+    and 11 rows. The column headers are top 1, top 2, top 3, and date.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-45
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample of the top news headlines
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we will prepare the stock history component (Listing [5-21](#PC22)). Assuming
+    a window length of 20, we will store 20 timesteps’ worth of values in `x_stock`
+    and the 21st in `y_stock`. We repeat this at every valid starting timestep in
+    the dataset. This is the standard “next-timestep” modeling paradigm. We’ll also
+    correspondingly select the associated relevant headlines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Additionally, we need to vectorize the top one, two, and three headlines like
+    before (Listing [5-22](#PC23)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ll need to separate the dataset into training and validation (Listing [5-23](#PC24)).
+    Because this is a forecasting problem, we will not use standard random train-validation
+    split to prevent data leakage. Instead, we will fit on the first 80% worth of
+    data and evaluate on the last 20%. Training and validation sets will be generated
+    for each relevant variable. (There are other ways of doing this – `exec` is one
+    cheap trick for doing so, which runs strings as Python code to avoid manual variable
+    assignment.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Our model will have three text inputs and one time-series input (Listing [5-24](#PC25),
+    Figure [5-46](#Fig46)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig46_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of multimodal stock depicts the input and output of the following
+    data. Inputlayer, embedding, L S T M, L S T M 1, L S T M 2, L S T M 3, ConvID,
+    concatenate, L S T M 4, dense, L S T M 5, concatenate 1, dense 1, dense 2, and
+    dense 3\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-46
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of the multimodal stock forecasting model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model can be accordingly compiled and fitted (Listing [5-25](#PC26)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'At this point in the book, you have seen enough examples of multimodal modeling
+    to be able to construct valid architectures for a variety of inputs: tabular,
+    image, text, sequence. Multimodal compatibility is one of the powerful features
+    of using deep learning to model problems with tabular data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Direct Tabular Recurrent Modeling
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Recall from Chapter [4](525591_1_En_4_Chapter.xhtml) that we were able to apply
+    one-dimensional and two-dimensional convolutions to tabular data, even though
+    convolutions were designed to operate on images or, more generally speaking, value
+    structures with spatially contiguous semantics. That is, pixels in an image have
+    some sort of inherent spatial relationship with one another, or values in a sequence
+    have some sort of inherent ordering. Even though tabular data generally does not
+    possess contiguous semantics in raw form, we were able to get the model to learn
+    a mapping from an unordered representation to an ordered representation using
+    soft ordering strategies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can use similar logic to apply recurrent models directly for the purpose
+    of modeling tabular data. Similarly to one-dimensional convolutions, recurrent
+    models are designed to work on sequence data, or data possessing contiguous semantics.
+    There should be some ordered quality to the data, such that it can be modeled
+    in a recurrent fashion. However, because recurrent models generally have more
+    components than convolutions, there is an even larger range of techniques we can
+    use to apply recurrent layers to tabular data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Novel Modeling Paradigm
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The methods introduced in Chapter [4](525591_1_En_4_Chapter.xhtml) may have
+    already seemed somewhat dubious upon initial impression. How could applying a
+    tool intended for images possibly work on data that possessed near none of the
+    properties of image data? In response, note that we *have* demonstrated that applying
+    convolutional processing techniques to data while tasking the network to learn
+    representations with contiguous semantics opens up new meta-nonlinearities in
+    learning that can match or improve performance of standard feed-forward modeling
+    techniques. However, we will even further stretch and manipulate the capacities
+    of recurrent models in ways that may seem immediately sacrilegious or otherwise
+    objectionable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To pad this instinct, consider the following theoretical model (Figure [5-47](#Fig47)).
+    The key principle to understand here, which is hopefully approachable given the
+    empirical work and demonstration of this sort of nontraditional usage of established
+    methods in the previous chapter, is a subversion/reversion of the traditional
+    modeling application paradigm. Traditionally, we abide by if the data has [property],
+    then apply [model built for data with this property]. If the data is comprised
+    of images, then apply convolutional layers. If the data is comprised of text,
+    then apply recurrent/attention layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, the novel insight is that we can also go boldly in the other direction:
+    if we apply [model built for data with this property] to [data without this property
+    in raw form], then the data will realize [property]. That is, we will be able
+    to extract representations or information projections of that original data possessing
+    some property (e.g., contiguous semantics) that can then be processed using a
+    host of novel and powerful tools that would have otherwise been closed off. In
+    this perspective of modeling, the purpose of a model is not passive (i.e., to
+    be applied in line with the nature of the raw data itself) but rather active (i.e.,
+    to be applied to push/project/transform the data into new spaces with different
+    properties to access novel processing methods).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig47_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A Process of traditional modeling. Data: Properties A to C lead to the model,
+    which further leads to properties A to C. Process of novel perspective. Data:
+    Property A leads to the model, which further leads to properties A to C.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-47
+  prefs: []
+  type: TYPE_NORMAL
+- en: A novel perspective of operations as transformative rather than just passive
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optimizing the Sequence
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: One naïve approach is to directly treat the tabular data like it possesses contiguous
+    semantics and to process it as if it were a sequence (Figure [5-48](#Fig48)).
+    That is, we treat each element of the feature vector as an element associated
+    with a particular timestep, which is accordingly fed into the recurrent layer
+    in a temporal fashion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig48_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration depicts the tabular data, 3.08, 2.84, negative 1.29, 0.34, 2.01
+    passes through the recurrent cell individually, producing the sequentially processed
+    output a at 2.01\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-48
+  prefs: []
+  type: TYPE_NORMAL
+- en: Applying a recurrent layer to tabular data. Variables represent an arbitrary
+    output
+  prefs: []
+  type: TYPE_NORMAL
+- en: We might arbitrarily implement such a model (Figure [5-49](#Fig49)) for the
+    54-feature Forest Cover dataset previously used in Chapter [4](525591_1_En_4_Chapter.xhtml)
+    for pragmatic demonstration purposes, as in Listing [5-26](#PC27). Note that we
+    need to reshape our input into the shape (number of timesteps, elements in vector
+    associated with each timestep) to use the recurrent layer. In this particular
+    example, we use 32 hidden units, which means that the recurrent network will use
+    and return a 32-length vector containing information informed from throughout
+    the sequence. The 32-dimensional output of the recurrent layer can then be interpreted
+    by a fully connected layer and mapped to a seven-class softmax output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig49_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of the recurrent layer to tabular data depicts the input and
+    output of the following data. InputLayer, reshape, simple R N N, dense, and dense
+    1\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-49
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of a direct application of a recurrent layer to tabular data
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: This model, expectedly, doesn’t do very well. Such an approach is analogous
+    to directly applying convolutional kernels to a feature vector in Chapter [4](525591_1_En_4_Chapter.xhtml).
+    Instead, we can use a similar approach as employed to address this problem in
+    the context of applying convolutions to tabular data and add additional fully
+    connected layers at the beginning of the network (Figure [5-50](#Fig50)). The
+    hope is that these layers will be able to transform the input into a form with
+    contiguous semantics, which is more readily readable by a recurrent layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig50_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A Tabular data lead to dense layers, which further leads to ordered. Ordered
+    data passes through R N A cell individually and produce the sequentially processed
+    output a.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-50
+  prefs: []
+  type: TYPE_NORMAL
+- en: Applying a soft reordering component with a dense layer before applying a recurrent
+    layer. “Recurrent cell” abbreviated as “RNN cell,” but this does not necessarily
+    mean the vanilla recurrent cell, but includes GRU and LSTM cells, which are also
+    fundamentally recurrent
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can implement this in Keras by simply adding some more fully connected layers
+    at the beginning of the network before reshaping and passing into the recurrent
+    layer (Listing [5-27](#PC28), Figure [5-51](#Fig51)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig51_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of recurrent model depicts the input and output of the following
+    data. InputLayer, dense, dense 1, reshape, simple R N N, dense 2, and dense 3\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-51
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of a soft ordering recurrent model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Moreover, observe that we do not need to reshape the processed vectors into
+    a sequence of one-element vectors. If we so desired, we could reshape the output
+    of the second fully connected layer into shape (8, 4), which would represent a
+    sequence of eight timesteps with a four-element vector being associated with each
+    timestep. This is preferable, because it provides more information to the recurrent
+    cell at each timestep to develop better-informed internal data representations.
+    In general, if one must make a trade-off, it is better to spread information “vertically”
+    (i.e., across the vectors associated with each timestep, by adding new elements)
+    rather than “horizontally”/”temporally” (i.e., across timesteps, by adding additional
+    timestep vectors). This is because recurrent models – even the more sophisticated
+    ones – suffer from a decaying signal along the temporal axis. If we can provide
+    it more information within each timestep, it will be able to extract and propagate
+    more relevant information than if it were distributed sparsely across timesteps.
+    (Of course, this is as at a limit – if we distributed all the information across
+    one timestep or an otherwise very small number of timesteps, there would be little
+    point in using the structure of the recurrent layer in the first place.) For simplicity,
+    however, for the remainder of this chapter, we will use “simple” reshaping (i.e.,
+    from shape `(a,)` to `(a,1)`) to highlight other moving pieces and to minimize
+    confusion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The full -connected layer provides a soft ordering–like pre-manipulation of
+    the data. We can visualize how various tabular inputs are transformed by the two-layer
+    fully connected head into inputs to the recurrent layers by creating a submodel
+    (Listing [5-28](#PC29); recall from Chapter [4](525591_1_En_4_Chapter.xhtml)).
+    Figure [5-52](#Fig52) demonstrates the sequences fed into the recurrent layers,
+    shown in batches of ten. Note that high-magnitude values are dispersed sparsely
+    at different locations in the sequence, which will result in differing readings
+    by the recurrent layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig52_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Two illustrations, sample ranges from 0 to 9 and sequence index range from 31
+    to 0, plot the sequence mappings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-52
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of generated sequence mappings in batches of ten samples. Each
+    column contains the sequence that some tabular sample has been projected into
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, we can do one better – we know that convolutional layers can help process
+    the input in a sequential way (Figure [5-53](#Fig53)). Because convolutions are
+    applied sequentially, they can help “pull out” contiguous semantics properties
+    from our feature vector before being passed into the recurrent layer. This addition
+    increases the expressivity of the input sequence with respect to its sequential/temporal
+    quality. You can think of this as adding recurrent layers to the previous direct
+    modeling design discussed in the previous chapter (in which we applied convolutions
+    to fully-connected-layer-processed feature vectors).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig53_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A sequence depicts the tabular data leads to dense layers of ordered data which
+    further leads to convolutional layers of even more ordered data. It processes
+    through individual R N N cell and produces sequentially processed output a.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-53
+  prefs: []
+  type: TYPE_NORMAL
+- en: Applying a dense soft ordering component and a 1D convolution component before
+    using recurrent layers
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moreover, an advantage of this sort of design is that we are able to pass in
+    richer sequence inputs to the recurrent layer in a more natural way. Ideally,
+    as previously discussed, the recurrent layer would have a substantially sized
+    vector associated with each timestep to inform its hidden/internal representations.
+    We could simply reshape a fully connected vector into such a shape, but it is
+    unnatural in the sense that the fully connected layers are being tasked to learn
+    complex spatial relationships between different outputs with linear mappings.
+    When we pass in a “grid of values” to the recurrent layer, we assume certain elements
+    with certain spatial properties have specific relationships to other elements,
+    each with its own spatial properties. For instance, when we pass in a grid of
+    elements to a recurrent model, we understand that there is a *temporal relationship*
+    between a vector at some timestep *t* and *t* + 1\. However, there is a *nontemporal
+    relationship* between elements within each vector. We cannot “compare” or “quantify”
+    the relationship between the 0th–1st vector index pair and the 0th–2nd vector
+    index pair in the same way that we can with the vector pairs at the 0th–1st timesteps
+    and the 0th–2nd timesteps (i.e., that the “duration” of the latter is twice that
+    of the first). These are complex relationships that exist implicitly in the recurrent
+    layer’s treatment of such data (Figure [5-54](#Fig54)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig54_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A set of elements in an array with five columns and four rows. Row-wise values
+    are called adjacent relationship and column-wise values are called nontemporal
+    relationship. Values have contiguous dimension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-54
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assumed relationships between elements in an array as treated by a recurrent
+    model
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can probably see the difficulty with trying to learn the mapping between
+    a standard feature vector and this complex arrangement of relationships (Figure
+    [5-55](#Fig55)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig55_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration depicts the values in the standard feature vector map with the
+    elements in an array. Column-wise values are called nontemporal relationship.
+    Values have a temporal dimension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-55
+  prefs: []
+  type: TYPE_NORMAL
+- en: High precision and nonlinearity of mapping elements from a standard tabular
+    feature vector to elements in an array with recurrent relationships
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, the assumptions in the data that one-dimensional convolutions operate
+    on are very similar to those of the data that recurrent layers operate on. Each
+    “row” in this representation is a sequence across which the convolution windows
+    are “slid,” generated and read by a different filter (a different “lens” or “perspective”
+    to feature extraction) (Figure [5-56](#Fig56)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig56_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A set of elements in an array with five columns and four rows. Row-wise values
+    are called temporal relationship and column-wise values are called nontemporal
+    relationship. Values have temporal dimension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-56
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assumed relationships between elements in an array as treated by a convolutional
+    model
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thus, we can more “naturally” give the recurrent layer richer and more “readable”
+    data (on a timestep-by-timestep basis) by processing the information with convolutions
+    that can expand the depth with different filters (Listing [2-29](525591_1_En_2_Chapter.xhtml#PC31),
+    Figure [5-57](#Fig57)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig57_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of the convolution recurrent model depicts the input and output
+    of following data. InputLayer, dense, dense 1, reshape, ConvID, L S T M, L S T
+    M 1, dense 2, and dense 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-57
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of the dense-convolution-recurrent model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: When visualizing the result of transforming the original raw tabular inputs
+    to the inputs to the recurrent layers (i.e., outputs of the last convolutional
+    layer), we notice much higher activity and information-rich signals. Indeed, empirically
+    adding convolutional layers generally yields superior performance to a similarly
+    parametrized fully-connected-only head (Figure [5-58](#Fig58)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig58_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Two illustrations, sample ranges from 0 to 9 and sequence index range from 27
+    to 0, plot the sequence mappings on bright background.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-58
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of generated sequence mappings in batches of ten samples. Each
+    column contains the sequence that some tabular sample has been projected into
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optimizing the Initial Memory State(s)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'However, we can exploit a different input “inlet” of the recurrent mechanism:
+    the initial hidden state. The initial hidden state is initialized to zeros in
+    TensorFlow, but changes as it becomes informed by elements from the sequence input.
+    We can reverse this paradigm by learning the optimal transformation of the raw
+    tabular input to the initial hidden state of a recurrent unit (Figure [5-59](#Fig59)).
+    Think of the initial hidden state as the “canvas” and the input sequence as the
+    “brush and paint.” Traditionally, the input sequence “paints” a “blank canvas,”
+    applying new layers and details at each timestep. The result is a “painting” informed
+    by all timesteps in the sequence. In this case, the canvas is not initialized
+    as blank, but rather as already quite complex. We can use a simple input sequence
+    (“simple brushes and painting strategies”) to provide a stimulus to modify the
+    canvas sequentially. For simplicity, this “dummy stimulus sequence” is visualized
+    as a zero vector; in practice, a zero vector is a poor choice for a stimulus sequence
+    because it has minimal effect on the original hidden state, regardless of the
+    learned weights. Two better choices are a one vector and transformer-style sinusoidal
+    position encodings.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig59_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of recurrent layer depicts the tabular data that lead to two
+    sets of values in dense layers. Each value passes through R N N cell individually
+    and produces the sequentially processed output a.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-59
+  prefs: []
+  type: TYPE_NORMAL
+- en: Learning the initial hidden state of the recurrent layer rather than its initial
+    sequence
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moreover, if you desire to stack multiple recurrent layers, you can also specify
+    the initial state of the second, third, fourth, etc. layers as transformations
+    of the original tabular input (which can be linked to the learned initial hidden
+    state of the first recurrent layer) (Figure [5-60](#Fig60)). This means that the
+    learned transformation of the original tabular input is now being dually interpreted
+    and produces tremendously complex and expressive topological nonlinearity without
+    many parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig60_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A Tabular data leads to two sets of values in dense layers. Each value passes
+    through R N N cell individually and produces the sequentially processed intermediary
+    and sequentially processed output a.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-60
+  prefs: []
+  type: TYPE_NORMAL
+- en: Learning initial states across recurrent layer stacks
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [5-30](#PC31) and Figure [5-61](#Fig61) demonstrate a multi-stack recurrent
+    model with only the first recurrent layer’s initial hidden state learned as a
+    function of the original tabular input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig61_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of the tabular recurrent model depicts the input and output of
+    the following data. InputLayer, dense, dense 1, G R U, G R U 1, dense 2, and dense
+    3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-61
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of the hidden-state-learned tabular recurrent model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can modify `initial_state=dense2` into the second recurrent layer to create
+    a dual linkage (Figure [5-62](#Fig62)). This increases expressivity and connection,
+    generally yielding superior empirical results during training faster.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig62_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of a dually connected tabular recurrent model depicts the input
+    and output of the following data. InputLayer, dense, dense 1, G R U, G R U 1,
+    dense 2, and dense 3\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-62
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of the dually connected hidden-state-learned tabular recurrent
+    model
+  prefs: []
+  type: TYPE_NORMAL
+- en: The elegance of such a design is that it does not require the transformed tabular
+    vector to possess contiguous semantics, but still produces a result that is informed/generated
+    sequentially. It can be “easier” for a fully connected head to learn such a transformation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can compile and fit the model with one vectors (Listing [5-31](#PC32)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternatively, we could opt for a more complex type of encoding. Transformer-style
+    positional encoding generates a set of sinusoidal curves such that the values
+    of the curves at any timestep are enough to inform a model which approximate timestep
+    it is at while remaining bounded (Figure [5-63](#Fig63)). See Chapter [6](525591_1_En_6_Chapter.xhtml)
+    for more context on the usage of positional encoding in a transformer model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig63_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graph plots sinusoidal curves with different fluctuations. Curves 1 to 4 plot
+    between (0, 0.00) and (30, 0.00). All values are approximate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-63
+  prefs: []
+  type: TYPE_NORMAL
+- en: A visualization of sinusoidal positional encoding vectors
+  prefs: []
+  type: TYPE_NORMAL
+- en: In a simple hypothetical implementation here (Listing [5-32](#PC33)), we generate
+    four sinusoidal curves with differing periods and store this stimulus sequence
+    as a 32-timestep sequence of length-four vectors. We need to correspondingly adjust
+    the model architecture such that `init_inp_vec = L.Input((32,4))`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Putting these methods together, we can simultaneously learn both the optimal
+    initial hidden state and the optimal input sequence to recurrent layers (Listing
+    [5-33](#PC34), Figures [5-64](#Fig64) and [5-65](#Fig65)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig65_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the input and output model of the following data. InputLayer,
+    dense, dense 2, dense 1, reshape, dense 3, ConvID, G R U, G R U 1, dense 4, and
+    dense 5\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-65
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of the model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig64_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration depicts the tabular data leads to two dense layers. Dense layers
+    on the left lead to initial state and dense layers on the right lead to convolutional
+    layers, together form sequentially processed output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-64
+  prefs: []
+  type: TYPE_NORMAL
+- en: Schematic diagram of the model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: As before, we can connect the learned initial hidden state for the first recurrent
+    layer to the second recurrent layer too (Figure [5-66](#Fig66)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig66_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the dually connected input and output model of the following
+    data. InputLayer, dense, dense 2, dense 1, reshape, dense 3, ConvID, ConvID 1,
+    G R U, G R U 1, dense 4, and dense 5\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-66
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of a dually connected model
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additionally, we can also create another branch to learn the optimal (different)
+    initial hidden state for the second recurrent layer independently (Figure [5-67](#Fig67)).
+    This eases expressivity restrictions that may become prohibitive for complex problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig67_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram depicts the input and output connected model of the following
+    data. InputLayer, dense, dense 2, dense 4, dense 1, reshape, ConvID, dense 3,
+    ConvID 1, G R U, G R U 1, dense 6, and dense 7\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-67
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of an independently learned dually connected model
+  prefs: []
+  type: TYPE_NORMAL
+- en: LSTMs have both a cell state and a hidden state and therefore lend themselves
+    to even more complex systems where the network simultaneously derives the optimal
+    sequence input, initial hidden state, and initial cell state from the original
+    tabular data and puts all the pieces together in a powerful recurrent layer stack
+    (Figure [5-68](#Fig68)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig68_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A Tabular data leads to two dense layers. Dense layer on the left leads to init
+    hidden state and dense layer on the right leads to init cell state, together passes
+    through L S T M cell and produce sequentially processed output a.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-68
+  prefs: []
+  type: TYPE_NORMAL
+- en: Learning the cell state, hidden state, and input sequence to an LSTM model.
+    The cell state is represented at the bottom as a single channel traveling through
+    the entire sequence for visualization purposes (despite being slightly inaccurate)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [5-34](#PC35) and Figure [5-69](#Fig69) demonstrate one such implementation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_5_Chapter/525591_1_En_5_Fig69_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of L S T M model depicts the input and output of the following
+    data. InputLayer, dense, dense 2, dense 4, dense 1, reshape, dense 3, ConvID,
+    dense 5, ConvID 1, L S T M, L S T M 1, dense 6, and dense 7\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-69
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of an LSTM model with a learned sequence input, cell state, and
+    hidden state
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can add multiple connections between the learned optimal initial hidden
+    and cell states and different levels of the recurrent layer stack too, as demonstrated
+    previously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We should take a step back to appreciate the architecture that we have arrived
+    at. The primary hesitance toward applying recurrent models directly toward tabular
+    data is, if we think about it, that there doesn’t seem to be an effective way
+    for tabular data to pass through the recurrent model in a “natural” way. In this
+    final model, tabular data is used to control all components of the tabular model
+    – the initial states, its transformation through time, and its final interpretation.
+    In this sense, it is as expressive as a feed-forward layer but provides crucial
+    scaffolding to formulate the development of ideas throughout time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Further Resources
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These are all novel approaches, which may or may not work well on any one case.
+    However, they have demonstrated promise in several key areas. Even if you are
+    not convinced of the validity or correctness of the architectures and techniques
+    proposed in this section, hopefully the more philosophical implications encourage
+    greater fluidity and intellectual innovativeness in your modeling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following references are applied examples of recurrent models being successfully
+    applied on tabular data and may be informative:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Althubiti, S.A., Nick, W., Mason, J.C., Yuan, X., & Esterline, A.C. (2018).
+    Applying Long Short-Term Memory Recurrent Neural Network for Intrusion Detection.
+    *SoutheastCon 2018*, 1–5.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Kim, J., Kim, J., Thu, H.L., & Kim, H. (2016). Long Short Term Memory Recurrent
+    Neural Network Classifier for Intrusion Detection. *2016 International Conference
+    on Platform Technology and Service (PlatCon)*, 1–5.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Le, T., Kim, J., & Kim, H. (2017). An Effective Intrusion Detection Classifier
+    Using Long Short-Term Memory with Gradient Descent Optimization. *2017 International
+    Conference on Platform Technology and Service (PlatCon)*, 1–6.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Nikolov, D., Kordev, I., & Stefanova, S. (2018). Concept for network intrusion
+    detection system based on recurrent neural network classifier. *2018 IEEE XXVII
+    International Scientific Conference Electronics – ET*, 1–4.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Prajyot, M.A. (2018). Review on Intrusion Detection System Using Recurrent Neural
+    Network with Deep Learning.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Wang, S., Xia, C., & Wang, T. (2019). A Novel Intrusion Detector Based on Deep
+    Learning Hybrid Methods. *2019 IEEE 5th Intl Conference on Big Data Security on
+    Cloud (BigDataSecurity), IEEE Intl Conference on High Performance and Smart Computing,
+    (HPSC) and IEEE Intl Conference on Intelligent Data and Security (IDS)*, 300–305.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For a sample code notebook, see Kaggle user Kouki’s solution to the Mechanisms
+    of Action competition, which uses a recurrent tabular model: [www.​kaggle.​com/​code/​kokitanisaka/​moa-ensemble/​notebook?​scriptVersionId=​​48123609](https://www.kaggle.com/code/kokitanisaka/moa-ensemble/notebook%253FscriptVersionId%253D48123609).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter discussed three popular forms of recurrent models; demonstrated
+    applications of recurrent models to text, time-series, and multimodal data; and
+    proposed several methods to directly apply recurrent layers to tabular data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recurrent neurons process sequence data iteratively by “snaking” the output
+    from the previous timestamp back into the input as a hidden state, combined with
+    the current timestamp’s input. This allows the model to effectively learn patterns
+    through time as an ordered sequence.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: LSTMs improve on standard recurrent neurons by addressing the vanishing gradient
+    problem. They use a gated mechanism, which allows the model to access crucial
+    information from older timestamps, allowing for gradients that still retain meaningful
+    information flowing backward all the way to the beginning timestamp.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Exploding gradients in recurrent models can be solved using gradient clipping.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: GRU is a modification to LSTM to simplify its training process by scraping the
+    long-term memory unit from LSTMs and introducing update and reset gates as cheaper
+    alternatives.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'To use recurrent layers to model text data: vectorize the text dataset, pass
+    through an embedding layer to obtain embedded vectors, and pass through a stack
+    of recurrent layers.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'There are three general templates of time-series prediction: next-timestep
+    forecasting, time-dependent target prediction, and time-independent time prediction.
+    Deep learning approaches to time-series modeling often work well on high-frequency
+    time-series datasets, such as high-volume stock datasets or audio waves. Such
+    architectures often perform well with convolutional heads that “smooth out” and
+    extract key information-rich sequences for a recurrent layer stack to process.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: By constructing multi-input network architectures, you can create models that
+    simultaneously accept different data modalities. This can be used to process data
+    for which there is both a text component and a tabular component, which is a common
+    occurrence in online platform and business data science contexts.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: To understand the premise, motivation, and justification of direct application
+    of recurrent models (and all other nontraditional mechanisms) to tabular data,
+    we must understand the reversion of the traditional modeling paradigm “if the
+    data has [property], then apply [model built for data with this property]” instead
+    as “if we apply [model built for data with this property] to [data without this
+    property in raw form], then the resulting data will realize [property].” The realization
+    of novel properties as caused by mechanisms assuming such properties opens up
+    the door for new, previously sealed-off techniques and methods.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: By processing a tabular input with fully connected layers before passing into
+    recurrent layers, the tabular input can be mapped to the optimal sequential representation.
+    Applying convolutional layers before inputting to the recurrent layer stack can
+    improve realization of contiguous semantics.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We can also task full -connected layers to learn the optimal initial hidden
+    state of the network and run it on a dummy stimulus sequence (one vector, transformer-style
+    positional encoding, etc.) to produce a sequentially informed result. This method
+    does not require the “input” to the mechanism (i.e., the learned optimal hidden
+    state) to be assumed as ordered, but nevertheless produces an ordered result that
+    can be processed sequentially by another recurrent layer.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: By combining the two previously discussed methods, we can construct a model
+    that derives the optimal input sequence and the optimal hidden state (and optimal
+    cell state for LSTMs) from the tabular input. This allows the recurrent modeling
+    mechanism to be informed and optimized in heavy connectivity with respect to the
+    input and increases expressivity and topological complexity/nonlinearity.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the next chapter, we will build upon recurrent models to explore the attention
+    mechanism – both in its original introduction as a supercharger mechanism for
+    recurrent models and as the key player in the transformer architecture – and how
+    it can be applied to tabular data.
+  prefs: []
+  type: TYPE_NORMAL

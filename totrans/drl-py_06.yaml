@@ -1,0 +1,1606 @@
+- en: 6. Deep Q-Learning (DQN)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: This chapter takes a deep dive into Q-learning combined with function approximation
+    using neural networks. Q-learning in the context of deep learning using neural
+    networks is also known as *Deep Q Networks* (DQN). The chapter first summarizes
+    what I have talked about so far with respect to Q-learning. You will then look
+    at code implementations of DQN on simple problems. Following this, you will take
+    stock of Gymnasium and learn how it differs from OpenAI Gym. The next focus is
+    on the Stable Baselines 3 (SB3) library and its associated ecosystem. You will
+    also explore hyperparameter optimization using Optuna and plotting, both in the
+    context of SB3\. With the basic machinery in place, I will extend DQN to cover
+    Atari game playing agent. The topics of DQN are followed by a quick exploration
+    of various other RL environments and associated libraries covering the use of
+    RL in financial market trading and in the field of robotics. However, be aware
+    that these are still research environments useful to gain more insights. As some
+    of these have multi-dimensional continuous value actions, there are better algorithms
+    than DQN for training agents. This chapter focuses on learning about these environments
+    and how to set them up. You will apply DQN where appropriate and detailed coverage
+    of those algorithms appears in future chapters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, most of these algorithms will be covered using PyTorch, which in recent
+    years has become the go-to deep learning framework displacing TensorFlow. TensorFlow
+    has seen a steady decline over the last four to five years. The chapter includes
+    an example in TensorFlow and, through that, you will realize that that big part
+    of expertise in RL lies in problem framing and having a good understanding of
+    the training algorithms. The role of deep learning framework is rather limited.
+    Once you master the concepts using one framework, it is very easy to switch to
+    another framework like TensorFlow or JAX.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deep Q Networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'To introduce DQN, I first recap what you have learned so far. Chapter [4](502835_2_En_4_Chapter.xhtml)
+    talked about Q-learning as a model-free off-policy TD control method. You first
+    looked at the online version, where you used an exploratory behavior policy (ϵ-greedy)
+    to take a step (i.e., take action *A*) while in state *S*. The reward *R* and
+    next state *S*^’ were then used to update the q-value *Q*(*S*, *A*). Figure [4-16](502835_2_En_4_Chapter.xhtml#Fig16)
+    explained the approach in pseudocode and Listing [4-6](502835_2_En_4_Chapter.xhtml#PC6)
+    showed the code implementing the same. The update rule, as shown in Equation [4-10](502835_2_En_4_Chapter.xhtml#Equ10),
+    is reproduced here. You are encouraged to review the section “Q-Learning: An Off-Policy
+    TD Control” in Chapter [4](502835_2_En_4_Chapter.xhtml) before you proceed.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha
+    \cdotp \left[{R}_{t+1}+\upgamma \cdotp \underset{A_{t+1}}{\mathit{\max}}Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right]
+    $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (6-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: I briefly talked about maximization bias and the approach of double Q-learning,
+    wherein you use two tables of q-values. Following this, you looked at the approach
+    of using a sample multiple times to convert online TD updates to batch TD updates,
+    making it more sample efficient. This introduced the concept of a replay buffer.
+    While it was only about sample efficiency in the context of discrete state and
+    state-action spaces, with function approximation using neural networks, it becomes
+    pretty much a must-have to make deep learning neural networks converge. You will
+    revisit this again, and when I talk about prioritized replay, you will look at
+    other options to sample from the replay buffer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Moving along, in Chapter [5](502835_2_En_5_Chapter.xhtml), you looked at various
+    approaches of function approximation. You looked at tile encoding as a way to
+    achieve linear function approximation. I then talked about DQN, that is, batch
+    Q-learning with neural networks as function approximators. I went through a long
+    derivation to arrive at a weight (i.e., neural network parameters) update equation,
+    as given in Equation [5-25](502835_2_En_5_Chapter.xhtml#Equ25). That equation
+    is reproduced here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\mathrm{w}}_{\mathrm{t}+1}={\mathrm{w}}_{\mathrm{t}}+\upalpha .\frac{1}{\mathrm{N}}{\sum}_{\mathrm{i}=1}^{\mathrm{N}}\left[{\mathrm{r}}_{\mathrm{i}}+\gamma
+    ma{\mathrm{x}}_{{\mathrm{a}}_{\mathrm{i}}^{\prime }}\overset{\sim }{\mathrm{q}}\left({\mathrm{s}}_{\mathrm{i}}^{\prime
+    },{\mathrm{a}}_{\mathrm{i}}^{\prime };{{\mathrm{w}}_{\mathrm{t}}}^{-}\right)-\hat{\mathrm{q}}\left({\mathrm{s}}_{\mathrm{i}},{\mathrm{a}}_{\mathrm{i}};{\mathrm{w}}_{\mathrm{t}}\right)\right].{\nabla}_{w_t}\;\hat{q}\left({s}_i,{a}_i;{w}_t\right)
+    $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (6-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that I use the subscript *i* to denote the sample in the mini-batch and
+    *t* to denote the time/loop index at which the weights are updated. Equation [6-2](#Equ2)
+    is the one you will be using extensively in this chapter and the next. You will
+    make various adjustments to this equation as you read about different modifications
+    and study their impact.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I also talked about not having a theoretical guarantee of convergence under
+    nonlinear function approximation with a gradient update. I have more to say about
+    that in this chapter. The Q-learning approach was for discrete states and actions,
+    where the update to the q-value was using Equation [6-1](#Equ1) as compared to
+    adjusting the weight parameters for the deep learning–based approach in DQN. The
+    Q-learning case had guarantees of convergence, while with DQN you had no such
+    guarantee. DQN is computationally intensive as well. However, despite these shortcomings,
+    DQN makes it possible to train agents using even raw images and not just specific
+    observation vectors like position, velocity, angle, grid number, and so on. This
+    is not at all conceivable in the case of plain Q-learning. Let’s now put Equation
+    [6-2](#Equ2) into practice to train the DQN agents in various environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s revisit the `CartPole` problem, which has a four-dimensional continuous
+    state with values for the current cart position, velocity, angle of the pole,
+    and angular velocity of the pole. The actions are of two types: push the cart
+    to the left or push the cart to the right, with the aim of keeping the pole balanced
+    as long as possible. This environment is part of OpenAI Gym library, which now
+    has been forked to Gymnasium, as discussed earlier. The following are the details
+    of the environment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: You will build a small neural network with four as the input dimension since
+    the state/observation vector is four dimensional, two hidden layers, followed
+    by an output layer of dimension two, as the number of possible actions is two.
+    There are two output q-values, that is *Q*(*S*, *A*), one for each action. Figure
+    [6-1](#Fig1) shows the network diagram.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_6_Chapter/502835_2_En_6_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A model diagram has the following flow, state S input, 256, 256, output of 2
+    for q s, a semi-colon w within parentheses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The simple neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are many ways to build neural networks in PyTorch. The most flexible way
+    is to sub-class the `torch.nn` module. In the `init` method of subclass, you define
+    the building blocks like the linear layers, activation functions, and so on. Then
+    you implement the `forward` method, the parent abstract method, which takes the
+    input, passes it through the layers of the network defined in the `init` method,
+    and returns the final output. The second method defines a list of all the layers
+    in the sequence, all the way from input to output and passes that list to `nn.Sequential`.
+    The second approach is a quicker one with minimal code, although it does not give
+    you flexibility especially when it comes to multiple inputs, outputs, and skip
+    connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter uses the first approach, with the second approach embedded inside
+    the `init` function, as shown in Listing [6-1](#PC2). You also define a few additional
+    convenience methods as part of the network. You will define three such methods.
+    The first one is `get_qvalues` and it takes state/observation as a `numpy` array
+    instead of a `torch` tensor that the `forward` expects. It then converts the `numpy`
+    array to torch `tensor`, passes it through the `forward` method, and then again
+    converts the returned PyTorch tensor from `forward` back to `numpy`. Such a method
+    makes it easier to use the network inside the environment `step` function code,
+    which otherwise would require you to convert the `tensor` to a `NumPy` or Python
+    array while implementing the logic to step through the environment. Ideally these
+    kinds of manipulations are best abstracted away and kept close to the network
+    PyTorch code. If you use GPU, such a structure of the code makes it easier to
+    handle the movement of batch of observations from CPU to GPU, process it through
+    the network, and then shift it back to CPU making the back and forth move from
+    CPU to GPU transparent to rest of the code. You can see this pattern in the first
+    and third line of code inside the `get_qvalues` function shown in Listing [6-1](#PC2).
+    While moving from `NumPy` to `tensor` you use the `device` argument to move the
+    observations to the appropriate device that’s hosting the neural network. In line
+    three, you use the `Tensor.cpu()` chained call to move the q-values output by
+    network back to CPU. The `get_qvalues` function takes a batch of states/observations
+    as input, that is, a tensor of dimension (*N* × 4) where *N* is the number of
+    samples. It passes the state values through the network to produce the *q*-values.
+    The output vector has size (*N* × 2); one row for each input. Each row has two
+    *q*-values, one for the left-push action and another for the right-push action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second function you’ll implement is `sample_actions`. It implements the
+    ϵ-greedy policy. It uses the `q-values` returned by the `get_qvalues` function
+    as a `NumPy` array to choose the best action (1 − ϵ) fraction times and choose
+    a random action ϵ fraction of times. It is what you use during learning to keep
+    exploring the unvisited states. As discussed earlier you start with a high ϵ value
+    like 0.6-0.8 and gradually reduce it down close to 0, with 0.05 being a popular
+    choice. The function takes in a batch of q-values (*N* × 2). It uses the *ε*-greedy
+    policy (equation [4-3](502835_2_En_4_Chapter.xhtml#Equ3)) to choose an action.
+    The output is the (*N* × 1) vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third function, called `get_action`, is a truncated version of `sample_actions`.
+    You use a greedy policy with no exploration. This is implemented in the `get_action`
+    function. There is no random selection. In this function you deterministically
+    and with zero exploration always return the best action with maximum *q*-value.
+    As with `sample_actions`, the `get_action` function also takes a batch of *q*-values
+    (*N* × 2) and produces (*N* × 1) action vector, one action per *N* observations
+    in the batch. This function is used post-training to get the best action for a
+    given state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [6-1](#PC2) shows the code in PyTorch with the full code available in
+    the `6.a-dqn-pytorch.ipynb` notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: While not essential, you will gain more from the code discussions if you have
+    some prior knowledge of PyTorch or TensorFlow. You should be able to create basic
+    networks, define loss functions, and carry out basic training steps for optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you look at the way a similar structure is created in TensorFlow. TensorFlow’s
+    eager mode is very much like PyTorch. In TensorFlow, you have a similar sequential
+    model that’s available under `tf.keras.models.Sequential`. In TensorFlow, you
+    have to implement `a __call__` method instead of the `forward` method that you
+    used in PyTorch. The rest of the code looks very similar and therefore I do not
+    list the code here. Interested readers can refer to the `6.b-dqn-tensorflow.ipynb`
+    notebook for full details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The code for the replay buffer is simple. You have an array called `self.buffer`
+    to hold the previous examples. The `add` function takes in `state, action, reward,
+    next_state, and done`, the values from a single step/transition by the agent,
+    and adds it as a tuple to the buffer. If the buffer has reached its full length,
+    it discards the oldest transition/tuple to make space for the new addition. The
+    `sample` function takes an integer `batch_size` and returns `batch_size` samples/transitions
+    from the buffer. In this vanilla implementation, each transition stored in the
+    buffer has equal probability of getting sampled. Listing [6-2](#PC3) shows the
+    code for the replay buffer from the `6.a-dqn-pytorch.ipynb` notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Moving ahead, you have a utility function called `play_and_record` that takes
+    in an `env` (e.g., `CartPole`), an `agent` (e.g., `DQNAgent`), an `exp_replay`
+    (`ReplayBuffer`), the agent’s `start_state`, and `n_steps` (i.e., number of steps/actions
+    to take in the environment). The function makes the `agent` take `n_steps` number
+    of steps, starting from the initial state `start_state`. The steps are taken based
+    on the current ε-greedy policy that the agent is following using `agent.sample_actions`
+    and records these `n_steps` transitions in the buffer. Refer to the notebook from
+    Listing [6-1](#PC2) (`6.a-dqn-pytorch.ipynb)` for the detailed code showing how
+    this is implemented.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, you look at the learning process. You first build the expression for
+    loss, *L*, that you want to minimize. It is the averaged squared error between
+    the target value of the current state action using a one-step TD value and the
+    current state value. As discussed in Chapter [5](502835_2_En_5_Chapter.xhtml),
+    you use a copy of the original neural network that has weights *w*^− (*w* with
+    superscript −). You use the loss to calculate the gradient of the agent (online/original)
+    network’s weight *w* and take a step in the negative direction of the gradient
+    to reduce the loss. Note that as discussed in Chapter [5](502835_2_En_5_Chapter.xhtml),
+    you keep the target network with weights *w*^− frozen and update these weights
+    on a less frequent basis. To quote from the section on batch methods of DQN in
+    Chapter [5](502835_2_En_5_Chapter.xhtml):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here you have used a different weight vector ![$$ {w}_t^{-} $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq1.png)
+    to calculate the estimate of the target. Essentially, you have two networks, one
+    called online with weights *w*, which is being updated as per Equation [5-24](502835_2_En_5_Chapter.xhtml#Equ24),
+    and a second similar network called target network but with a copy of the weight
+    called *w*^−. Weight vector *w*^− is updated less frequently, say after every
+    100 updates of online network weight *w*. This approach keeps the target network
+    constant and allows you to use the machinery of supervised learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The loss function L is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{L}=\frac{1}{\mathrm{N}}{\sum}_{i=1}^N{\left[{r}_i+\left(\left(1-
+    don{e}_i\right).\gamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2
+    $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (6-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: You take a gradient (derivative) of loss *L* with respect to *w* and then use
+    this gradient to update the weights *w* of the online network. You update the
+    weights in the negative direction of gradient, as you want to reduce the loss
+    by adjusting the values of weight *w*. This concept is from calculus that the
+    gradient (also known as the derivative or the slope) of a function with respect
+    to its variable gives the direction of maximum increase and therefore by adjusting
+    the *w* in the negative direction of the gradient, you walk toward a new *w* that
+    offers the fastest decrease in the function value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This concept translates to the following equations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_wL=-\frac{1}{N}{\sum}_{i=1}^N\left[{r}_i+\left(\left(1- don{e}_i\right).\gamma
+    .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--}
+    \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]\nabla \hat{q}\left({s}_i,{a}_i;{w}_t\right)
+    $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (6-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{q}\left({s}^{\prime },A;{w}^{-}\right) $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq2.png)
+    is calculated using target network whose weights are held constant and refreshed
+    periodically from the agent learning network.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The target is given by following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Nonterminal state: ![$$ {r}_i+\upgamma .\underset{a_i^{\prime }}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };{w}_t^{-}\right) $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq3.png)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Terminal state: *r*[*i*]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The value of *done*[*i*] is 1 when the environment terminated as a result of
+    the action *a*[*i*]. In Equation [6-4](#Equ4), by multiplying with (1 − *done*[*i*])
+    you get the two values of the target depending on the state of *done*[*i*] flag.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The gradient ![$$ \nabla \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq4.png)
+    is calculated by back-propagation of the loss outputted by neural network and
+    this is one of the primary reasons for using deep learning frameworks like PyTorch
+    and TensorFlow, which automate the calculation of these gradients and have made
+    these frameworks so powerful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The basic flow is to design the network to output ![$$ \hat{q}\left({s}_i,{a}_i;{w}_t\right)
+    $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq5.png) and then
+    write a loss function to calculate loss *L* as given in Equation [6-3](#Equ3),
+    which uses the network output ![$$ \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq6.png)
+    and the target values to calculate the average squared loss as per Equation [6-3](#Equ3).
+    The implementation of Equation [6-4](#Equ4) is automatically done by deep learning
+    frameworks with a simple call of something like `loss.backward()`. Once the gradient
+    has been calculated you have the value as given in Equation [6-4](#Equ4). Next,
+    you adjust the current weights of the network with a scaled amount of this gradient.
+    The scaling factor α is the learning rate and it controls the amount of adjustment
+    you make in each update. Usually, you start with higher α early in the training
+    phase and gradually reduce it down as training of network progresses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}\leftarrow {w}_t-\upalpha {\nabla}_wL $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (6-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [6-3](#PC4) shows the code to calculate *L*, as discussed previously.
+    This is done by the `compute_td_loss` function. It takes in a batch of `states,
+    actions, rewards, next_states`, and `done_flags`. It also takes in the discount
+    parameter *γ* as well as the agent/online and target networks. The function first
+    converts the `NumPy` arrays to `PyTorch` tensors and moves them to a CPU or GPU
+    device. Next the states tensor batch is passed through the `agent` network to
+    output the `predicted_qvalues` for all actions. You choose the specific q-value
+    for the action tensor batch *a*[*i*] to produce ![$$ \hat{q}\left({s}_i,{a}_i;{w}_t\right)
+    $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq7.png), shown
+    in the code as tensor `predicted_qvalues_for_actions`. Next, you compute the `predicted_next_qvalues`
+    for all actions by passing the batch of `next_states` through the target network.
+    You then take a `max` over the actions to produce ![$$ ma{\mathrm{x}}_{{\mathrm{a}}_i^{\prime
+    }}\hat{\mathrm{q}}\left({\mathrm{s}}_{\mathrm{i}}^{\prime },{\mathrm{a}}_{\mathrm{i}}^{\prime
+    };{\mathrm{w}}_{\mathrm{t}}^{-}\right) $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq8.png),
+    shown in the code as `next_state_values`. Next, you calculate the target values
+    ![$$ {\mathrm{r}}_{\mathrm{i}}+\left(\left(1-\mathrm{don}{\mathrm{e}}_{\mathrm{i}}\right).\upgamma
+    . ma{\mathrm{x}}_{{\mathrm{a}}_{\mathrm{i}}^{\prime }}\hat{\mathrm{q}}\left({\mathrm{s}}_{\mathrm{i}}^{\prime
+    },{\mathrm{a}}_{\mathrm{i}}^{\prime };{\mathrm{w}}_{\mathrm{t}}^{-}\right)\right)
+    $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_IEq9.png) shown
+    in the code as `target_qvalues_for_actions`. The last line of the code calculates
+    the loss by taking a difference of `target_qvalues` and `predicted q_values`,
+    squaring, adding, and then averaging over the batch to return the computed loss
+    *L*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: At this point, you have all the machinery needed to train the agent to balance
+    the pole. But first you need to define some hyperparameters like `batch_size`,
+    total training steps `total_steps`, and the rate at which exploration ϵ will decay.
+    It starts at 1.0 and slowly reduces to 0.05 as the agent learns the optimal policy.
+    You also define an `optimizer`, which takes in the parameters of the agent network,
+    that is, weight vector *w*. This is provided by passing `agent.parameters()` to
+    the constructor function of the optimizer. There are many optimizers and Adam
+    is a popular choice. The name is derived from adaptive moment estimation. The
+    optimizer is called Adam because it uses estimations of the first and second moments
+    of the gradient to adapt the learning rate for each weight of the neural network.
+    You can read more about it in the PyTorch and TensorFlow documentation. The other
+    important training parameter that you set is the frequency the target network
+    is updated-that is, network with weights *w*^−. In this case you set it to 100
+    using `refresh_target_network_freq = 100`, which means that for every 100 updates
+    of weight *w* of agent network, you will update the target network. This way the
+    target network provides a stable target for weight *w* to converge as well as
+    it is not too infrequent leading to target network weights becoming stale. It
+    is a hyperparameter and in real life you will probably be required to tune this.
+    You also define the frequency of logging the training loss for plotting purposes
+    and the frequency with which the trained agent will be evaluated to assess the
+    quality of the policy agent is learning. Finally, you define `max_grad_norm` to
+    clip the gradient’s values. This is again a standard practice in deep learning,
+    and it is a hyperparameter. All of these parameters are shown in Listing [6-4](#PC5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now you are all set to start training the agent. Listing [6-5](#PC6) shows the
+    code. You first reset the environment to obtain the initial state. After this
+    point you will run a loop for a number of times equal to `total_steps`—that is,
+    the number of training steps that the agent will be trained for. This is one of
+    the parameters defined in Listing [6-4](#PC5). In the loop you first set the exploration
+    ϵ as per the settings defined in Listing [6-4](#PC5). You use a one-line helper
+    function called `epsilon_schedule` to do this. The implementation of this function
+    is shown in Listing [6-5](#PC6). You use the `play_and_record` function discussed
+    earlier to fill the Replay Buffer shown in Listing [6-1](#PC2). You use a hyper-parameter
+    called `timesteps_per_epoch` to control the number of steps you will take in each
+    step of training. Usually this is set to 1 so that each time you run a training
+    step you add one more tuple of training data to the buffer. This way, as the agent
+    learns and explores new parts of the *state*, *action* space, the replay buffer
+    is updated. Next, you sample a batch of stored transitions from the replay buffer
+    with the size of buffer controlled by the `batch_size` parameter. The batch of
+    training data so collected is passed to the `compute_td_loss` discussed in Listing
+    [6-3](#PC4). The return value stored in variable `loss` is explained in Equation
+    [6-3](#Equ3). Next, you call `loss.backward()` which almost magically calculates
+    the gradient ∇[*w*]*L*, as defined in Equation [6-4](#Equ4). This is the power
+    of deep learning frameworks, which implement automatic differentiation. As discussed,
+    you clip the gradients to ensure that each individual gradient value in the vector
+    of gradients ∇[*w*]*L* is within your defined bounds. Next, you call `opt.step()`
+    to run the weight update as defined in Equation [6-5](#Equ5). This completes the
+    core code in the training loop. Further in the training loop, you have some minor
+    housekeeping code. You need to zero the vector of gradient ∇[*w*]*L* after the
+    update of the weight vector *w*. You also need to refresh the target network as
+    per the `refresh_target_network_freq` parameter. Finally, you have to log the
+    training loss, determine the mean return per episode as part of validation, and
+    plot all these values to show the progress of training. Listing [6-5](#PC6) shows
+    all the code discussed. Some of the housekeeping code has been omitted from the
+    listing to keep the focus sharp on what you need to understand. Readers interested
+    in exploring the full code can refer to the `6.a-dqn-pytorch.ipynb` notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: You now have a fully trained agent. You train the agent and plot the mean reward
+    per episode periodically as you train the agent for 50,000 steps. In the left
+    plot of mean return per episode in Figure [6-2](#Fig2), the x-axis value of 10
+    corresponds to the 10,000^(th) step. You also plot the TD loss every 20 steps,
+    and that’s why you have the x-axis on the right plot going from 0 to 2500, that
+    is, 0 to 2500x20=50,000 steps. Unlike supervised learning, the targets are not
+    fixed. Keep the target network fixed for a short duration and update it periodically
+    by refreshing the target network weights with the online network. Also, as discussed,
+    nonlinear function approximation (neural networks) with off-policy learning (Q-learning)
+    and bootstrapped targets (the target network being just an estimate of the actual
+    value and the estimate formed using the current estimates of other q-values) has
+    no convergence guarantee. The training may see losses going up and exploding or
+    fluctuating. This loss graph is counterintuitive as compared to the loss graphs
+    in the usual supervised learning. Figure [6-2](#Fig2) shows the graphs from the
+    training DQN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_6_Chapter/502835_2_En_6_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 graphs of mean return per episode and T D loss history smoothened. The mean
+    return graph plots a fluctuating line with an increasing trend and sharp peaks
+    and dips. The T D graph plots a fluctuating line that becomes linear towards the
+    end. It has the highest peak between 250 and 750 on the x-axis. The values are
+    estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training curves for DQN
+  prefs: []
+  type: TYPE_NORMAL
+- en: I have more to say about other options for DQN training and logging using frameworks
+    like Stable Baselines3 (SB3), RL Baselines3 Zoo (SB3 Zoo), weights and biases
+    and others. However, before covering those issues, I take a quick detour to explain
+    the origin of environment API from OpenAI and its forked version under Gymnasium.
+    This understanding will be helpful, as some of the environment libraries and frameworks
+    (like SB3, SB3 Zoo, and a few others) still follow an older version of API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: OpenAI Gym vs Farma Gymnasium
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'OpenAI made some breaking changes to the core API. It impacted workflows like
+    how to create environments, what value is returned when you reset the environment,
+    how to set the random seed, what values are returned by step function, and so
+    on. These changes were introduced initially in OpenAI Gym v0.25.0 in July 2022
+    as opt-in and breaking change in v0.26.0 in Sep 2022.^([1](#Fn1)) The details
+    are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Step`: The step function was modified to return five values: `obs, reward,
+    termination, truncation, and info`. Original return values were `obs, reward,
+    done, and info.` The reason for this change was to make a distinction between
+    termination and truncation. `done=True` did not distinguish between the environment
+    terminating and the episode truncating. In most cases where time limit is not
+    a factor, you can set `done = truncation or termination.` You can read more about
+    it here.^([2](#Fn2))'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Render: The Render API was changed such that the mode had to be specified during
+    `gym.make` with the `render_mode` keyword, after which the render mode is fixed.
+    You can refer to release comments of Gym v0.25.0.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Reset info: The `Env.reset` function was changed to return two values (`obs`
+    and `info`) versus the older API returning only `obs`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'No `Seed` function: While `Env.seed` was a helpful function, this was almost
+    solely used for the beginning of the episode and was hence added to `gym.reset(seed=...)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In October 2022, the role of maintenance and updates to Gym was moved over to
+    a new non-profit organization called the Farma Foundation. The code was moved
+    over to a new Python package named `Gymnasium`, which carried over the new version
+    of the APIs introduced in OpenAI Gym 0.26.0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, the story does not end here. Some of the third-party environments and
+    libraries like SB3 and RL SB3 Zoo use parts or full older version of the API.
+    SB3 and SB3 Zoo use the older API for `step` and `reset`. They retain the new
+    `render` method, requiring `render_mode` to be specified right in the `gymnasium.make`
+    call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are other environment libraries that are still using the pre 0.25.0—the
+    popular `gym v0.21` version of API. Depending on the environment frameworks you
+    plan to use, you should read the documentation and make sure you understand the
+    version the library supports and if the library is compatible with OpenAI Gym
+    or Frama Gymnasium.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Gymnasium also provides some environment wrappers to wrap environments following
+    the old API to become compatible with newer post v0.26 API. Key wrappers that
+    serve this compatibility need are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The wrapper `gymnasium.wrappers.EnvCompatibility` wraps an environment following
+    the older version to become compatible with the newer API.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The wrapper `gymnasium.wrappers.StepAPICompatibility` can transform an environment
+    from new the step API to the old and vice versa.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The wrapper `gymnasium.wrappers.PassiveEnvChecker` is a passive environment
+    checker wrapper that surrounds the `step`, `reset`, and `render` functions to
+    determine whether they follow the Gymnasium API.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Recording Videos of Trained Agents
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that you understand the API changes between Gym and Gymnasium, let’s continue
+    with the topic of DQN training. Having trained the agent and reviewed the performance
+    by way of plots, next you want to generate the video of the trained agent in action.
+    I talked about it briefly in Chapter [2](502835_2_En_2_Chapter.xhtml). However,
+    this time I dive a bit deeper, which will help you gain a better understanding
+    of the Stable-Baselines3 (SB3) library. SB3 gives you a unified structure for
+    all the popular RL algorithms. It has optimized implementations of most of the
+    popular RL algorithms used for training agents. It has integration with various
+    experiment sharing, tracking, and logging services, such as weights and biases,
+    HuggingFace, and MLFlow. SB3 also provides vectorized environments. Vectorized
+    environments stack multiple independent environments into a single environment.
+    Instead of training an RL agent on one environment per step, vectorized environments
+    allow you to train it on *n* environments per step. You will use two such vector
+    environment classes—`DummyVecEnv` and `VecVideoRecorder`—to help you record the
+    video of trained agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`DummyVecEnv` creates a simple vectorized wrapper for multiple environments,
+    calling each environment in sequence on the current Python process. This can also
+    be used for RL methods that require a vectorized environment, but that you want
+    a single environment to train with. You will use the latter purpose of wrapping
+    a single environment with `DummyVecEnv.` The reason is that the recording API
+    expects a vectorized environment. Listing [6-6](#PC7) shows the code for the `record_video`
+    function. The first line of code creates an array with a single `CartPole` environment.
+    You’ll use `Gymnasium` (imported as `gym`) to call its `make` function and pass
+    the array to `DummyVecEnv`’s `init` function.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you wrap the vectorized environment with `VecVideoRecorder`, providing
+    arguments such as the vectorized environment for which you want to record the
+    video, the folder path where the video will be recorded, the trigger callback
+    which starts the recording, and the name prefix to specify the prefix of the video
+    file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once `vec_env` has been wrapped in `VecVideoRecorder`, you run the standard
+    rollout of episode, starting from the reset of the environment with `obs = vec_env.reset()`.
+    Note that the SB3 vectorized environment’s `reset` function returns a single value—the
+    observation that conforms to the older version of the Gym API. Next, you run a
+    loop to step through the environment with the policy being the trained agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You extract the generated video filename so that it can be returned by the `record_video`
+    function and consumed by the `play_video` function. You can refer to the accompanying
+    notebook for the implementation of the `play_video` function. Finally, you call
+    the `vec_env.close()` function to close the environment, stop the video, and free
+    up all the resources.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Confusingly, Gymnasium also has a set of vectorized environments that follow
+    the new API with a `step` function returning a batch of `observations, rewards,
+    terminations, truncations,` and `infos`. Even the Gymnasium vectorized environment’s
+    `reset` function adheres to the newer version, returning a batch of observations
+    and info from the vectorized environment. You could have implemented the same
+    video recording code using the Gymnasium API. Interested readers can refer to
+    the Gymnasium documentation for more details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you leverage the same code you saw in Chapter [2](502835_2_En_2_Chapter.xhtml)
+    with which you can push the trained agent and the network weights along with the
+    video to HuggingFace. The code is similar to what you saw in Chapter [2](502835_2_En_2_Chapter.xhtml).
+    Inside the `6.a-dqn-pytorch.ipynb` notebook, you can look at the section named
+    “Share the agent using HuggingFace” and explore the arguments passed to the `package_to_hub()`
+    function call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: End-to-End Training with SB3
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Up to this point, you handcrafted the agent network, the loss calculation, and
+    the training code for the DQN algorithm. While this is good for learning, eventually
+    in projects you want to leverage well implemented scalable DQN algorithms with
+    all the bells and whistles. SB3 provides you with most of the popular algorithms
+    with parameters to control the behavior. Let’s look at the complete code to create
+    and train the agent using SB3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In terms of actual code, you first create the `CartPole` environment, and this
+    code is similar to what you used earlier while handcrafting the DQN algorithm
+    in earlier sections. Next, you create `policy_kwargs` to define the network layers
+    and activation function to be used inside the neural network. You create a similar
+    network like before with two hidden layers of 256 nodes each and ReLU as the activation
+    function. There are multiple ways to define the network. The most basic is to
+    go with the default and not create `policy_kwargs`, the policy configuration dictionary.
+    This approach creates a default network of two hidden layers with 64 nodes each
+    and ReLU activations. The most complex and flexible way is to create your own
+    custom network similar to Listing [6-1](#PC2). For details, refer to the documentation
+    in SB3 under the “Custom Policy” topic.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once `policy_kwargs` is defined, you instantiate the `model` with a call to
+    the SB3 provided DQN class. It takes in `MlpPolicy` as the type of policy, `env`
+    as the variable holding the environment, and `policy_kwargs` as the custom configuration
+    of that policy. There are many other parameters you might need to tweak for your
+    specific use case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This pretty much completes the creation code. Next, you call `model.learn()`
+    with parameters like training time steps, logging intervals, and flags to control
+    the display of training progress. After the training is over, you save the model
+    with a call to `model.save()`, providing the path where you want the model to
+    be saved. The six-line code given in Listing [6-7](#PC8) is sufficient to instantiate
+    and train a DQN on the `CartPole` environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: End to End Training with SB3 Zoo
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As discussed earlier, RL Baselines3 Zoo is a training framework for reinforcement
+    learning (RL). It provides scripts for training, evaluating agents, tuning hyperparameters,
+    plotting results, and recording videos. In addition, it includes a collection
+    of tuned hyperparameters for common environments and RL algorithms, and agents
+    trained with those settings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To expose you to various options, this example uses weights and biases (`wandb`)
+    integration to log these experiments. With `wandb`, you can capture the logging
+    and share it with other team members. It also helps you track all your experiments,
+    the specific parameters used in a given run, the training logs, and various other
+    system level details. You first need to create a `wandb` account by going to [`www.wandb.ai`](http://www.wandb.ai).
+    Once you have created an account and logged in, click your name/photo on the top-right
+    of the page and then navigate to “User Settings”. Once on the Settings page, navigate
+    to the end of the page and look for a sub-section named “API Keys” under the “Danger
+    Zone” section. Click the “New Key” button to create the key and copy the key generated
+    somewhere, as you will need it in your Python code to allow it to access your
+    `wandb` account.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly, you also need to create an account on HuggingFace and generate an
+    API key/token, which you can do in Chapter [2](502835_2_En_2_Chapter.xhtml). You
+    can reuse the same token here and for all the following chapters. Listing [6-8](#PC9)
+    shows the code for using RL SB3 Zoo for training an agent, playing/uploading trained
+    agent performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You first log in to your `wandb` account so that you can log the experiment
+    results there. Next, you run `rl_zoo3.train` on the command line with various
+    parameters to train and track the agents. Most of the command-line parameters
+    are self-explanatory based on their names. The command-line parameters are over
+    and above what can be seen in Listing [6-8](#PC9). You can refer to RL SB3 Zoo
+    documentation for more details.^([3](#Fn3)) Sometimes, we have found it easier
+    to refer to the script code to understand all the parameters. For example, the
+    `Train` script code can be browsed in GitHub at the location given in the reference.^([4](#Fn4))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once you have trained the agent, you evaluate it using an `rl_zoo3.enjoy` call
+    and record the video with the help of `rl_zoo3.recrod_video`. Finally, `rl_zoo3.push_to_hub`
+    can be used to push the trained agent weights, video, and other relevant details
+    to HuggingFace.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Hyperparameter Optimization**
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: You have seen in the previous examples that there are a lot of hyperparameters
+    that can impact the performance of the model. On a real-life RL training project,
+    you are likely to spend a lot of time fine-tuning many of these parameters. First-time
+    readers can skip this section and come back later as and when the need arises.
+    This is not an essential read for understanding the RL algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL SB3 Zoo is integrated with Optuna.^([5](#Fn5)) Optuna offers three key features
+    1) automated search for optimal hyperparameters using Python conditionals, loops,
+    and syntax, 2) efficiently search large spaces and prune unpromising trials for
+    faster results, and 3) parallelize hyperparameter searches over multiple threads
+    or processes without modifying code. I cover high-level concepts of how Optuna
+    works with RL SB3 Zoo. For more details, refer to the documentation of Optuna.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To optimize, you first need to define the range over which you want to tune
+    hyperparameters. You also define how these values will change over the range—for
+    example, will they change by an integer value, or will the change be a float number,
+    and will the change follow a log domain where the parameter values are sampled
+    from log domain. A hyperparameter changing values over 0.1, 1, 10, 100, 1000 are
+    equally spaced when you take the log. The previous range in base-10 log works
+    out to -1, 0, 1, 2, 3, which is equally spaced. Log space sampling is the preferred
+    choice when varying the learning rate *α*. The change could also be a categorical,
+    meaning there is a defined set of values that it can take—for example, `batch_size`
+    = [8, 16, 32, 64]. In RL SB3 Zoo, there is a file named `rl_zoo3/hyperparams_opt.py`^([6](#Fn6))
+    that provides a suggested list of tunable hyperparameters along with the ranges
+    for each of the hyperparameters. The list and range are defined for each RL algorithm
+    separately. Listing [6-9](#PC10) shows the setting for DQN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The hyperparameter sampler takes an argument `trial` of the type `optuna.Trial`,
+    which defines a single instance of the run. For a given instance of the experiment
+    run, you choose a specific set of hyperparameter values and return the same back
+    for consumption by the rest of the optimization pipeline. The key part is that
+    hyperparameter value sampling is done by the calls to `trial.suggest()` and the
+    algorithm used for sampling is determined by the `--sampler` command-line argument
+    while calling `rl_zoo3.train`. There are three possible values: `random`, `tpe`,
+    and `skopt`. Random is a random search and can be a fairly good option in most
+    cases. TPE stands for Tree-structured Parzen estimator algorithm. This sampler
+    is based on independent sampling. On each trial, for each parameter, TPE fits
+    one Gaussian Mixture Model (GMM) `l(x)` to the set of parameter values associated
+    with the best objective values, and another GMM `g(x)` to the remaining parameter
+    values. It chooses the parameter value `x` that maximizes the ratio `l(x)/g(x)`.^([7](#Fn7))
+    Scikit-Optimize, or `skopt`, is a simple and efficient library that minimizes
+    (very) expensive and noisy black-box functions. It implements several methods
+    for sequential model-based optimization. `skopt` aims to be accessible and easy
+    to use in many contexts.^([8](#Fn8))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The other important part of the hyperparameter optimization is the concept
+    of pruning, which refers to the strategy for the termination of unpromising trials.
+    In some literature, it is also known as early stopping. In SB3 Zoo, pruning is
+    controlled via `the --prunner` command-line argument, which can take one of the
+    three possible values: `halving, median, or none`. Successive halving, or halving,
+    has a simple idea behind the algorithm. Given an input budget, uniformly allocate
+    the training budget to a set of arms (number of parameter combinations) for a
+    predefined number of iterations, evaluate their performance, throw out the worst
+    half, and repeat until just one hyperparameter configuration remains. You can
+    read more about the concept of pruning in the paper titled “Non-stochastic Best
+    Arm Identification and Hyperparameter Optimization” by Kevin Jamieson and Ameet
+    Talwalkar.^([9](#Fn9)) Median pruning refers to the strategy that a trial is pruned
+    if the trial’s best intermediate result is worse than the median of the intermediate
+    results of previous trials at the same step.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`rl_zoo.train` provides a few other controls on the optimization. The `--n-startup-trials`
+    command-line argument defines the number of trials before the Optuna sampler starts.
+    The `--n-trials` command-line argument defines the number of trials for optimizing
+    hyperparameters. The `--max-total-trials` command-line argument defines the number
+    of (potentially pruned) trials for optimizing hyperparameters. This last argument
+    applies to the entire optimization process and takes precedence over `--n-trials`.
+    There are a few more and you can read about them in the `rl_zoo3.train` script.^([10](#Fn10))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Not to forget—the most important command-line argument is `--optimize`. It launches
+    `rl_zoo3.train` in hyperparameter optimization mode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lastly, there are many ways to specify `hyperparams_opt.py`. Listing [6-10](#PC11)
+    shows a sample call of `rl_zoo.train` with DQN and the `CartPole` environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that, based on the settings, it may take a long time to complete the optimization
+    run. Moving on to plotting the optimization results, the `rl_zoo3/plots` and `scripts`
+    folders in the `rl_zoo3 rep`ository provide a few scripts to plot the results.
+    In the `scripts` folder, `parse_study.py` helps parse an optimization run and
+    saves the *n* best hyperparameter configuration. Listing [6-11](#PC12) shows an
+    example of running this script after the optimization run in Listing [6-10](#PC11)
+    completes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Integration with Rliable library(**)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In 2021, a paper called “Deep Reinforcement Learning at the Edge of the Statistical
+    Precipice” by Agarwal et al.,^([11](#Fn11)) received the Outstanding award at
+    NeurlPS 2021\. To quote from the paper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: “Deep reinforcement learning (RL) algorithms are predominantly evaluated by
+    comparing their relative performance on a large suite of tasks. Most published
+    results on deep RL benchmarks compare point estimates of aggregate performance
+    such as mean and median scores across tasks, ignoring the statistical uncertainty
+    implied by the use of a finite number of training runs....”
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The authors go on to say that the shift toward computationally demanding benchmarks,
+    especially with benchmarks based on environments like ALE (Arcade Learning Environments),
+    has increasingly led to a practice of evaluating only on a small number of tasks,
+    which is worsening the statistical uncertainty of the point estimates. The authors
+    illustrate this point using ALE and then go on to recommend use of
+  prefs: []
+  type: TYPE_NORMAL
+- en: “...interval estimates of aggregate performance and propose performance profiles
+    to account for the variability in results, as well as present more robust and
+    efficient aggregate metrics, such as interquartile mean scores, to achieve small
+    uncertainty in results.”
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: You can read more about it in the link to the blog accompanying the paper. The
+    authors also released a Python library called `rliable`, which has been integrated
+    into RL SB3 Zoo. There are three key scripts provided by SB3 Zoo for plotting.
+    `scripts/all_plots.py, scripts/plot_from_file.py` for plotting evaluations, and
+    `scripts/plot_train.py` for plotting training reward/success. The `6.a-dqn-pytorch.ipynb`
+    notebook contains some samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, you need to do multiple training runs to collect diverse data points
+    for meaningful plotting. For this, you can rerun the training script from Listing
+    [6-8](#PC9) multiple times, with some random variations of the hyperparameters.
+    You’ll create various training trajectories and have multiple validation results.
+    Once you have had enough runs, the next step is to prepare the results file. Listing
+    [6-12](#PC13) contains the code for running these and other plotting scripts.
+    The first command line in Listing [6-12](#PC13) is about preparing the file for
+    all plots. It requires parameters like the algorithm, the environment, the location
+    where the data from the training runs is stored, and the output location where
+    you want to store file generated by this script. After the results have been saved
+    in a file, you feed the same into the second command, as shown in Listing [6-12](#PC13).
+    `plot_from_file` takes as input the file produced from the previous `all_plots`
+    command and, based on the command-line parameters, it uses `rliable` or other
+    graphing libraries to create the graphs. Some of the command-line arguments pertain
+    to the `rliable` library. You may need to explore the `rliable` documentation
+    for a better understanding of what they control and what is the significance of
+    each of them. You can look into the Plotting section of SB3 Zoo documentation
+    to understand the various command-line options these scripts have. Like `all_plots`,
+    there is another script called `plot_train` that plots the training graphs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: This completes the implementation of a full DQN to train an agent. The core
+    idea was to focus on the algorithm and teach you how to write a DQN learning agent.
+    You will now use the same implementation with minor tweaks so that the agent can
+    play Atari games using the game image pixel values as the state. Note that you
+    will be building a more powerful neural network and will need to train agents
+    over many more time steps running into a million steps. Therefore, unless you
+    have access to a GPU locally, you may consider running the Atari DQN notebook
+    on Google Colab. The notebook contains commands for all the package installations
+    required to run the notebook on Google Colab and is thus self-contained.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Atari Game-Playing Agent Using DQN
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In a 2013 seminal paper titled “Playing Atari with Deep Reinforcement Learning,”^([12](#Fn12))
+    the authors used a deep learning model to create a neural network–based Q-learning
+    algorithm. They christened it Deep Q Networks. This is exactly what you implemented
+    in the previous section. You will now briefly learn about the additional steps
+    the authors took to train the agent to play Atari games. It is mostly the same
+    as the previous section with two key differences: 1) uses game image pixel values
+    as state inputs that necessitate some preprocessing, and b) uses convolutional
+    networks inside an agent instead of linear layers that you saw in the previous
+    section. The rest of the approach to calculate the loss *L* and carry out the
+    training remains the same. Note that training with convolution networks takes
+    a lot of time, especially on regular PCs/laptops. Get ready to watch the training
+    code run for hours, even on moderately powerful GPU-based machines.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can find the complete code to train the agent in PyTorch in the Python notebook
+    called `6.c-dqn_atari_pytorch.ipynb`. The Gymnasium library has implemented many
+    of the transformations needed for an Atari game image, and wherever possible,
+    these examples use the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Atari Environment in Gymnasium
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s first talk about Atari games environment as provided within Gymnasium
+    and also the image preprocessing done to get the image pixel values ready for
+    feeding into the deep learning network. Gymnasium provides a set of Atari 2600
+    environments simulated through Stella and the Arcade Learning Environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Atari 2600 Video Computer System (VCS), introduced in 1977, was the most
+    popular home video game system of the early 1980s. You can enjoy all the popular
+    Atari 2600 games on your PC thanks to Stella. Stella is a multi-platform Atari
+    2600 VCS emulator released under the GNU General Public License (GPL).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Arcade Learning Environment (ALE) is a simple framework that allows researchers
+    and hobbyists to develop AI agents for Atari 2600 games. It is built on top of
+    the Atari 2600 emulator called Stella and separates the details of emulation from
+    agent design. ALE provides Python bindings and supports OpenAI Gym and Farma Gymnasium.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ALE-py doesn’t include the Atari ROMs (`pip install gymnasium[atari]`), which
+    are necessary to make Atari environments in the Gymnasium `make` function. The
+    Python installation instructions in the beginning of the book take care of this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The action space of Atari games is comprised of 18 actions numbered from 0 to
+    17\. By default, most environments use a smaller subset of the legal actions,
+    excluding those actions that don’t have an effect in that specific game. If users
+    are interested in using all possible actions, pass the keyword argument `full_action_space=True`
+    to `gymnasium.make`. I will not be using this as the neural networks will be used
+    to output only relevant actions for the specific game in question.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Atari games have three types of observation spaces: the most common one is
+    1) RGB image of size 210x160 with type `Box(0, 255, (210, 160, 3), np.uint8)`,
+    2) the grayscale version of the image, and 3) the RAM state of 128 bytes. You
+    can control this using the `obs_type` argument to the `gym.make` function call.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As the Atari games are entirely deterministic, agents could achieve state-of-the-art
+    performance by simply memorizing an optimal sequence of actions while completely
+    ignoring observations from the environment. There are several methods to avoid
+    this. Quoting from the Gymnasium documentation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Sticky actions**:* Instead of always simulating the action passed to the environment,
+    there is a small probability that the previously executed action is used instead.
+    In the v0 and v5 environments, the probability of repeating an action is 25% while
+    in v4 environments, the probability is 0%. Users can specify the repeat action
+    probability using `repeat_action_probability to gymnasium.make`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Frameskipping*: On each environment step, the action can be repeated for a
+    random number of frames. This behavior may be altered by setting the `argument
+    frameskip` keyword to either a positive integer or to a tuple of two positive
+    integers. If `frameskip` is an integer, frame skipping is deterministic, and in
+    each step the action is repeated `frameskip` many times. Otherwise, if `frameskip`
+    is a tuple, the number of skipped frames is chosen uniformly at random between
+    `frameskip[0]` (inclusive) and `frameskip[1]` (exclusive) in each environment
+    step.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Some games allow users to set a difficulty level and a game mode. Different
+    modes/difficulties may have different game dynamics and different action spaces.
+    This example does not vary either of these. It uses the default of 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You will be implementing an agent for the game of Breakout. In Breakout, there
+    is a paddle at the bottom, and the idea is to move the paddle to ensure the ball
+    does not fall below it. The player needs to use the paddle to hit the ball and
+    take out as many bricks as possible. Each time the ball misses the paddle, the
+    player loses a life. The player has five lives to start with. Breakout has an
+    action space of 0-3 `[''NOOP'', ''FIRE'', ''RIGHT'', ''LEFT'']` with 0: “No Operation
+    (NOOP), 1: FIRE to start the game, 2: move paddle right and 3: move paddle left.
+    You can refer to the Gymnasium documentation for more details.^([13](#Fn13)) Figure
+    [6-3](#Fig3) shows three frames of the game.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_6_Chapter/502835_2_En_6_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 3 screenshots of a video game highlight the score, color gradient areas, a vertical
+    falling bar, and a horizontal bar from top to bottom.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Atari Breakout game images
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Atari game images are 210×160-pixel images with a 128-color palette. Listing
+    [6-13](#PC14) shows the code used to create the environment and print a few frames
+    of the game.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Preprocessing and Training
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You will do preprocessing to prune down the image size and make the convolutional
+    network run faster. You also scale down the images. You can convert the images
+    to grayscale again to reduce the size of the input vector, with one channel of
+    grayscale instead of three channels of colors for RGB (the red, green, and blue
+    channels). A preprocessed single frame of the image of size (1×84×84—channel,
+    width, height) in PyTorch just gives the static state. The position of the ball
+    or paddle does not tell you about the direction in which both are moving. Accordingly,
+    you will stack a few consecutive frames of the game images together to train the
+    agent. You will stack four reduced-size grayscale images that will the state *S*
+    feeding into the neural network. The input (i.e., state *S*) will be of size 4×84×84
+    in PyTorch and 84×84×4 in TensorFlow, where 4 refers to the four frames of the
+    game images and 84×84 is the grayscale image size of each frame. Stacking four
+    frames together will allow the agent network to infer the direction of movement
+    of the ball and paddle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [6-14](#PC15) shows the code to create the environment, including the
+    preprocessing steps. When you plot a single observation of the environment after
+    the preprocessors, you see that state/observation has a shape of 4x84x84\. In
+    the `make_env` function, you first call `gym.make` with `frameskip=1` which is
+    the default behavior, meaning that the next call to `step` will produce the next
+    game frame. The reason you do this is because you will be wrapping this with additional
+    wrappers, which will take care of stacking multiple frames together. Therefore,
+    you do not want any frame skipping in the call to `gym.make`. Note that all along
+    you import Gymnasium as `gym`. Accordingly, in this code I refer to the package
+    as `Gymnasium` or `Gym` interchangeably, for example, `gymnasium.make` or `gym.make`.
+    Both refer to the Gymnasium library and calling the `make` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, you wrap the Gymnasium Breakout environment with `AtariPreprocessing`
+    to set `screen_size` to 84 pixels, and the pixel values are mapped to 0-1 range
+    instead of 0-255 range with the help of `scale_obs=True`. The complete list of
+    the arguments to `AtariPreProcessing` can be seen in the Gymnasium documentation.^([14](#Fn14))
+    The same documentation page also provides details with respect to many other wrappers
+    that can be used to wrap the vanilla environments to augment or alter the default
+    behaviors. You will use the default value of `frame_skip=4`, as you need to stack
+    four frames together to provide the context of ball and pad direction before feeding
+    the observations to the neural network. Therefore, the next wrapper you use is
+    `FrameStack` with `num_stack=4` to stack four frames of game images together.
+    Finally, based on the `clip_rewards` flag, you further wrap the environment with
+    the `TransformReward` wrapper. This wrapper takes the input environment and a
+    function to transform the reward. In this case, you use a simple lambda function
+    `lambda r: np.sign(r)` to return just the sign of the reward, dropping the magnitude.
+    This is in line with the process followed in the original paper.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: The previous preprocessing step produces the final state that you will be feeding
+    into the network. This is 4×84×84 in PyTorch, where 4 refers to the four frames
+    of the game images and 84×84 is the grayscale image size of each frame. Figure
+    [6-4](#Fig4) shows the observation as produced by the code in Listing [6-14](#PC15)
+    and which is used as input to the neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_6_Chapter/502835_2_En_6_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A set of 4 screenshots of a video game, titled agent observation of 4 frames
+    left to right, highlights the score, color gradient areas, a vertical falling
+    bar, and a horizontal bar from top to bottom.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Processed image to be used as state input into the neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, you build the neural network that will take in the previous image, that
+    is, the state/observation *S*, and produce q-values for all four actions in this
+    case. The shape of the network you will build is given here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Input: PyTorch tensor of shape [batch_size, 4, 84, 84]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'First hidden convolutional layer: 16 nos of 8x8 filters with stride 4 and ReLU
+    activation producing output of shape [batch_size, 16, 20, 20]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Second hidden convolution layer: 32 nos of 4x4 filters with stride of 2 and
+    ReLU activation producing output of shape [batch-size, 32, 9, 9]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Flatten the observation to shape [batch, 32x9x9] = [batch_size, 2592]
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Third hidden fully connected linear layer with 256 outputs and ReLU activation
+    producing output of shape [batch_size, 256]
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Output layer is a linear layer with “n_actions” units with no activation producing
+    output of shape [batch_size, 4]
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You implement the usual functions—`forward`, `get_qvalues,` and `sample_actions`.
+    These are similar to what you did in the `6.a-dqn_pytorch.ipynb` notebook for
+    the `CartPole` environment. Listing [6-15](#PC16) shows the code implementing
+    what you just read about when creating a `DQNAgent` specific to the Atari game
+    in question.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is then followed by the usual implementation of experience replay, functions
+    to play and record the game, creating an initial copy of target network as a deep
+    copy of agent network, the `compute_td_loss` function to compute TD loss, instantiating
+    all the machinery of agent, target network, and replay buffer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once these are done, you fill the replay buffer with an initial set of actions
+    by having the agent randomly choose actions. You then go on to create the hyperparameters,
+    as shown in Listing [6-16](#PC17).
+  prefs: []
+  type: TYPE_NORMAL
+- en: At this point, the agent is ready to be trained. Note that to get meaningful
+    behavior, you need to train the agent close to one million steps or so. The network
+    is also substantially more complex than the one used in the `CartPole` environment.
+    Therefore, it takes a long time to train the Atari game playing agent for one
+    million steps. You are advised to run the code on Google Colab or run it on a
+    local computer that has GPU computing capabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code for training the agent is similar to what you saw for `CartPole` in
+    the `6.a-dqn_pytorch.ipynb notebook`. The code for recording and playing the video
+    of trained agent, pushing the trained agent parameters and video to HuggingFace
+    and so on, are pretty similar as before. Therefore, I do not explicitly show the
+    listings of the code here. Interested readers may refer to the `6.c-dqn_atari_pytorch.ipynb`
+    notebook. You can also train the same agent with Stable Baselines3 (SB3) or RL
+    SB3 Zoo. You are encouraged to write that code using `CartPole` notebook code
+    as a starting point. The key difference you will have to watch out for is the
+    preprocessing of Breakout environment with specific Atari wrappers, as discussed
+    earlier in this section. The default policy also must be switched from `MLPPolicy`
+    to `CnnPolicy`, either with default values or with custom network as per your
+    needs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This completes the implementation and training of DQN for the Atari game. Now
+    that you know how to train a DQN agent, in Chapter [7](502835_2_En_7_Chapter.xhtml),
+    an optional chapter, you will investigate some issues and various approaches you
+    could take to modify the DQN. I close the chapter by reviewing the various other
+    environments that are integrated with Gymnasium and/or Stable Baselines3, including
+    the kind of problems they solve and the technical considerations for using these
+    environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of Various RL Environments and Libraries
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Until now in this book, you have looked at Gymnasium and its earlier version
+    OpenAI Gym. They both, barring some minor differences as discussed in the beginning
+    of this chapter, specify a standard interface for defining RL environments—the
+    need for such environments to have functions like `reset, step, render,` and so
+    on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You also looked at specific environments like Cart Pole, Mountain Car, Lunar
+    Lander, and Atari Breakout. These environments follow the specifications of Gymnasium/Gym
+    and are made available inside the Gymnasium library. There are many other third-party,
+    open-source environments for different use cases which are either integrated within
+    Gymnasium by the group maintaining the Gymnasium codebase or by other open-source
+    libraries. To help you appreciate that RL is used not just for playing games but
+    for very large and varied scenarios, the next section look at some of the other
+    environments. What I discuss next is by no means exhaustive, rather just a sample.
+    Readers, based on their interest, may decide to dive into the details of libraries/environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyGame
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PyGame is a Python-based library. This library includes several modules for
+    playing sound, drawing graphics, handling mouse inputs, and so on. Many RL environments
+    in gymnasium use PyGame to implement rendering logic in environments for human
+    and/or visual space representation of the game state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyGame is not just for RL. It is a wider library that’s used for implementing
+    stand-alone games and interactive environments using the Python programing language.
+    You can possibly take a full course on PyGame to understand the details; it has
+    an extensive set of features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As an RL engineer, you will not be not needing to dive into the details. Even
+    if you design your customer environments, you will use other higher-level libraries
+    that may internally use PyGame to implement the graphics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: MuJoCo
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: MuJoCo stands for Multi-Joint dynamics with Contact. It is a physics engine
+    for facilitating research and development in robotics, biomechanics, graphics
+    and animation, and other areas where fast and accurate simulation is needed. The
+    unique dependencies for this set of environments can be installed via `pip install
+    gymnasium[mujoco].`
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Gymnasium has eleven MuJoCo environments: Ant, HalfCheetah, Hopper, Humanoid,
+    HumanoidStandup, InvertedDoublePendulum, InvertedPendulum, Pusher, Reacher, Swimmer,
+    and Walker2d. A sample screenshot of these environments is shown in Figure [6-5](#Fig5).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_6_Chapter/502835_2_En_6_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 11 3 D stick figure models of an ant. a half cheetah, a hopper, a humanoid standup,
+    a humanoid, an inverted double pendulum, an inverted pendulum, a pusher, a reacher,
+    a swimmer, and a walker 2 D. Some of the models are on a checkerboard surface.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: MuJoCo environments in Gymnasium
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'All of these environments are stochastic in terms of their initial state, with
+    Gaussian noise added to a fixed initial state in order to add stochasticity. The
+    state spaces for MuJoCo environments in Gymnasium consist of two parts that are
+    flattened and concatenated together: a position of a body part (`mujoco-py.mjsim.qpos`)
+    or joint and its corresponding velocity (`mujoco-py.mjsim.qvel`). Often, some
+    of the first positional elements are omitted from the state space since the reward
+    is calculated based on their values, leaving it up to the RL algorithm to infer
+    those hidden values indirectly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you want to use these environments from gymnasium, you also need to install
+    the MuJoCo engine. DeepMind acquired MuJoCo in late 2021 and open-sourced the
+    code, making it free for everyone. Instructions on installing the MuJoCo engine
+    can be found on the website^([15](#Fn15)) and on the GitHub repository.^([16](#Fn16))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using MuJoCo with Gymnasium also requires the `mujoco` framework be installed
+    (this dependency is installed with the previous `pip` command). Environments can
+    be configured by changing the XML files or by tweaking the parameters of their
+    classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similar to Atari, you can use RL Zoo to train the agent. Listing [6-17](#PC18)
+    shows the terminal command to train the agent. The complete code with the required
+    installation steps can be found in the `6.d-robotic-env.ipynb` notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Unity ML Agents
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The Unity Machine Learning Agents Toolkit (ML-Agents^([17](#Fn17))) is an open-source
+    project that enables games and simulations to serve as environments for training
+    intelligent agents. ML-Agents provides PyTorch-based implementations of state-of-the-art
+    algorithms to enable game developers and hobbyists to easily train intelligent
+    agents for 2D, 3D and VR/AR games. Researchers can also use the provided simple-to-use
+    Python API to train agents using reinforcement learning, imitation learning, neuro
+    evolution, or any other methods. These trained agents can be used for multiple
+    purposes, including controlling non-playing character (NPC) behavior (in a variety
+    of settings such as multi-agent and adversarial), automated testing of game builds,
+    and evaluating different game design decisions pre-release.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `ML-agents` toolkit comes with 17+ sample Unity environments. It has support
+    for training single-agent, multi-agent cooperative, and multi-agent competitive
+    scenarios via several deep reinforcement learning algorithms. You can very easily
+    add your own customer environment or custom training algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It also provides a way to wrap Unity Learning environments as a OpenAI Gym environment
+    for you to use it in your code as a straight drop-in in place of any other environment.
+    You can read about it in the documentation for `ml-agents` in GitHub, the link
+    for the same is referenced at the beginning of this sub-section. Unfortunately,
+    as of writing this book, `ml-agents` supports the OpenAI gym API version and not
+    the latest API version from Gymnasium and there is no clear direction from the
+    maintainers of the code on the migration from Gym to Gymnasium.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can refer to the `ml-agent` tutorials or go to the [`https://huggingface.co/docs/hub/ml-agents`](https://huggingface.co/docs/hub/ml-agents)
+    link, which walks through the way `ml-agents` can be used in HuggingFace ecosystem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PettingZoo
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'PettingZoo is a simple, Pythonic interface capable of representing general
+    *multi-agent reinforcement learning* (MARL) problems. PettingZoo includes a wide
+    variety of reference environments, helpful utilities, and tools for creating your
+    own custom environments. While I mention this library here for the sake of completeness
+    and for putting together all environment related discussions in a single place
+    in the book, I will be covering PettingZoo in greater detail in a subsequent chapter
+    on multi-agent RL. Some common multi-agent environments include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Atari multiplayer games
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Board games like Chess and Go
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Card games like rummy
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Multi-Particle Environments (MPEs), where particle agents can move, communicate,
+    see each other, push each other around, and interact with fixed landmarks
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The SISL environments, which are a set of three cooperative multi-agent benchmark
+    environments, created at SISL (Stanford Intelligent Systems Laboratory) and released
+    as part of “Cooperative multi-agent control using deep reinforcement learning”
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Bullet Physics Engine and Related Environments
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Bullet is a physics engine which simulates collision detection as well as soft
+    and rigid body dynamics. It has been used in video games and for visual effects
+    in movies. Erwin Coumans, its main author, won a Scientific and Technical Academy
+    Award[4] for his work on Bullet.^([18](#Fn18))
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyBullet is a fast and easy to use the Python module for robotics simulation
+    and machine learning, with a focus on sim-to-real transfer. PyBullet wraps the
+    Bullet API. PyBullet can be easily used with TensorFlow and OpenAI Gym. Researchers
+    from Google Brain, Stanford AI Lab, OpenAI, and many other labs use PyBullet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Then come the various RL environments, which further wrap PyBullet to create
+    custom RL environments that follow the OpenAI gym API signatures. Some of the
+    common ones are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Pandas-gym`: PyBullet based simulations of a robotic arm moving objects.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Parallel Game engine (PGE)`: Intended for fast and pretty 3D artificial intelligence
+    experiments. However, this open-source project has not seen any update since 2018
+    and may be considered stale.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`PyFlyt`: UAV Flight Simulator Environments for Reinforcement Learning Research.
+    It is a library for testing reinforcement learning algorithms on various UAVs.
+    Built on the Bullet physics engine, it offers flexible rendering options, time-discrete
+    steppable physics, Python bindings, and support for custom drones of any configuration,
+    be it biplanes, quadcopters, rockets, and anything you can think of. It is still
+    under development and supports the newer Gymnasium API signatures.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: There are a few more that are mentioned in the Gymnasium documentation under
+    section on third-party environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CleanRL
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: CleanRL is a deep reinforcement learning library that provides high-quality,
+    single-file implementation with research-friendly features. The implementation
+    is clean and simple. With single file implementation, every detail about an algorithm
+    variant is put into a single stand-alone file. For example, `ppo_atari.py` has
+    340 lines of code and contains all the implementation details on how PPO works
+    with Atari games, so it is a great reference implementation to read.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CleanRL only contains implementations of online deep reinforcement learning
+    algorithms. Refer to [`https://github.com/corl-team/CORL`](https://github.com/corl-team/CORL),
+    which shares a similar design philosophy as CleanRL but for offline RL algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CleanRL uses “Poetry” which is yet another Python packaging and dependency management
+    tool and achieves a similar purpose as that of `venv` or `conda`. You can explore
+    Poetry’s dependency management and its pros and cons by visiting the Poetry documentation.^([19](#Fn19))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [6-18](#PC19) shows the set of commands you can run to install Poetry,
+    followed by CleanRL and then training an agent DQN. The code in Listing [6-18](#PC19)
+    has been tried on WSL2 Ubuntu on Windows 11 and should also work out-of-the-box
+    on Ubuntu and macOS. For macOS, you may want to use the Homebrew package manager
+    for installing Python and the other libraries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: MineRL
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: MineRL is a Python 3 library that provides a OpenAI Gym interface for interacting
+    with the video game Minecraft, accompanied with datasets of human gameplay. Started
+    as a research project at Carnegie Mellon University, MineRL aims to assist in
+    the development of various aspects of artificial intelligence within Minecraft.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Refer to the documentation^([20](#Fn20)) for more details on how to install
+    and use this. You can also refer to the Tutorial section of the documentation
+    for examples on how to run MineRL on Colab.
+  prefs: []
+  type: TYPE_NORMAL
+- en: FinRL
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: FinRL is an open-source framework for financial reinforcement learning. FinRL
+    provides a framework that supports various markets, State of the Art (SOTA) deep
+    learning RL (DRL) algorithms, benchmarks of many quant finance tasks, live trading,
+    and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The DRL framework is powerful in solving dynamic decision-making problems by
+    learning through interactions with an unknown environment, thus exhibiting two
+    major advantages: portfolio scalability and market model independence. Automated
+    trading is essentially making dynamic decisions, namely, to decide where to trade,
+    at what price, and what quantity, over a highly stochastic and complex stock market.
+    Taking many complex financial factors into account, DRL trading agents build a
+    multi-factor model and provide algorithmic trading strategies, which are difficult
+    for human traders. Interested readers can read more about it on GitHub.^([21](#Fn21))
+    The documentation also contains some notebooks showcasing on its use.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: FlappyBird Environment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The GitHub repository `markub3327/flappy-bird-gymnasium`^([22](#Fn22)) contains
+    the implementation of Gymnasium environment for the FlappyBird game.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'FlappyBird, `FlappyBird-v0`, has 12 dimensional observation spaces with the
+    following meanings:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The last pipe’s horizontal position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The last top pipe’s vertical position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The last bottom pipe’s vertical position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The next pipe’s horizontal position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The next top pipe’s vertical position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The next bottom pipe’s vertical position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The next next pipe’s horizontal position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The next next top pipe’s vertical position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The next next bottom pipe’s vertical position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The player’s vertical position
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The player’s vertical velocity
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The player’s rotation
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'The action space is discrete, with two values:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Do nothing - “0”
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Flap - “1”
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'And reward is comprised of:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: +0.1 - Every frame it stays alive
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: +1.0 - Successfully passing a pipe
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: -1.0 - Dying
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Interested readers can refer to the `6.e-dqn_flappy_pytorch.ipynb` notebook
+    for training and evaluating the FlappyBird environment using DQN. It is very similar
+    to what you saw for Atari DQN. This brings you to the end of this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This was a long chapter, where you looked at DQN in depth and the various RL
+    environments. It started with a quick recap of Q-learning and the derivation of
+    the update equation for DQN. You then looked at the implementation of DQN in both
+    PyTorch and TensorFlow for a simple `CartPole` environment. You saw the complete
+    code for the DQN algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You followed it with a review of the Gymnasium API and compared the changes
+    it has undergone from its original version under OpenAI Gym. You looked at how
+    Stable Baselines3 (SB3) and RL SB3 Zoo (SB3 Zoo) can be used for training agents,
+    where you leverage the pre-implemented DQN and various other algorithms. A quick
+    review of the process to record the video of a trained agent in action was also
+    discussed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next two sections were on hyperparameter optimization using Optuna and SB3
+    and plotting using the Rliable library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This completed the walkthrough of DQN and its associated concepts. Next, I talked
+    about applying DQN to Atari games, which resulted in discussing preprocessing
+    steps commonly required for games like these.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The final section was devoted to the various RL environments ,ranging from MuJoCo
+    for simple joint robots, to Unity-based ML agents, and areas like finance under
+    the FinRL library.
+  prefs: []
+  type: TYPE_NORMAL

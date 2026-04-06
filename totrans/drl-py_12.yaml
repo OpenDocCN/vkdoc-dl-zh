@@ -1,0 +1,1311 @@
+- en: 12. Multi-Agent RL (MARL)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: The book so far has covered most of the popular RL approaches, including the
+    state-of-the-art PPO with its application in Large Language Models for RLHF fine-tuning.
+    You may have noticed that the focus has always been on only one agent in the environment
+    that learns to act optimally using RL training algorithms. However, there is a
+    whole range of settings with more than one agent. These agents in the environment—either
+    individually or in a collaborative manner—try to achieve some goal. A setup involving
+    multiple agents in the same environment is the focus of this chapter. It is called
+    Multi-Agent RL (MARL). MARL is a very fascinating and vast topic. To do proper
+    justice to the topic would require a complete book of its own. This chapter introduces
+    the key topics with simple examples and finally concludes the chapter with an
+    example of applying learning in MARL setup for a simple environment. I will introduce
+    various terms and concepts and make some assertions without getting into depth.
+    The key purpose is to introduce MARL with the expectation that readers interested
+    in MARL will refer to other detailed MARL-related books.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In environments characterized by the presence of multiple decision-makers, agents
+    are required to not only understand and adapt to the dynamics of the environment
+    but also to predict and react to the actions of other agents. This capability
+    is critical for any system where cooperation, competition, or a mixture of both
+    is necessary for achieving optimal outcomes. A schematic of MARL is shown in Figure
+    [12-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An architecture with agents 1 to 3 on the left and environment on the right.
+    The agents send actions to the environment and receive observations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Schematic of Multi-Agent RL (MARL)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look at some examples of MARL in different domains:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Autonomous driving*: MARL is used to simulate and train autonomous vehicles
+    to navigate complex traffic scenarios, where each vehicle (agent) must consider
+    the actions of others to avoid collisions and optimize traffic flow.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Robotics*: In collaborative robotics, MARL enables multiple robots to work
+    together on tasks such as assembly lines or search-and-rescue missions, coordinating
+    their actions for efficiency and effectiveness.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Smart grid management*: MARL can optimize energy distribution and consumption
+    in smart grids, with each agent representing a consumer, producer, or storage
+    system, working together to balance supply and demand.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*E-commerce*: Online platforms use MARL to model interactions between buyers,
+    sellers, and recommendation systems, optimizing for user satisfaction and revenue.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Multiplayer online games*: Game developers use MARL to create more intelligent
+    and adaptable non-player characters (NPCs) that can interact with human players
+    or other NPCs in complex game environments.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '*Financial markets*: MARL models the behavior of traders in financial markets,
+    helping to understand market dynamics and develop strategies for trading and investment.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The next question that comes to mind is how do these agents learn in a setup
+    like this? It is actually very similar to the RL you have been seeing in the book
+    so far. Like the single-agent case, the agents learn their behaviors by trying
+    different actions and receiving rewards, or returns, for their outcomes. Figure
+    [12-2](#Fig2) illustrates the basic MARL training loop. Each of the agents picks
+    an individual action, and the combination of these actions is called *joint action*.
+    The joint action affects the state of the environment according to the environment
+    dynamics, and the agents get individual rewards from this change, as well as individual
+    observations about the new environment state. This loop repeats until a stopping
+    criterion is met such as one agent losing a game or all agents collaboratively
+    reaching an end goal, such as picking all the articles from the floor, or agents
+    unloading all the items from a delivery truck and placing them properly on the
+    warehouse shelves. A full run of this loop from the initial state to the final
+    state is called an *episode*. The data generated from multiple separate episodes—that
+    is, the observed observations, actions, and rewards in each episode—are used to
+    constantly improve the agents’ policy/reward. After the agent has been trained,
+    in actual runs, the agents may still act independently, as shown in Figure [12-1](#Fig1),
+    or jointly, as shown in Figure [12-2](#Fig2). In a subsequent section you will
+    take a look at the various combinations of how to train and how to execute after
+    training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A circular flow chart of training loop. The multi-agents 1 to 3 are connected
+    to the joint action. The joint action leads to the environment and the environment
+    is connected to agents 1 to 3 through observation or reward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training loop in Multi-Agent RL (MARL)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Look again at Figure [12-2](#Fig2). Could you still solve it using what you
+    have learned so far for single agent setup? Theoretically, there is a way. Think
+    of the three agents as a combined single agent. And think of combining individual
+    rewards into a collective single reward. The same view can be extended to observations
+    and actions as well. With this approach you can recast a multi-agent setup to
+    a single agent setup. Though theoretically possible, it has a few challenges when
+    viewed as a single combined-agent RL. I briefly talk about these challenges.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Suppose each agent has a single dimension action with five discrete values and
+    further suppose that you are combining three such agents together. What is the
+    action space for the combined agent? It will be 5x5x5=125 actions. The same applies
+    to state/observation as well. Therefore, using a single agent RL approach leads
+    to exponential growth of the possible action space and state/observation space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another challenge is when agents act sequentially, like in a game of Chess or
+    Go. Each agent takes a turn to act and the action depends on the action of other
+    player. In a setup like this, the agents’ actions are not independent. There is
+    no easy way to look at it as a single agent RL setup.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third challenge is with the combination of state/observations. Consider
+    the case of a bunch of self-driving cars. If they are treated as a single agent
+    RL, you need to combine the local observation of each car together into a big
+    observation vector. For two cars which are, say, a few kilometers apart, the decision
+    to steer each car will mostly depend on the local state of that car. The state/observation
+    of the car far away will have no bearing (unless it involves a police chase!).
+    However, by combining the states of both the car together, you are providing a
+    whole lot of irrelevant information, thus making learning tougher or almost impossible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Therefore, there is a need to have a separate approach and a separate set of
+    algorithms that recognize the presence of multiple agents and their unique challenges
+    and then carry out planning effectively. Let’s talk about these key challenges.
+    The point is that treating all agents as a large combined single agent RL entity
+    has a set of challenges. However, depending on the abstraction used, treating
+    each agent as an individual entity under MARL has a different set of challenges.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Challenges in MARL
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '*Moving and changing targets*: I mentioned this problem when I introduced RL.
+    In RL, unlike supervised learning where the training data is given beforehand,
+    new data/observations appear as agents learn a behavior and explore the environment.
+    The training data is not fixed, so learning a target is like aiming at a moving
+    target. You saw this in the TD(0) method of bootstrapping approach and how you
+    treated the targets as constants. This problem is even bigger in MARL. Since there
+    are multiple agents, each agent tries to adjust to the policies of the other agents
+    and vice versa, in a cycle. This creates an unstable cyclic learning dynamic that
+    requires MARL algorithms to deal with this non-stationary aspect in a more reliable
+    way than single agent RL algorithms.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*The best policy and the balance*: In a single agent RL, the best policy means
+    getting the highest expected returns in each state. But when there are multiple
+    agents together, the return for each agent depends on the return for the others.
+    So, what is the best result? Is it for one agent, all agents together or relative
+    to what? How do you combine the returns of different agents? There may be more
+    than one policy with the same total return but different individual returns. If
+    the environment is cooperative or competitive, how does that affect the idea of
+    the best? The whole idea of the best depends on the context and that needs to
+    be abstracted in MARL.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Reward assignment*: In RL, reward assignment, also known as temporal credit
+    assignment in RL, is the challenge of determining which of the previous actions
+    contributed to the reward agent receives at a given instance. In MARL, this challenge
+    is even more complicated because it also requires identifying who performed the
+    action that resulted in the reward. With only this state/action/reward information,
+    it can be very hard to distinguish the influence of each agent on the received
+    reward, especially if an agent did not contribute to the reward since its action
+    was irrelevant. Although theoretical ideas based on counterfactual reasoning can
+    address this problem, it is still an open problem how to do multi-agent reward
+    assignment in an effective and scalable way.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Scaling for number of agents*: In a MARL environment, as the number of agents
+    grows, the number of combinations of agent actions also increase and could do
+    so in an exponential way. The current state-of-the-art MARL approaches does not
+    handle a large number of agents. It is an active area of research.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Apart from these aspects, there are a few other issues that arise in MARL. When
+    you have more than one agent in the system, they may also communicate with each
+    other. This communication usually helps in stabilizing the learning process; however,
+    if the messages/information being communicated between agents contains irrelevant
+    information or noise, it could impede the learning process. Another aspect is
+    the robustness and stability of the learning process. With a higher number of
+    agents interacting and affecting each other in multiple ways, it becomes tricker
+    to ensure stability. MARL algorithms have to take special care of this aspect.
+  prefs: []
+  type: TYPE_NORMAL
+- en: MARL Taxonomy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Continuing with introduction of MARL and its components, you’ll look next at
+    the hierarchy of MARL. Figure [12-3](#Fig3) shows one such possible classification.
+    You have been mostly learning about Markov Decision Processes (MDP) introduced
+    in Chapter [2](502835_2_En_2_Chapter.xhtml) which involves single agent in the
+    environment. It is based on the action and response of the environment to the
+    action; the agent can move from one state to another. In Chapter [10](502835_2_En_10_Chapter.xhtml),
+    I introduced multi arm bandit, which is a special case of MDP with one agent and
+    one state. After the agent takes an action, the agent gets a reward based on the
+    action and then the agent state is reset to the beginning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A model diagram of taxonomy consists of 4 rectangles. The outer one reads partially
+    observable, inner rectangle is the stochastic game. It consists of 2 small rectangles
+    inside that read repeated normal form game and Markov decision process. Markov
+    consists of a small rectangle of multi-arm bandit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: MARL taxonomy
+  prefs: []
+  type: TYPE_NORMAL
+- en: Just like multi arm bandit was the foundational building block of MDP, repeated
+    normal form game is the foundational block of MARL. By the way, in this chapter,
+    I use “environment” and “game” interchangeably. The word “game” comes from the
+    discipline of “game theory” which is the foundational concept on which MARL models
+    are built. Normal form game defines a single interaction between two or more agents.
+    The way it works is that each agent *i* from the set of *n* agents, select an
+    action *a*[*i*] as per its policy π[*i*]. The resulting actions from all the agents
+    form a joint action, *a* = (*a*[*i*], *a*[2], …, *a*[*n*]). Based on the joint
+    action, each agent receives a reward *r*[*i*]. You can consider this as one loop
+    of the interaction, as shown in Figure [12-3](#Fig3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Normal form games can be further sub-classified based on the type impacting
+    the reward structure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Zero-sum game**:* The sum of agents’ rewards is zero. In the case of a two-agent
+    setup, the gain of one agent is a loss of the same amount for the other one.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Common-reward game**:* All agents receive the same reward. Most cooperative
+    behaviors would fall under this category.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*General-sum game**:* All other types that do not fit into the previous two
+    categories.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Two-player normal form games are also known as *Matrix games* because the actions
+    of one player can be represented as rows of a matrix and the actions of the second
+    agent can be represented as columns of the matrix. The reward in this case is
+    shown in the cells of the matrix as a tuple, with the first element of the tuple
+    showing the reward of the first agent and the second element of the tuple showing
+    the reward of the second agent. Do you remember about the game of rock-paper-scissors
+    (RPS) discussed in Chapter [8](502835_2_En_8_Chapter.xhtml)? Figure [12-4](#Fig4)
+    shows the reward and actions matrix form. It also shows a possible reward structure
+    for a sample cooperative game as well as the famous prisoner’s dilemma. Prisoner’s
+    Dilemma is a famous problem setup in game theory and can merit a complete book
+    of its own. In cooperative/coordination, games have the same reward to all the
+    agents, and you can have a single entry per cell, the common reward.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Three matrices represent games. Left. 4 by 4 rock-paper-scissors matrix with
+    headers R, P, and S. Middle. 3 by 3 coordination game matrix with headers X and
+    Y. Right. 3 by 3 prisoner's dilemma with headers silent and testify.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example matrix games
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is a *normal-form game*. *Repeated normal-form game* is nothing but repeating
+    this in a loop similar to taking multiple repeated actions, such as with the multi
+    arm bandit. When I talk about repeated actions, the time horizon also becomes
+    important. Games with finite time may demonstrate different behavior as the game
+    progresses and gets close to the end. The agents may choose different actions
+    closer to the end of the game versus the actions toward the start. With infinite
+    time internal actions, after some stabilization over certain time periods, the
+    agent actions will converge to the same distribution as kind of a steady state.
+    As discussed earlier, with infinite interval games, you use the concept of γ,
+    the discounting factor, to add the rewards in order to keep the sum of the rewards
+    bounded.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next in the hierarchy is the concept of *Stochastic games*. This setup extends
+    the repeated-normal-form with a single state to multiple states, very similar
+    to the extension of multi-arm-bandit to MDP. This is a full multi-agent system,
+    defined as MARL. Just like a single agent MDP, you now have each agent acting
+    based on current state. These actions are combined to get *joint action*. The
+    joint action is passed over to the environment, which responds with reward and
+    the next state for each individual agent. The agents then use the new state to
+    reinitiate the action-reward-next state loop. Similar to MDP, stochastic games
+    have a Markov property—that is, the probability of the next state and action for
+    an agent being conditionally independent of the past states and joint action given
+    the current states and joint action. It is the same Markov Property you saw for
+    RL and a single agent. Now, it is extended from one agent to a multi-agent setup.
+    As shown in Figure [12-3](#Fig3), repeated normal-form games are a special case
+    of stochastic games with only one state. Further, the classification to zero-sum
+    game, common-reward game or general-sum game carries over to Stochastic games
+    as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Extending the generalization, you can move from fully observable stochastic
+    games to partially observable stochastic games. While in stochastic games, the
+    agents are able to directly observe the state of the environment, in *Partially
+    Observable Stochastic Games* (POSG), the agent gets an observation, which is an
+    incomplete information of the actual state. Usually for each agent *i*, an individual
+    observation function *O*[*i*] is defined which specifies the probabilities over
+    the agent’s possible observations ![$$ {o}_i^t $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_IEq1.png)
+    given the actual environment state *s*^(*t*) and joint action in previous time
+    step *a*^(*t* − 1). This is represented as ![$$ {O}_i\left({o}_i^t|{a}^{t-1},{s}^t\right)
+    $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_IEq2.png). Accordingly,
+    each agent’s action/policy depends on the history of the observations now. This
+    distinction of zero-sum games, common-reward games and general-sum reward games
+    also extends to POSG. The common reward games are also known as decentralized
+    POMDP. The observation function *O*[*i*] can be used to present diverse situations.
+    Consider the environment of robot soccer in which each robot may observe the full
+    playing field but may not communicate its action to other robots especially players
+    from rival team. Therefore, each robot has to guess the action of other robots.
+    One example of this would be the ball-passes between robots of the same team based
+    on the location and presence of the rival team robots. In some other cases the
+    agents may only observe a subset of the state and joint actions. An example of
+    this is self-driving cars. Observation functions can also be used to model uncertainly
+    in observation by adding some random noise. This would be the case with most of
+    the physical sensors that robots and other autonomous vehicles use to sense the
+    environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Communication Between Agents
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When you have more than one agent in the environment, the way they communicate
+    also needs to be modeled. One way to model this is to consider messages as a type
+    of action that do not impact the environment state. For an agent *i*, you can
+    think of its action *a*[*i*] as a composition of two types of actions—one is the
+    environmental action *x*[*i*] which impacts the state of the environment and message
+    action *m*[*i*]. *m*[*i*] is usually a discrete set specifying the structure of
+    information passed by agent *i* to others. With this modification, the complete
+    action *a*[*i*] of agent *i* is now represented as a tuple (*x*[*i*], *m*[*i*]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like noise in observations, you could also introduce uncertainly in the communication
+    and message passing between agents. For communication actions, the agents as part
+    of learning need to develop an understanding of the message received by them.
+    It could lead to an evolution of some abstract form of shared language between
+    agents.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mapping with Game Theory
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The field of MARL borrows a lot of foundational setups from game theory as well
+    as traditional single agent RL. The “environment” in RL is known as a *game*.
+    I used the word “game” while defining the hierarchy in MARL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In RL, the agent is an entity or a construct that makes decisions on how to
+    act. In game theory, such an entity is called a *player*. What is called reward
+    on RL, is called *payoffs* or *utility* in game theory. Policy defines the way
+    agent acts in RL based on the information available. This is known as *strategy*
+    in game theory, which defines the way agent/player acts based on the information
+    available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Solutions in MARL
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: What is a solution in MARL? A previous section introduced the basic environment
+    setup for multi-agent scenarios—how they act, what ways they could pass messages,
+    and so on. However, this on its own does not help in developing a learning process.
+    You need one more thing, which is the objective that you are trying to optimize.
+    In single RL, you used total discounted reward, also known as return, as a metric
+    to be maximized. Similarly, you need to define an objective that you want to maximize
+    in a MARL setup.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As there are multiple agents involved in MARL, the objective that you need to
+    optimize has its own peculiarities. For common-reward games where all agents receive
+    the same reward, a definition of a solution could be to maximize the expected
+    return received by all agents. The concept of a solution becomes much more complex
+    when agents receive separate rewards. Let’s look at a few common ones.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look at a setup of two agent zero-sum game of rock-paper-scissors that
+    you saw in Figure [12-4](#Fig4). In a zero-sum game, the reward of one agent is
+    the negative of the other agent’s return. Many two-player board games such as
+    chess and go also fit into this category of zero-sum games with sequential moves.
+    The solution applicable in this case is known as *minimax*. Each agent learns
+    a policy, which is maximized against the worst-case opponent—that is, an opponent
+    which highest level of expertise. It is also called the *best response policy**,*
+    where an agent responds to the opponent’s move with a best response possible.
+    In rock-paper-scissors, the best response policy is a uniform random action of
+    choosing one of the three possible actions with equal probability. Such an approach
+    gives the expected reward of zero for each of the two players/agents. Let’s consider
+    two agents *i* and *j* with policies π[*i*] and π[*j*]. The joint policy π is
+    denoted as a tuple of individual agent policies: π = (π[*i*], π[*j*]). For a minimax
+    joint policy, the following conditions must hold:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {U}_i\left(\uppi \right)=\underset{\uppi_i^{\prime }}{\max}\underset{\uppi_j^{\prime
+    }}{\min }{U}_i\left({\uppi}_i^{\prime },{\uppi}_j^{\prime}\right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ =\underset{\uppi_j^{\prime }}{\min}\underset{\uppi_i^{\prime }}{\max }{U}_i\left({\uppi}_i^{\prime
+    },{\uppi}_j^{\prime}\right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {U}_i\left(\uppi \right)=-{U}_j\left(\uppi \right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: There could be more than one minimax solution to a zero-sum game; however the
+    utility or reward, also known as minimax value of the game, remains the same under
+    these different solutions. For non-repeated zero-sum normal-from games, the minimax
+    solution can be obtained via linear programming. Interested readers can refer
+    to standard texts on MARL to understand this approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next type of objective is the *Nash equilibrium*, which is applicable with
+    a general-sum game with two or more players. It is a well-studied concept in game
+    theory. In Nash equilibrium, an agent *i* cannot improve its expected return by
+    changing its policy. If the policy of other agents changes, the agent *i* can
+    find another fixed point which is the new Nash equilibrium and is the best response
+    to the current policies of all the other agents. In a general-sum game with *n*
+    agents with joint policy π = (π[1], …, π[*n*]) is considered to be in Nash equilibrium
+    if:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \forall i,{\uppi_i}^{\prime }:{U}_i\left({\pi_i}^{''},{\pi}_{-i}\right)\le
+    {U}_i\left(\pi \right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Where π[*i*]^′ is a policy for agent *i* and *π*[−*i*] is the policy of all
+    other agents except the agent *i*. Equation [12-4](#Equ4) says that if a policy
+    π is a Nash equilibrium with agent *i* policy as π[*i*] then π[*i*] is better
+    than any other policy π[*i*]^′ for the agent *i* considering that other agents’
+    policies *π*[−*i*] remaining constant.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The concept of Nash equilibrium can also be applied to zero-sum games, as they
+    are a special case of general-sum games. In rock-paper-scissors, the only Nash
+    equilibrium is choosing actions with uniform random probability. In some games,
+    the equilibrium could be unique or there could be multiple Nash equilibrium. In
+    the prisoner’s dilemma shown in Figure [12-5](#Fig5), the Nash equilibrium is
+    a unique and deterministic one where for each agent there is a single best action,
+    such as “testify”. Such a deterministic policy by each agent satisfies Equation
+    [12-4](#Equ4). If the column prisoner chooses to stay silent, the row prisoner
+    is better off by choosing to testify. They will get a reward of 0 under action
+    “testify” vs a reward of -1 if they stay silent. Similarly, if the column prisoner
+    chooses to testify, the column prisoner is again better off by testifying since
+    that will give the row prisoner a reward of -2 vs a reward of -3 if the row prisoner
+    chooses to remain silent. The same logic can be applied from the perspective of
+    the column prisoner, wherein the policy to testify is the best for them as well.
+    Therefore, there is a single deterministic joint policy of both prisoners choosing
+    the testify action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 3 by 3 matrix of prisoner's dilemma represents the values of silent and testify.
+    The coordinates in the first row are (negative 1, negative 1) and (negative 3,
+    0). The coordinates in the second row are (0, negative 3) and (negative 2, negative
+    2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prisoner’s dilemma
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, in the case of rock-paper-scissors, there is no unique Nash equilibrium.
+    Rather it is a probabilistic one where each agent chooses to act in a uniform
+    random way, choosing any of the three actions (rock, paper, scissors) with equal
+    probability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A further generalization of the Nash equilibrium policy is by allowing for correlated
+    policy of agents where each agent’s policy is no longer independent of the others.
+    In cases like these, there may be many policies that achieve the same expected
+    joint rewards. In situations like these, you extend the concept of equilibrium
+    with additional criteria such as Pareto optimality and social welfare and fairness
+    to differentiate between different equilibrium solutions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A joint policy is *Pareto-optimal* if there is no alternative joint policy that
+    increases the expected return for one or more agents, without decreasing the expected
+    return for at least one agent. This means that none of the agents can gain without
+    causing losses to other agents. In games where the reward is shared by all players,
+    any joint policy that is Pareto-optimal has the same expected value, which is
+    also the highest expected value that any joint policy can attain in the game.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pareto-optimal solutions, however, make no statement about the relative distribution
+    of joint reward among the various agents. Welfare indicates the overall number
+    of benefits all the agents get, while fairness indicates how the benefits are
+    divided among the agents. In common-reward games or zero-sum games there is no
+    notion of social welfare of fairness. As an example, in common-reward games, where
+    all agents receive the same reward, welfare and fairness are maximized when the
+    individual agents’ expected returns are maximized. In a zero-sum game, one agent’s
+    reward is a negative of the reward of the other agent. The total expected joint
+    return is zero and therefore for zero-sum games, the minimax solution achieves
+    the total social welfare of zero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: MARL and Core Algorithms
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Having introduced MARL concepts, this section explores the core learning algorithms
+    for MARL. At an abstract level, they mostly follow the approach you have seen
+    so far for one-agent RL, but with some modifications. This section briefly covers
+    algorithms, mostly in finite space of actions and states.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Value Iteration
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Value iteration for one agent was introduced in Chapter [3](502835_2_En_3_Chapter.xhtml).
+    Figure [12-6](#Fig6) reproduces the pseudocode for the value iteration algorithm
+    from Chapter [3](502835_2_En_3_Chapter.xhtml). There are a few minor changes that
+    you need to make to extend this algorithm to MARL scenario. The step where you
+    calculate *v*^′(*s*) needs to change—that is, ![$$ {v}^{\prime }(s)\leftarrow
+    \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r|s,a\right)\left[r+\upgamma
+    v\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_IEq3.png)
+    is the one that you need to change. There are two changes you need to make to
+    this step. First you calculate the right-side expression for each agent *i* and
+    store it in an intermediate action-value vector *M*[*i*, *s*] as shown in Equation
+    [12-5](#Equ5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {M}_{i,s}(a)\leftarrow \sum \limits_{s^{\prime },r}p\left({s}^{\prime
+    },r|s,a\right)\left[{r}_i+\gamma {v}_i\left({s}^{\prime}\right)\right],\mathrm{for}\
+    \mathrm{state}\ s\in S,\mathrm{joint}\ \mathrm{action}\ a\in A $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm of value iteration describes the state values, loop procedures,
+    and output deterministic policy. It includes the expressions of upsilon prime
+    of s, delta, upsilon of s, and pi of s.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Value Iteration for single-agent RL
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next change is to replace “max” in the original equation with a value operator
+    *v*[*i*] for each agent *i*, which is obtained by computing minimax solution for
+    agent *i* over all the other agents in the environment. It can be represented
+    as *v*[*i*](*s*) = *Value*[*i*](*M*[1, *s*], …, *M*[*n*, *s*]). The rest of the
+    pseudocode remains same. Note that value iteration for MARL requires access to
+    the underlying model dynamics, similar to the requirements for single-agent RL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will see this pattern repeated, where the base construct used for MARL will
+    follow the approaches similar to the ones for single agent RL. In MARL, state
+    value and action value calculation are followed by additional post-processing
+    steps like minimax and Nash equilibrium to calculate the updates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TD Approach with Joint Action Learning
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Chapter [4](502835_2_En_4_Chapter.xhtml) explained the model-free approach for
+    single-agent RL. This section explores how similar model-free approaches can be
+    applied to MARL. One naïve approach is to have each agent run TD(0) at each step.
+    In other words, if an environment has *n* agents, you run *n* separate TD(0) updates
+    at each step, essentially treating each of the *n* agents as an independent agent
+    without worrying about the actions of other agents. This approach is also known
+    as *independent Q-learning*. This approach introduces the issues of changing targets
+    due to the actions of other agents, reward assignments, and the notion of what
+    is a best policy, which I talked about in the section on “Challenges in MARL..
+  prefs: []
+  type: TYPE_NORMAL
+- en: Joint action learning (JAL) is a TD-learning approach in a TD model-free world,
+    where the algorithm estimates the expected return of joint actions and uses that
+    to train the agents. Like the one agent Q-learning TD approach these are off-policy
+    algorithms. One key difference is the involvement of multiple agents, which brings
+    the notion of what is optimal equilibrium solution. As compared to single agent
+    Q values, just learning the Q values of each agent in a given state and action—that
+    is, *Q*[*i*](*s*, *a*[1], …, *a*[*n*]), is not sufficient. Unlike single agent
+    Q-value, you cannot take a simple max over Q values of agent *i*—that is, ![$$
+    ma{x}_{a_i}{Q}_i\left(s,{a}_1,\dots, {a}_n\right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_IEq4.png),
+    in a given state *s* and joint action *a* = (*a*[1], …, *a*[*n*]) to get the best
+    Q value for that given state. The max for an agent *i* depends on the actions
+    of the other agents in the environment. You need to bring in the concept of equilibrium
+    based on how agents are interacting—are they competing or cooperating, what’s
+    the relative reward structure, are they all getting same rewards, or do they vary,
+    and so on. You read about a few options in the section on solutions in MARL. I
+    talked about *minimax* in a zero-sum game, as well as the *Nash equilibrium* and
+    *Correlated-equilibrium* solution objectives. Depending on the solution strategy
+    from game theory, JAL learning has variations on how this step toward optimal
+    equilibrium solution is taken. These family of JALs with game theory solution
+    objectives are commonly referred to as JAL-GT family.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The high-level approach in solving these kinds of problems is to first compute
+    Q values for each agent at a given state and all possible joint actions. Consider
+    that you have two agents each with three actions. The Q values will be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_i\left(s,{a}_{i,1},{a}_{j,1}\right),{Q}_i\left(s,{a}_{i,1},{a}_{j,2}\right),\dots,
+    {Q}_i\left(s,{a}_{i,3},{a}_{j,3}\right),\kern1em i\in \left\{1,2\right\} $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: With each of the two agents have three actions each, the total possible joint
+    actions will be 3*x*3 = 9\. Therefore, there will be 9*x*2 = 18 Q values with
+    nine Q-values for the first agent and nine Q-values for the second agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second step is to use the minimax or Nash equilibrium solution approach
+    to update the policy for both the agents.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The third step is to generate a new transition using the updated policy with
+    the usual ϵ-greedy policy, execute the join action in the environment, and finally
+    observe the reward and transition to a new state. This loop is repeated: Q-value
+    calculation, update of policy, and taking an ϵ-greedy joint step.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, the process is very similar to tabular Q-learning in Chapter
+    [4](502835_2_En_4_Chapter.xhtml). The only difference is the way max is replaced
+    with either a minimax or Nash equilibrium-based policy update. The core structure
+    of Q-learning remains the same as the single-agent RL approach, with replacement
+    of a simple max with a game theory driven policy update.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I will briefly describe the three Q-learning approaches using minimax, Nash
+    equilibrium, and correlated equilibrium, the types of game settings each of these
+    can be used for, and some key theoretical findings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Minimax Q-Learning
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Minimax Q-learning solves Q-learning using a minimax approach and it is carried
+    out via linear programming. It can be applied to two agent zero-sum games. Like
+    the usual assumption of single-agent Q-learning, minimax Q-learning is guaranteed
+    to find an optimal solution under the assumption that all state and joint action
+    combinations are tried a sufficient number of times. One common challenge with
+    the minimax approach is that it assumes the opponent to be an expert optimal agent
+    who is acting to defeat the other player. If the opponent is not optimal and has
+    a weakness, the minimax solution does not allow the other agent to exploit this
+    weakness in the opponent’s strategy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nash Q-Learning
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Nash Q-learning solves the multi-agent Q-learning by computing a Nash equilibrium
+    and using that to update the policy. This algorithm can be applied to a more general
+    class of settings with a finite number of agents. Though, the more agents there
+    are, the higher the complexity in calculating the Nash equilibrium at each step.
+    Nash Q-learning is guaranteed to learn a Nash equilibrium of the game provided
+    all states have a global optimum across all the agents. This condition is very
+    restrictive and not usually present in most practical games.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Correlated Q-Learning
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Just like the other two, correlated Q-learning solves the policy update step
+    by finding a correlated equilibrium. This approach has two key benefits—it can
+    be applied to a wider space of games than what is feasible with the Nash equilibrium
+    and it can be computed using a linear programming approach, while the Nash equilibrium
+    requires quadratic programming.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assumptions on Agents
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In JAL-GT agents, we make assumptions on the agents depending on the solution
+    approach of minimax, Nash, or correlated equilibrium. But what if an agent deviates
+    from these assumptions? As an example, in minimax, we make the assumption that
+    each opponent is an optimal worst-case agent. Accordingly, the policy that’s learned
+    is the best action against such an optimal agent. If the opponent is not optimal,
+    a player will not learn to exploit the weakness of its opponent. There is another
+    way to go about this. Instead of making assumptions about the behavior of the
+    opponent, you learn the behavior based on observations. This is known as *agent
+    modeling* and a common approach is policy reconstruction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Casted as a supervised problem, you collect the pair of opponent’s state and
+    actions to model the policy opponent is following. You start with an assumption
+    of uniform policy for the opponent and keep adjusting the assumed policy of opponent
+    based on the observations of opponent’s behavior each time it acts. This family
+    of JAL algorithms is known as JAL-AM (JAL with Agent Modeling).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy-Based Learning
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Just like policy-based algorithms for single-agent RL that you read about in
+    Chapters [8](502835_2_En_8_Chapter.xhtml) and [9](502835_2_En_9_Chapter.xhtml),
+    MARL also has a family of algorithms that are policy based. You learn a policy
+    directly instead of learning the *V* or *Q* values and then use these values to
+    find a policy. These are all based on gradient ascent to nudge the actions of
+    all agents in the environment toward a higher expected return individually. Let’s
+    talk through an example. First, consider a scenario of two agents each with two
+    actions. Look at a non-repeated normal form game, which means that there is only
+    one state, and the episode ends after both the agents take an action. Let’s write
+    the reward matrix for the two agents as given in Equation [12-6](#Equ6). If agent
+    *i* chooses action 2 and agent *j* choses action 1, the reward for agent *i* will
+    be *r*[2,1] and for agent *j* it will be *u*[2,1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {R}_i=\left[\begin{array}{cc}{r}_{1,1}&amp; {r}_{1,2}\\ {}{r}_{2,1}&amp;
+    {r}_{2,2}\end{array}\right],\kern0.36em {R}_j=\left[\begin{array}{cc}{m}_{1,1}&amp;
+    {m}_{1,2}\\ {}{m}_{2,1}&amp; {m}_{2,2}\end{array}\right] $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As you are in a non-repeated normal-form game, you can define the policies
+    of the two agents as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\uppi}_i=\left(\upalpha, 1-\upalpha \right)\kern2.25em {\uppi}_j=\left(\upbeta,
+    1-\upbeta \right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Where α represents the probability with which agent *i* chooses action 1 and
+    1 − α as the probability that agent *i* chooses action 2\. Similarly, β represents
+    the probability with which agent *j* chooses action 1 and 1 − β as the probability
+    that agent *j* chooses action 2\. In this notation, the join action probability
+    can be represented as π = (π[*i*], π[*j*]). Let’s now write the expected reward
+    for each agent as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {U}_i\left(\upalpha, \upbeta \right)=\alpha \beta {r}_{1,1}+\upalpha \left(1-\upbeta
+    \right){r}_{1,2}+\left(1-\upalpha \right)\upbeta {r}_{2,1}+\left(1-\upalpha \right)\left(1-\upbeta
+    \right){r}_{2,2} $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\alpha \beta u+\upalpha \left({r}_{1,2}-{r}_{2,2}\right)+\upbeta \left({r}_{2,1}-{r}_{2,2}\right)+{r}_{2,2}
+    $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \mathrm{Where}\kern1em u={r}_{1,1}-\left({r}_{1,2}+{r}_{2,1}\right)+{r}_{2,2}
+    $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: And,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {U}_j\left(\upalpha, \upbeta \right)=\alpha \beta {m}_{1,1}+\upalpha \left(1-\upbeta
+    \right){m}_{1,2}+\left(1-\upalpha \right)\upbeta {m}_{2,1}+\left(1-\upalpha \right)\left(1-\upbeta
+    \right){m}_{2,2} $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\alpha \beta {\mathrm{u}}^{\prime }+\upalpha \left({m}_{1,2}-{m}_{2,2}\right)+\upbeta
+    \left({m}_{2,1}-{m}_{2,2}\right)+{m}_{2,2} $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \mathrm{Where}\kern0.48em {\mathrm{u}}^{\prime }={m}_{1,1}-\left({m}_{1,2}+{m}_{2,1}\right)+{m}_{2,2}
+    $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-9)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The gradient ascent approach will update both agents’ policies to maximize
+    the expected rewards of both the agents. Assume that you are at iteration *k*
+    and the current joint policy is (α^(*k*), β^(*k*)). Agent *i* and *j* will take
+    a gradient ascent step to adjust their respective policies, which can be expressed
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\upalpha}^{k+1}={\upalpha}^k+\upeta \frac{\partial {U}_i\left({\upalpha}^k,{\upbeta}^k\right)}{\partial
+    {\upalpha}^k} $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ10.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\upbeta}^{k+1}={\upbeta}^k+\upeta \frac{\partial {U}_j\left({\upalpha}^k,{\upbeta}^k\right)}{\partial
+    {\upbeta}^k} $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ11.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-11)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Where,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial {U}_i\left({\upalpha}^k,{\upbeta}^k\right)}{\partial {\upalpha}^k}=\beta
+    u+\left({r}_{1,2}-{r}_{2,2}\right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ12.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-12)
+  prefs: []
+  type: TYPE_NORMAL
+- en: And,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial {U}_j\left({\upalpha}^k,{\upbeta}^k\right)}{\partial {\upbeta}^k}=\upalpha
+    {\mathrm{u}}^{\prime }+\left({m}_{2,1}-{m}_{2,2}\right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ13.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-13)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can combine Equations [12-12](#Equ12) and [12-13](#Equ13) into a vector
+    form, as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left[\begin{array}{c}\frac{\partial {U}_i}{\partial \alpha}\\ {}\frac{\partial
+    {U}_j}{\partial \beta}\end{array}\right]=\left[\begin{array}{cc}0&amp; u\\ {}{u}^{\prime
+    }&amp; 0\end{array}\right]\left[\begin{array}{c}\upalpha \\ {}\upbeta \end{array}\right]+\left[\begin{array}{c}\left({r}_{1,2}-{r}_{2,2}\right)\\
+    {}\left({m}_{2,1}-{m}_{2,2}\right)\end{array}\right] $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-14)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This policy learning algorithm with infinitesimal step size is referred to as
+    infinitesimal gradient ascent (IGA). Making the left side equal zero in Equation
+    [12-14](#Equ14) and solving for α, β will give you the fixed/center point α = α^∗,
+    β = β^∗.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left({\upalpha}^{\ast },{\upbeta}^{\ast}\right)=\left(\frac{m_{2,2}-{m}_{2,1}}{u^{\prime
+    }},\frac{r_{2,2}-{r}_{1,2}}{u}\right) $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ15.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (12-15)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The trajectory and speed of convergence toward this fixed point depends on the
+    relative reward matrices values shown in Equation [12-6](#Equ6). It can further
+    be controlled with the help of learning rate η, as shown in Equations [12-10](#Equ10)
+    and [12-11](#Equ11). Interested readers can refer to books on game theory and
+    MARL for finer aspects. This completes the example of policy ascent for two agent
+    two action non-repeated normal-form games.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The IGA can be generalized to more than two agents and two actions and is called
+    Generalized IGA or *GIGA*. GIGA does not require knowledge of the other agents’
+    policies and assumes that it can observe the past actions of the other agents.
+  prefs: []
+  type: TYPE_NORMAL
+- en: No-Regret Learning
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Up to this point, you have studied two approaches of learning that are MARL
+    extensions of the single agent—that is, value-based methods and policy learning
+    methods. There is another class of methods known as *no-regret learners*. I will
+    briefly explain these methods now.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s first define the notion of “regret,” which is not having chosen the best
+    action in past episodes. You saw this while looking at the explore-exploit dilemma
+    and various ways to balance the regret so that you explore enough but just enough
+    to find the optimal action. Let’s look at a concreate example. Figure [12-7](#Fig7)
+    reproduces the prisoner’s dilemma.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 3 by 3 matrix of prisoner's dilemma represents the values of silent and testify.
+    The coordinates in the first row are (negative 1, negative 1) and (negative 3,
+    0). The coordinates in the second row are (0, negative 3) and (negative 2, negative
+    2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The prisoner’s dilemma
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s look at a simulation of two prisoners choosing silent (S) or testify (T)
+    based on some policy distribution for action selection that you do not know. Let’s
+    look at a series of ten episodes of the play and its outcome of reward for prisoner
+    1, as shown in Figure [12-8](#Fig8). Based on the current ten-episode run, Prisoner
+    1’s reward over ten episodes equals -17\. If prisoner 1 chose to always stay silent,
+    the total reward over ten episodes based on the observed action of prisoner 2
+    would have come to -20\. Similarly, if prisoner 1 chooses to always testify against
+    the prisoner 2, the total reward for prisoner 1 over ten episodes is -10\. Therefore,
+    the “regret” for player 1 is -10+17=7\. Averaging over ten episodes, the regret
+    per episode equals 0.7.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A table depicts the prisoner's dilemma payoffs from 10 episodes. It has 10 columns
+    and 5 rows. Rows 1 and 2 indicate players 1 and 2 actions with S to stay silent
+    and T to testify against other prisoner. The bottom rows indicate player 1 reward
+    and player 1 reward for always S and T, respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prisoner’s dilemma payoffs after ten episodes
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Learning algorithms that aim to minimize this notion of regret are called no-regret
+    learners. The learning approach revolves around regret of not having chosen a
+    specific action in the past and updating their policies to assigning higher probability
+    to actions with higher regrets in past. They are broadly classified into two categories:
+    a) unconditional regret matching and b) conditional regret matching. As their
+    names suggest, unconditional regret matching is based on calculating unconditional
+    regrets and conditional regret matching is based on calculating conditional regret
+    matching.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deep MARL
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Just like you extended finite state and action tabular RL algorithms to a richer
+    set of environments with real valued state and action spaces using deep neural
+    network based models, MARL can also be extended from the finite world to continuous
+    valued high dimensional state and action space. However, the current deep MARL
+    algorithms still work only for a finite small/moderate number of agents in an
+    environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One naïve approach is to treat each agent independently and train it with the
+    single-agent deep RL algorithms. However, these will encounter challenges such
+    as non-stationary environments due to action of other agents, reward assignment,
+    and the concept of what is an equilibrium or optimal action. Despite these challenges,
+    it is a very common approach to extend the current RL approaches to MARL, like
+    Independent DQN, Independent REINFORCE, and other independent policy gradient
+    methods. Even A2C and PPO can be extended. Treating other agents as part of the
+    environment favors on-policy learning approaches, such as REINFORCE, as it learns
+    from most recent experiences, which reflect the latest behavior of other agents.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The design space of how to use deep networks as models of the state or environment
+    and/or policy has many more knobs. The policy or state value network could share
+    part of the network across all the agents with individual smaller top layers specific
+    to each agent. There is also a possibility to share experience. One form of that
+    in zero-sum games would be something called self-play wherein an agent plays with
+    a copy of itself to collect experience and learn.
+  prefs: []
+  type: TYPE_NORMAL
+- en: At a high level, a common way to categorize the Deep MARL (also known as Multi-Agent
+    Deep RL) algorithms is based on the information available during training and
+    inference/execution phases. There are four broad categories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first one is *Centralized Training and Execution (CTCE)* in which the learning
+    process and agents’ policy share some kind of centralized information. It essentially
+    involves converting multi-agent RL to one large, combined single agent RL. The
+    sharing could be in the form of observations across all agents, join policy action,
+    and so on. When such a sharing is feasible or applicable, this approach can be
+    used. However, it has certain issues such as conversion of individual agent reward
+    to a combined scalar reward, exponential growth in joint-action when individual
+    agent’s actions are combined, or the infeasibility of such a communication, such
+    as when sharing information across a fleet of self-driving cars. Even if information
+    could be shared, the relevance of local observation of one agent may have very
+    little information content and add more to the noise. The higher the signal-to-noise
+    ratio, the tougher and longer the training could become.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second class is *Decentralized Training and Execution (DTDE)*. One flavor
+    of this that I discussed earlier is where each agent learns independently, treating
+    all the other agents as part of the environment. I also discussed how such an
+    approach, although scalable, could face significant challenges due to non-stationarity
+    of environment because of other agents’ action being part of the environment.
+    Consider the extreme case of an agent taking no action at every time step, yet
+    the environment/state it sees keeps changing at each time tick due to the actions
+    of other agents. However, due to its scalability it is often used as a first step
+    toward developing more complex and complete approaches to MARL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third class is *Centralized training and Decentralized Execution (CTDE)*.
+    One way to look at this is that during training, shared information is used to
+    update each agent’s policies; however, the policy of each agent depends only on
+    that agent’s observation alone. There are a few other variations. CTDE is a very
+    popular approach for Deep MARL. Remember the actor critic policy learning algorithm
+    that you saw in Chapter [8](502835_2_En_8_Chapter.xhtml)? You could use a CTDE
+    version of actor critic to train agents in MARL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider the case of single agent A2C algorithm. The actor is the policy network.
+    You use Critic to help train the agent by telling which action is better than
+    the average and which one is worse than average. After the agent is trained and
+    ready to be executed in product, you do not need the Critic any further. Therefore,
+    one way to extend A2C to MARL is to use a centralized Critic and continue to have
+    Actor, the policy, decentralized at each individual agent level. The Critic for
+    each agent could have two components, one that is the history of observations
+    of that agent in question along with some centralized information which is available
+    to all agents during training time. It could be some abstracted centralized info
+    or in extreme cases it could even be history of states/observations of all the
+    agents in the environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are many other ways to extend the current Deep RL algorithms to the field
+    of MARL. While making such extensions, you must pay careful consideration to the
+    concept of equilibrium. Deep MARL involves neural networks with large parameter
+    sizes. Therefore, as the number of agents in the environment increases, you also
+    have to think about the way the agent-specific network models could share some
+    parts of the network to keep the scale of the problem manageable. The explore
+    versus exploit dilemma also needs careful handling, especially if the usual single
+    agent settings do not yield result.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This completes a high-level introduction of traditional and Dep MARL, the setup,
+    the unique challenges, and how one-agent RL algorithms could be extended to MARL.
+    Next, you will look at some common libraries that provide MARL environments and
+    the training algorithms along with a sample application of agent training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Petting Zoo Library
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One of the challenges of MARL is finding suitable environments and algorithms
+    to test and train the agents. Petting Zoo is a library that aims to provide a
+    collection of high-quality MARL environments and easy-to-use interfaces for various
+    RL frameworks. The library is developed by Farama, a research group that focuses
+    on multi-agent reinforcement learning and its applications. Petting Zoo offers
+    a diverse set of environments, ranging from classic games like chess and pong,
+    to cooperative scenarios like predator-prey and pursuit-evasion, to social dilemmas
+    like prisoner’s dilemma. Petting Zoo also supports several popular RL libraries,
+    such as Stable Baselines3, CleanRL, RLLib, and so on, allowing users to leverage
+    existing algorithms and tools for MARL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Most of the existing MARL environments are based on the Markov game model, which
+    assumes that the agents act simultaneously and synchronously at each time step.
+    However, this assumption does not capture the reality of many real-world scenarios,
+    where the agents may act sequentially and asynchronously, such as in turn-based
+    games, auctions, and negotiations. To address this limitation, Petting Zoo introduced
+    a novel modeling framework called Agent Environment Cycle (AEC) for MARL environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This allows Petting Zoo to represent any type of game multi-agent RL can consider.
+    In this model, agents sequentially see their observation, agents take actions,
+    rewards are emitted from the other agents, and the next agent to act is chosen.
+    This is effectively a sequentially stepping form of the POSG mode. A schematic
+    is shown in Figure [12-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A cycle diagram of the A E C cycle consists of player 1, environment step 1,
+    player 2, and environment step 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: AEC cycle
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cycle repeats until the environment reaches a terminal state, or a predefined
+    maximum number of steps is reached. An AEC environment can be seen as a generalization
+    of the Markov game model, where the scheduling function can implement different
+    types of agent interactions, such as simultaneous, sequential, or mixed. An AEC
+    environment can also handle variable agent numbers, such as in games where agents
+    can join or leave at any time. Furthermore, an AEC environment can model partial
+    observability, stochasticity, and non-stationarity, which are common challenges
+    in MARL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Petting Zoo provides a standard API for interacting with AEC environments,
+    which is similar to the OpenAI Gym API for single-agent RL environments. You can
+    read more about it in paper “PettingZoo: A Standard API for Multi-Agent Reinforcement
+    Learning.”^([1](#Fn1)) Specifically refer to Appendix C3 for a detailed mathematical
+    formulation of AEC.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will use one of its environments named *Knights Archers Zombies* (KAZ),
+    which I describe briefly. Knights Archers Zombies is part of the Butterfly environment.
+    Butterfly environments are challenging scenarios created by Farama, using PyGame
+    with visual Atari spaces. All environments require a high degree of coordination
+    and require learning emergent behaviors to achieve an optimal policy. As such,
+    these environments are currently very challenging to learn. Environments are highly
+    configurable via arguments specified in their respective documentation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Knights Archers Zombies, Zombies walk from the top border of the screen down
+    to the bottom border in unpredictable paths. The agents you control are knights
+    and archers (by default, there are two knights and two archers) that are initially
+    positioned at the bottom border of the screen. Each agent can rotate clockwise
+    or counterclockwise and move forward or backward. Each agent can also attack to
+    kill zombies. When a knight attacks, it swings a mace in an arc in front of its
+    current heading direction. When an archer attacks, it fires an arrow in a straight
+    line in the direction of the archer’s heading. The game ends when all agents die
+    (collide with a zombie) or a zombie reaches the bottom screen border. A knight
+    is rewarded with 1 point when its mace hits and kills a zombie. An archer is rewarded
+    1 point when one of their arrows hits and kills a zombie. There are two possible
+    observation types for this environment, vectorized or image-based. This example
+    uses the vectorized space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Agents | `agents= [''archer_0'', ''archer_1'', ''knight_0'', ''knight_1'']`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Agents | `4` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Action Shape | `(1,)` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Action Values | `[0,5]` |'
+  prefs: []
+  type: TYPE_TB
+- en: You can pass the `vector_state=True` argument to the environment to get a vectorized
+    environment. The observation is an (N+1)x5 array for each agent, where `N = num_archers
+    + num_knights + num_swords + max_arrows + max_zombies`. And the 1 refers to the
+    current agent. In total, there will be N+1 rows. Rows with no entities will be
+    all 0, but the ordering of the entities will not change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Vector breakdown**:* All distances are normalized to [0, 1]. Note that for
+    positions, [0, 0] is the top-left corner of the image. Down is positive y and
+    Left is positive x. The meaning of values in the vector for current agent are
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first value means nothing and will always be 0.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The next four values are the position and angle of the current agent.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The first two values are position values, normalized to the width and height
+    of the image, respectively.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The final two values are heading of the agent represented as a unit vector.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For everything else other than the current agent, the respective vectors are
+    each five wide and each row has a following breakdown:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first value is the absolute distance between an entity and the current agent.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The next four values are the relative position and absolute angles of each entity
+    relative to the current agent.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The first two values are position values relative to the current agent.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The final two values are the angle of the entity represented as a directional
+    unit vector relative to the world.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_12_Chapter/502835_2_En_12_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of Knights Archers zombies screen frame consists of archers and
+    zombies at random positions on a dark background.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 12-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Knights Archers Zombies (KAZ)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample Training
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section looks at a sample of running PPO training algorithm on *Knights
+    Archers Zombies (KAZ)**.* You will leverage the PPO algorithm from SB3 library.
+    The complete code to train the multiple agents in the KAZ environment is in the
+    `12.a-ppo_pettingzoo_kaz.ipynb` notebook. Listing [12-1](#PC1) contains the training
+    code. You first create the environment using `env_fn`, which is passed to the
+    `train` function. Peculiar to the KAZ environment, where the agents die, you use
+    the `ss.black_death_v3(env)` wrapper so that the number of agents stays constant.
+    If you are using the image version of the KAZ observation space, you use a set
+    of wrappers similar to the ones for the Atari environment in the previous chapters
+    to reduce the image sizes, stacking of frames, and so on. For carrying out these
+    wrapper processing, you use the library called SuperSuit as compared to Gymnasium
+    and/or SB3 wrappers, which was used with the Atari games. If the observation space
+    is a vectorized version, you do not need these preprocessing steps. Next, you’ll
+    create the PPO learning agent and run the training. The trained agent weights
+    are then saved to file for future retrieval.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: You also have a similar code to evaluate the performance of the agent. It is
+    the usual observe/step/observe cycle using the training PPO agent and KAZ environment.
+    The evaluation function gathers the rewards and prints a summary at the end of
+    the evaluation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The code to train and evaluate the code is shown in Listing [12-2](#PC2). It
+    is a simple three-step process—first train the agent, evaluate the metrics, and
+    then show the trained agent in action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: This concludes this chapter on MARL. It was a fast-paced introduction to MARL
+    without getting into the details, as the idea was to make readers familiar with
+    the additional complexities and challenges when multiple agents are involved in
+    an environment. Interested readers may explore the MARL-specific literature and
+    the Petting Zoo library documentation, which contains many other example environments
+    and sample tutorials.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter introduced the concept of MARL, where multiple agents interact
+    within the same environment. MARL presents unique challenges, such as the need
+    for agents to predict and react to the actions of other agents, and the exponential
+    growth of the action and state space. Several examples of MARL in different domains
+    were presented, including autonomous driving, robotics, and smart grid management.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter also discussed key challenges in MARL, such as moving and changing
+    targets, the definition of the best policy, reward assignment, and scaling for
+    the number of agents. A taxonomy of MARL was presented, including normal-form
+    games, stochastic games, and partially observable stochastic games.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter also covered various solution approaches in MARL, including minimax,
+    Nash equilibrium, and correlated equilibrium. Core algorithms for MARL, including
+    value iteration, TD approach with joint action learning, and policy-based learning,
+    were discussed. The chapter also introduced the concept of no-regret learning
+    and deep MARL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, the chapter provided an example of training agents in a MARL environment
+    using the Petting Zoo library and the PPO algorithm.
+  prefs: []
+  type: TYPE_NORMAL

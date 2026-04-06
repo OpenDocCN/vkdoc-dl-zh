@@ -1,0 +1,2280 @@
+- en: 6. Successful Neural Network Architecture Design
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*Design is as much a matter of finding problems as it is solving them.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Bryan Lawson, Author and Architect
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The previous chapter, on meta-optimization, discussed the automation of neural
+    network design, including automated design of neural network architectures. It
+    may seem odd to follow such a chapter on the automation of neural network architectures
+    with a chapter on successful (implicitly, manual) neural network architecture
+    design, but the truth is that deep learning will not reach a point anytime soon
+    (or at all) where the state of design could possibly dismiss the need to possess
+    an understanding of key principles and concepts in neural network architecture
+    design. You’ve seen, firstly, that Neural Architecture Search – despite making
+    rapid advancements – is still limited in many ways by computational accessibility
+    and reach in the problem domain. Moreover, Neural Architecture Search algorithms
+    themselves need to make implicit architectural design decisions to make the search
+    space more feasible to search, which human NAS designers need to understand and
+    encode. The design of architectures simply cannot be wholly automated away.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The success of transfer learning is earlier and stronger evidence for the proposition
+    that the design of neural network architectures is a study that need not be studied
+    by the average deep learning engineer. After all, if the pretrained model libraries
+    built into TensorFlow and PyTorch don’t satisfy the needs of your problem, platforms
+    like the TensorFlow model zoo, GitHub, and pypi host a massive quantity of easily
+    accessible models that can be transferred, slightly adapted with minimal architectural
+    modifications to fit the data shapes and objectives of your problem, and fine-tuned
+    on your particular dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is partially true – the availability of openly shared model architectures
+    and weights has brought about a decreased need to design large architectures from
+    scratch. However, in practice, it’s more likely than not that model architectures
+    you select don’t completely align with the context of your problem. Unless an
+    architecture was crafted particularly for your problem domain (and even if it
+    is), usually there is a need for more significant architectural modifications
+    (Figure [6-1](#Fig1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig1_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architectures often still need significant modifications to adapt to your particular
+    problem domain
+  prefs: []
+  type: TYPE_NORMAL
+- en: The process of making these more significant modifications to adapt the architecture
+    toward success in your problem domain is a continual one; when designing your
+    network, you should repeatedly experiment with the architecture and make architectural
+    adaptations in response to the feedback signals of previous experiments and problems
+    that emerge.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Both constructing successful modifications and successfully integrating them
+    into the general model architecture require a knowledge of successful architecture-building
+    patterns and techniques. This chapter will discuss three key ideas in neural network
+    architecture construction – nonlinear and parallel representation, cell-based
+    design, and network scaling. With knowledge of these concepts, you will not only
+    be able to successfully modify general architectures but also to analytically
+    deconstruct and understand architectures and to construct successful model architectures
+    from scratch – a tool whose value extends not only into the construction of network
+    architectures but cutting-edge fields like NAS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In order to accomplish these goals, we’re going to need to use Keras in a more
+    complex fashion. As the neural network architectures we seek to implement become
+    more intricate, there is an increasing ambiguity of implementation – that is,
+    there are many “correct answers.” In order to navigate this ambiguity of implementation
+    more efficiently, we will begin to *compartmentalize*, *automate*, and *parametrize*
+    the defining of network architectures:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Compartmentalization* : This concept was introduced in Chapter [3](516104_1_En_3_Chapter.xhtml)
+    on autoencoders, in which large models were defined as a set of linked sub-models.
+    While we will not be defining models for each component, we will need to define
+    functions that automatically create new components of networks for us.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Automation* : We will define methods of building neural networks that can
+    build more segments of the architecture than we explicitly define in the code,
+    allowing us to scale the network more easily and to develop complex topological
+    patterns.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Parametrization* : Networks that explicitly define key architectural parameters
+    like the width and depth are not robust nor scalable. In order to compartmentalize
+    and automate neural network design, we will need to define parameters relative
+    to other parameters rather than as absolute, static values.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'You’ll find that the content discussed in this chapter may feel more abstracted
+    than that of previous chapters. This is part of the process of developing more
+    complex architectures and a deeper feel for the dynamics of neural networks: rather
+    than seeing an architecture as merely a collection of layers arranged in a certain
+    format that somewhat arbitrarily and magically form a successful prediction function,
+    you begin to identify and use motifs, residuals, parallel branches, cardinality,
+    cells, scaling factors, and other architectural patterns and tools. This eye for
+    design will be invaluable in the development of more professional, successful,
+    and universal network architecture designs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nonlinear and Parallel Representation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The realization that purely linear neural network architecture topologies perform
+    well but not well enough drives nonlinearity in the topology of – more or less
+    – every successful modern neural network design. Linearity in the topology of
+    a neural network becomes a burden when we want to scale it to obtain greater modeling
+    power.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A good conceptual model for understanding the success and principles of nonlinear
+    architecture topology design is to think of each layer as its own “thinker” engaged
+    in a larger dialogue – one part of a large, connected network. Passing an input
+    into the network is like presenting this set of thinkers with an unanswered question
+    to consider. Each thinker sheds their unique light on the input, making some sort
+    of transformation to it – reframing the question or adding some progress in answering
+    it, perhaps – before passing the fruits of their consideration onto the next thinker.
+    You want to design an arrangement of these thinkers – that is, where certain thinkers
+    get and pass on information – such that the output of the dialogue (the answer
+    to your input question) takes advantage of each of these thinkers’ perspectives
+    as much as possible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s consider how a hypothetical arranged network of thinkers would approach
+    the age-old question, “What is the meaning of life?” (Figure [6-2](#Fig2)). The
+    first thinker reframes the question of meaning as a matter of value and focuses
+    on those that possess life – living beings – as the subjects of the question,
+    in turn asking: “What do living beings value most in their life?” The next thinker
+    interprets this question in an anthropocentric sense as relating to how *humans*
+    value life. The last thinker answers that humans value happiness the most, and
+    the output of this network is the common answer of “happiness.”'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig2_HTML.png](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hypothetical dialogue of a linearly arranged chain of thinkers – an answer to
+    the age-old question, “What is the meaning of life?”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because of the linear topology of this arrangement of thinkers, each thinker
+    can only think through the information given to them by the previous thinker.
+    All thinkers after the first thinker don’t have direct access to the original
+    input question; the third thinker, for instance, is forced to answer the second
+    thinker’s interpretation on the first thinker’s interpretation on the original
+    question. While increasing the depth of the network can be incredibly powerful,
+    it can also lead to this problem we see before us that later “thinkers” or layers
+    are progressively detached from the original context of the input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: By adding nonlinearity to our arrangement of thinkers, the network is able to
+    generate more complexity of representation by more directly connecting “thinkers”
+    with the developments of multiple thinkers at various locations down the “chain”
+    of dialogue (Figure [6-3](#Fig3)). In this example nonlinear arrangement of thinkers,
+    we add one additional connection from the first thinker to the third thinker such
+    that the third thinker takes in the ideas of both the first and the second thinker.
+    Rather than responding to only the interpretation of the second thinker, it is
+    able to consider the developments and ideas of multiple thinkers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig3_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adding a nonlinearity in the arrangement of thinkers significantly changes the
+    output of the dialogue
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this example, the third thinker generalizes the developments of the first
+    and second thinkers – “What do living beings value most in their life?” and “What
+    do humans value most in their life?” – between a purely biological perspective
+    on the value of life and another more embedded in the humanities. The third thinker
+    responds: “Forms of reproduction – new life and ideas,” referring to the role
+    of reproduction both in biological evolution and in the reproduction of ideas
+    across individuals, generations, and societies of human civilization. To summarize
+    the third thinker’s ideas, the output of the network is thus “procreation.”'
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the addition of one connection from the first thinker to the third thinker,
+    the output of the network has changed from “happiness” – a simpler, more instinctive
+    answer – to the concept of “procreation,” a far deeper and more profound response.
+    The key difference here is the element of merging different perspectives and ideas
+    in consideration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Most people would agree that more, not less, dialogue is conducive to the emergence
+    of great ideas and insights. Similarly, think of each connection as a “one-way
+    conversation.” When we add more connections between thinkers, we add more conversations
+    into our network of thinkers. With sufficient number and nonlinearity connections,
+    our network will burst into a flurry of activity, discourse, and dialogue, performing
+    better than a linearly arranged network ever could.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Residual Connections
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Residual connections are the first step toward nonlinearity – these are simple
+    connections placed between nonadjacent layers. They’re often presented as “skipping”
+    over a layer or multiple layers, which is why they are also often referred to
+    as “skip connections” (Figure [6-4](#Fig4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig4_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Residual connection
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that because the Keras Functional API cannot define multiple layers as
+    the input to another layer, in implementation the connections are first merged
+    through a method like adding or concatenation. The merged components are then
+    passed into the next layer (Figure [6-5](#Fig5)). This is the implicit assumption
+    of all residual connection diagrams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig5_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Technically correct residual connection with merge layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although residual connections are incredibly versatile tools, there are generally
+    two methods of residual connection usage, based on the ResNet and DenseNet architectures
+    that pioneered their respective usages of residual connections. “ResNet-style”
+    residual connections employ a series of short residual connections that are repeated
+    routinely throughout the network (Figure [6-6](#Fig6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig6_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: ResNet-style usage of residual connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: “DenseNet-style” residual connections, on the other hand, place residual connections
+    between valid layers (i.e., layers designated as open to having residual connections
+    attached, also known as “anchor points” or “anchor layers”) (Figure [6-7](#Fig7)).
+    Because – as one might imagine – this sort of usage of residual connections leads
+    to a high number of residual connections, seldom do DenseNet-style architectures
+    treat all layers as residual connections. In this style, both long and short residual
+    connections are used to provide information pathways across sections of the architecture.
+    Because each anchor point is connected to each anchor point before it, it is informed
+    by various stages of the network’s processing and feature extraction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig7_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: DenseNet-style usage of residual connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: This representation of residual connections (Figure [6-4](#Fig4)) is probably
+    the most convenient interpretation of what a residual connection is for the purposes
+    of implementation. It visualizes residual connections as nonlinearities added
+    upon a “main sequence” of layers – a linear “backbone” upon which residual connections
+    are added. In the Keras Functional API, it’s easiest to understand a residual
+    connection as “skipping” over a “main sequence” of layers. In general, implementing
+    nonlinearities is best performed with this concept of a linear backbone in mind,
+    because code is written in a linear format that can be difficult to translate
+    nonlinearities to.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, there are other architectural interpretations of what a residual connection
+    is that may be conceptually more aligned with the general class of nonlinearities
+    in neural network architectures. Rather than relying upon a linear backbone, you
+    can interpret a residual connection as splitting the layer before it into two
+    branches, which each process the previous layer in their own unique ways. One
+    branch (Layer 1 to Layer 2 to Layer 3 in Figure [6-8](#Fig8)) processes the output
+    of the previous layer with a specialized function, whereas the other branch (Layer
+    1 to Identity to Layer 3) processes the output of the layer with the identity
+    function – that is, it simply allows the output of the previous layer to pass
+    through, the “simplest” form of processing (Figure [6-8](#Fig8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig8_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Alternative interpretation of residual connection as a branching operation
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method of conceptually understanding residual connections more easily allows
+    you to categorize them as a sub-class of general nonlinear architectures, which
+    can be understood as a series of branching structures (Figure [6-9](#Fig9)). We’ll
+    see how this interpretation helps later in our exploration of parallel branches
+    and cardinality.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig9_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generalized nonlinearity form
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Residual connections are often presented as a technical justification for the
+    *vanishing gradient problem* (Figure [6-10](#Fig10)), which shares many characteristics
+    to the previously discussed problem of a linear arrangement of thinkers: in order
+    to access some layer, we need to travel through several other layers first, diluting
+    the information signal. In the vanishing gradient problem, the backpropagation
+    signal within very deep neural networks used to update the weights gets progressively
+    weaker such that the front layers are barely utilized at all.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig10_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Vanishing gradient problem
+  prefs: []
+  type: TYPE_NORMAL
+- en: With residual connections, however, the backpropagation signal travels through
+    fewer average layers to reach some particular layer’s weights for updating. This
+    enables a stronger backpropagation signal that is better able to make use of the
+    entire model architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are other interpretations of residual connections too. Like the random
+    forest algorithm is constructed of many smaller decision tree models trained on
+    part of the dataset, a neural network with a sufficient number of residual connections
+    can be thought to be an “ensemble” of smaller sequential models built with a fewer
+    number of layers (Figure [6-11](#Fig11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig11_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deconstructing a DenseNet-style network into a series of linear topologies
+  prefs: []
+  type: TYPE_NORMAL
+- en: Residual connections can also be thought of as a “failsafe” for poor performing
+    layers. If we add a residual connection from layer A to layer C (assuming layer
+    A is connected to layer B, which is connected to layer C), the network can “choose”
+    to disregard layer B by learning near-zero weights for connections from A to B
+    and from B to C while information is channeled directly from layer A to C via
+    a residual connection. In practice, however, residual connections act more as
+    an additional representation of the data for consideration than as failsafe mechanisms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementing individual residual connections is quite simple with our knowledge
+    of the Functional API. We’ll use the first presented interpretation of the residual
+    connection architecture, in which a residual connection acts as a “skipping mechanism”
+    between nonadjacent layers in a linear architecture backbone. For simplicity,
+    let’s define this linear architecture backbone as a series of Dense layers (Listing
+    [6-1](#PC1), Figure [6-12](#Fig12)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig12_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of a sample linear backbone model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s say that we want to add a residual connection from `layer1` to `layer3`.
+    In order to do this, we need to merge `layer1` with whatever current layer is
+    the input to `layer3` (this is `layer2`). The result of the merging is then passed
+    as the input to `layer3` (Listing [6-2](#PC2), Figure [6-13](#Fig13)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig13_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of a linear backbone with a residual connection skipping over a
+    processing layer, `dense_1`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, this method of manually creating residual connections by explicitly
+    defining merging and input flows is inefficient and not scalable (i.e., it becomes
+    too unorganized and difficult if you wanted to define dozens or hundreds of residual
+    connections). Let’s create a function, `make_rc()` (Listing [6-3](#PC3)), that
+    takes in a connection split layer (this is the layer that “splits” – there are
+    two connections stemming from it) and a connection joining head (this is the layer
+    before the layer in which the residual connection and the “linear main sequence”
+    join together) and outputs a merged version of those two layers that can be used
+    as an input to the next layer (Figure [6-14](#Fig14)). We’ll see how automating
+    the creation of residual connections will be incredibly helpful soon when we attempt
+    to construct more elaborate ResNet- and DensNet-style residual connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig14_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Terminology for certain layers’ relationship to one another in the automation
+    of building residual connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can also add another parameter, `merge_method`, which allows the function
+    user to specify which method to use to merge the connection split layer and the
+    connection joining head. The parameter takes in a string, which is mapped to the
+    corresponding merging layer via a dictionary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can thus build a residual connection quite easily simply by passing in the
+    function `make_rc` with the appropriate parameters as an input to the layer we
+    want to receive the merged result (Listing [6-4](#PC4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can automate the usage of this function to create a ResNet-style architecture
+    in which blocks of layers with short residual connections are repeated several
+    times (Figure [6-15](#Fig15)). In order to automate the construction of the architecture,
+    we will use the placeholder variables `x`, `x1`, and `x2`. We will build `x1`
+    from `x` and `x2` from `x1` in sequences and merge `x` with `x2` to build the
+    residual connection (Listing [6-5](#PC5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig15_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Automating the construction of residual connections by constructing in entire
+    build iterations/blocks
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: It can be conceptually difficult to automate the building of these nonlinear
+    topologies. Drawing a diagram and labeling with which template variables allows
+    you to implement complex residual connection patterns more easily.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since at the end of the building iterations `x` is the last connected layer,
+    we connect `x` to the output layer and aggregate the architecture into a model
+    (Listing [6-6](#PC6), Figure [6-16](#Fig16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig16_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Automated ResNet-style usage of residual connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: A DenseNet residual connection pattern (Figure [6-17](#Fig17)), in which every
+    “anchor point” is connected to every other “anchor point,” requires some more
+    planning . (Note that for the sake of ease, we will build residual connections
+    between every Dense layer rather than building additional un-connected layers.
+    We’ll discuss residual connections for cell-based architectures in the next section.)
+    We’ll keep a list of previous layers `x`. Every building step, we add a new layer
+    `x[i]` that is connected to the merging of every previous layer. Note that the
+    layer `x[i-1]` is the direct connection and the connection between `x[i-2]`, `x[i-3]`,
+    … and `x[i]` is a residual connection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig17_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conceptual diagram of automating the construction of DenseNet-style usage of
+    residual connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first step is to adjust the `make_rc` function to take in a *list* of layers
+    to join rather than just two. This is because the DenseNet architecture is built
+    such that many residual connections connect to the same layer. In addition to
+    taking in the list of layers, we’re going to specify that if the number of layers
+    to join is 1 (i.e., connecting `x[0]` to `x[1]` with no residual connections),
+    we simply return the one element in the `join_layers` list – that is, if there
+    is only one item in a list of layers to merge, we “merge” the layer with an “empty”
+    layer (Listing [6-7](#PC7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can begin by defining an initial layer `x` and a list of created layers `layers`.
+    After creating the initial layer, we loop through the remaining layers to be added
+    by redefining the template variable `x` as a Dense layer that takes in a merged
+    version of all the other currently created layers (Listing [6-8](#PC8), Figure
+    [6-18](#Fig18)). Afterward, we append `x` to `layers` such that the next created
+    layer will take in this just created layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig18_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keras visualization of DenseNet-style residual connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is a great example of how using predefined functions, storage, and built-in
+    scalability in combination with one another allows for a quick and efficient building
+    of complex topologies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, when we begin to build more complex network designs, the Keras
+    plotting utility starts to struggle to produce an architecture visualization that
+    is visually consistent with our conceptual understanding of the topology. Regardless,
+    visualization still serves as a sanity check tool to ensure that your automation
+    of complex residual connection relationships is functioning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Branching and Cardinality
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The concept of cardinality is the core framework of nonlinearity and a generalization
+    of residual connections. While the *width* of a network section refers to the
+    number of neurons in the corresponding layer(s), the cardinality of a network
+    architecture refers to the number of “branches” (also known as parallel towers)
+    in a nonlinear space at a certain location in a neural network architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cardinality is most clear in *parallel branches* – an architectural design in
+    which a layer is “split” into multiple layers, each of which are processed linearly
+    and eventually merged back together. The cardinality of a segment of a network
+    employing parallel branches is simply the number of branches (Figure [6-19](#Fig19)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig19_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig19_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: A sample component of a neural network architecture with a cardinality of two.
+    The numbering of the layers is arbitrary
+  prefs: []
+  type: TYPE_NORMAL
+- en: As mentioned prior in the section on residual connections, one can generalize
+    residual connections as a simple branching mechanism with a cardinality of two,
+    in which one branch is the series of layers the residual connection “skips over”
+    and the other branch is the identity function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that, depending on the specific topology, the cardinality of a section
+    of a network is more or less ambiguous. For instance, some topologies may build
+    branches within sub-branches and join together certain sub-branches in complex
+    ways (e.g., Figure [6-20](#Fig20)). Here, the specific cardinality of the network
+    is not relevant; what *is* relevant is that information is being modeled in a
+    nonlinear fashion that encourages multiplicity of representation (the general
+    concept of cardinality) and thus greater complexity and modeling power.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig20_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig20_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: An architectural component of a neural network that demonstrates more extreme
+    nonlinearity (i.e., branching and merging)
+  prefs: []
+  type: TYPE_NORMAL
+- en: It should be noted, though, that nonlinearities should not be built arbitrarily.
+    It can be easy to get away with building complex nonlinear topologies for the
+    sake of nonlinearity, but you should have some idea of what purpose the topology
+    serves to enable. Likewise, a key component of the network design is not just
+    the architecture within which layers reside but which layers and parameters are
+    chosen to fit within the nonlinear architecture. For instance, you may allocate
+    different branches to use different kernel sizes or to perform different operations
+    to encourage multiplicity of representation. See the case study in the next section
+    on cell-based design for an example on good purposeful design of more complex
+    nonlinearities, the Inception cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The logic of branch representations and cardinality in architectural designs
+    is very similar to that of residual connections. This sort of representation is
+    the natural architectural development as a generalization of the residual connection
+    – rather than passing the information flowing through the residual connection
+    (i.e., doing the “skipping”) through an identity function, it can be processed
+    separate from other components of the network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In our analogy of a network as a linked set of thinkers engaged in a dialogue
+    whose net output is dependent on their arrangement, branch representations allow
+    not only for thinkers to consider multiple perspectives but for entire “schools
+    of thought” to emerge in conversation with one another (Figure [6-21](#Fig21)).
+    Branches process information separately (i.e., in parallel), allowing different
+    modes of feature extraction to become “mature” (fully formed by several layers
+    of processing) before they are merged with other branches for consideration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig21_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig21_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parallel branches as conceptually organizing “thinkers” into “schools of thought”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin by creating a multi-branch nonlinear topology explicitly/manually
+    (Listing [6-9](#PC9)). We will create two branches that span from a layer; each
+    branch, which holds a particular representation of the data, is processed independently
+    and merged later (Figure [6-22](#Fig22)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig22_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig22_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of building parallel branches
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To automate the building of multiple branches, we consider two dimensions:
+    the number of layers in each branch and the number of parallel branches (Listing
+    [6-10](#PC10)). We can accomplish this in an organized fashion with two functions
+    – `build_branch()`, which takes in an input layer to start a branch from and outputs
+    the last layer in the branch, and `build_branches()`, which takes in a layer to
+    split into several branches (using the `build_branch()` function). We can define
+    the building of a branch simply as a series of linearly connected Dense layers,
+    although branches can also be built as a nonlinear topology too.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: In order to split a layer into a series of parallel branches, we use `build_branch`
+    from that starting layer a certain number of times (this number being the cardinality,
+    which is passed as an argument into the `build_branches` function). The `build_branch`
+    function outputs the last layer of the branch, which we append to a list of branch
+    last layers, `outputs`. After all the branches are built, we merge the outputs
+    together via adding (rather than concatenating in this case, which would yield
+    in a very large concatenated vector) and return the output of merging (Listing
+    [6-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Building an entire series of parallel branches within a neural network architecture
+    is now incredibly simple (Listing [6-12](#PC12), Figure [6-23](#Fig23)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig23_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig23_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-23
+  prefs: []
+  type: TYPE_NORMAL
+- en: Automation of building arbitrarily sized parallel branches
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: This sort of method is used by the ResNeXt architecture, which employs parallel
+    branches as a generalization and “next step” from residual connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Case Study: U-Net'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The goal of *semantic* *segmentation* is to segment, or separate, various items
+    within an image into various classes. Semantic segmentation can be used to identify
+    items in a picture, like cars, people, and buildings in a picture of the city.
+    The difference between semantic segmentation and a task like image recognition
+    is that semantic segmentation is an *image-to-image* task, whereas image recognition
+    is an *image-to-vector* task. Image recognition tells you if an object is present
+    in the image or not; semantic segmentation tells you where the object is located
+    in the image by marking each pixel as part of the corresponding class or not.
+    The output of semantic segmentation is called the *segmentation map* .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Semantic segmentation has many applications in biology, which can be used to
+    automate the identification of cells, organs, neuron links, and other biological
+    entities (Figure [6-24](#Fig24)). As such, much of research into semantic segmentation
+    architectures has been developed with these biological applications in mind.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig24_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig24_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Left: input image to a segmentation model. Right: example segmentation of cells
+    in the image. Taken from the U-Net paper by Ronneberger et al.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Olaf Ronneberger, Philipp Fischer, and Thomas Brox proposed the *U-Net* *architecture*
+    in 2015,^([1](#Fn1)) which has since become a pillar of semantic segmentation
+    development (Figure [6-25](#Fig25)). The linear backbone component of the U-Net
+    architecture acts like an autoencoder – it successively reduces the dimension
+    of the image until it reaches some minimum representation size, upon which the
+    dimension of the image is successively increased via upsampling and up-convolutions.
+    The U-Net architecture employs very large residual connections that connect large
+    parts of the network together, connecting the first block of layers to the last
+    block, the second block to the second-to-last block, etc. When the residual connections
+    are arranged to be parallel to one another in an architectural diagram, the linear
+    backbone is forced into a “U” shape, hence its name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig25_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig25_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: U-Net architecture. Taken from the U-Net paper by Ronneberger et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The left side of the architecture is termed the *contracting path* ; it develops
+    successively smaller representations of the data. On the other hand, the right
+    side is termed the *expansive path* , which successively increases the representation
+    of the data. Residual connections allow the network to incorporate previously
+    processed representations into the expansion of the representation size. This
+    architecture allows both for *localization* (focus on a local region of the data
+    input) and the use of broader *context* (information from farther, nonlocal regions
+    of the image that still provide useful data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The resulting U-Net architecture performed significantly better than other architectures
+    at its time on various biological segmentation challenges (Table [6-1](#Tab1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of U-Net against other segmentation models at the time on two key
+    datasets in the ISBI cell tracking challenge 2015\. Results are measured in IOU
+    (Intersection Over Union), a segmentation metric measuring how much of the predicted
+    and true segmented regions overlap. A higher IOU is better. U-Net beats other
+    methods at the time by a large margin in IOU
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Model | PhC-U373 Dataset | DIC-HeLa Dataset |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| IMCB-SG (2014) | 0.2669 | 0.2935 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| KTH-SE (2014) | 0.7953 | 0.4607 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| HOUS-US (2014) | 0.5323 | – |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Second Best (2015) | 0.83 | 0.46 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| U-Net (2015) | 0.9203 | 0.7756 |'
+  prefs: []
+  type: TYPE_TB
+- en: While the U-Net architecture is technically adaptable to all image sizes because
+    it is built using only convolution-type layers that do not require a fixed input,
+    the original implementation by Ronneberger et al. requires significant planning
+    with respect to the shape of information as it passes through the network. Because
+    the proposed U-Net architecture does not use padding, the spatial resolution is
+    successively reduced and increased divisively (by max pooling) and additively
+    (by convolutions). This means that residual connections must include a cropping
+    function in order to properly merge earlier representations with later representations
+    that have a smaller spatial size. Moreover, the input shape must be carefully
+    planned to have a certain input size, which will not match the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thus, in our implementation of the U-Net architecture, we will slightly adapt
+    the convolutional layers to use padding such that merging and keeping track of
+    data shapes is simpler. While implementing U-Net is relatively simple, it’s important
+    to keep track of variables. We will name our layers with appropriate variable
+    names such that they can be used in the `make_rc()` function earlier discussed
+    to be part of a residual connection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building the contracting path (Listing [6-13](#PC13)) is quite simple; in this
+    case, we implement one convolution before every pooling reduction, although you
+    can add more. We use three pooling reductions; conv4 is the “bottleneck” of the
+    autoencoder, carrying the data with the smallest spatial representation size.
+    Note that we increase the number of filters in each convolutional layer to accommodate
+    for reductions in resolution to avoid actually building a representative bottleneck,
+    which would be counteractive to the goals of this model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Building the expanding path (Listing [6-14](#PC14)) requires some more caution.
+    We begin by upsampling the last layer, `conv4`, such that it has the same spatial
+    dimension as the `conv3` layer. We apply another convolution after upsampling
+    to process the result, as well as to ensure that `upsamp4` has the same depth
+    (i.e., number of channels) as `upsamp3`. They can then be merged together via
+    adding to preserve the depth.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can likewise build the remainder of the expanding path (Listing [6-15](#PC15)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: To ensure that the input data and the output of the U-Net architecture have
+    the same number of channels, we add a convolution layer with (1,1) that doesn’t
+    change the spatial dimension but collapses the number of channels to the standard
+    three used in almost all image data (Listing [6-16](#PC16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: As mentioned earlier, you can change the input shape and the code will produce
+    a valid result, as long as the spatial dimensions of the input are divisible by
+    2\. You can plot the model with plot_model to reveal the architectural namesake
+    of the model (Figure [6-26](#Fig26)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig26_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig26_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-26
+  prefs: []
+  type: TYPE_NORMAL
+- en: U-Net-style architecture implementation in Keras. Can you see the “U”?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Block/Cell Design
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Recall the network of thinkers used to introduce the concept of nonlinearity.
+    With the addition of a nonlinearity, thinkers were able to consider perspectives
+    from multiple stages of development and processing and therefore expand their
+    worldview to produce more insightful outputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Profound intellectual work is best achieved via conversation between *multiple
+    thinkers* rather than the processing capability of one individual thinker (Figure
+    [6-27](#Fig27)). Thus, it makes sense to consider the key intellectual unit of
+    thinking as a *structured arrangement of thinkers* rather than just one individual
+    thinker. These “cells” are the new unit objects, which can be stacked together
+    like “super-layers” in a similar way that we stacked individual thinkers before
+    – we can stack these cells of thinkers linearly, in branches, add residual connections,
+    etc. By replacing the base unit of information processing with a more powerful
+    unit, we systematically increase the modeling power of the entire system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig27_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig27_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-27
+  prefs: []
+  type: TYPE_NORMAL
+- en: Arrangement of thinkers into cells
+  prefs: []
+  type: TYPE_NORMAL
+- en: Likewise, by arranging neural network layers into cells, we form a new unit
+    with which we can manipulate architecturally – the cell, which contains more processing
+    capability than a single layer. A cell can be thought of as a “mini-network.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: In a block/cell-based design, a neural network consists of several repeating
+    “cells,” each of which contains a preset arrangement of layers (Figure [6-28](#Fig28)).
+    Cells have shown to be a simple and effective way to increase the depth of a network.
+    These cells form “motifs,” which are recurring themes or patterns in the arrangement
+    of certain layers. Like many observed phenomena in deep learning, cell-based design
+    has parallels in neuroscience – neural circuits have been observed to assemble
+    into repeated motif patterns. Cell-based designs allow for established and standardized
+    extraction of features; the top performing neural network architectures include
+    a high number of well-designed cell-based neural network architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig28_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig28_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-28
+  prefs: []
+  type: TYPE_NORMAL
+- en: Usage of cell-based design
+  prefs: []
+  type: TYPE_NORMAL
+- en: From a design standpoint, cells reduce the search space a neural network designer
+    is confronted with. (You may recall that this is the justification given for a
+    NASNet-style search space for cell architectures discussed in Chapter [5](516104_1_En_5_Chapter.xhtml).)
+    The designer is able to exercise fine-tuned control over the architecture of the
+    cell, which is stacked repeatedly, therefore amplifying the effect of changes
+    to the architecture. Contrast this with making a change to one layer in a non-cell-based
+    network – it is unlikely that making one change would be significant enough to
+    yield meaningfully different results (provided there exist other similar layers).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two key factors to consider in cell-based design: the architecture
+    of the cell itself and the stacking method. This section will discuss methods
+    of stacking across sequential and nonlinear cell design.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sequential Cell Design
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Sequential cell designs are – as implied by the name – cell architectures that
+    follow a sequential, or linear, topology. While sequential cell designs have not
+    generally performed as well as nonlinear cell designs, they can be useful as a
+    beginning location to illustrate key concepts that will be used in nonlinear cell
+    designs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We’ll begin with building a *static dense cell* – a cell whose primary processing
+    layer is the fully connected layer and that does not change its layers to adapt
+    to the input shape (Listing [6-17](#PC17)). Using the same logic as previously
+    established, a function is defined to take in an input layer upon which the cell
+    will be built. The last layer of the cell is then returned to be the input to
+    the next cell (or to the output layer).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: These cells can then be repeatedly stacked by iteratively passing the output
+    of the previously constructed cell as the input to the next cell (Listing [6-18](#PC18)).
+    This combination of cell design and stacking – linear cell design stacked in a
+    linear fashion – is perhaps the simplest cell-based architectural design (Figure
+    [6-29](#Fig29)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig30_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig30_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-30
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of architecture stacking convolutional and dense cells
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig29_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig29_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-29
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of cell-based design architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that while we are building a cell-based architecture, we’re not using *compartmentalized
+    design* (introduced in Chapter [3](516104_1_En_3_Chapter.xhtml) on autoencoders).
+    That is, while conceptually we understand that the model is built in terms of
+    repeated block segments, we do not build that into the actual implementation of
+    the model by defining each cell as a separate model. In this case, there is no
+    need for compartmentalized design since we do not need to access the output of
+    any one particular cell. Moreover, defining builder functions should serve as
+    a sufficient code-level conceptual organization of how the network is constructed.
+    The primary burden of using compartmentalized design with cell-based structures
+    is the need to keep track of the input shape of the previous cell’s output in
+    an automated fashion, which is required when defining separate models. However,
+    implementing compartmentalized design will make Keras’ architecture visualizations
+    more consistent with our conceptual understanding of cell-based models by visualizing
+    cells rather than the entire sequence of layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can similarly create a static convolutional cell by using the standard sequence
+    of a series of convolutional layers followed by a pooling layer, with batch normalization
+    and dropout for good measure (Listing [6-19](#PC19)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can combine the convolutional and dense cells together (Listing [6-20](#PC20),
+    Figure [6-30](#Fig30)). After the convolutional component is completed, we use
+    Global Average Pooling 2D (the Flatten layer also works) to collapse the image-based
+    information flow into a vector-like shape that is processable by the fully connected
+    component.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that static dense and static convolutional cells have different effects
+    on the data input shapes they are applied to. Static dense cells always output
+    the same data output shape, since the user specifies the number of nodes the input
+    will be projected to when defining a Dense layer in Keras. On the other hand,
+    static convolutional cells output different data output shapes, depending on which
+    data input shapes they received. (This is discussed in more detail in Chapter
+    [2](516104_1_En_2_Chapter.xhtml) on transfer learning.) Because different primary
+    layer types in cell designs can yield different impacts on the data shape, it
+    is general convention not to build static cells.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Instead, cells are generally built by their effect on the output shape, such
+    that they can more easily be stacked together. This is especially helpful in nonlinear
+    stacking patterns, in which cell outputs must match to be merged in a valid fashion.
+    Generally, cells can be categorized as reduction cells or normal cells. Normal
+    cells keep the output shape the same shape as the input shape, whereas reduction
+    cells decrease the output shape from the input shape. Many modern architectures
+    employ multiple designs for normal and reduction cells that are stacked repeatedly
+    throughout the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to build these shape-based cells (Listing [6-21](#PC21)), we will need
+    an additional parameter to keep track of – the input shape. For a network dealing
+    with tabular data, we are concerned only with the width of the input layer. In
+    a normal cell, the output is the same width as the input; we define a reduction
+    cell to reduce the size of the input by half, although you can adopt different
+    designs, depending on your problem type. Each cell-building function returns the
+    output layer of the cell, in addition to the width of the output layer. This information
+    will be employed in building the next cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can simply sequentially stack these two cells together in an alternating
+    pattern (Listing [6-22](#PC22), Figure [6-31](#Fig31)). We use the holder variables
+    `cell_out` and `w` to keep track of the output of a cell and the corresponding
+    width. Each cell-building function either keeps the shape `w` the same or modifies
+    it to reflect changes in the shape of the output layer of the cell. This information
+    is, as mentioned before, passed into the following cell-building functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig31_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig31_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-31
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture of alternating stacks of cells
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Building convolutional normal and reduction cells is similar, but we need to
+    keep track of three shape elements rather than one. Like in the context of autoencoders
+    and other shape-sensitive contexts, it’s best to use `padding='same'` to keep
+    the input and output shapes the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The normal cell uses two convolutional cells with `'same'` padding (Listing
+    [6-23](#PC23)). You can also use a pooling layer with `padding='same'` if you’d
+    like to use pooling in a normal cell. Note that the depth of the input is passed
+    as the number of filters in the convolutional layers to preserve the input shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: The reduction cell (Listing [6-24](#PC24)) also uses two convolutional cells
+    with `'same'` padding, but a pooling layer is added, which reduces the height
+    and width by half. We return the new shape, which halves the height and width.
+    The ceiling operation is performed on the result, in the case that the input shape
+    height or width is odd and the result of division is not an integer. If you use
+    a different padding mode for max pooling, you’ll need to correspondingly adjust
+    how the new shape is calculated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: These two cells can then be stacked in a linear arrangement, as previously demonstrated.
+    Alternatively, these cells can be stacked in a nonlinear format. To do this, we’ll
+    use the methods and ideas developed from the nonlinear and parallel representation
+    section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To merge the outputs of two cells together, they need to have the same shape.
+    Thanks to shape-based design, we can arrange normal and reduction cells accordingly
+    to form valid merge operations. For instance, we can draw a residual connection
+    from a normal cell “over” another normal cell, merge the two connections, and
+    pass the merged result into a reduction cell as displayed in Figure [6-32](#Fig32).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig32_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig32_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-32
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nonlinear stacking of cells
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, reduction cells form “borders” that cannot be transgressed by connections
+    (unless you use reshaping mechanisms), because the input shapes on the two sides
+    of the reduction cell do not match (Figure [6-33](#Fig33)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig33_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig33_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-33
+  prefs: []
+  type: TYPE_NORMAL
+- en: Demonstration of residual connection usage across cells
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can build nonlinear cell-stacking architectures in a very similar way as
+    we built nonlinearities and parallel representations among layers in a network
+    architecture. We will use the `make_rc` function defined in the previous section
+    to merge the outputs of `norm_1` and `norm_2` and pass the merged result as the
+    input of a reduction cell (Listing [6-25](#PC25), Figure [6-34](#Fig34)). The
+    shape is defined after the input with a depth of 64 such that convolutional layers
+    process the data with 64 filters (rather than 3). If desired, you can manipulate
+    reduction cells to also change the image depth. Note that the merging operation
+    we use in this case is adding rather than concatenation. The output shape of adding
+    is the same as the input shape of any one of the inputs, whereas depth-wise concatenation
+    changes the shape. This can be accommodated but requires ensuring the shape is
+    correspondingly updated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig34_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig34_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-34
+  prefs: []
+  type: TYPE_NORMAL
+- en: Residual connections across normal cells
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Cells can similarly be stacked in DenseNet style and with parallel branches
+    for more complex representation. If you’re using linear cell designs, it’s recommended
+    to use nonlinear stacking methods to add nonlinearity into the general network
+    topology.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nonlinear Cell Design
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Nonlinear cell designs have only one input and output, but use nonlinear topologies
+    to develop multiple parallel representations and processing mechanisms, which
+    are combined into an output. Nonlinear cell designs are generally more successful
+    (and hence more popular) because they allow for the construction of more powerful
+    cells.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building nonlinear cell designs is relatively simple with knowledge of nonlinear
+    representation and sequential cell design. The design of nonlinear cells closely
+    follows the previous discussion on nonlinear and parallel representation. Nonlinear
+    cells form organized, highly efficient feature extraction modules that can be
+    chained together to successively process information in a powerful, easily scalable
+    manner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Branch-based design is especially powerful in the design of nonlinear cell architectures.
+    It is able to effectively extract and merge different parallel representations
+    of data in one compact, stackable cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s build a normal cell for image data that keeps the spatial dimensions and
+    depth of the data constant (Listing [6-26](#PC26), Figure [6-35](#Fig35)). Like
+    previous designs, it will take in both the input layer to attach the cell to,
+    as well as the shape of the data. The depth of the image will be extracted from
+    the shape and used as the depth throughout the cell. By using appropriate padding,
+    the spatial dimensions of the data remain unchanged too. Three branches each extract
+    and process features in parallel with different filter sizes; these representations
+    are then merged via concatenation (depth-wise, meaning that they are “stacked
+    together”). This merging produces data of shape (*h*, *w*, *d* · 3), as we are
+    stacking together the outputs of three branches; to ensure that the output shape
+    is identical to the input shape, we add another convolutional layer with filter
+    `(1, 1)` to collapse the number of channels from *d* · 3 to *d*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig35_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig35_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-35
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hypothetical architecture of nonlinear normal cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can similarly build a reduction cell by building multiple branches that reduce
+    the spatial dimension of the input (Listing [6-27](#PC27), Figure [6-36](#Fig36)).
+    In this case, one branch performs a convolution with stride `(2, 2)` – halving
+    the spatial dimension. Another uses a standard max pooling reduction. Both are
+    followed by a convolution layer with filter `(1,1)` that separately process the
+    output before they are merged together via depth-wise concatenation. When the
+    two are concatenated, the depth is doubled. This is fine in this case; since we
+    want to compensate for decreases in resolution with corresponding increase in
+    quantity of filters, there is no need to decrease the number of filters after
+    concatenation as performed in the design of the normal cell. Correspondingly,
+    we place a convolutional layer with filter `(1,1)` to further process the results
+    of concatenation and use that layer as the output. The new shape of the data is
+    correspondingly calculated and passed as a second output to the cell-building
+    function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig36_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig36_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-36
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hypothetical architecture of a nonlinear reduction cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: These two cells (and any other additional designs for normal or reduction cells)
+    can be stacked linearly. Because nonlinearly designed cells contain sufficient
+    nonlinearity, there is less of a need to be aggressive in nonlinear stacking.
+    Stacking nonlinear cells sequentially is a tried-and-true formula. One concern
+    that could arise with linear stacking arises if you are stacking so many cells
+    together that the depth of the network poses problems for cross-network information
+    flow. Using residual connections across cells can help to address this problem.
+    In the case study for this section, on the famed InceptionV3 model, we will explore
+    a concrete example of successful nonlinear cell-based architectural design.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Case Study: InceptionV3'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The famous InceptionV3 architecture , part of the Inception family of models
+    that has become a pillar of image recognition, was proposed by Christian Szegedy,
+    Vincent Vanhoucke, Sergey Ioffe, Jonathon Shlens, and Zbigniew Wojna in the 2015
+    paper “Rethinking the Inception Architecture for Computer Vision.”^([2](#Fn2))
+    The InceptionV3 architecture, in many ways, laid out the key principles of convolutional
+    neural network design for the following years to come. The aspect most relevant
+    for this context is its cell-based design.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The InceptionV3 model attempted to improve upon the designs of the previous
+    InceptionV2 and original Inception models. The original Inception model consisted
+    of a series of repeated cells (referred to in the paper as “modules”) that followed
+    a multi-branch nonlinear architecture (Figure [6-37](#Fig37)). Four branches stem
+    from the input to the module; two branches consist of a 1x1 convolution followed
+    by a larger convolution, one branch is defined as a pooling operation followed
+    by a 1x1 convolution, and another is just a 1x1 convolution. Padding is provided
+    on all operations in these modules such that the size of the filters is kept the
+    same such that the results of the parallel branch representations can be concatenated
+    depth-wise back together.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig37_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig37_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-37
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Left: original Inception cell. Right: one of the InceptionV3 cell architectures'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A key architectural change in the InceptionV3 module designs is the *factorization*
+    of large filter sizes like 5x5 into a combination of smaller filter sizes. For
+    instance, the effect of a 5x5 filter can be “factored” into a series of two 3x3
+    filters; a 5x5 filter applied on a feature map (with no padding) yields the same
+    output shape as two 3x3 filters: `(w-4, h-4, d)`. Similarly, a 7x7 filter can
+    be “factored” into three 3x3 filters. Szegedy et al. note that this factorization
+    does not decrease representative power while promoting faster learning. This module
+    will be termed the *symmetric factorization module* , although in implementation
+    within the context of the InceptionV3 architecture it is referred to as *Module
+    A* .'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In fact, even 3x3 and 2x2 filters can be factorized into sequences of convolutions
+    with smaller filter sizes. An *n* by *n* convolution can be represented as a 1
+    by *n* convolution followed by an *n* by 1 convolution (or vice versa). Convolutions
+    with kernel height and widths that are different lengths are known as *asymmetric
+    convolutions* and can be valuable fine-grained feature detectors (Figure [6-38](#Fig38)).
+    In the InceptionV3 module architecture, *n* was chosen to be 7\. This module will
+    be termed the *asymmetric factorization module* (also known as *Module B* ). Szegedy
+    et al. find that this module performs poorly on early layers but works well on
+    medium-sized feature maps; it is correspondingly placed after symmetric factorization
+    modules in the InceptionV3 cell stack.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig38_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig38_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-38
+  prefs: []
+  type: TYPE_NORMAL
+- en: Factorizing n by n filters as operations of smaller filters
+  prefs: []
+  type: TYPE_NORMAL
+- en: For extremely *coarse* (i.e., small-sized) inputs, a different module with *expanded
+    filter bank outputs* is used. This model architecture encourages the development
+    of high-dimensional representations by using a tree-like topology – the two left
+    branches in the symmetric factorization module are further “split” into “child
+    nodes,” which are concatenated along with the outputs of the other branches at
+    the end of the filter (Figure [6-39](#Fig39)). This type of module is placed at
+    the end of the InceptionV3 architecture to handle feature maps when they have
+    become small spatially. This module will be termed the *expanded filter bank module*
+    (or *Module C* ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig39_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig39_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-39
+  prefs: []
+  type: TYPE_NORMAL
+- en: Expanded filter bank cell – blocks within the cell are further expanded by branching
+    into other filter sizes
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another reduction-style Inception module is designed to efficiently reduce the
+    size of the filters (Figure [6-40](#Fig40)). The reduction-style module uses three
+    parallel branches; two use convolutions with a stride of 2 and the other uses
+    a pooling operation. These three branches produce the same output shapes, which
+    can be concatenated depth-wise. Note that Inception modules are designed such
+    that a decrease in size is correspondingly counteracted with an increase in the
+    number of filters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig40_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig40_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-40
+  prefs: []
+  type: TYPE_NORMAL
+- en: Design of a reduction cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The InceptionV3 architecture is formed by stacking these module types in a
+    linear fashion, ordered such that each module is placed in a location where it
+    will receive a feature map input shape that it succeeds in processing. The following
+    sequence of modules is used:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A series of convolutional and pooling layers to perform initial feature extraction
+    (these are not part of any module).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Three repeats of the symmetric convolution module/Module A.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Reduction module.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Four repeats of the asymmetric convolution module/Module B.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Reduction module.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Two repeats of the expanded filter bank module/Module C.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Pooling, dense layer, and softmax output.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Another often unnoticed but important feature of the Inception family of architectures
+    is the 1x1 convolution, which is present in every Inception cell design, often
+    as the most frequently occurring element in the architecture. As discussed in
+    previous chapters, using convolutions with kernel size (1,1) is convenient in
+    terms of building architectures like autoencoders when there is a need to collapse
+    the number of channels. In terms of model performance, though, 1x1 convolutions
+    serve a key purpose in the Inception architecture: computing cheap filter reductions
+    before expensive, larger kernels are applied to feature map representations. For
+    instance, suppose at some location in the architecture 256 filters are passed
+    into a 1x1 convolutional layer; the 1x1 convolutional layer can reduce the number
+    of filters to 64 or even 16 by learning the optional combination of values for
+    each pixel from all 256 filters. Because the 1x1 kernel does not incorporate any
+    spatial information (i.e., it doesn’t take into account pixels next to one another),
+    it is cheap to compute. Moreover, it isolates the most important features for
+    the following larger (and thus more expensive) convolution operations that incorporate
+    spatial information.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Via well-designed module architectures and purposefully planned arrangement
+    of modules, the InceptionV3 architecture performed very well in that year’s ILSVRC
+    (ImageNet competition) and has become a staple in image recognition architectures
+    (Tables [6-2](#Tab2) and [6-3](#Tab3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of an ensemble of InceptionV3 architectures compared against ensembles
+    of other architecture models
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Architecture | # Models | Top 5 Error | Top 1 Error |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| VGGNet | 2 | 23.7% | 6.8% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| GoogLeNet | 7 | – | 6.67% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| PReLU | – | – | 4.94% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Inception | 6 | 20.1% | 4.9% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| InceptionV3 | 4 | 17.2% | 3.58% |'
+  prefs: []
+  type: TYPE_TB
+- en: Table 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of InceptionV3 architecture against other models in ImageNet
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Architecture | Top 5 Error | Top 1 Error |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| GoogLeNet | – | 9.15% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| VGG | – | 7.89% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Inception | 22% | 5.82% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| PReLU | 24.27% | 7.38% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| InceptionV3 | 18.77% | 4.2% |'
+  prefs: []
+  type: TYPE_TB
+- en: The full InceptionV3 architecture is available at `keras.applications.InceptionV3`
+    with available ImageNet weights for transfer learning or just as a powerful architecture
+    (used with random weight initialization) for image recognition and modeling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building an InceptionV3 module itself is pretty simple, and because the design
+    of each cell is relatively small, there is no need to automate its construction.
+    We can build four branches in parallel to one another, which are concatenated.
+    Note that we specify `strides=(1,1)` in addition to `padding='same'` in the max
+    pooling layer to keep the input and output layers the same. If we only specify
+    the latter, the strides argument is set to the entered pool size. These cells
+    can then be stacked alongside other cells in a sequential format to form an InceptionV3-style
+    architecture (Listing [6-28](#PC28), Figure [6-41](#Fig41)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig41_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig41_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-41
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of a Keras InceptionV3 cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Besides getting to work with large neural network architectures directly, another
+    benefit of implementing these sorts of architectures from scratch is customizability.
+    You can insert your own cell designs, add nonlinearities across cells (which InceptionV3
+    does not implement by default), or increase or decrease how many cells you stack
+    to adjust the network depth. Moreover, cell-based structures are incredibly simple
+    and quick to implement, so this comes at little cost.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Network Scaling
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Successful neural network architectures are generally not built to be static
+    in their size. Through some mechanism, these network architectures are *scalable*
+    to different sets of problems. In the previous chapter, for instance, we explored
+    how NASNet-style Neural Architecture Search design allowed for the development
+    of successful cell architectures that could be scaled by stacking different lengths
+    and combinations of the discovered cells. Indeed, a large advantage to cell-based
+    design is inherent scalability. In this section, we’ll discuss scaling principles
+    that are applicable to all sorts of architectures – both cell-based and not.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The fundamental idea of scaling is that a network’s “character” can be retained
+    while the actual size of a network is scaled to be smaller or larger (Figure [6-42](#Fig42)).
+    Think of RV model airplanes – flyable airplanes that are only a few feet large
+    in any dimension. They capture the spirit of what an airplane is by retaining
+    its design and general function but use fewer resources by decreasing the size
+    of each component. Of course, because they use fewer resources, they are less
+    equipped for certain situations that true airplanes could withstand, like heavy
+    gusts of wind, but this is a necessary sacrifice for scaling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig42_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig42_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-42
+  prefs: []
+  type: TYPE_NORMAL
+- en: Scaling a model to different sizes
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are generally two dimensions that can be scaled – the width (i.e., the
+    number of nodes, filters, etc. in each layer) and length (i.e., the number of
+    layers) in the network. These two dimensions are easily defined in linear topologies
+    but are more ambiguous in nonlinear topologies. To make scaling simple, there
+    are generally two paths to deal with nonlinearity. If the nonlinearity is simple
+    enough that there is an easily identifiable linear backbone (e.g., residual connection-based
+    architectures or simple branch architectures), the linear backbone itself is scaled.
+    If the nonlinearity is too complex, arrange it into cells that can be linearly
+    stacked together and scaled depth-wise. We’ll discuss these ideas more in detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Say, you have a neural network architecture on your hands – perhaps you’ve
+    gotten it from a model repository or designed one yourself. Let’s consider three
+    general scenarios in which scaling can help:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You find that it yields insufficiently high performance on your dataset, even
+    when trained until fruition. You suspect that the maximum predictive capacity
+    of the model is not enough to model your dataset.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You find that the model performs fine as is, but you want to decrease its size
+    to make it more portable in a systematic way without damaging the key attributes
+    that contribute to the model’s performance.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You find that the model performs well as is, but you want to open-source the
+    model for usage by the community or would like to employ it in some other context
+    in which it will be applied to a diverse array of problem domains.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The principles of neural network scaling provide the key concepts to increase
+    or decrease the size of your neural network in a systematic and structured fashion.
+    After you have a candidate model architecture built, incorporating scalability
+    into its design makes it more accessible across all sorts of problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Input Shape Adaptable Design
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: One method of scaling is to adapt the neural network to the input shape size.
+    This is a direct method of scaling the architecture in relation to the complexity
+    of the dataset, in which the relative resolution of the input shape is used to
+    approximate the level of predictive power that needs to be allocated to process
+    it adequately. Of course, it is not always true that the size of the input shape
+    is indicative of the dataset’s complexity to model. The primary idea of input
+    shape adaptable design is that a larger input shape indicates more complexity
+    and therefore requires more predictive power *relative* to a smaller input (the
+    opposite relationship being true as well). Thus, a successful input shape adaptable
+    design is able to modify the network in accordance to chances in the input shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sort of scaling is a practical one, given that input shape is a key vital
+    component of using and transferring model architectures (i.e., if it is not correctly
+    set up, the code will not run). It allows you to directly build model architectures
+    that respond to different resolutions, sizes, vocabulary lengths, etc. with correspondingly
+    more or less predictive resource allocation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The simplest adaptation to the input shape is not to modify the architecture
+    at all, but to modify the shape of the input via a resizing layer (Listing [6-29](#PC29)).
+    In Keras syntax, a `None` in a dimension of the input shape parameter indicates
+    that the network accepts an arbitrary value for that dimension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: This sort of resizing design has the benefit of *portability* in deployment;
+    it’s easy to make valid predictions by passing in an image (or some other data
+    form with appropriate code modifications) of any size into the network without
+    any preprocessing. However, it doesn’t quite count as *scaling* in that computational
+    resources are not being allocated to adapt to the input shape. If we pass an image
+    with a very high resolution – (1024, 1024, 3), for instance – into the network,
+    it will lose a tremendous level of information by naïvely resizing to a certain
+    height or width.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s consider a simple example of a fully connected network whose depth is
+    fixed, but whose widths are open to be adjusted. It hypothetically contains layers
+    that transform the input width from 32 to 21 to 14 to 10 to 10 to 5 to 1 (output)
+    across five layers. We need to identify a scalable pattern – an *architectural
+    policy* that can be generalized. In this case, each width is approximately two-thirds
+    the width of the previous width. We can implement this recursive architectural
+    policy by defining five layer widths based on this generalized policy and storing
+    it in a list of layer widths (Listing [6-30](#PC30)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can apply this to the construction of our simple neural network (Listing
+    [6-31](#PC31)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: This model, albeit simple, is now capable of being transferred to datasets of
+    different input sizes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can similarly apply these ideas to convolutional neural networks. Note that
+    convolutional layers can accept arbitrarily sized inputs, but nevertheless we
+    can change the number of filters used in each layer by finding and applying generalized
+    rules in the existing architecture to be scaled. In convolutional neural networks,
+    we want to expand the number of filters to compensate for decreases in image resolution.
+    Thus, the number of filters should increase over time relative to the original
+    input shape to perform this resource compensation properly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can define the number of filters we want the first convolutional layer and
+    the last convolutional layer to have as dependent on the resolution of the input
+    shape (Listing [6-32](#PC32)). In this case, we define it the number of filters
+    as ![$$ {2}^{round\left({\mathit{\log}}_2w\right)-4} $$](../images/516104_1_En_6_Chapter/516104_1_En_6_Chapter_TeX_IEq1.png),
+    where *w* is the original width (the expression is purposely left in unsimplified
+    form). Thus, a 128x128 image would begin with 8 filters, whereas a 256x256 image
+    would begin with 16 filters. The number of filters a network has is scaled up
+    or down relative to the size of the input image. We define the number of filters
+    the last convolutional layer has simply to be 2³ = 8 times the number of original
+    filters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Our goal is to progress from the starting number of filters to the ending number
+    of filters throughout the ten layers we define our network depth to be. In order
+    to do this, we divide the number of layers into four segments. To go from one
+    segment to the next, we multiply the number of filters by 2\. We determine when
+    to move to the next segment by measuring what fraction of the layers have been
+    accounted for (Listing [6-33](#PC33)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: The sequence of filters for a (128,128,3) image, according to this method, is
+    [8, 8, 8, 16, 16, 32, 32, 32, 64, 64]. The sequence of filters for a (256,256,3)
+    image is [16, 16, 16, 32, 32, 64, 64, 64, 128, 128]. Note that we don’t define
+    the architectural policy in this case recursively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: By determining which segment to enter by measuring *progress* rather than the
+    deterministic layer (i.e., if the current layer is past Layer 3), this script
+    is also scalable across *depth*. By adjusting the `num_layers` parameter, you
+    can “shrink” or “stretch” this sequence across any desired depth. Because higher
+    resolutions generally warrant longer depths, you can also generalize the `num_layers`
+    parameter as a function of the input resolution, like `num_layers = round(np.log2(128)*3)`.
+    Note that in this case we are using the logarithm to prevent the scaling algorithm
+    from constructing networks with depths that are too high in response to high-resolution
+    inputs. The list and length of filters can then be used to automatically construct
+    a neural network architecture scaled appropriately depending on the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that these operations should be fitted *after* you have obtained a model
+    to scale in the first place. We can generalize this process of scaling into three
+    steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Identify architectural patterns that can be generalizable for scaling, like
+    the depth of the network or how the width of layers changes across the length
+    of the network.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Generalize the architecture pattern into an *architectural policy* that is scalable
+    across the scaled dimension.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Use the architectural policy to generate concrete elements of the network architecture
+    in response to the input shape (or other determinants of scaling).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Adaptation to input shapes is most relevant for architectures like autoencoders,
+    in which the input shape is a key influence throughout the architecture. We’ll
+    combine cell-based design and knowledge of autoencoders discussed in Chapter [3](516104_1_En_3_Chapter.xhtml)
+    to create a *scalable* autoencoder whose length and filter sizes can automatically
+    be scaled to whatever input size it is being applied to.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To make the process of building easier, let’s define an “encoder cell” and a
+    “decoder cell” (Listing [6-34](#PC34)). These are not the encoder and decoder
+    *sub-models* or components but rather represent cells that can be stacked together
+    to form the encoder and decoder. The encoder cell attaches two convolutional layers
+    and a max pooling layer to whatever layer is passed into the cell-building function,
+    whereas the decoder cell attaches the “inverse” – an upsampling layer followed
+    by two transpose convolutional layers. Both return the output/last layer of the
+    cell, which can be used as the input to the following cell. Note that these two
+    cells halve and double the resolution of image inputs, respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will begin with three key variables: `i` will represent the power with which
+    2 is raised to in determining how many filters the first and last convolutional
+    layer should have (`i=4` indicates that 2⁴ = 16 filters will be used); `w`, `h`,
+    and `d` will be used to hold the width, height, and depth of the input shape;
+    and `curr_shape` will be used to track the shape of data as it is passed through
+    the network (Listing [6-35](#PC35)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We must consider the two key dimensions of scale: width and depth.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of filters in a block will be doubled if the resolution is halved,
+    and it will be halved if the resolution is doubled. This sort of relationship
+    ensures approximate *representation equilibrium* throughout the network – we do
+    not create representation bottlenecks that are too severe, a principle of network
+    design outlined by Szegedy et al. in the Inception architecture (see case study
+    for section on cell-based design). Assume that this network is used for a purpose
+    like pretraining or denoising in which bottlenecks can be built less liberally
+    in size (in other contexts, we would *want* to build more severe representation
+    bottlenecks). We can keep track of this relationship by increasing `i` by 1 after
+    an encoder cell is attached and decreasing it by 1 after a decoder cell is attached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this example, we will build our neural network not with a certain pre-specified
+    depth, but with whatever depth is necessary to obtain a certain bottleneck size.
+    That is, we will continue stacking encoder blocks until the data shape is equal
+    to (or falls below) a certain desired bottleneck size. At this point, we will
+    stack *decoder* blocks to progressively increase the size of the data until it
+    reaches its original size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can construct the input layer and the first encoder cell (Listing [6-36](#PC36)).
+    We update the current shape of the data appropriately by halving after an encoder
+    cell is added. Moreover, we increase `i` such that the following encoder cell
+    uses two times as many filters. An infinite loop continues stacking encoder cells
+    until the output shape of the cell (i.e., the potential bottleneck) is equal to
+    or less than 16 neurons (the desired cell).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: After the encoder is built, we can correspondingly build the decoder, which
+    repeatedly stacks decoder cells and decreases `i` such that the following cell
+    uses half as many filters (Listing [6-37](#PC37)). While you could continue to
+    keep track of the shape and break when the current shape was equal to the original
+    shape, another approach that uses less code is to take advantage of our usage
+    of `i` and treating `i=4` as an indication that we have reached the initial state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: The complete model can be aggregated as `ae = keras.models.Model(inputs=inp,
+    outputs=x)`. This simple autoencoder design – using two convolutions followed
+    by a pooling operation – has been scaled to be capable of modeling any input size
+    resolution (as long as it is a power of 2, since pooling makes approximations
+    that are not captured in upsampling if the side length is not cleanly divisible
+    by the pooling factor – see Chapter [3](516104_1_En_3_Chapter.xhtml) for more
+    on this). Scaling a model to be adaptable to different input sizes can require
+    more work, as we’ve seen, but it makes your model more accessible and agile in
+    experimentation and deployment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parametrization of Network Dimensions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In the earlier section, we focused on scaling oriented toward a necessity-level
+    parameter: the input shape of a model. In this section, we will discuss broad
+    parametrization of network dimensions. Adapting the network architecture to the
+    input shape requires us to generalize the model architecture and thus formulate
+    implicit and explicit architectural policies that may or may not be successful.
+    The goal here is rather to *parametrize* the dimensions of the network for the
+    purposes both of adaptation to different problems and also for *experimentation*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As discussed in the introduction to this chapter, seldom will one round of model
+    building suffice for deployment. By parameterizing the dimensions of a network
+    architecture, we are able to experiment with different scales and sizes more easily
+    and quickly for a network to optimally fit a dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The key difference between parametrizing a model for the sake of experimentation
+    and inherent scalability and parametrizing a model to adapt to the input shape
+    is that the factors determining parametrization are user-specified, not dependent
+    on the input shape. Rather than programming architectural policies (e.g., the
+    pattern with which the width of a network expands from the input shape), we use
+    *multiplying coefficients*. These are parameters that the user specifies that
+    are multiplied to the current dimensions of the network. A multiplying coefficient
+    smaller than 1 will shrink that dimension, whereas a multiplying coefficient larger
+    than 1 will expand that dimension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider this simple sequential model architecture , which processes a 64-dimensional
+    input through four fully connected layers and an output (Listing [6-38](#PC38)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s parametrize the width by multiplying the number of nodes in each layer
+    by some width coefficient (Listing [6-39](#PC39)). Because the result may be a
+    fraction, we round the result of the scaling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parametrizing the depth is a little bit more tricky, because we need to manipulate
+    actual layer objects, rather than parameters within a fixed set of layers. A successful
+    systematic approach is to identify key blocks of the architecture consisting of
+    multiple similar layers that can be stretched or shrunk by a depth coefficient
+    (Listing [6-40](#PC40)). In our simple model, there are two easily identifiable
+    blocks: one block directly after the input and before the batch normalization
+    consisting of two layers with 32 nodes and another block after the batch normalization
+    layer consisting of another two layers with 16 nodes. By default, these two blocks
+    consist of one type of layer with a default quantity of 2\. We can parametrize
+    the network, therefore, by multiplying this quantity by the depth coefficient.
+    Like with the width, we perform rounding in the case of noninteger results.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this case, we pass `2` into `d()` because 2 is the default number of layers
+    in our model architecture. Note additionally that we are not scaling the *entire*
+    depth of the network; we are leaving layers like batch normalization alone regardless
+    of the depth coefficient, for instance. Depth-wise scaling should be applied appropriately
+    to processing layers, not to layers like batch normalization or dropout that only
+    shift or regularize the data flow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The user can now adjust `width_coef` and `depth_coef` for quick experimentation
+    and portability. The method by which you *optimize* the parametrization of network
+    dimensions is up to you. One method that is likely to be successful is to use
+    Bayesian optimization via Hyperopt or Hyperas to tune the width and depth scaling
+    factors `width_coef` and `depth_coef`. Alternatively, one can look toward a recently
+    growing body of research around general best practices for scaling , like the
+    *compound scaling method* introduced in the successful EfficientNet architecture
+    of models. We’ll explore this method in the case study for this section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This logic applies to architectures with nonlinearity, as long as a clear backbone
+    is identifiable (Listing [6-41](#PC41)). Consider, for instance, the code used
+    for building DenseNet-style residual connections (Listing [6-8](#PC8)). We can
+    scale network depth and width from their original “default” dimension values using
+    our `d` and `w` functions, for instance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Similarly, you can parametrize the dimensions of nonlinear architectures without
+    a nonlinear backbone that are simple, like parallel branches. If an architecture
+    is too nonlinear to use a block-based approach toward scaling the depth dimension
+    as introduced earlier, another method is to group these highly nonlinear topologies
+    into blocks that can be scaled by stacking different quantities of blocks together.
+  prefs: []
+  type: TYPE_NORMAL
+- en: By parameterizing network dimensions, you enable yourself and others to experiment
+    and adapt the network architecture more quickly and easily, leading to improved
+    performance on the problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Case Study: EfficientNet'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Convolutional neural networks have historically been scaled relatively arbitrarily,
+    along the two previously discussed dimensions – height and width – as well as
+    (recently) resolution. “Arbitrary” scaling entails adjusting these dimensions
+    of a network without much of a justification for how the adjusting is performed;
+    there is ambiguity in how large to scale dimensions. The “larger is better” paradigm
+    that gripped much of earlier development in convolutional neural network designs
+    is reaching a limit in its competitiveness against other approaches that focus
+    more on developing efficient mechanisms and designs. Thus, there is a need for
+    a *systematic method of scaling neural network architectures across several dimensions*
+    for the highest expected success (Figure [6-43](#Fig43)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig43_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig43_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-43
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dimensions of a neural network that can be scaled, compared with the compound
+    scaling method
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Mingxing Tan and Quoc V. Le propose the *compound scaling method* in their
+    paper “EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks.”^([3](#Fn3))
+    The compound scaling method is a simple but successful scaling method in which
+    each dimension is scaled by a constant ratio.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A set of fixed scaling constants is used to uniform scale the width, depth,
+    and resolution used by a neural network architecture. These constants – *α*, *β*, *γ*
+    – are scaled by a compound coefficient, *ϕ*, such that the depth is *d* = *α*^(*ϕ*),
+    the width is *w* = *β*^(*ϕ*), and the resolution is *r* = *γ*^(*ϕ*). *ϕ* is defined
+    by the user, depending on how many computational resources/predictive power they
+    are willing to allocate toward a particular problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The values of the constants can be found through a small grid search, in which
+    *ϕ* is set to 1 and the set of parameters that yield the best accuracy is selected.
+    This is both feasible and successful given the small search space. Two constraints
+    on the constants are imposed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*α* ≥ 1, *β* ≥ 1, *γ* ≥ 1: This ensures that the constants do not decrease
+    in value when they are raised to the power of the compound coefficient *ϕ*, such
+    that a larger compound coefficient value yields in a larger depth, width, and
+    resolution size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*α* · *β*² · *γ*² ≈ 2: The FLOPS (floating point operations per second) of
+    a series of convolution operations is proportional to the depth, the width squared,
+    and the resolution squared. This is because depth operates linearly by stacking
+    more layers, whereas the width and the resolution act upon two dimensional filter
+    representations. To ensure computational interpretability, this constraint ensures
+    that any value of *ϕ* will raise the total number of FLOPS by approximately (*α* · *β*² · *γ*²)^(*ϕ*) = 2^(*ϕ*).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Using this method of scaling is very successful in application to previously
+    successful architectures like MobileNet and ResNet (Table [6-4](#Tab4)). Through
+    the compound scaling method, we are able to expand the size and computational
+    power of the network in a structured and non-arbitrary way that optimizes the
+    resulting performance of the scaled model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of the compound scaling method on MobileNetV1, MobileNetV2, and
+    ResNet50 architectures
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Model | FLOPS | Top 1 Acc. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Baseline MobileNetV1 | 0.6 B | 70.6% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale MobileNetV1 by width (*w* = 2) | 2.2 B | 74.2% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale MobileNetV1 by resolution (*r* = 2) | 2.2 B | 74.2% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Scale MobileNetV1 by compound scaling** | **2.3 B** | **75.6%** |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Baseline MobileNetV2 | 0.3 B | 72.0% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale MobileNetV2 by depth (*d* = 4) | 1.2 B | 76.8% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale MobileNetV2 by width (*w* = 2) | 1.1 B | 76.4% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale MobileNetV2 by resolution (*r* = 2) | 1.2 B | 74.8% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Scale MobileNetV2 by compound scaling** | **1.3 B** | **77.4%** |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Baseline ResNet50 | 4.1 B | 76.0% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale ResNet50 by depth (*d* = 4) | 16.2 B | 76.0% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale ResNet50 by width (*w* = 2) | 14.7 B | 77.7% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Scale ResNet50 by resolution (*r* = 2) | 16.4 B | 77.5% |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Scale ResNet50 by compound scaling** | **16.7 B** | **78.8%** |'
+  prefs: []
+  type: TYPE_TB
+- en: Tan and Le propose explanations for the success of compound scaling that are
+    similar to our previous intuition developed when adapting the architecture of
+    a neural network based on the input size. By intuition, when the input image is
+    larger, all dimensions – not just one – need to be correspondingly increased to
+    accommodate the increase in information. Greater depth is required to process
+    the increased layers of complexity, and greater width is needed to capture the
+    greater quantity of information. Tan and Le’s work is novel in expressing the
+    relationship between the network dimensions quantitatively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tan and Le’s paper proposes the *EfficientNet* family of models, which is a
+    family of differently sized models built from the compound scaling method. There
+    are eight models in the EfficientNet family – EfficientNetB0, EfficientNetB1,
+    …, to EfficientNetB7, ordered from smallest to largest. The EfficientNetB0 architecture
+    was discovered via Neural Architecture Search. In order to ensure that the derived
+    model optimized both performance and FLOPS, the objective of the search was not
+    merely to maximize the accuracy but to maximize a combination of performance and
+    the FLOPS. The resulting architecture is then scaled using different values of
+    *ϕ* to form the other seven EfficientNet models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The actual open-sourced EfficientNet models are slightly adapted from their
+    pure scaled versions. As you may imagine, compound scaling is a successful but
+    still approximate method, as is to be expected with most scaling techniques –
+    these are generalizations across ranges of architecture sizes. To truly maximize
+    performance, some fine-tuning of the architecture is still needed afterward. The
+    publicly available versions of the EfficientNet model family contain some additional
+    architectural changes after scaling via compound scaling to further improve performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The EfficientNet family of models impressively obtains higher performance on
+    benchmark datasets like ImageNet, CIFAR-100, Flowers, and others than similarly
+    sized models – both manually designed and NAS-discovered architectures (Figure
+    [6-44](#Fig44)). While the core EfficientNetB0 model was created as a product
+    of Neural Architecture Search, the remaining members of the EfficientNet family
+    are constructed via scaling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/516104_1_En_6_Chapter/516104_1_En_6_Fig44_HTML.jpg](../images/516104_1_En_6_Chapter/516104_1_En_6_Fig44_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-44
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot of various EfficientNet models against other important model architectures
+    in number of parameters and ImageNet top 1 accuracy
+  prefs: []
+  type: TYPE_NORMAL
+- en: The EfficientNet model family is available in Keras applications at `keras.applications.EfficientNetBx`
+    (substituting `x` for any number from 0 to 7). The EfficientNet implementation
+    in Keras applications ranges from 29 MB (B0) to 256 MB (B7) in size and from 5,330,571
+    parameters (B0) to 66,658,687 parameters (B7). Note that the input shapes for
+    different members of the EfficientNet family are different. EfficientNetB0 expects
+    images of spatial dimension (224, 224); B4 expects (380, 380); B7 expects (600,
+    600). You can find this information in the expected input shape listed in Keras/TensorFlow
+    applications documentation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Looking at the EfficientNet source code in Keras is a valuable way to get a
+    feel for how scaling is implemented on a professional level. It is available at
+    [`https://github.com/keras-team/keras-applications/blob/master/keras_applications/efficientnet.py`](https://github.com/keras-team/keras-applications/blob/master/keras_applications/efficientnet.py).
+    Because this implementation is written for one of the most widely used deep learning
+    libraries, much of the relevant code is used to generalize/parametrize the model
+    for accessibility across various platforms and purposes. Nevertheless, its general
+    structure of organization can be emulated for your deep learning purposes and
+    designs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The EfficientNet implementation in Keras consists of three key types of functions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`block()`, which builds a standard EfficientNet-style block given a long list
+    of parameters, including the dropout rate, the number of incoming filters, the
+    number of outgoing filters, etc. `expand_ratio` and `se_ratio` parameters refer
+    to the “severity” or “intensity” of the *expansion phase* and the *squeeze and
+    excitation phase*, which (roughly speaking) increase and decrease the representation
+    size of the data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`EfficientNet()`, which constructs an EfficientNet model given two key parameters
+    – the `width_coefficient` and the `depth_coefficient`. Additional parameters include
+    the dropout rate and the depth divisor (a unit used for the width of a network).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`EfficientNetBx()`, which simply calls the `EfficientNet()` architecture construction
+    function with certain parameters appropriate to the EfficientNet structure being
+    called. For instance, the `EfficientNetB4()` function returns the `EfficientNet()`
+    function with a width coefficient of 1.4 and a depth coefficient of 1.8\. The
+    “unscaled” EfficientNetB0 model uses a width coefficient and depth coefficient
+    of 1.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The key `EfficientNet()` function defines two functions within itself, `round_filters`
+    and `round_repeats`, which take in the “default” number of filters and number
+    of repeats and scale them appropriately depending on the provided width coefficient
+    and depth coefficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `round_filters` function (Listing [6-42](#PC42)) takes in the default number
+    of filters and returns the new number of filters after scaling. The equation for
+    the new number of filters *f*[*n*] is given roughly by ![$$ {f}_n=\mathit{\max}\left(d,
+    round\left(\frac{w\times {f}_o+\frac{d}{2}}{d}\right)\cdotp d\right) $$](../images/516104_1_En_6_Chapter/516104_1_En_6_Chapter_TeX_IEq2.png),
+    where *d* is the depth divisor, *w* is the width scaling coefficient, and *f*[*o*]
+    is the original number of filters. The number of new filters can never be shrunk
+    below the value of the divisor because of the *max*(…) mechanism. The expression
+    on the right simply multiplies the original number of filters by the width scaling
+    coefficient and then applies the *depth divisor* to it. The depth divisor can
+    be thought of as the bin size in quantization from Chapter [5](516104_1_En_5_Chapter.xhtml);
+    it is the basic unit that a parameter is scaled in terms of. The default divisor
+    for EfficientNet is 8, meaning that the width is represented in multiples of 8\.
+    This sort of “quantization” can be easily done via the ![$$ round\left(\frac{a}{d}\right)\cdotp
+    d $$](../images/516104_1_En_6_Chapter/516104_1_En_6_Chapter_TeX_IEq3.png) (integer
+    division is performed in Python by `a//d`). This implementation adds ![$$ \frac{d}{2}
+    $$](../images/516104_1_En_6_Chapter/516104_1_En_6_Chapter_TeX_IEq4.png) to “balance”
+    the scaled number of filters before “quantization”/“rounding.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: The depth scaling method is simpler; the default number of block repeats is
+    multiplied by the depth coefficient, with the ceiling function applied for a resulting
+    noninteger scaled depth (Listing [6-43](#PC43)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: These functions are used in the building of the parametrized EfficientNet base
+    model, allowing for easy scaling.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this chapter, we discussed three key themes in successful neural network
+    architecture design: nonlinear and parallel representation, cell-based design,
+    and architecture scaling:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are three key concepts in efficient and advanced implementation of complex
+    architectures – compartmentalization, automation, and parametrization.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Nonlinear and parallel representations allow layers to pass information signals
+    across various components of the architecture without being restricted by having
+    to pass through many other components. This allows for the network to process
+    information in a way that considers more perspectives and representations.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Residual connections are connections that “skip” or “jump” over other layers.
+    ResNet-style residual connections are used repeatedly to jump over small stacks
+    of layers. DenseNet-style residual connections, on the other hand, place residual
+    connections between every pair of anchor points, allowing information to traverse
+    both longer and shorter distances through the network. Residual connections are
+    one method of addressing the vanishing gradient problem. These can be implemented
+    quite simply through the Functional API by merging the “root” of the residual
+    connection with the input to the “end” of the residual connection.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Branching structures and cardinality are generalizations of residual connections
+    into broader nonlinearities. While width measures how wide one layer is (e.g.,
+    number of nodes or filters), *cardinality* measures how many layers wide – and
+    therefore how many parallel representations exist and are being processed – the
+    network is at some point.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Blocks/cell design consists of arranging layers into packaged topologies that
+    function as cells which can be stacked upon one another to form a cell-based architecture.
+    By arranging layers into cells and manipulating cells rather than layers, we replace
+    the base unit of architectural construction – the layer – with a more powerful
+    one, consisting of an agglomeration of layers. Cells can be thought of as “mini-networks”
+    that can take on a variety of internal topologies, linear or nonlinear. In implementation,
+    block/cell design can be implemented by constructing a function which takes in
+    a layer to build the cell on and outputs the last layer of the cell (upon which
+    another cell or other processing layers can be stacked).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Neural network scaling allows network architectures to be scaled for different
+    datasets, problems, and experimentation. You can use scaling to adapt the architecture
+    width and dimension to the input shape by identifying patterns in the neural network
+    architecture and generalizing into an *architectural policy*. You can also scale
+    architectures by parameterizing the width and the depth; these can be optimized
+    via a method like Bayesian optimization or by a manual scaling policy like compound
+    scaling.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the next chapter, we will use the tools we’ve built across these multiple
+    chapters to discuss deep learning problem-solving methods.
+  prefs: []
+  type: TYPE_NORMAL

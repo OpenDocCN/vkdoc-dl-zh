@@ -1,0 +1,1956 @@
+- en: 9. Temporal Convolutional Networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In this chapter, you will learn about temporal convolutional networks (TCNs).
+    You will learn how TCNs work, how they can be used to detect anomalies, and how
+    you can implement anomaly detection using a TCN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In a nutshell, this chapter covers the following topics:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is a temporal convolutional network?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Dilated temporal convolutional network
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Encoder-decoder temporal convolutional network
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: TCN application
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code examples are provided in Python 3.8\. The code repository for this book
+    is available at [`https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/tree/master`](https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/tree/master).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The repository also includes a requirements.txt file to check your packages
+    and their versions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The two notebooks for this chapter are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Dilated TCN**: [`https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_tcn.ipynb`](https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_tcn.ipynb)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**ED-TCN**: [`https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_ed_tcn.ipynb`](https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_ed_tcn.ipynb)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Navigate to “Chapter 9 Temporal Convolutional Networks” and then click the notebook.
+    The code is provided as .py files as well, though it is the exported version of
+    the notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will be using JupyterLab to present all of the code examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What Is a Temporal Convolutional Network?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Temporal convolutional networks are a family of architectures that incorporate
+    one-dimensional convolutional layers. More specifically, these convolutions are
+    **causal**, meaning no information from the future is leaked into the past. In
+    other words, the model only processes information going forward in time. One of
+    the problems with recurrent neural networks (covered in Chapter [8](483137_2_En_8_Chapter.xhtml))
+    in the context of language translation is that they read sentences from left to
+    right in time, leading them to mistranslate in some cases where the order of the
+    sentence is switched around to create emphasis. To solve this, RNNs use bi-directional
+    encoders, but this means future information is considered in the present. TCNs
+    don’t have this problem because, unlike RNNs, they don’t rely on information from
+    previous time steps, thanks to their causality. Additionally, TCNs can map an
+    input sequence of any length to an output sequence with the same length, just
+    as RNNs can do.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Basically, TCNs seem to be a great alternative to RNNs. These are the advantages
+    of TCNs, specifically considering RNNs in general:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Parallel computations**: Convolutional networks pair well with GPU training,
+    particularly because the matrix-heavy calculations of the convolutional layers
+    are well suited to the structure of GPUs, which are configured to carry out matrix
+    calculations that are part of graphics processing. Because of that, TCNs can train
+    much faster than RNNs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Flexibility**: TCNs can change input size, change filter size, increase dilation
+    factors, stack more layers, etc. in order to easily be applied to various domains.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Consistent gradients**: Because TCNs are comprised of convolutional layers,
+    they backpropagate differently than RNNs do, and thus all of the gradients are
+    saved. RNNs have a problem called “exploding,” or “vanishing gradients,” where
+    sometimes the calculated gradient is either extremely large or extremely small,
+    leading to the readjusted weight to be either too extreme of a change or a relatively
+    nonexistent change. To combat this, types of RNNs such as the LSTM, GRU, and HF-RNN
+    were developed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Lighter on memory**: LSTMs store information in their cell gates, so if the
+    input sequence is long, much more memory is used by the LSTM network. Comparatively,
+    TCNs are relatively straightforward, as they are comprised of several layers that
+    all share their own respective filters. Compared to LSTMs, TCNs are much lighter
+    to run in regard to their memory usage during training.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'However, TCNs do have some disadvantages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Memory usage during evaluation mode**: RNNs only need to know some input
+    x[t] to generate a prediction, since they maintain a summary of everything they
+    learned through their hidden state vectors. In comparison, TCNs need the entire
+    sequence up until the current point again to make an evaluation, leading to potentially
+    higher memory usage than RNNs when making predictions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Problems with transfer learning**: **Transfer learning** is when a model
+    has been trained for one particular task (e.g., classifying vehicles) and has
+    the last layer(s) taken out and retrained completely so that the model can be
+    used for a new classification task (e.g., classifying animals).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The of transfer learning is a powerful and useful concept. In computer vision,
+    there are some really powerful models, such as the ResNet152 model, that have
+    been trained on powerful GPUs for quite some time to achieve the performances
+    that they do. Instead of training our own CNN from the ground up (and most of
+    us don’t have the GPU hardware or the time to spend that long training an extremely
+    deep model like ResNet152), we can simply take ResNet152, for example, which is
+    really good at extracting features out of images, and train it to associate the
+    features that it extracts with a completely new set of classes. This process takes
+    a lot less time since the weights in the entire network are already well optimized,
+    so we’re only concerned with finding the optimal weights for the layers we are
+    retraining.
+  prefs: []
+  type: TYPE_NORMAL
+- en: That’s why transfer learning is such a valuable process; it allows us to take
+    a pretrained, high-performance model and simply retrain the last layer(s) with
+    our hardware and teach the model a new classification task (for CNNs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Going back to TCNs, the model might be required to remember varying levels of
+    sequence history to make predictions. If the old model required some arbitrary
+    length of history to make predictions, but in the new task, it suddenly requires
+    a significantly different length of history to make predictions, that could cause
+    issues and lead to poor performance. Transfer learning doesn’t make much sense
+    anymore - you’d have to retrain the entire network because the only way to perform
+    well on this new task is to have a different history length as input. In contrast,
+    images are much more stable and are usually always at a fixed length, unlike one-dimensional
+    sequences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In a one-dimensional convolutional layer, we still have a parameter **k** to
+    determine the size of our kernel, or filter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As an example of what the one-dimensional convolutional operation looks like,
+    assume that we have an input vector defined as shown in Figure [9-1](#Fig1) and
+    a filter initialized as shown in Figure [9-2](#Fig2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An input vector for filter weights reads as follows. Left square bracket 1 0.2
+    0.1 right square bracket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The filter weights associated with this one-dimensional convolutional layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: X equals left square bracket 10 5 15 20 10 20 right square bracket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: An input vector x defined with corresponding values
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output of the convolutional layer is calculated as shown in Figure [9-3](#Fig3),
+    Figure [9-4](#Fig4), Figure [9-5](#Fig5), and Figure [9-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 10, 5, 15, 20, 10, and 20\. Filter weight includes 1, 0.2, and 0.1\.
+    The summed value after filtering includes 20 plus 2 plus 2\. Output includes 12.5,
+    10, 20, and 24.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: How the last entry of the output vector is calculated using the filter weights
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 10, 5, 15, 20, 10, and 20\. Filter weight includes 1, 0.2, and 0.1\.
+    The summed value after filtering includes 15 plus 4 plus 1\. Output includes 12.5,
+    10, and 20.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: How the third entry of the output vector is calculated using the filter weights
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 10, 5, 15, 20, 10, and 20\. Filter weight includes 1, 0.2, and 0.1\.
+    The summed value after filtering includes 5 plus 3 plus 2\. The output includes
+    12.5 and 10.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: How the second entry of the output vector is calculated using the filter weights.
+    The procedure is the same as in Figure [9-3](#Fig3), but the filter weights are
+    shifted right one
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 10, 5, 15, 20, 10, and 20\. Filter weight includes 1, 0.2, and 0.1\.
+    The summed value after filtering includes 10 plus 1 plus 1.5\. Output includes
+    12.5.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: How the first entry of the output vector is calculated using the filter weights.
+    The filter weights are multiplied element-wise with the first three entries in
+    the input, and the results are summed up to produce the output value
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now, we have the output of the one-dimensional convolutional layer. These one-dimensional
+    convolutional layers are quite similar to how two-dimensional convolutional layers
+    work, and they comprise nearly the entirety of the two different TCNs we will
+    look at: the **dilated temporal convolutional network**, and the **encoder-decoder
+    temporal convolutional network**. It is important to note that both models involve
+    **supervised anomaly detection**, though the encoder-decoder TCN is capable of
+    semi-supervised anomaly detection since it is an autoencoder.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dilated Temporal Convolutional Network
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this type of TCN, we deal with a new property known as a **dilation**. Basically,
+    when the dilation factor is greater than 1, we introduce gaps in the output data
+    that correspond to the dilation factor. To understand the concept of dilation
+    better, let’s look at how it works for a **two-dimensional convolutional layer**.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is a standard convolution, equivalent to what we looked at in Chapter [3](483137_2_En_3_Chapter.xhtml).
+    You can also think of a standard convolutional layer as having a **dilation factor**
+    of 1 (refer to Figure [9-7](#Fig7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: To the left, there is a 5 times 5 grid, with highlighted sections in columns
+    1 and 2, as well as rows 1 and 2\. On the right is a corresponding feature map
+    with a 4 times 4 layout. The highlighted box in column 1, row 1 on the right serves
+    as an illustration of the highlighted boxes on the left.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: A standard convolution with a dilation factor of 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, let’s look at what happens when we increase the dilation factor to 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the first entry in the feature map, the convolution looks like Figure [9-8](#Fig8).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: To the left, there is a 5 times 5 grid, with highlighted sections in columns
+    1 and 3, as well as rows 1 and 3\. On the right is a corresponding feature map
+    with a 3 times 3 layout. The highlighted box in column 1, row 1, on the right
+    serves as an illustration of the highlighted boxes on the left.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: A standard convolution with a dilation factor of 2 defining the first entry
+    in the feature map
+  prefs: []
+  type: TYPE_NORMAL
+- en: Notice that the spacing between each sampled entry has increased by one across
+    all directions. Vertically, horizontally, and diagonally, the sampled entries
+    are all spaced apart by one entry. Essentially, this spacing is determined by
+    finding what **d – 1** is, where **d** is the **dilation factor**. For a dilation
+    factor of 3, this spacing will be two apart. Now, for the second entry, the convolution
+    process proceeds as normal, as shown in Figure [9-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: To the left, there is a 5 times 5 grid, with highlighted sections in columns
+    2 and 4, as well as rows 1 and 3\. On the right is a corresponding feature map
+    with a 3 times 3 layout. The highlighted box in column 2, row 1, on the right
+    serves as an illustration of the highlighted boxes on the left.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: The convolution with a dilation factor of 2 defining the second entry in the
+    feature map
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once the process terminates, we will have our feature map. Notice the reduction
+    in dimensionality of the feature map, which is a direct result of increasing the
+    dilation factor. In the standard two-dimensional convolutional layer, we had a
+    4×4 feature map since the dilation factor was 1, but now we have a 3×3 feature
+    map after increasing this factor to 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A one-dimensional dilated convolution is similar. Let’s revisit the one-dimensional
+    convolution example from earlier and modify it a bit to illustrate this concept.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assume now that the new input vector and filter weights are as shown in Figure
+    [9-10](#Fig10) and Figure [9-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An input vector for filter weights reads as follows. Left square bracket 0.5
+    0.2 0.4 right square bracket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: The new filter weights
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: X equals left square bracket 2 8 12 4 6 4 2 12 right square bracket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: The new input vector weights
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s also assume now that the dilation factor is 2, not 1\. The new output
+    vector would be the following, using dilated one-dimensional convolutions with
+    a dilation factor of 2 (Figure [9-12](#Fig12), Figure [9-13](#Fig13), Figure [9-14](#Fig14),
+    and Figure [9-15](#Fig15)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 2 8 12 4 6 4 2 12\. Filter weight includes 0.5, 0.2, and 0.4\. The summed
+    value after filtering includes 2 plus 0.8 plus 4.8\. Output includes 5.8, 6.4,
+    8, and 7.6.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: The final set of three input vector values are multiplied with the filter weights
+    to produce the last output vector value
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 2 8 12 4 6 4 2 12\. The spacing between the values is 1\. Filter weight
+    includes 0.5, 0.2, and 0.4\. The summed value after filtering includes 6 plus
+    1.2 plus 0.8\. Output includes 5.8, 6.4, and 8.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third set of three input vector values are multiplied with the filter weights
+    to produce the next output vector value
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 2 8 12 4 6 4 2 12\. Filter weight includes 0.5, 0.2, and 0.4\. The summed
+    value after filtering includes 4 plus 0.8 plus 1.6\. The output includes 5.8 and
+    6.4.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next set of three input vector values are multiplied with the filter weights
+    to produce the next output vector value
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the input and output vectors of filter weights. Input includes
+    values of 2 8 12 4 6 4 2 12\. The spacing between the values is 1\. Filter weight
+    includes 0.5, 0.2, and 0.4\. The summed value after filtering includes 1 plus
+    2.4 plus 2.4\. The output includes 5.8.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calculating the first entry in the output factor using dilated one-dimensional
+    convolutions with a dilation factor of 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now that we’ve covered what a dilated convolution looks like in the context
+    of one-dimensional convolutions, let’s look at the difference between an acausal
+    and a causal dilated convolution. To illustrate this concept, assume that both
+    examples that follow are referring to a set of dilated one-dimensional convolutional
+    layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With that in mind, Figure [9-16](#Fig16) shows what an acausal dilated network
+    looks like.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An acausal dilated network has four layers that form distinct nodes highlighted
+    within sections of a horizontal rectangle. Starting from the top, these layers
+    are organized as follows. The output layer, hidden layer 2, hidden layer 1, and
+    the input layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: An acausal dilated network. The first hidden layer has a dilation factor of
+    2, and the second hidden layer has a dilation factor of 4\. Notice how inputs
+    “forward in the sequence” contribute to the next layer’s node as well
+  prefs: []
+  type: TYPE_NORMAL
+- en: It might not be that apparent from the way the architecture is structured, but
+    if you think of the input layer as a sequence of some data going forward in time,
+    you might be able to see that information from the future would be accounted for
+    when selecting the output. In a causal network, we only want information that
+    we’ve learned up until the present, so none of the information from the future
+    will be accounted for in the model’s predictions. Figure [9-17](#Fig17) shows
+    what a causal dilated network looks like.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An acausal dilated network has four layers that form distinct nodes highlighted
+    within sections of a horizontal rectangle. Starting from the top, these layers
+    are organized as follows. The output layer, hidden layer 2, hidden layer 1, and
+    the input layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: A causal dilated network. The first hidden layer has a dilation factor of 2,
+    and the second hidden layer has a dilation factor of 4\. Notice how no inputs
+    forward in the sequence contribute to the next layer’s node. This type of structure
+    is ideal if the goal is to preserve some sort of flow within the data set, which
+    is time in our case
+  prefs: []
+  type: TYPE_NORMAL
+- en: This shows how the linear nature of time is preserved in the model, and how
+    no information from the future would be learned by the model. In causal networks,
+    only information from the past until the present is considered by the model. The
+    dilated temporal convolutional network we are referring to has a similar model
+    architecture, utilizing dilated causal convolutions in each layer preceding the
+    output layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The TCN can be used for supervised, semi-supervised, and unsupervised tasks,
+    much like the LSTM and RNNs in general, for any task that involves sequences,
+    whether it’s a time series, a sequence of video frames, or even geospatial coordinate
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Anomaly Detection with the Dilated TCN
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now that you know more about what a TCN is and how it works, let’s try applying
+    a dilated TCN to the New York taxi dataset to see how it performs **unsupervised
+    anomaly detection** in a time-series setting. Much like in the LSTM example from
+    Chapter [8](483137_2_En_8_Chapter.xhtml), the TCN will be trained to predict the
+    T^(th) time step’s value given the time step values from 1 to T-1, where T is
+    some window size. An example would be using the first 15 values to predict the
+    16^(th) value. Similarly, we will train it on the first half of the time series
+    on strictly normal data. We will set the error threshold (95^(th) percentile error
+    on the training set, so top 5% largest error) on the training prediction errors
+    as the anomaly threshold. Any points with prediction errors given by the mean
+    absolute error between predicted time-series values and actual time-series values
+    higher than this threshold are counted as anomalies. As no labels are required
+    for training, this is an unsupervised learning task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The reasoning for training only on the first half of the sequence is to teach
+    the model what normal time-series values look like before we predict on the latter
+    half with anomalies. The idea is that the predicted value will not match the anomaly,
+    producing a higher error and being flagged as an anomaly. Since no labels are
+    required for anomaly detection, this is an unsupervised learning task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Access the notebook provided at [`https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_tcn.ipynb`](https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_tcn.ipynb).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The data is provided on GitHub as well at [`https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/tree/master/data`](https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/tree/master/data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, import all of the necessary packages as shown in Figure [9-18](#Fig18).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig18_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 28-line code to import libraries and modules from Tensor Flow, Keras, and
+    s k learn for building and training a neural network model. The code checks and
+    prints the versions of Python, pandas, numpy, seaborn, mat plot lib, and s k learn.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Importing all of the necessary packages
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You should see output like the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: After that, we proceed to defining our `Visualization` class, as shown in Figure
+    [9-19](#Fig19).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 38-line code of the Visualization class provides a set of methods for generating
+    insightful visualizations such as confusion matrices, anomaly plots, and reconstruction
+    error charts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the `Visualization` class
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, let’s define the mechanism to load our data, as shown in Figure [9-20](#Fig20).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 20-line code to initialize two lists, tensor logs, and data File Paths, each
+    containing identifiers for time-series datasets and their corresponding file paths,
+    respectively. The tensor logs list holds the names of different time-series datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the dataset paths to be able to switch between them easily
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now select our dataset (Figure [9-21](#Fig21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig21_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 5-line code to initialize a variable i with the value 7\. It then uses this
+    value to index the tensor logs and data File Paths lists, extracting the dataset
+    name and corresponding file path at index 7\. The code prints out the values of
+    these variables to the console.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Selecting our dataset. We have picked `i = 7`, which should load the NYC taxi
+    dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Your output should look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s continue to actually loading our selected dataset, as shown in Figure
+    [9-22](#Fig22).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig22_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 4-line code to use the p d library to read a C S V file specified by the data
+    File Path variable into d f. It then prints the number of rows in the d f and
+    displays the first five rows of the d f using the d f dot head of 5.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to load the selected dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Your output should look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s plot our time-series data. Refer to Figure [9-23a](#Fig23) and Figure
+    [9-23b](#Fig24).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig24_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A time-series graph of value by date time. (July, 30000), (August, 25000), (September,
+    32000), (October, 29000), (November, 40000), (December, 27000), and (January 2015,
+    32000). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-23b
+  prefs: []
+  type: TYPE_NORMAL
+- en: The plotted time-series dataset. This is the NYC taxi dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig23_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 7-line code to add a new column Date time to d f, converting the timestamp
+    column to date time format using p d. It then displays the first three rows of
+    the updated Data Frame. A time series plot using Mat plot lib is generated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-23a
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the time-series dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: We should rescale our dataset next. Refer to Figure [9-24](#Fig25).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig25_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 7-line code utilizes the Min-Max Scaler from s k learn to normalize the value
+    column in d f and create a new column named scaled value. The code then prints
+    the number of rows in the d f dot shape of 0 and displays the first five rows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to rescale the dataset to a range of 0 to 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output dataframe should look like Table [9-1](#Tab1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rescaled Values in the Dataframe
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | timestamp | value | Datetime | scaled_value |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **0** | 2014-07-01 00:00:00 | 10844 | 2014-07-01 00:00:00 | 0.276506 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **1** | 2014-07-01 00:30:00 | 8127 | 2014-07-01 00:30:00 | 0.207175 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **2** | 2014-07-01 01:00:00 | 6210 | 2014-07-01 01:00:00 | 0.158259 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **3** | 2014-07-01 01:30:00 | 4656 | 2014-07-01 01:30:00 | 0.118605 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **4** | 2014-07-01 02:00:00 | 3820 | 2014-07-01 02:00:00 | 0.097272 |'
+  prefs: []
+  type: TYPE_TB
+- en: Let’s now create the training dataset. We will be using a rolling-window approach
+    and a window size of `time_steps`, which we will shorthand to **T** in this explanation.
+    We will iterate through the dataset a window length of T at a time, taking the
+    first T-1 values as the x and the T^(th) values as the y. We will teach the model
+    to read an input of T-1 values and predict the T^(th). Refer to Figure [9-25](#Fig26).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig26_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 15-line code generates rolling window sequences from a time series data column
+    scaled value in d f. The variable time steps are set to 16\. The code iterates
+    through the time series data, creating windows of length for time steps. The resulting
+    arrays are then printed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating the rolling-window features to feed into the model
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now that we have our data created, let’s define the model architecture. Refer
+    to Figure [9-26](#Fig27).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig27_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 30-line code to define the T C N model using Kernel for processing time series
+    data. The model comprises a series of Con v 1 D. After each convolutional layer,
+    a dropout layer, Spatial Dropout 1 D is applied. The convolutional layer includes
+    parameters like filter size, dilation rate, and more.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-26
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the TCN architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are a lot of new parameters to specify:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`kernel_size`: This controls the length of each filter that is being applied
+    over the data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dilation_rate`: This controls d, the dilation size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`padding`: Set to `''causal''`, this specifies that we want a causal layer,
+    not an acausal layer.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`strides`: The stride length. Set to `1`, this means each filter shifts over
+    by one value of the input data once it’s done with its computation. It’s like
+    the rolling-window code described earlier in that each consecutive window is one
+    stride or value apart.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`kernel_regularizer`: Specifying the L2 regularization prevents overfitting.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`kernel_initializer`: Set to `''he_normal''`, we are initializing the weights
+    using the Kaiming/He normal method. This helps with training stability with networks
+    that rely on ReLU activation functions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We have also added `SpatialDropout1D` layers, which act as dropout layers for
+    one-dimensional CNN settings and helps with the regularization of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `Flatten` layer simply concatenates all of the outputs of the previous layer
+    to make it one-dimensional into a (batch_size, 1) shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now compile the model and print the architecture. Refer to Figure [9-27a](#Fig28).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig28_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 4-line code configures and compiles a previously defined T C N model. The
+    chosen optimizer is adam and the loss function for training is set to mean absolute
+    error. The code prints a summary of the T C N model using the summary method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-27a
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compiling the model to use the Adam optimizer and mean absolute error as the
+    loss function
+  prefs: []
+  type: TYPE_NORMAL
+- en: You should see output like that shown in Figure [9-27b](#Fig29).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig29_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The output architecture represents a summary of a model named Model 1 for processing
+    time series data. The summary provides information about each layer in the model,
+    including its type, output shape, and the number of parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-27b
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output architecture printed out
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s initiate the training process. Refer to Figure [9-28](#Fig30).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig30_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 17-line code prepares and trains a T C N model on time series data. The training
+    process is initiated using the fit method, specifying the training input training
+    x and target output timing y, along with parameters like batch size, number of
+    epochs, and a validation dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-28
+  prefs: []
+  type: TYPE_NORMAL
+- en: Specifying the training dataset to be half of the total dataset to teach the
+    model what is normal before predicting on the entire dataset later on. This also
+    specifies the training loop
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output should look somewhat like Figure [9-29](#Fig31).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig31_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The output provides an overview of the data shapes and the training progress
+    of the T C N model. It includes key metrics such as loss and mean absolute error,
+    offering insights into the model's performance during training and validation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-29
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output of the training code, with some of the outputs removed for a clearer
+    display
+  prefs: []
+  type: TYPE_NORMAL
+- en: One thing to note about TCN/one-dimensional CNNs in general is that they tend
+    to be a bit sensitive, meaning that sometimes the training completely fails and
+    the CNN just produces a straight-line output. The He Normal initialization technique
+    should help combat this collapse, but sometimes you’ll just need to retrain the
+    model to achieve a convergence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If your results are not satisfactory or are a failure, feel free to rerun the
+    model training a few times if necessary. Because neural networks in general depend
+    on random weight initializations that are not privy to the geometry of the loss
+    curve, they can get trapped into reaching suboptimal convergences or even a divergence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the training completed, let’s move on to making the predictions. Execute
+    the code shown in Figure [9-30](#Fig32).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig32_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An 11-line code evaluates the performance of a trained T C N model on a testing
+    dataset. It uses the M S E metric to quantify the difference between the sequences
+    y and the testing pred. The code calculates the errors by subtracting the predicted
+    values from the actual values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-30
+  prefs: []
+  type: TYPE_NORMAL
+- en: Making predictions using the trained model
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If all went well during training, the output should look something like the
+    following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s now calculate the distance cutoffs to determine the anomaly threshold.
+    Refer to Figure [9-31](#Fig33).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig33_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 13-line code based on cutoff after sorting errors is used to calculate the
+    threshold using training error and calculate the total error over the full sequence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-31
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calculating the threshold for maximum prediction error that’s still normal
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You should see output like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Your determined threshold may differ, as it all depends on the model training
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now plot the model’s predictions. Refer to Figure [9-32a](#Fig34) and
+    Figure [9-32b](#Fig35).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig35_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A frequency graph has the following values. (0, 0.8), (2000, 0.7), (4000, 0.78),
+    (6000, 1.0), (8000, 0.7), (10000, 0.8). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-32b
+  prefs: []
+  type: TYPE_NORMAL
+- en: The resulting plot. The model seems to have learned a pretty good fit for the
+    dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig34_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 4-line code to create a plot comparing the sequences y with the predicted
+    values on both the training and testing datasets. The plot is displayed in a large
+    figure with dimensions of 24 times 16.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-32a
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the time-series sequences, color-coded so that `green` represents
+    the true value of the entire sequence of values, `blue` only represents the training
+    split, and `red` represents the model’s predictions on the whole dataset’s time-series
+    values
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s start making predictions for what the anomalies are using our calculated
+    threshold. Refer to Figure [9-33](#Fig36).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig36_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 10-line code assigns labels to records as anomalies or not based on a specified
+    threshold. The code uses the zip function to iterate over pairs of boolean values
+    and distances. The resulting anomaly labels are stored in the y-label list, and
+    the distances are stored in the error list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-33
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to calculate the anomaly label for each data point
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can visualize this error threshold and find out what points lie beyond it.
+    Refer to Figure [9-34](#Fig37) for the code to plot this threshold graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig37_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 2-line code creates an instance of the Visualization class and calls its draw
+    anomaly method. The method takes three arguments. y label, error, and threshold.
+    The draw anomaly method generates a scatter plot to visualize anomalies in the
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-34
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the error threshold graph
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-35](#Fig38) shows the resulting plot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig38_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A scatterplot titled Anomalies plots error versus data. The plots for normal
+    lie in the range of 0 to 10000 on the horizontal axis and 0.0 to 0.19 on the vertical
+    axis. The line for the threshold is linear and starts from 0.17 of the vertical
+    axis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-35
+  prefs: []
+  type: TYPE_NORMAL
+- en: The plot showing the points that lie beyond the error threshold, thus being
+    classified as anomalies
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s create an anomaly prediction dataframe to more easily plot which points
+    exactly were determined to be anomalies. Refer to Figure [9-36](#Fig39).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig39_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 5-line code creates a new a d f, incorporating columns for datetime, observation,
+    error, and anomaly. The error and anomaly columns are initialized with zeros for
+    the initial records. The head of 5 method is used to display the first five rows
+    of this new data frame.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-36
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating a dataframe of the original values as well as the observed prediction
+    error and anomaly flag
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output should look like Table [9-2](#Tab2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Resulting Dataframe Table of Code in Figure [9-36](#Fig39)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | Datetime | observation | error | anomaly |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **0** | 2014-07-01 00:00:00 | 10844 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **1** | 2014-07-01 00:30:00 | 8127 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **2** | 2014-07-01 01:00:00 | 6210 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **3** | 2014-07-01 01:30:00 | 4656 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **4** | 2014-07-01 02:00:00 | 3820 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: Due to the rolling-window approach, we don’t have predictions for the first
+    `time_steps-1` number of datapoints, which is why they are padded with zeros.
+    Let’s now plot the final graph showing visually what the anomalies are. Refer
+    to Figure [9-37](#Fig40) for this code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig40_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An 8-line code creates a time series plot to visualize the observations over
+    time. The plot is displayed in a figure with dimensions 12 times 6\. Anomalies
+    in the data, identified by the anomaly column having a value of 1, are highlighted
+    with scatter points on the plot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-37
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the anomalous points on the original time-series sequence
+  prefs: []
+  type: TYPE_NORMAL
+- en: The result looks something like Figure [9-38](#Fig41).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig41_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A scatterplot titled time series of value by date time plots observation versus
+    date time. (2014-07, 30000), (2014-08, 31000), (2014-11, 40000), (2015-01, 32000),
+    and (2015-02, 3000). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-38
+  prefs: []
+  type: TYPE_NORMAL
+- en: The identified anomalies using the TCN’s predictions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-38](#Fig41) shows that quite a few points are labeled as anomalies.
+    Most importantly, the model managed to predict as anomalies Thanksgiving, Christmas,
+    New Year’s Eve, and a snowstorm-type weather anomaly, among some other points.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overall, this was an example of **unsupervised anomaly detection**. We took
+    a subset of the original sequence, trained the model to output a prediction given
+    rolling windows, and calculated a threshold by which we can identify anomalies.
+    None of the steps in this process involved a training label.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For our next example, we will be implementing the encoder-decoder temporal convolutional
+    network, essentially combining the TCN with the concept of an autoencoder to perform
+    unsupervised anomaly detection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Encoder-Decoder Temporal Convolutional Network
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The version of the encoder-decoder TCN (ED-TCN) we will be exploring involves
+    a combination of one-dimensional causal convolutional and pooling layers to encompass
+    the encoding stage, and a series of upsampling and one-dimensional causal convolutional
+    layers to comprise the decoding stage. The convolutional layers in this model
+    aren’t dilated, but they still count as layers of a TCN. To better understand
+    the structure of this model, take a look at Figure [9-39](#Fig42).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig42_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An interconnected link chart of decoding and encoding stages. The chart has
+    six layers of output, softmax, con v 2, up sample 2, con v 1, and up sample 1
+    in the decoding stage. In the encoding stage, there are five layers of pool 2,
+    con v 2, pool 1, con v 1, and input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-39
+  prefs: []
+  type: TYPE_NORMAL
+- en: In both the encoding and decoding stages, the model is comprised of causal convolutional
+    layers, and is structured so that the layers are always causal
+  prefs: []
+  type: TYPE_NORMAL
+- en: The diagram might seem pretty complicated, so let’s break it down layer by layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, look at the encoding stage and start with the input layer at the very
+    bottom. From this layer, we perform a **causal convolution** on the input as part
+    of the first convolutional layer. The outputs of the first convolutional layer,
+    which we will call `conv_1`, are now the inputs of the first **max pooling layer**,
+    which we will call `pool_1`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recall from Chapter [3](483137_2_En_3_Chapter.xhtml) that the pooling layer
+    emphasizes the maximum value in the areas it passes through, effectively generalizing
+    the inputs by choosing the heaviest values. From here, we have another set of
+    causal convolutions and max pooling with layers `conv_2` and `pool_2`. Note the
+    progressive reduction in size of the data as it passes through the encoding stage,
+    a feature characteristic to autoencoders. Finally, we have a dense layer in the
+    middle of the two stages, representing the final, encoded output of the encoding
+    stage, as well as the encoded input of the decoding stage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The decoding stage is a bit different in this case, since we make use of what
+    is called **upsampling**. Upsampling is a technique in which we repeat the data
+    **n** number of times to scale it up by a factor **n**. In the max pooling layers,
+    the data was reduced by a factor of 2\. So, to upsample and increase the data
+    by the same factor of 2, we repeat the data twice. In this case, we are using
+    one-dimensional upsampling, so the layer would repeat each step **n** times with
+    respect to the axis of time. To get a better understanding of what upsampling
+    does, let’s apply one-dimensional upsampling as shown in Figure [9-40](#Fig43)
+    and Figure [9-41](#Fig44).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig44_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A three-line text reads as follows. Line 1, n equals 2\. Line 2, so data increases
+    by a factor of 2 forward-slash. Line 3, repeat each step two times.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-41
+  prefs: []
+  type: TYPE_NORMAL
+- en: The upsampling factor n
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig43_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: X equals left square bracket 4 2 6 7 1 6 9 right square bracket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-40
+  prefs: []
+  type: TYPE_NORMAL
+- en: A vector x defined with the corresponding values
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keeping in mind that each individual temporal step is repeated twice, we would
+    see something like procedure shown in Figure [9-42](#Fig45), Figure [9-43](#Fig46),
+    and Figure [9-44](#Fig47).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig47_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A two-line vector input reads as follows. Line 1, left square bracket 4 4 2
+    2 6 6 right square bracket. Line 2, left square bracket 4 2 6 7 1 6 9 5 right
+    square bracket. An arrow from 6 of line 2 splits and points to 6 6 in line 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-44
+  prefs: []
+  type: TYPE_NORMAL
+- en: This process is repeated with the third entry in the input vector to form the
+    next third pair of entries in the output vector
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig46_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A two-line vector input reads as follows. Line 1, left square bracket 4 4 2
+    2 right square bracket. Line 2, left square bracket 4 2 6 7 1 6 9 5 right square
+    bracket. An arrow from 2 of line 2 splits and points to 2 2 in line 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-43
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next entry is repeated twice to form the next two entries in the output
+    vector of the upsampling operation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig45_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A two-line vector input reads as follows. Line 1, left square bracket 4 4 right
+    square bracket. Line 2, left square bracket 4 2 6 7 1 6 9 5 right square bracket.
+    An arrow from 4 of line 2 splits and points to 4 4 in line 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-42
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first entry in the input is repeated twice to form the first two entries
+    in the upsampled output vector
+  prefs: []
+  type: TYPE_NORMAL
+- en: This continues until we finally get to the result shown in Figure [9-45](#Fig48).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig48_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A two-line vector input reads as follows. Line 1, left square bracket 4 4 2
+    2 6 6 7 7 1 1 6 6 9 9 5 5 right square bracket. Line 2, left square bracket 4
+    2 6 7 1 6 9 5 right square bracket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-45
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output vector after the upsampling operation compared to the original input
+    vector below it
+  prefs: []
+  type: TYPE_NORMAL
+- en: Going back to the model, each upsampling layer is then connected to a one-dimensional
+    convolutional layer, and the pair of upsampling layer and one-dimensional convolutional
+    layer repeats again until the final output is passed through a `softmax()` function
+    to result in the output/prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Anomaly Detection with the ED-TCN
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s put this model to the test by applying it to the credit card dataset.
+    Once again, this example will be another instance of **unsupervised learning**,
+    so we will not have any anomaly or normal data labeled. Follow along with the
+    notebook at [`https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_ed_tcn.ipynb`](https://github.com/apress/beginning-anomaly-detection-python-deep-learning-2e/blob/master/Chapter%209%20Temporal%20Convolutional%20Networks/chapter9_ed_tcn.ipynb).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The data is also available on GitHub. Much of the following code is very similar
+    to the earlier dilated TCN example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, import all of the necessary packages, as shown in Figure [9-46](#Fig49).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig49_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 27-line code imports various libraries and checks their versions. It includes
+    a Tensor Flow module, s k-learn, and libraries like Mat plot lib and Seaborn.
+    The code checks and prints the versions of Python and TensorFlow. The percent
+    mat plot lib inline magic command is used for inline plotting.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-46
+  prefs: []
+  type: TYPE_NORMAL
+- en: Importing all of the necessary packages
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You should see output like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: After that, we proceed to defining our `Visualization` class, as shown in Figure
+    [9-47](#Fig50).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig50_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 38-line code defines a class named Visualization that encapsulates methods
+    for drawing visualizations related to anomaly detection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-47
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the `Visualization` class
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, let’s define the mechanism to load our data, as shown in Figure [9-48](#Fig51).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig51_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 20-line code defines two lists, tensorlogs, and data FilePaths. Tensorlogs
+    contain string identifiers for different time series datasets, each associated
+    with an index 0 to 9\. Data File Paths contain file paths corresponding to the
+    datasets in tensorlogs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-48
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the dataset paths to be able to switch between them easily
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now select our dataset (Figure [9-49](#Fig52)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig52_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 5-line code retrieves information about a specific time series dataset using
+    an index. The index i is set to 7, the dataset name is stored in the variable
+    tensor log, and the file path is stored in the variable data File Path.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-49
+  prefs: []
+  type: TYPE_NORMAL
+- en: Selecting our dataset. We have picked `i = 7`, which should load the NYC taxi
+    dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Your output should look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s continue to actually loading our selected dataset, as shown in Figure
+    [9-50](#Fig53).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig53_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 4-line code reads a C S V file into d f using the file path stored in the
+    variable data File Path. The code then prints the number of rows in the Data Frame
+    using the d f dot shape of 0 and displays the first five rows of the Data Frame
+    using the d f dot head of 5.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-50
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to load the selected dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Your output should look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s plot our time-series data. Refer to Figure [9-51a](#Fig54) and Figure
+    [9-51b](#Fig55).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig55_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A time-series graph plots value versus date time. (July, 30000), (August, 27000),
+    (September, 25000), (October, 29000), (November, 40000), (December, 21000), (January
+    2015, 34000). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-51b
+  prefs: []
+  type: TYPE_NORMAL
+- en: The plotted time-series dataset. This is the NYC taxi dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig54_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 7-line code processes d f representing time series data. It converts the timestamp
+    column to Date Time format, displays the first three rows of the Data Frame, and
+    then creates a time series plot using Mat plot lib. The plot shows the relationship
+    between datetime and value columns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-51a
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the time-series dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: We should rescale our dataset next. Refer to Figure [9-52](#Fig56).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig56_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 7-line code uses s k-learn's MinMaxScaler to scale the value column of a data
+    frame d f between 0 and 1\. The scaled values are added as a new column named
+    scaled value. The shape of the data frame is then printed, and the first five
+    rows are displayed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-52
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to rescale the dataset to a range of 0 to 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output dataframe should look like Table [9-3](#Tab3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rescaled Values in the Dataframe
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | timestamp | value | Datetime | scaled_value |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **0** | 2014-07-01 00:00:00 | 10844 | 2014-07-01 00:00:00 | 0.276506 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **1** | 2014-07-01 00:30:00 | 8127 | 2014-07-01 00:30:00 | 0.207175 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **2** | 2014-07-01 01:00:00 | 6210 | 2014-07-01 01:00:00 | 0.158259 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **3** | 2014-07-01 01:30:00 | 4656 | 2014-07-01 01:30:00 | 0.118605 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **4** | 2014-07-01 02:00:00 | 3820 | 2014-07-01 02:00:00 | 0.097272 |'
+  prefs: []
+  type: TYPE_TB
+- en: Let’s now create the training dataset. Instead of predicting the T^(th) value
+    using the first T-1 values, we will directly predict the T values given the T
+    values. In other words, we are teaching the model how to efficiently encode the
+    T values to some lower-dimensional space such that they can be reconstructed with
+    minimal error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: And so, we won’t have a y set, but rather only the x set. Refer to Figure [9-53](#Fig57).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig57_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 12-line code to create rolling window sequences as determined by time underscore
+    steps and create the number of windows to iterate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-53
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating the rolling-window features to feed into the model
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Your output should look somewhat like the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now that we have our data created, let’s define the model architecture. Refer
+    to Figure [9-54a](#Fig58) and Figure [9-54b](#Fig59).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig59_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 30-line code of the decoding stage is used to pair upsampling and casual 1-D
+    convolutional layers comprising the decoding stage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-54b
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the decoder portion of the ED-TCN architecture as well as the final
+    model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig58_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 27-line code to pair causal 1-D convolutional layers and pooling layers comprising
+    the encoding stage. The output of the encoding stage is provided.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-54a
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the encoder portion of the ED-TCN architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `MaxPooling1D` layers apply a filter of length `pool_size=2`, moving through
+    the data two at a time (as specified by `strides=2`). It picks the maximum value
+    in the filter to pass through to the next layer. It has the effect of halving
+    the data dimension (not the filters), so we are lowering not only the filter dimension
+    space, but also the data dimension space itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We have an `UpSampling1D` layer in the decoder portion functions similarly to
+    how we described UpSampling right before the coding section for the ED-TCN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now compile the model and print the architecture. Refer to Figure [9-55a](#Fig60).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig60_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 4-line code configures a T C N model for training. It uses the Adam optimizer
+    and mean absolute error as the loss function. The compile method is then called
+    to finalize the model configuration. The model summary is printed to the console
+    using t c n dot summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-55a
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compiling the model to use the Adam optimizer and mean absolute error as the
+    loss function
+  prefs: []
+  type: TYPE_NORMAL
+- en: You should see output like that shown in Figure [9-55b](#Fig61).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig61_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The output summary represents a T C N architecture. The model, named model 6,
+    takes input sequences of shape (16, 1). It consists of Con v 1 D with max-pooling
+    layers, a dense layer, and up-sampling layers. An overview of the type of layer,
+    output shape, and number of parameters is provided.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-55b
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output architecture printed out
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, there is a compression of dimensions occurring throughout the
+    model along with an expanding. We are getting the model to learn the attributes
+    of the time-series model by having it learn an efficient representation of the
+    input to reconstruct the original input back out from. The idea is that it will
+    learn the properties of what makes a normal time-series dataset, and when applying
+    these learned properties to encoding and decoding an anomalous sequence, it will
+    have high reconstruction errors that would flag these sequences as anomalous.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s initiate the training process. Refer to Figure [9-56](#Fig62).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig62_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 13-line code reshapes the input sequences x sequences to a 3-D array of sequences
+    x suitable for training T C N. The reshaped array has dimensions. The reshaping
+    is followed by printing the shape of the newly created array.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-56
+  prefs: []
+  type: TYPE_NORMAL
+- en: Specifying the training dataset to be half of the total dataset to teach the
+    model what is normal before predicting on the entire dataset later on. This also
+    specifies the training loop
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output should look somewhat like Figure [9-57](#Fig63).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig63_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A summary of the code first prints the shapes of two arrays. sequences x with
+    dimensions (10305, 16, 1) and training x with dimensions (5160, 16, 1). The subsequent
+    output displays the training progress for each epoch during the T C N training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-57
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output of the training code, with some of the outputs removed for a clearer
+    display
+  prefs: []
+  type: TYPE_NORMAL
+- en: As this model is also based on the TCN/1D-CNN, it may also possibly fail training
+    and produce a single-line output. Rerun the model training in this case, though
+    we have initialized the weights with He Normal for stability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the training completed, let’s move on to making the predictions. Execute
+    the code in Figure [9-58](#Fig64).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig64_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 12-line code evaluates the performance of a T C N model on a testing dataset.
+    It first prints the shape of the testing dataset sequences x. The model is then
+    used to predict values on this testing dataset, and the predicted values are reshaped
+    to align with the original structure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-58
+  prefs: []
+  type: TYPE_NORMAL
+- en: Making predictions using the trained model
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If all went well during training, the output should look something like the
+    following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s now calculate the distance cutoffs to determine the anomaly threshold.
+    Refer to Figure [9-59](#Fig65).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig65_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 13-line code to calculate the threshold using training error and calculate
+    the total error over full sequences based on the cutoff after sorting errors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-59
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calculating the threshold for maximum prediction error that’s still normal
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You should see output like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Your determined threshold may differ, as it all depends on the model training
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before we plot the predictions, we must process the rolling-window sequences
+    to be in terms of the original, continuous sequence of values. For that, run the
+    code in Figure [9-60](#Fig66).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig66_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 10-line code creates arrays (plot x, plot preds, and plot training x) by concatenating
+    segments of the original sequence, predicted values, and training data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-60
+  prefs: []
+  type: TYPE_NORMAL
+- en: Processing the predicted sequences to be in terms of the original continuous
+    sequence to plot them
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now plot the model’s predictions. Refer to Figure [9-61a](#Fig67) and
+    Figure [9-61b](#Fig68).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig68_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A frequency graph has the following values. (0, 0.78), (2000, 0.7), (4000, 0.73),
+    (6000, 1.0), (8000, 0.68), and (10000, 0.77). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-61b
+  prefs: []
+  type: TYPE_NORMAL
+- en: The resulting plot. The model seems to have learned a pretty good fit for the
+    dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig67_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 4-line code generates a plot using the Mat plot lib library. It sets up a
+    figure with a specific size and then plots three lines on the same graph. The
+    figure size is adjusted to be 24 units wide and 16 units tall.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-61a
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the time-series sequences color-coded so that ‘green’ represents
+    the true value of the entire sequence of values, ‘blue’ only represents the training
+    split, and ‘red’ represents the model’s predictions on the whole dataset’s time-series
+    values
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s start making predictions for what the anomalies are using our calculated
+    threshold. Refer to Figure [9-62](#Fig69).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig69_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 10-line code to label the records as anomalies or not based on threshold.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-62
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to calculate the anomaly label for each data point
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can visualize this error threshold and find out what points lie beyond it.
+    Refer to Figure [9-63](#Fig70) for the code to plot this threshold graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig70_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 2-line code creates an instance of the Visualization class and calls its draw
+    anomaly method. The draw anomaly method takes three parameters, y label, error,
+    and threshold.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-63
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the error threshold graph
+  prefs: []
+  type: TYPE_NORMAL
+- en: Refer to Figure [9-64](#Fig71) to see the resulting plot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig71_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A scatterplot titled anomalies plots error versus data. The plots for normal
+    lie in the range of 0 to 10000 on the horizontal axis and 0.0 to 0.19 on the vertical
+    axis. The line for the threshold is linear and starts at 0.17 of the vertical
+    axis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-64
+  prefs: []
+  type: TYPE_NORMAL
+- en: The plot showing the points that lie beyond the error threshold, thus being
+    classified as anomalies
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s create an anomaly prediction dataframe to more easily plot which points
+    exactly were determined to be anomalies. Refer to Figure [9-65](#Fig72).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig72_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 5-line code creates a Data Frame a d f. It includes four columns. Datetime,
+    observation, error, and anomaly containing zeros for the initial time steps, and
+    then the labeled anomalies based on the provided y label parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-65
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating a dataframe of the original values as well as the observed prediction
+    error and anomaly flag
+  prefs: []
+  type: TYPE_NORMAL
+- en: The output should look like Table [9-4](#Tab4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Resulting Dataframe Table of Code in Figure [9-65](#Fig72)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | Datetime | observation | error | anomaly |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **0** | 2014-07-01 00:00:00 | 10844 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **1** | 2014-07-01 00:30:00 | 8127 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **2** | 2014-07-01 01:00:00 | 6210 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **3** | 2014-07-01 01:30:00 | 4656 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **4** | 2014-07-01 02:00:00 | 3820 | 0.0 | 0 |'
+  prefs: []
+  type: TYPE_TB
+- en: Due to the rolling-window approach, we don’t have predictions for the first
+    `time_steps-1` number of datapoints, which is why they are padded with zeros.
+    Let’s now plot the final graph showing visually what the anomalies are. Refer
+    to Figure [9-66](#Fig73) for this code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig73_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An 8-line code utilizes Mat plot lib to create a time series plot. It generates
+    a figure and axes, then plots the original observations against the timestamps
+    from the Data Frame a d f.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-66
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code to plot the anomalous points on the original time-series sequence
+  prefs: []
+  type: TYPE_NORMAL
+- en: The result looks something like Figure [9-67](#Fig74).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/483137_2_En_9_Chapter/483137_2_En_9_Fig74_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A scatterplot plots observation versus date time. (2014-07, 10000), (2014-08,
+    28000), (2014-09, 27000), (2014-11, 40000), (2014-12, 25000), (2015-01, 32000),
+    and (2015-02, 30000). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-67
+  prefs: []
+  type: TYPE_NORMAL
+- en: The identified anomalies using the TCN’s predictions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-67](#Fig74) shows that quite a few points are labeled as anomalies.
+    There were more errors than in the Dilated TCN plot, but most importantly, the
+    model heavily predicted the spikes around Thanksgiving and New Year’s Eve.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It did miss Christmas and the snowstorm event in late January. Try playing around
+    with the model architecture and parameters, as well as the `time_steps` parameter,
+    in order to get better predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, this was another example of **unsupervised anomaly detection**. We
+    took a subset of the original sequence, trained the model to encode and decode
+    each rolling-window sequence, and calculated a threshold by which we can identify
+    anomalies. None of the steps in this process involved a training label.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, we discussed temporal convolutional networks and saw how they
+    fare when applied to anomaly detection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Chapter [10](483137_2_En_10_Chapter.xhtml), we will look at the practical
+    use case of anomaly detection.
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,492 @@
+- en: 8. Training an image classifier with transfer learning on Node.js
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: An intersection between the products we have so far built—a game, a web application,
+    or a Chrome extension—is that they live in the browser. From this ecosystem, we
+    have trained models, loaded others, visualized data, detected mean words, and
+    more. But the reality is different. Unlike our apps, most of the models we interact
+    with every day are in a server, and not client-side. There, from the server, we
+    deploy and expose machine learning models to the users through a service. In this
+    chapter, we will create one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using **Node.js**, a runtime environment that executes JS code outside the browser,
+    we will develop a server-side application for deploying and serving a TensorFlow.js
+    model via a web service. But which model?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before creating the service—let’s call it the *Server*—you will write another
+    Node.js program (the *Trainer*) for training an image classifier using the personalized
+    dataset from Chapter [7](494424_1_En_7_Chapter.xhtml). However, instead of training
+    it from scratch, you will apply **transfer training** to a pre-trained **MobileNet**
+    model and start from there.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Wow, so many concepts: Node.js, servers, web services, transfer learning, and
+    MobileNet. Well, there is another one! To inspect the training, we will use **TensorBoard**,^([1](#Fn1))
+    a TensorFlow visualization toolkit that, among other features, provides tracking
+    of the model’s performance metrics and loss values.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is transfer learning?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Training a (large) deep learning model is a computationally extensive task that
+    requires a vast amount of data. To get an idea, NVIDIA’s *Megatron-LM* (Shoeybi
+    et al., 2019), an 8.3 billion parameter transformer model, required two days per
+    epoch using 512 GPUs. Two days! Per epoch! I do not know about you, but I do not
+    own that kind of hardware. So, how can we, ordinary people, train deep models
+    in a relatively short time and with a limited dataset? An option is transfer learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transfer learning refers to the technique of reusing parts (the trained weights)
+    of a model as a starting point of another. In other words, it *transfers the knowledge
+    learned in one setting to another* (Goodfellow et al., 2016). Using a pre-trained
+    model as a base to a second one implies significantly speeding up the training
+    of the target model and requiring less training data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The main idea behind transfer learning consists of concatenating the base model’s
+    layers to a new set of layers and training them. In practice, this involves using
+    the upper layers (the first layers) of the base model since they are most likely
+    to have learned the high-level features of their dataset, that is, these features
+    are the ones that might be useful for the new model. These layers are sometimes
+    known as “frozen” layers because their weights are fixed and will not be trained.
+    To these frozen layers, then, you append the new set of layers, including the
+    output layer, and train these with your data to create the relationship between
+    what the base model knows and the target of your dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As useful as transfer learning is, it is not a perfect or a “one-size-fits-all”
+    solution. When applying it, there are several things we must consider. One is
+    the layer from which we should “truncate” the model, a decision that depends on
+    the size of the training set; the more data you have, the higher the cutting point
+    (less frozen layers) (Géron, 2019). Another possible issue is the similarity between
+    the task of the original model and the model we want to train. For example, if
+    the original model is for detecting potatoes, you cannot expect that it will be
+    good at identifying spaceships (unless they are potato-shaped spaceships). Therefore,
+    try using a base model trained on a similar dataset or a large and diverse one,
+    such as ImageNet. Similarly, we need to keep in mind the input shape of the base
+    model. For instance, our base model, MobileNet, is trained on images of size 224x224,
+    so we have to resize our dataset before feeding it to the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Understanding MobileNet and ImageNet
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Our base model is a MobileNet (Howard et al., 2017), a light and fast convolutional
+    neural network architecture for visual applications, which include object detection,
+    image classification, and novel ones like the PoseNet network from Chapter [5](494424_1_En_5_Chapter.xhtml).
+    MobileNet targets low-resource devices such as embedded systems and mobile phones,
+    which is why it trades accuracy for speed. It has over 25 layers, which include
+    a special convolutional layer named depthwise separable convolution as well as
+    batch normalization layers, ReLU activation layers, a convolutional layer, and
+    a softmax layer for classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The MobileNet model we will use was trained on the *ImageNet Large Scale Visual
+    Recognition Challenge 2012* (ILSVRC2012) database (Russakovsky et al., 2015) where
+    it achieved an accuracy of 70.6%. The dataset has 1,431,167 images and 1000 classes
+    that depict items, animals, and objects, among others, for example, “football,”
+    “helmet,” “candle,” “eel,” and “digital clock.” If the labels seem all over the
+    place, it is because this dataset is a subset of the larger ImageNet, which aims
+    to cover most nouns of the English language. Having a model trained with such
+    a mix of a diverse object might be beneficial for our transfer learning job.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building the Trainer
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Our first task is creating the Trainer, responsible for training the model.
+    This program does two things, pre-processing the data and training the model,
+    and so we will split the explanation into two parts. Besides, since we have a
+    new framework, Node.js, we will start with a brief description of how to run TensorFlow.js
+    in this environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setting up the environment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The first step is installing Node.js. You can find the instructions at [`https://nodejs.org/en/`](https://nodejs.org/en/).
+    Installing Node.js also installs **npm**, a package manager for JavaScript projects.
+    Once ready, add a directory in your preferred location and create the file *package.json*,
+    a document with metadata about the project. Ours looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first three keys are the project’s name, version, and description. Then
+    comes the `scripts` property, a dictionary of commands. For example, we have a
+    `train` command whose value is `node trainer.js`, so executing `npm train` in
+    the path where *package.json* is runs `node trainer.js`. The next attribute defines
+    the project’s dependencies, which are Node.js version of TensorFlow.js, *Express*
+    and *Multer*, two we will use for the web service. If your computer has an NVIDIA
+    GPU and supports CUDA, you could instead use the GPU variant, *tfjs-node-gpu*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To make sure everything is working, first, run `npm i` to install the dependencies.
+    When that finishes, create a file named *trainer.js*, add the line `console.log('boo!');`,
+    and execute `npm run train` from the console.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Loading and pre-processing the images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Did it work? Cool. Now, remove the “boo” line and replace it with the following
+    two to load TensorFlow.js and the *fs* (short for “File System”) module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Right after, declare these three variables:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: where `xTrain` is the dataset and `yTrain` the labels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, create `readImage()`. The function consists of one call to `tf.tidy()`,
+    to read images from the file system using *fs*’ `readFileSync()`, followed by
+    `tf.node.decodeImage()` to decode it and convert to a tensor. Next, transform
+    the tensor using the following methods:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`resizeBilinear([224, 224])` to resize it to 224x224\. After this function,
+    the tensor’s shape is [224, 224, 3]. The 3 is because of the colored image RGB
+    channels.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`expandDims()` to add an extra dimension. Tensor shape: [1, 224, 224, 3].'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`toFloat()` to convert the values to floats.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`div(127.0)` to divide the values by 127.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`sub(1)` to subtract 1\. These last two methods bound the values between -1
+    and 1 (RGB values range from 0 to 255).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'To avoid keeping these intermediate tensors in memory, wrap up everything inside
+    a `tf.tidy()`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The script’s second function is `getImages()`. This one takes two parameters,
+    `dir`, a directory containing images, and `label`, the dataset’s labels, coded
+    as numbers, for example, 0 for “pikachu.” `getImages()` uses *fs* method `readdir()`
+    and a foreach to iterate over a directory’s files that are used by the function
+    `readImages()` to get the images. After each image, it calls `tf.oneHot()` to
+    create a *one-hot* tensor that encodes the image’s class. A one-hot vector is
+    a vector of length *n*, where *n* − 1 values are zero, and the remaining one is
+    1\. In machine learning, we frequently use this technique to label datasets in
+    such a way where only the index corresponding to the instance’s class is 1, while
+    the others are 0\. For example, suppose that in our “pikachu and bottle” classifier,
+    the index of class “pikachu” is 0, and that of “bottle” is 1\. Here, the one-hot
+    encoding of a “bottle” label is [0, 1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With the image and label set, the missing step is concatenating them to `xTrain`
+    and `yTrain` along the first axis, that is, to form a tensor of images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training the model with transfer learning
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Welcome to transfer learning! After repeating the term so many times, you must
+    be (maybe) eager to apply it. So, let’s start right away with a new function named
+    `train()`. The function’s first commands involve using the method `tf.loadLayersModel()`
+    to load a version of MobileNet provided by Google and `tf.LayersModel.getLayer()`
+    to get the layer “conv_pw_13_relu.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: This “conv_pw_13_relu” layer is the cutting point. All the layers before this
+    one are considered “frozen,” that is, they are the “learning” we will transfer
+    (the base model). Why this particular layer? One reason is its proximity to the
+    output layer—meaning that we will use many learned layers—and because it performed
+    well with my dataset. However, you do not have to choose the same one. After we
+    finish building the model, I would recommend trying different cutting points to
+    see which one is better for your data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use `mobilenet.summary()` to see the network’s layers name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Since we know the cutting point, let’s get the corresponding layers and build
+    a new model with them. This model is not a sequential one, but a graph-based one
+    that uses the functional approach we saw back in Chapter [1](494424_1_En_1_Chapter.xhtml).
+    To create it, we will use the property inputs and outputs of the argument object
+    to set its inputs and outputs (write this under the `cutoffLayer` line):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you are curious, run `console.log(mobilenet.summary())` and `console.log(truncatedModel.summary())`
+    to see the difference in the architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following step is producing the intermediate activations using `truncatedModel.predict(xTrain)`.
+    Mind that this is not “predicting” in the sense that we are used to because there
+    is no classification output. Here, we are using the weights of the base model
+    to produce an intermediate activation tensor used by the second model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now create the final model that takes the activation tensor as input and produces
+    the image classification. The model needs three layers. The first of these is
+    a flatten layer, whose `inputShape` is the shape of `truncatedModel`’s output.
+    The following is a dense layer of 20 units and a ReLU activation function. As
+    for the last one, add another dense layer where units equal `NUM_CLASSES`, and
+    the activation function is softmax. Then compile it using the categorical cross-entropy
+    loss function, an Adam optimizer with a learning rate of 0.001, and the accuracy
+    metric.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To fit the model, this time, we will use a new callback `tf.node.tensorBoard()`.
+    This callback writes the training’s metric and loss values in the directory specified
+    in the function’s argument. Later, with TensorBoard, we will read these logs to
+    track the training process. As for the other parameters, use the activation tensor
+    as training data, the label `yTrain`, and a configuration object to set the batch
+    size to 32 and epochs to 15\. Last, use `model.save()` to save the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: That’s it for `train()`. You can close the function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Running the Trainer
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To complete the script, define the starting point with an `init()` function
+    :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that you need one call to `getImages()` per class. Their arguments are
+    the path to a directory that should only contain images of one class and the label
+    (as a number). If you have all the pictures under the same directory, please split
+    them into two.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Back at the terminal, open a second tab and run `pip install tensorboard` to
+    install TensorBoard. Once installed, execute `npm run tensorboard` and click the
+    given address (probably `http://localhost:6006`) to launch the tool. From the
+    terminal’s first tab, run `npm run train` to initiate the training script. The
+    program needs about one minute to load and process all the images. While this
+    happens, if you trace the computer’s memory usage, you will see how it fills up
+    a bit and drops after the dispose methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: pip is a Python package manager. To learn how to install it, visit [`https://pip.pypa.io/en/stable/installing/`](https://pip.pypa.io/en/stable/installing/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: During the training, once you spot the log messages on the terminal, switch
+    to TensorBoard (Figure [8-1](#Fig1)) to track the accuracy and loss. If they are
+    not there, either wait a few seconds until the Trainer writes the log or click
+    the refresh button.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg](../images/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 8-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: TensorBoard
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you re-train, change the TensorBoard log directory on the callback or make
+    sure it is empty. Otherwise, you will have logs from different trainings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With my dataset, the model achieved an accuracy of 0.85 and a loss of 0.207
+    after ten epochs (not a terrible result). If you are not happy with yours, you
+    could try several things starting with adjusting the hyperparameters’ learning
+    rate, units, or the number of epochs. Another alternative is trying fewer layers
+    of the base model (in this case, you might need to increase the size of the training
+    set), adding more, or even changing the architecture of the top model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building the Server
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: So, we have a nice model trained with transfer learning, but no way to interact
+    with it. Until now. In this second part of the exercise, we will write the Server,
+    a small Node.js program that exposes the model using a REST web service. Once
+    deployed, you will be able to perform predictions (and see the response) with
+    POST requests sent from the terminal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Serving the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Create a new file and name it *server.js*. Then, import TensorFlow.js and two
+    libraries—Express and Multer—that will help us build the web server. After the
+    imports, create a function named `imageBufferToTensor()` to convert an `imageBuffer`
+    to tensor. The function is the same `readImage()` as earlier but without the `fs.readFileSync()`
+    line.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Below it, define the function that creates and executes the server, `runServer()`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the function’s first line, we load our model and MobileNet. As before, we
+    have to use a truncated version of MobileNet to create the intermediate activation
+    tensors. After loading the models, set up the web server with Express and use
+    Multer’s `memoryStorage()` function to keep the uploaded images in memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now we create the POST route. This route has a function called the *handler
+    function* that runs when the application receives a request to the specified endpoint,
+    for example, a POST request sent to `http://localhost:8081/upload`. The function
+    takes two parameters, `req` (request) and `res` (response). `req` is an object
+    containing information about the request, including the data, or in this case,
+    the image, while `res` is the response we will send back to the user.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This response is the prediction outcome, wrapped in a JSON object. To get it,
+    we need three steps: convert the image buffer to tensor, produce the intermediate
+    activation tensor, and classify it. To end the script, use `app.listen()` to listen
+    for the requests in the specified port.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Testing the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To test the model, return to the terminal and execute `npm run serve` to initialize
+    the server. In another terminal tab (once the server is ready), run
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'where `DIR_NAME` is the directory and `IMAGE_NAME` is the image you want to
+    classify, for example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The result is the model prediction encoded as JSON, like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: It might not look like much, but this service might serve as the starting point
+    of a bigger project. To mention some ideas, you could consider deploying it in
+    a remote server so you can predict from anywhere you want. Or imagine having a
+    client, for example, a web app, that sends images to the server and tidily presents
+    the outcome. It sounds fun. What do you think?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recap
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A TensorFlow.js application is not limited to live in the browser. With the
+    right tools, namely, Node.js and TF.js’ own “node” backend mode, we can build
+    hardware-accelerated software for training and deploying models in a server-side
+    program. In this chapter, we explored the Node.js version of TensorFlow.js to
+    create an app that trains a model and a service that serves it. The training script,
+    adequately named the Trainer, uses transfer learning—a technique that transfers
+    the knowledge of one model to another—to fit an image classifier using a limited
+    amount of data. While training, we had a glimpse at TensorBoard—TensorFlow’s visualization
+    toolkit—for monitoring the procedure. Our second application, Server, loads the
+    Trainer’s model and exposes it with a web service.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Running TensorFlow.js under the Node.js runtime does more than just making it
+    faster. It also provides a unique set of functionalities that allows us to do
+    things such as decoding images, writing logs for TensorBoard, and accelerating
+    the processes even further with its GPU version.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs: []
+  type: TYPE_NORMAL
+- en: Empirically speaking, how does the object detection model from Chapter [7](494424_1_En_7_Chapter.xhtml)
+    compare to this one?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Cut the base model at different layers and then perform transfer learning. Did
+    you achieve better results? Worse?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Tweak the model’s hyperparameters.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For experimentation, can you achieve an acceptable accuracy using fewer training
+    samples? The goal is to study how the base model performs on your dataset without
+    seeing much of it.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Train a model from scratch. Does it perform better than the one just did here?
+    How many epochs did it need before achieving the same accuracy?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For the curious, open `model.json` and study the complete topology of the model.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Share the model!
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

@@ -1,0 +1,1591 @@
+- en: 1. Build TensorFlow Input Pipelines
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: We introduce you to TensorFlow input pipelines with the tf.data API, which enables
+    you to build complex input pipelines from simple, reusable pieces. Input pipelines
+    are the lifeblood of any deep learning experiment because learning models expect
+    data in a TensorFlow consumable form. It is very easy to create high-performance
+    pipelines with the tf.data.Dataset abstraction (a component of the tf.data API)
+    because it represents a sequence of elements from a dataset in a simple format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although data cleaning is a critical component of input pipelining, we focus
+    on building pipelines with cleansed data. We want to focus you on building TensorFlow
+    consumable pipelines rather than data cleansing. A data scientist can spend upwards
+    of 80% of the total machine learning (ML) project’s time on just cleaning the
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We build input pipelines from three data sources. The first data source is from
+    data loaded into memory. The second one is from external files. The final one
+    is from cloud storage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Notebooks for chapters are located at the following URL:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://github.com/paperd/deep-learning-models`](https://github.com/paperd/tensorflow)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: What Are Input Pipelines?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A **machine learning (ML)** **input pipeline** is an approach to codify and
+    automate the workflows required to produce a machine learning model. *ML workflows*
+    are the phases that are implemented during a ML project. Typical phases include
+    data collection, data preprocessing, building datasets, model training and refinement,
+    evaluation, and deployment to production. So the goal of an input pipeline is
+    to automate the workflows (or phases) associated with ML problem solving. Once
+    an input pipeline is automated, it can be reused as new data is added to a ML
+    project. It can even be tweaked for use with similar ML projects.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first step in any input pipeline is data preprocessing. In this step, raw
+    data is gathered, cleansed, and merged into a single organized framework. **Data
+    cleaning** is the process of identifying and fixing any issues with a dataset.
+    The objective of data cleaning is to fix any data that is incorrect, inaccurate,
+    incomplete, incorrectly formatted, duplicated, or irrelevant to the purpose of
+    the ML project so that the cleansed dataset is correct, consistent, reliable,
+    and usable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Without robust and accurate data as input to train a model, projects are more
+    likely to fail. Once data is properly prepared, the focus of an input pipeline
+    is on writing and executing ML algorithms to obtain a ML model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why Build Input Pipelines?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To understand the importance of input pipelines, it is beneficial to look at
+    the typical stages that data science teams work through when building a ML model.
+    Implementing a ML model from scratch tends to be very problem-oriented. So a data
+    science team focuses on producing a model to solve a single business problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Manual Workflow
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Typically, teams start with a *manual workflow* with no existing infrastructure.
+    Data collection, data cleaning, model training, and evaluation are likely written
+    in a single notebook. The notebook is run locally to produce a model, which is
+    handed over to an engineer tasked with turning it into an application programming
+    interface (API) endpoint. An **API endpoint** is a remote tool utilizing ML to
+    solve a specific problem within a specific project. So the engineer works with
+    a trained model to create an API tool that can be deployed across platforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A manual workflow is often ad hoc and starts to break down when a team begins
+    to speed up its iteration cycle because manual processes are difficult to repeat
+    and document. Code in a single notebook format tends to be unsuitable for collaboration.
+    In a manual workflow scenario, the **model** is the product.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Automated Workflow
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Once teams move from a stage where they are occasionally updating a single model
+    to having multiple frequently updated models in production, a pipeline approach
+    becomes paramount. In this scenario, we don’t build and maintain a model. We develop
+    and maintain a pipeline. So the **pipeline** is the product.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An automated pipeline consists of components and a blueprint for how the components
+    are integrated to produce and update the most crucial component – the model. With
+    automated workflows, code is split into more manageable components including data
+    preprocessing, model training, model evaluation, and retraining triggers. Such
+    triggers are put in place to automatically fire when a model requires retraining.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The system offers the ability to execute, iterate, and monitor a single component
+    in the context of the entire pipeline with the same ease and rapid iteration as
+    running a local notebook cell on a laptop. It also lets us define the required
+    inputs and outputs, library dependencies, and monitored metrics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The ability to split problem solving into reproducible, predefined, and executable
+    components forces the team to adhere to a joined (or joint) process. A joined
+    process, in turn, creates a well-defined language between the data scientists
+    and engineers that eventually leads to an automated setup that is the ML equivalent
+    of continuous integration (CI). CI is the practice of automating the integration
+    of code changes from multiple contributors into a single software project so the
+    final product is capable of auto-updating itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basic Input Pipeline Mechanics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The *tf.data.Dataset* API supports writing descriptive and efficient input pipelines,
+    which follows a common pattern. First, create a source dataset from the input
+    data. Second, apply data transformations to preprocess the data. Third, iterate
+    over the dataset and process the elements. Iteration happens in a streaming fashion
+    so the entire dataset doesn’t need to fit into memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once a data source is created, transform it into a new dataset by chaining method
+    calls on the tf.data.Dataset object. The dataset object is a Python iterable that
+    can be consumed with a for loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A TensorFlow dataset is typically created in two distinct ways. We can create
+    a dataset from data stored in memory or in one or more files. If need be, however,
+    we can create a dataset with a data transformation based on one or more tf.data.Dataset
+    objects.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To create a TensorFlow dataset from memory, use either the *from_tensors()*
+    or *from_tensor_slices()* method. To create a TensorFlow dataset from data stored
+    in a file in the recommended TFRecord format, use the *TFRecordDataset()* method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The **from_tensors()** method combines the input tensor from the data source
+    and returns a dataset with a single element. The **from_tensor_slices()** method
+    creates a dataset with a separate element for each row of the input tensor. An
+    **input tensor** is a vector or matrix of n dimensions that represents the data
+    source. We focus on the *from_tensor_slices()* method because we want to be able
+    to conveniently inspect and process each element from the data source.
+  prefs: []
+  type: TYPE_NORMAL
+- en: High-Performance Pipelines
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The tf.data API enables creation of flexible and efficient input pipelines by
+    delivering data for the next step of training before the current step has finished.
+    We focus on three of the best practices for building performant TensorFlow input
+    pipelines, namely, prefetch, cache, and shuffle. We discuss each of these practices
+    with examples when we build input pipelines later in the chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Google Developers Codelabs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Even after you work through the examples in this book, you may want to add to
+    your deep learning application knowledge by exploring additional tutorials. *Google
+    Developers Codelabs* provide guided tutorials emphasizing hands-on coding examples.
+    Most tutorials step you through the process of building a small application or
+    adding a new feature to an existing application. They cover a wide range of topics
+    such as Android Wear, Google Compute Engine, Project Tango, and Google APIs on
+    iOS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To peruse the Codelabs website, visit
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://codelabs.developers.google.com/`](https://codelabs.developers.google.com/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a New Notebook in Colab
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Within the Colab environment, it is easy to create a new notebook. Open Google
+    Colab in a browser (if not already open). From the pop-up window, click *New notebook*.
+    If already in the Colab environment, click *File* in the top-left menu under *Welcome
+    to Colaboratory*. Click *New notebook* from the drop-down menu. A code cell is
+    now ready for executing Python code! Add code or text cells by clicking the *+
+    Code* or *+ Text* button. For more options, click *Insert* from the main menu.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For an introduction to Colab, peruse
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://colab.research.google.com/`](https://colab.research.google.com/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To create your first piece of code, add the following in the code cell:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: To execute the code, click the *little arrow to the left*. The output from the
+    code cell shows the result of the multiplication.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: We recommend copying and pasting code from the website.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Import the TensorFlow Library
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before we can do anything in TensorFlow, we must import the appropriate Python
+    library. It is common practice to alias the TensorFlow library as **tf**. So go
+    ahead and execute the import in a new code cell:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: GPU Hardware Accelerator
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'To vastly speed up processing, use the GPU available from the Google Colab
+    cloud service. Colab provides a free Tesla K80 GPU of about 12 GB RAM (as of this
+    writing). It’s very easy to enable the GPU in a Colab notebook:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click *Runtime* in the top-left menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Click *Change runtime type* from the drop-down menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Choose *GPU* from the *Hardware accelerator* drop-down menu.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Click *Save*.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The GPU must be enabled in *each* notebook. But it only has to be enabled once.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Verify that the GPU is active:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: If ‘/device:GPU:0’ is displayed, the GPU is active. If ‘ ’ is displayed, the
+    regular CPU is active.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you get the error **NAME ‘TF’ IS NOT DEFINED**, re-execute the code to import
+    the TensorFlow library! For some reason, we sometimes have to re-execute the TensorFlow
+    library import in Colab. We don’t know why this is the case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Colab is a wonderful tool to work with TensorFlow. However, it does have its
+    limitations. Colab applies dynamic resource provisioning. In order to be able
+    to offer computational resources for free, Colab dynamically adjusts usage limits
+    and hardware availability on the fly. So available resources in Colab vary over
+    time to accommodate fluctuations in demand. In a nutshell, this means that Colab
+    may not always be available for use! One solution is to move to Colab Pro for
+    a small monthly fee. As of this writing, the cost is $9.99/month.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: For serious TensorFlow users, we recommend moving to Colab Pro. It is not free,
+    but it is quite inexpensive. From our experience, it is more powerful than the
+    free version, and it is more readily available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a TensorFlow Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Create a dataset of three tensors with six elements each:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create the dataset. Transform it into a tf.data.Dataset object with the from_tensor_slices()
+    method. The shape of the dataset is (6,), which means that each row contains six
+    scalar values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: We highly recommend testing small pieces of code in their own code cells to
+    reduce debugging time and effort.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consume the Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Iterate over the dataset to display tensor information:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since the tf.data.Dataset object is created with from_tensor_slices(), it is
+    a Python iterable that can be consumed with a for loop. With TensorFlow datasets,
+    use the *numpy()* method to explicitly convert each tensor to a NumPy array.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Alternatively, we can use the *take()* method to iterate over a TensorFlow
+    dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: We add *3* as a parameter in the take() method to grab three examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Another option is to create a Python iterator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initialize a counter variable. Use the *iter()* method to create an iterator.
+    Consume the iterator with the *next()* method and display the results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dataset Structure
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The *element_spec* property of tf.data.Dataset allows inspection of the dataset.
+    The property returns a nested structure of the tf.TypeSpec object that matches
+    the structure of the element. The nested structure may be a single component,
+    a tuple of components, or a nested tuple of components.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Inspect the dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Shape and datatype are displayed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Alternatively, we can just display the tf.data.Dataset object:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a Dataset from Memory
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: If all of your input data fits in memory, the simplest way to create a TensorFlow
+    dataset is to convert it to tf.Tensor objects with the from_tensor_slices() method.
+    Now, we are going to build a pipeline. We begin by loading a clean dataset. We
+    continue by scaling the feature data images. Scaling (or feature scaling) is a
+    method used to normalize the range of independent variables or features of a dataset.
+    Scaling is important because ML models tend to work better if the pixels that
+    make up each image are smaller in size. We inspect the data with code and visualizations.
+    Next, we configure the pipeline for performance. We end by creating a model, training
+    the model, and evaluating the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Load and Inspect Data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To build an input pipeline, we need a dataset. Since the focus is on building
+    a TensorFlow consumable pipeline, we work with cleansed datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Load training and test data in memory:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Download Fashion-MNIST data into training and test sets. We use training data
+    to teach the model. We use test data to evaluate the model. Fashion-MNIST is a
+    dataset of Zalondo’s article images. It contains 60,000 training and 10,000 test
+    examples. The dataset is intended to serve as a direct drop-in replacement of
+    the original MNIST dataset for benchmarking machine learning algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Inspect:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training and test sets are tuples where the first tuple element contains feature
+    images and the second contains corresponding labels. Both datasets are NumPy arrays.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Load images and labels into variables:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: By separating images and labels from the respective datasets, we can more easily
+    process images and labels as needed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Verify shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training data consists of 60,000 28 × 28 feature images and 60,000 labels. Test
+    data consists of 10,000 28 × 28 feature images and 10,000 labels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Scale and Create the tf.data.Dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Scale data for efficient processing and create the training and test sets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Get slices of the NumPy arrays in the form of tf.data.Dataset objects with *from_tensor_slices()*.
+    Feature image pixel values are typically integers that range from 0 to 255\. To
+    scale, divide feature images by 255 to get pixel values that range from 0 to 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Scaling images is a critical preprocessing step because deep learning models
+    train faster on smaller images. Moreover, many deep learning model architectures
+    require that images are the same size. But raw images tend to vary in size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Inspect training and test tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Both datasets are *TensorSliceDataset* objects, which means that they are iterators.
+    An **iterator** is an object that contains a countable number of examples that
+    can be traversed with the *next()* method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display the first label from the training set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Each example in the training set contains an image matrix and its corresponding
+    label. The *next()* method returns a tuple with the first image matrix and its
+    label in positions 0 and 1 in the tuple respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display ten labels from the training set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: The *batch()* method takes *n* examples from a dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display all 60,000 labels from the training set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the first image from the training set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Verify that the first image is a 28 × 28 matrix:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: To find dimensions of a matrix in Python, the height (or rows) is *len(matrix),*
+    and the width (or columns) is *len(matrix[0])*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Verify Scaling
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Display a pre-scaled tensor from the training set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the same tensor after scaling:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Voilà! The pixels are scaled between 0 and 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Check Tensor Shape
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Check shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Fashion-MNIST images are equally sized. So we don’t have to resize them!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Inspect Tensors
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Check train and test tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: All is well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preserve the Shape
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Assign a variable to the feature image shape for use in the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualize
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Visualize an element from the training set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Although Fashion-MNIST images are grayscale, we can bring them to life with
+    colors using predefined color maps built into the matplotlib library. A **color
+    map** is an array of colors used to map pixel data to actual color values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Peruse the following URL for detailed information about matplotlib color maps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html`](https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Define Class Labels
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'From our experience working with Fashion-MNIST, we know the corresponding labels:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Convert a Numerical Label to a Class Label
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Labels are numerical in the tf.data.Dataset that we just loaded, but we can
+    display the corresponding class name with the *class_labels* list we just created:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Take an example and display the label as a numerical value and string value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a Plot of Examples from the Dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Take some images and labels from the training set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a function to display a grid of examples as shown in Listing [1-1](#PC30).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Invoke the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: It’s always a good idea to check out the dataset to see if it is as we expect.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Build the Consumable Input Pipeline
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We say *consumable input pipeline* because the actual pipeline starts when data
+    is actually acquired. We use this terminology to emphasize the importance of transforming
+    the training and test datasets into efficient tensors for TensorFlow model consumption.
+    We see examples that refer to this part as building the input pipeline, but the
+    input pipeline encompasses the entire workflow from raw data to generalized model.
+    In later chapters, we drop the word “consumable.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Configure the Dataset for Performance
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Use buffered prefetching and caching to improve I/O performance. Shuffle data
+    to improve model performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Prefetching** is a function in the tf.data API that overlaps data preprocessing
+    and model execution while training, which reduces the overall training time of
+    a model. To perform this operation, add the *tf.Dataset.prefetch* transformation
+    to the input pipeline.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Add the *tf.data.Dataset.cache* transformation to the pipeline to keep images
+    in memory after they’re loaded off disk during the first epoch, which ensures
+    that the dataset doesn’t become a bottleneck during training. So caching saves
+    operations (e.g., file opening, data reading) from being executed during each
+    epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Shuffling** data serves the purposes of reducing variance (ensuring that
+    a model remains general) and reducing overfitting. An obvious case for shuffling
+    is when data is sorted by class (or target). We shuffle to ensure that the training,
+    test, and validation sets are representative of the overall distribution of the
+    data. To perform this operation, add the *tf.Dataset.shuffle* transformation to
+    the pipeline.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training is always performed on batches of training data and labels. Doing so
+    helps the algorithm converge. **Batch** is when all of a dataset is used to compute
+    the gradient during one iteration. **Mini-batch** is when a subset of a dataset
+    is used to compute the gradient during one iteration. To perform this operation,
+    add the *tf.Dataset.batch* transformation to the pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *batch dimension* is typically the first dimension of data tensors. So a
+    tensor of shape [100, 192, 192, 3] contains 100 images of 192 × 192 pixels with
+    three values per pixel (RGB) in each batch. The **RGB color model** is an additive
+    color model in which red, green, and blue lights are added together in various
+    ways to reproduce a broad array of colors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Build the consumable input pipeline:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Shuffle training data. Shuffling randomizes training data, which ensures that
+    each data element is independent from other data elements during each training
+    epoch. Learning models tend to perform best when exposed to independently sampled
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Batch, cache, and prefetch training and test data. Adding the *cache()* transformation
+    increases performance because data is read and written only once during the first
+    epoch rather than during every epoch. Adding the *prefetch(1)* transformation
+    is a good idea because it adds efficiency to the batching process. That is, while
+    our training algorithm is working on one batch, TensorFlow is working on the dataset
+    in parallel to get the next batch ready. So this transformation can dramatically
+    improve training performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like other tf.data.Dataset methods, prefetch operates on the elements of the
+    input dataset. It has no concept of examples vs. batches. So prefetch two examples
+    with examples.prefetch(2) and prefetch two batches with 20 examples per batch
+    with examples.batch(20).prefetch(2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The test (or validation) set is used to demonstrate how well the trained model
+    works on examples it hasn’t seen during training. So it being shuffled is irrelevant.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We set batch size and shuffle size based on trial and error experiments. You
+    can experiment by adjusting batch and shuffle sizes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Inspect tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Import requisite libraries:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Clear previous models and generate a seed for reproducibility of results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: We use zero for the seed value, but any number can be substituted.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: Clearing previous models does *not* reset the current model to its initial state.
+    To reset a model, just rebuild the input pipeline for the model!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Create the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: The basic building block of a neural network is the layer. Layers extract representations
+    from the data fed into them. Hopefully, these representations are meaningful for
+    the problem at hand. Most of deep learning consists of chaining together simple
+    layers. Most layers, such as *Dense*, have parameters that are learned during
+    training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first layer in this network is a *Flatten* layer, which transforms the format
+    of the images from a two-dimensional array (of 28 by 28 pixels) to a one-dimensional
+    array (of 28 * 28 = 784 pixels). Think of this layer as unstacking rows of pixels
+    in the image and lining them up. This layer has no parameters to learn because
+    it only reformats the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the pixels are flattened, the network consists of a sequence of two Dense
+    layers. Dense layers are fully connected neural layers, which means that all the
+    neurons in a layer are connected to all neurons in the next layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first Dense layer has 128 nodes (or neurons). We add a *Dropout* layer after
+    the first Dense layer to reduce overfitting. The second (and last) layer returns
+    a logits array with length of 10\. **Logits** are the outputs of a layer of neurons
+    before the activation function is applied. Each node contains a score that indicates
+    that the current image belongs to one of the ten classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Dropout** is a regularization method that approximates training a large number
+    of neural networks with different architectures in parallel. During training,
+    some number of layer outputs are randomly ignored or “dropped out,” which has
+    the effect of making the layer look like and be treated like a layer with a different
+    number of nodes and connectivity to the prior layer. In effect, each update to
+    a layer during training is performed with a different “view” of the configured
+    layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Inspect the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compile and Train the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Compile the model with *SparseCategoricalCrossentropy* loss. Sparse categorical
+    cross-entropy performs well when classes are mutually exclusive. That is, each
+    sample belongs exactly to one class. An advantage of using sparse categorical
+    cross-entropy is that it saves time in memory as well as computation because it
+    uses a single integer for a class rather than a whole vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *from_logits=True* attribute informs the loss function that the output values
+    generated by the model are not normalized. That is, the softmax function *has
+    not* been applied on them to produce a probability distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Compile:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Train the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model is training with ten epochs. The number of **epochs** is the number
+    of times the learning algorithm works through the entire training dataset. Loss
+    and accuracy are displayed for training and test data. Training loss and accuracy
+    are based on what the model learned during training. Test loss and accuracy are
+    based on new data that the model hasn’t learned upon. So the closer test accuracy
+    is to training accuracy, the more generalizable the model. Of course, we want
+    to have high test accuracy and low test loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Load a TensorFlow Dataset as NumPy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The previous section modeled Fashion-MNIST data based on a Keras dataset. However,
+    we can load data as a TensorFlow dataset (TFDS) and convert it into NumPy arrays
+    for very easy processing. We cover TFDS in detail in a later chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this experiment, we load the MNIST dataset instead of Fashion-MNIST. We
+    do this because we work with Fashion-MNIST many times in later chapters. So we
+    just want to expose you to another dataset for practice. Once the data is loaded
+    and converted to NumPy, the input pipeline phases are the same as in the previous
+    section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Create a training set as NumPy arrays in a single batch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: By using *batch_size=-1*, the full dataset is loaded as a single batch. The
+    *tfds.load()* function loads the dataset. The *tfds.as_numpy()* function converts
+    the dataset to NumPy arrays.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The training set contains 60,000 28 × 28 images. The *1* dimension indicates
+    that the data is grayscale. A **grayscale** image is one in which the only colors
+    are shades of gray. That is, the image only contains luminance (or brightness)
+    information and no color information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Create the corresponding test set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Inspect Shapes and Pixel Intensity
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Get training shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Get test shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a function to find the first pixel vector with pixel intensity values
+    as shown in Listing [1-2](#PC44).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Invoke the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: The nonzero values are pixel intensities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display the first pixel with intensity greater than zero:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: Scale
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Since NumPy array values are float, divide them by 255 to scale the image pixels:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Verify that scaling worked:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: Prepare Data for TensorFlow Consumption
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Slice NumPy arrays into TensorFlow datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Inspect:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build the Consumable Input Pipeline
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Initialize parameters, shuffle training data, and batch and prefetch training
+    and test data:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Inspect tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Earlier, we imported requisite libraries. Since they are already in memory,
+    we don’t need to import them again (assuming that we are using the same notebook).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get tensor shape:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Clear previous models and generate a seed for reproducibility of results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Create the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compile and Train the Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Compile with sparse categorical cross-entropy. Notice that we **don''t** set
+    *from_logits=True* because we use *softmax* activation in the output layer of
+    the model to produce a probability distribution from the logits. The **softmax**
+    activation function acts on a vector to increase the difference between the largest
+    component and all others and normalizes the vector to have a sum of 1 so that
+    it can be interpreted as a vector of probabilities. It is used as the last step
+    in classifiers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Train the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: We train for just three epochs because MNIST is so easy to train.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a Dataset from Files
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Create a TensorFlow dataset from files with a Keras utility. We use the Keras
+    utility because it greatly simplifies processing of the flowers dataset. The *flowers
+    dataset* is public with thousands of flower photos distributed into five classes.
+    Just like the Fashion-MNIST and MNIST examples, we build an input pipeline following
+    similar workflow phases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Download and Inspect the Dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Import a library for visualization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The dataset contains several thousand photos of flowers in five subdirectories
+    with one flower photo per class. The directory structure is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Download data with the tf.keras.utils.get_file utility:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: The *tf.keras.utils.get_file* utility downloads a file from a URL if not already
+    in the cache. The *pathlib.Path* function provides a concrete path to the files.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Count the number of flower photos downloaded and available in data_dir:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: There are 3670 files of flower images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The *data_dir* path points to directories that each hold a different type of
+    flower. Let’s see the directories:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: Each directory contains images of that type of flower.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Access some of the files:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display labels from each file:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Each directory contains images of that type of flower. Here is the first flower
+    in the *daisy* directory:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display the number of daisy images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s display several images from the *roses* directory. Create a list to hold
+    roses:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Grab labels from some of the files:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: Display some roses as shown in Listing [1-3](#PC69).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: Notice that images are not of the same size!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parse Data with the tf.keras.preprocessing Utility
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The *tf.keras.preprocessing.image_dataset_from_directory* utility offers incredible
+    convenience for loading and parsing images off disk! We show the convenience of
+    the utility in the “*Create Training and Test Sets”* subsection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Set Parameters
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Set batch size, image height, and image width:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: We set batch size initially to 32 because it tends to be a good size for many
+    of the datasets with which we work. We set image height and width at 180 because
+    we get good results and the model trains really fast. Feel free to experiment
+    with these parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Our inspection revealed that image size differs. Since TensorFlow models expect
+    images of the same size, we must resize them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create Training and Test Sets
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The *tf.keras.preprocessing.image_dataset_from_directory* utility generates
+    a tf.data.Dataset from image files in a directory. The utility is very useful
+    because it allows us to conveniently split, seed, resize, and batch data. Let’s
+    split data into 81% training and 19% test sets. We set this split based on numerous
+    experiments. Of course, you can tweak the sizes with your own experiment. The
+    combination of the *validation_split* and *subset* parameters determines the train
+    and test splits.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Set aside 81% for training data:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Set aside 19% for test data:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: Inspect Tensors
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Inspect :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Take the first batch from the training set and preserve shapes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: We take the first batch to help us inspect a batch from the dataset. We preserve
+    the shape of the batch and batch size for use in the model. Batch size is 32,
+    and images are resized to 180 × 180 × 3\. The *3* value indicates that images
+    have three channels, which means they are RGB (color). Labels have shape (32,)
+    that corresponds to the 32 scalar images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get Class Names
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'We already identified the classes from the directory names. But we can now
+    access them with the *class_names* method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: Display Examples
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Take a batch from the training set and plot some images as shown in Listing
+    [1-4](#PC76).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: Scale the Data
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: As noted earlier in the chapter, a pixel is represented by 256 values. So RGB
+    channel values are in the [0, 255] range. Since neural networks work better with
+    small values, data is typically scaled to be in the [0, 1] range.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Create a function to scale images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function is used when we configure the input pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Configure the Dataset for Performance
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Use buffered prefetching to get data from disk to mitigate I/O issues. Cache
+    data to keep images in memory after they’re loaded off disk. Caching saves operations
+    like file opening and data reading from being executed during each epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Build the Input Pipeline
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Scale, shuffle the training set, and cache and prefetch train and test sets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since training and test data have already been batched by the utility, *do not*
+    batch when building the input pipeline!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Build the Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Since we are working with large color images, we need to build a convolutional
+    neural network (CNN) model to garner respectable performance because flower images
+    are color with higher pixel counts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We need additional libraries for a CNN:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Get the number of classes for use in the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Clear any previous models and generate a random seed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a multilayer CNN as shown in Listing [1-5](#PC82).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first layer scales the data. The second layer contains 32 neurons with a
+    3 × 3 convolutional kernel (or filter). Activation is *relu*. The third layer
+    uses maximum pooling to reduce the spatial size of a layer by just keeping the
+    maximum values. As such, the pooling layer reduces image dimensionality without
+    losing important features or patterns. The next four layers repeat the same pattern
+    as the second and third layers. The Flatten layer converts pooled data into a
+    single column because a Dense layer expects data in this form. The final Dense
+    layer enables classification and prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compile and Train the Model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Compile with SparseCategoricalCrossentropy():'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since *softmax* is applied to outputs, we **don’t** set *from_logits=True*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Train the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model is overfitting because validation accuracy is low compared to training
+    accuracy. But we have not made any attempt to tune the model. In the next chapter,
+    we explore a powerful technique to mitigate overfitting.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get Flowers from Google Cloud Storage
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We demonstrated input pipelining with data from memory and from files. We can
+    also pipeline data from cloud storage. Flowers data is hosted in a public bucket
+    on Google Cloud Storage (GCS). So we can grab flower files from GCS. We can read
+    flowers as JPEG files or as TFRecord files. For data modeling, we use TFRecord
+    files. For optimal performance, we read from multiple TFRecord files at once.
+    The **TFRecord format** is a simple format for storing a sequence of binary records.
+    A TFRecord file contains a sequence of records, which can only be read sequentially.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Read Flowers as JPEG Files and Perform Simple Processing
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Read JPEG files based on a GCS pattern:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: GCS_PATTERN is a *glob pattern* that supports the “*” and “?” wildcards. **Globs**
+    (also known as glob patterns) are patterns that can expand a wildcard pattern
+    into a list of pathnames that match the given pattern.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Get the number of JPEG images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Create a dataset of filenames from GCS_PATTERN and peruse its contents:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: We need the data in (image, label) tuples to work with the images and labels
+    independently. So create a function to return a dataset of (image, label) tuples
+    as shown in Listing [1-6](#PC88).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Map the function to each filename to create a dataset of (image, label) tuples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Peruse:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display an image:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: Although we don’t train with this dataset, let’s see how to convert text labels
+    to encoded labels as shown in Listing [1-7](#PC92).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: Take a label. Compare it against the class name list to find its position in
+    the list. Create a one-hot vector. Convert the one-hot vector into a label tensor.
+    We don’t train with this dataset because it is not the way to model complex data
+    from GCS. But it is a simple way to load and inspect the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Read and Process Flowers as TFRecord Files
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The best way to model complex data from GCS is as TFRecord files. A TFRecord
+    file stores data as a sequence of binary strings. Binary strings are very efficient
+    to process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Read TFRecord Files
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Read TFRecord files based on a GCS pattern:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Get the number of buckets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE93]'
+  prefs: []
+  type: TYPE_PRE
+- en: We grabbed 16 buckets. Since there are 3670 flower files, 15 buckets contain
+    230 images (15 × 230 = 3,450), and the final bucket contains 220 images. Add 3,450
+    to 220 to get 3,670.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Display a file:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE94]'
+  prefs: []
+  type: TYPE_PRE
+- en: Set Parameters for Training
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Set parameters for image resizing, pipelining, and number of epochs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE95]'
+  prefs: []
+  type: TYPE_PRE
+- en: Use *AUTOTUNE* to prompt the tf.data runtime, which tunes the value dynamically
+    at runtime.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: AUTOTUNE is experimental, which means that the operation may change in the future.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Set validation split and class labels:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE96]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create data splits, validation steps, and steps per epoch as shown in Listing
+    [1-8](#PC98).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE97]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create Functions to Load and Process TFRecord Files
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Create a function to parse a TFRecord file as shown in Listing [1-9](#PC99).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE98]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function accepts a TFRecord file. A dictionary holds datatypes common to
+    TFRecords. The tf.string datatype converts the image to byte strings (list of
+    bytes). The tf.int64 converts the class label to a 64-bit integer scalar value.
+    The TFRecord file is parsed into (image, label) tuples. The image element, a JPEG-encoded
+    image, is decoded into a uint8 image tensor. The image tensor is scaled to the
+    [0, 1] range for faster training. It is then reshaped to a standard size for model
+    consumption. The class label element is cast to a scalar.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a function to load TFRecord files as tf.data.Dataset as shown in Listing
+    [1-10](#PC100).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE99]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function accepts TFRecord files. For optimal performance, code is included
+    to read from multiple TFRecord files at once. The options setting allows order-altering
+    optimizations. As such, *n* files are read in parallel, and data order is disregarded
+    in favor of reading speed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a function to build an input pipeline from TFRecord files as shown in
+    Listing [1-11](#PC101).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE100]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function accepts TFRecord files and calls the *load_dataset* function. The
+    function continues by building an input pipeline by caching, repeating, shuffling,
+    batching, and prefetching the dataset. Repeating and shuffling are only mapped
+    to training data to follow best practices for a Keras dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create Training and Test Sets
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Instantiate the datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE101]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Display an image and preserve the shape for the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE102]'
+  prefs: []
+  type: TYPE_PRE
+- en: Model Data
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Clear and seed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE103]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create the model as shown in Listing [1-12](#PC105).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE104]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Inspect:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE105]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Compile:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE106]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Train:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE107]'
+  prefs: []
+  type: TYPE_PRE
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We built ML input pipeline examples from three types of data. The first experiments
+    built pipelines from data loaded into memory. We then built a pipeline from external
+    files. The final experiment built a pipeline from cloud storage.
+  prefs: []
+  type: TYPE_NORMAL

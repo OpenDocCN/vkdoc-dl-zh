@@ -1,0 +1,1002 @@
+- en: '9. Machine Learning: Practical ANN Demonstrations'
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: This is the final chapter in the series exploring machine learning. I demonstrate
+    two practical examples of an artificial neuron network (ANN) based on the concepts
+    and Python implementations discussed in the previous chapters. You should review
+    the material in at least the two previous chapters to gain the most benefit from
+    reading and even duplicating this chapter’s demonstrations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I would like to give much credit to Tariq Rashid, whose book Make Your Own Neural
+    Network (CreateSpace Independent Publishing Platform, 2016) was a source of inspiration
+    and guidance for me in preparing this and other chapters in my book. I highly
+    recommend Tariq’s book to readers who wish to gain more insight into practical
+    ANNs. Tariq also has a blog at [`http://makeyourownneuralnetwork.blogspot.co.uk/`](http://makeyourownneuralnetwork.blogspot.co.uk/)
+    , which I found to be a highly useful source of information and lively discussions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The demonstrations in this chapter are centered on recognizing handwritten numbers.
+    They are classic ANN projects that fully demonstrate the learning capability of
+    an ANN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parts List
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: You need additional parts for the demonstrations , which are detailed in Table
+    [9-1](#Tab1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parts Lists
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Description | Quantity | Remarks |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Pi Cobbler | 1 | 40-pin version, either T or DIP form factor acceptable |'
+  prefs: []
+  type: TYPE_TB
+- en: '| solderless breadboard | 1 | 700 insertion points with 1 power supply strip
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| jumper wires | 1 package |   |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 220Ω resistor | 1 | 1/4 watt |'
+  prefs: []
+  type: TYPE_TB
+- en: '| LED | 1 |   |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Pi Camera | 1 | version 2 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| tactile push button switch | 1 | with solderless connections |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Demo 9-1: MNIST Data Set'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: I will show you how an ANN can recognize handwritten numbers. The training and
+    test data used in this project come directly from two Mixed National Institute
+    of Standards and Technology (MNIST) databases. These databases have been widely
+    used for training and testing ANNs for many years and are an accepted standard
+    for rating how accurate a particular ANN is for accomplishing a task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The genesis for the MNIST databases comes from input images taken from handwritten
+    numeric symbols by 500 people, half of which were US Census Bureau employees and
+    the other half were high school students. The original black-and-white images
+    were also normalized to fit a 20 × 20-pixel-image bounding block and further anti-aliased,
+    which generated a one-byte grayscale value for each pixel. What this means will
+    be made very clear to you shortly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The MNIST data sets are quite large, consisting of 60,000 training images (104MB)
+    and 10,000 testing images (18MB). Both data sets are freely available in a comma-separated
+    value (CSV) format from the following websites:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Training set: [`http://www.pjreddie.com/media/files/mnist_train.csv`](http://www.pjreddie.com/media/files/mnist_train.csv)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Test set: [`http://www.pjreddie.com/media/files/mnist_test.csv`](http://www.pjreddie.com/media/files/mnist_test.csv)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The training set should be used to train the ANN. All the included records are
+    labeled, meaning that the CSV data is identified with the corresponding image
+    it is representing. The test set is used to check how well the ANN functions in
+    recognizing test CSV data. The test data set also contains labels as an aid to
+    verify whether the ANN successfully identified the correct number. Separating
+    training from test data is always a good idea because the ANN could return stored
+    patterns if the training data was also the test data. This situation would not
+    be a good indicator of how well the ANN actually learned.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-1](#Fig1) shows only the beginning of the first record contained in
+    the training data set as displayed by a hex editor application running on my MacBook
+    Pro.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig1_HTML.jpg](A436848_1_En_9_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A portion of the first record in the MNIST training data set
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are 784 bytes composing one image because each image in the database
+    has been resized to 28 × 28 pixels or 784 overall. Each pixel value represents
+    the equivalent grayscale value of a pixel. One byte has a numeric range of 0 to
+    255, where 0 is total white and 255 is total black. Each database image therefore
+    consists of 784 pixel values, 785 commas, and 1 byte for the label, which sums
+    to 1570 bytes overall. While one record of this size is not too hard to handle,
+    having more than 60,000 of them in one file tends to overload most programs, especially
+    programs that are expected to run on a Raspberry Pi. Fortunately, there are two
+    very small subsets of both the larger MNIST train and the test data sets, which
+    are available at the following websites :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Test data set [`https://raw.githubusercontent.com/makeyourownneuralnetwork/makeyourownneuralnetwork/master/mnist_dataset/mnist_test_10.csv`](https://raw.githubusercontent.com/makeyourownneuralnetwork/makeyourownneuralnetwork/master/mnist_dataset/mnist_test_10.csv)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Train data set [`https://raw.githubusercontent.com/makeyourownneuralnetwork/makeyourownneuralnetwork/master/mnist_dataset/mnist_train_100.csv`](https://raw.githubusercontent.com/makeyourownneuralnetwork/makeyourownneuralnetwork/master/mnist_dataset/mnist_train_100.csv)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'I opened both downloaded data sets using the hex editor and they appeared to
+    be just fine. However, to use the data in a Python script, you need to use some
+    statements to access these data sets. The following Python statements instantiate
+    a file object named `dataFile`, read the data line by line into a list object
+    named `dataList`, and finally close the file. These statement types are a very
+    common way to read data files with Python :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [9-2](#Fig2) shows an interactive session on a Raspberry Pi where I used
+    the preceding statements to create the `dataList` object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig2_HTML.jpg](A436848_1_En_9_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interactive Python session creating a dataList object
+  prefs: []
+  type: TYPE_NORMAL
+- en: I ran the Python session in the same directory where the MNIST data set was
+    located. If you do not have the data set in the same directory, then you have
+    to prepend the appropriate path to the MNIST data set name to avoid the Python
+    error of not finding the file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may start examining the data once it has been read. I entered `len(dataList)`
+    to find out the number of records that were put into the `dataList` object. The
+    return value was `100`, as expected. Figure [9-3](#Fig3) shows this statement
+    along with a display of the first record, which I directed by entering `dataList[0]`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig3_HTML.jpg](A436848_1_En_9_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: dataList properties
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you closely examine the `datalist[0]` display in the figure, you probably
+    see that the data begins and ends with apostrophes. This indicates that the `dataList[0]`
+    record is recognized as a string by the Python interpreter. It may look like numbers
+    but it is considered just a string of ASCII characters according to Python. The
+    character just before the ending apostrophe is `\n`, which is the “escaped” letter
+    `n`. This indicates to Python that the first record ends and it should place a
+    new line at that point. New line characters are delimiters for the record set,
+    telling Python where one record ends and the next begins. All 100 records are
+    indexed, meaning they may be individually accessed by using the appropriate index
+    number along the list name, as I did to access the first record (i.e., `dataList[0]`).
+    The indices are 0 based, ranging from 0 to 99 in this case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, I show you how to image a record, instead of simply looking at sterile
+    numbers that make little to no sense.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Imaging a MNIST Record
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'It is actually fairly easy to image a data record using a few Python commands.
+    I used the Python GUI IDLE 2 to accomplish the next steps. A GUI environment is
+    necessary to show the resultant image. You can use the Python 3 GUI if so desired,
+    but you need to modify the following installation statements for Python 3\. The
+    matplotlib library is required to create and display the image; more specifically,
+    the `imshow` and `show` methods contained in the pyplot package, which is part
+    of the overall matplotlib library . Enter the following commands to install the
+    matplotlib library:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Once the installation is completed, you are ready to enter the next commands
+    to read in the data from the 100-record, abbreviated data set. Enter these commands
+    :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first two import commands are not needed for the data-read portion, but
+    I always want to put any import statements at the start of a code block. The `dataFile`
+    logical reference is created with the open statement and it points to the start
+    of the 100-record file. The actual read happens with the next statement that reads
+    in 100 separate records into a list object named `dataList`. The `readlines` method
+    just reads one character after another until it encounters a new-line character
+    (`\n`). At that instant, it creates a new record for the list and resumes the
+    character-by-character reads until it encounters the end-of-file (EOF) character
+    , which ceases the read process. The `close` method just “destroys” the `dataFile`
+    logical reference so that the file will not be inadvertently modified.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The script is set to image a selected record once the data set is in memory.
+    The following code accomplishes this objective :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first command creates a small list object named `record0` that consists
+    of all 785 elements in the first record that were read into the large `dataList`
+    object. There are 785 separate list elements in the `record0` object because the
+    `split` method created them by using the comma delimiter as an indicator for separation.
+    The second command uses the `imshow` method to create the image to be displayed.
+    It starts with the second list element and it is a grayscale image that is shaped
+    into a 28 × 28–pixel array. Note the spelling of `Greys` in the `imshow` argument
+    list. Finally, the `show` method actually displays the image in the IDLE 2 GUI.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-4](#Fig4) shows all of the preceding commands running in an IDLE 2
+    GUI.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig4_HTML.jpg](A436848_1_En_9_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-4.
+  prefs: []
+  type: TYPE_NORMAL
+- en: IDLE 2 GUI interactive Python session
+  prefs: []
+  type: TYPE_NORMAL
+- en: The resulting number image is shown in Figure [9-5](#Fig5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig5_HTML.jpg](A436848_1_En_9_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-5.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number figure
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, the image shows a rather casually written number 5, which is
+    one of the many records to be used to train the ANN. Incidentally, if you go back
+    and look at Figure [9-1](#Fig1), you see the number 5 as the label for the first
+    record, which confirms the record identity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: At this point, I turn the discussion toward how to prepare the data sets so
+    that they can be used effectively with an ANN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adjusting the Input and Output Data Sets
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'You certainly know that all MNIST data sets contain values ranging from 0 to
+    255, which is well beyond the range that any ANN that I have developed so far
+    can accept. The input values should be in a preferred range of 0.01 to 1.0, which
+    matches the sigmoid function input requirements quite nicely. The following Python
+    statement adjusts the values range for a MNIST data set record to match the preferred
+    range for an ANN input data set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [9-6](#Fig6) shows an adjusted record set created in an interactive Python
+    session. A portion of the record set is also shown in the screenshot, confirming
+    that the new MNIST values fall within the desired input value range.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig6_HTML.jpg](A436848_1_En_9_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-6.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adjusted MNIST data set
+  prefs: []
+  type: TYPE_NORMAL
+- en: The preceding discussion takes care of the input, but what should an output
+    data set look like? The answer lies in considering the purpose that the ANN serves
+    . Its purpose is to recognize a handwritten number whose value ranges from 0 to
+    9\. It would make sense to have the ANN just output a high value near one of the
+    output nodes associated with the recognized number. Thus, an ideal output array
+    such as the following shows that a handwritten number 5 was detected by the ANN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\{\begin{array}{l}0\\ {}0\\ {}0\\ {}0\\ {}0\\ {}1\\ {}0\\ {}0\\ {}0\\
+    {}0\end{array}\right\} $$](A436848_1_En_9_Chapter_Equa.gif)'
+  prefs: []
+  type: TYPE_IMG
+- en: The actual values in such an array would not be 0 or 1, but instead values near
+    0 for low recognition and near 1 for high recognition. It is also entirely possible
+    to have the ANN output intermediate values on several nodes, such as 0.4 and 0.6,
+    indicating that the ANN cannot choose a unique value, but “thinks” the input number
+    could be one of several candidates. This is quite similar to a human unable to
+    decide what the causally written number is, such as confusing a four for a nine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next code segment creates a sample train array that is needed to update
+    the ANN weights so that it can recognize a specific number. Let’s create a train
+    array for the first record in the small MNIST training data set by using the realistic
+    input values earlier discussed. The Python code is quite simple, as shown in the
+    following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The preceding program segment should be very familiar to you by now, except
+    for the last few lines. The following line creates a 10-element array with all
+    values equal to 0.01:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, the following line takes the first element in the first record (the label)
+    and converts it to an integer, and subsequently sets it equal to 0.99:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [9-7](#Fig7) shows the preceding code segment run in an interactive Python
+    session.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig7_HTML.jpg](A436848_1_En_9_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-7.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating a training array interactive session
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can clearly see the train array created where the sixth element has been
+    set to 0.99 because the label equaled 5.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is time to focus on how to configure this ANN now that the data set input
+    and training sets have been developed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Configuring the ANN for Handwritten Number Detection
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The first step in this process is to decide on the basic ANN configuration.
+    I have primarily used three-layer ANNs up to this point and I see no real reason
+    to change that approach. The number of output nodes is determined to be 10 based
+    on the previous discussion. What remains is to figure out the number of input
+    and hidden nodes to create.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figuring out the number of input nodes is relatively easy because there are
+    784 separate pixel values that must be examined. This means that the ANN needs
+    784 input nodes. That seems like a lot, but the nature of this problem dictates
+    that is the number required to take advantage of all the data present in the problem
+    domain.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Determining the number of nodes in the hidden layer is a more difficult issue
+    to resolve. There is no analytic method available to determine the appropriate
+    number. I have done a fair amount of research on this topic and have determined
+    that most AI researchers use a variety of “rules of thumb” to determine this number.
+    The following are among the most common:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use the mean of the input layer nodes (N[i]) and output layer nodes (N[o]).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Take the square root of N[i] times N[o].
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The number of hidden layer nodes (N[h]) should be between the size of the N[i]
+    and N[o].
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Nh should be 2/3 the size of N[i] plus N[o].
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Nh should be less than twice the size of the N[i].
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: One fact that became abundantly clear to me is that an ANN configuration often
+    turns into a trial-and-error situation. There are two related terms that you should
+    be familiar with and those are under-fitting and over-fitting. Under-fitting happens
+    in an ANN when there are too few nodes present to support adequate training. The
+    symptoms of under-fitting are that the ANN cannot be trained and/or the error
+    is high enough to render the ANN unusable. The converse is true of over-fitting,
+    in which there is a surplus of nodes, training is hampered by too many links,
+    and the ANN performance suffers. When over-fitting occurs, the ANN has so much
+    information processing capacity that the limited amount of data contained in the
+    training set is not sufficient to train all the nodes in the hidden layer. Additionally,
+    a large number of unneeded nodes in the hidden layer increases the time that it
+    takes to train the network. This increased training time can make it impossible
+    to adequately train the ANN. To achieve optimal performance, the goal is to neither
+    under-fit nor over-fit an ANN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Based on the preceding discussion and my research, I came to the following
+    conclusion on setting the appropriate number of hidden layer nodes :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of hidden layer nodes in a three-layer ANN should be set at the square
+    of the number of output nodes, but should not exceed the mean of the input and
+    output layer nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This conclusion might be considered a “mashup” of the various rules of thumb
+    stated earlier. I have also noted anecdotally that there seems to be a squaring
+    relationship that often pops up in ANN technology. This relationship was present
+    when the mean was calculated for the initial weighting and when the error function
+    slope was calculated. Squaring the 10 output nodes means that 100 hidden layer
+    nodes should be set. This value seems appropriate for an initial try. It can easily
+    be changed if the ANN performs poorly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At this point, it is appropriate to incorporate all the preceding code segments
+    into a Python script that also imports the ANN.py script developed in the last
+    chapter. The following listing is named trainANN.py :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Python code is remarkably concise for the amount of computations being carried
+    out. Separating the ANN class definition from the test code is always a good idea
+    because the class may be easily updated or extended without requiring modifications
+    to the test code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I executed the trainANN script in an interactive session and it ran without
+    errors, but of course, nothing displayed. It now needs some test data to see how
+    well it functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Test Run
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The subset of MNIST test data that I downloaded is set up in the same way as
+    the training data because it is in the same format as the training data. The following
+    familiar Python code prepares the test data:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: It would be wise to image the first test data record before tactually testing
+    it with the ANN. Figure [9-8](#Fig8) shows a session with IDLE 2 that imaged the
+    record.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig8_HTML.jpg](A436848_1_En_9_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-8.
+  prefs: []
+  type: TYPE_NORMAL
+- en: IDLE 2 GUI interactive Python session
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number that displayed is shown in Figure [9-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig9_HTML.jpg](A436848_1_En_9_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-9.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number figure
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next step is to add the following code to the trainANN.py script . Technically,
+    this script both trains and tests the ANN. You may wish to give it a new name
+    to reflect its new function. I just kept the old name and tried to remember that
+    it now tests the ANN. The additional Python code is in the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [9-10](#Fig10) shows the results of running the newly modified trainANN
+    script. Ten output arrays were output but only six are shown in the screenshot
+    due to limitations in the screen capture process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig10_HTML.jpg](A436848_1_En_9_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-10.
+  prefs: []
+  type: TYPE_NORMAL
+- en: trainANN output with test inputs
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table [9-2](#Tab2) neatly summarizes the results comparing the label value with
+    the index of the highest value in the output array.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Test Results
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Label | 7 | 2 | 1 | 0 | 4 | 1 | 4 | 9 | 5 | 9 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Index | 7 | 3 | 1 | 0 | 4 | 1 | 7 | 6 | 0 | 7 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Match | x |   | x | x | x | x |   |   |   |   |'
+  prefs: []
+  type: TYPE_TB
+- en: The 50 percent was rather disappointing, but maybe that was to be expected because
+    the ANN was trained with only 100 records out of more than 60,000 available for
+    training. I did notice that the output values were fairly high for those records
+    that matched, whereas the ones that didn’t match had a uniform spread of random-like
+    values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'I next slightly modified the code to automatically calculate the success rate,
+    especially considering that I was going to run 10,000 test records through and
+    I did not want to manually calculate that test run. I also deleted the display
+    code for the output arrays. The following code implements these changes :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: I ran the trainANN script six times and saw some interesting results, as shown
+    in Figure [9-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig11_HTML.jpg](A436848_1_En_9_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-11.
+  prefs: []
+  type: TYPE_NORMAL
+- en: trainANN script with success rate calculations
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The success rate varied from 0.4 to 0.6; it used the same test input data set.
+    The only reasonable explanation is that some weight matrices were better fitted
+    than others were. These matrices are generated using a random normal distribution,
+    as I discussed in Chapter [8](A436848_1_En_8_Chapter.html), and apparently, some
+    are slightly better suited to produce more accurate results than others are. Let’s
+    hope that these random variations disappear when the ANN is trained using the
+    full 60,000 training record set. To use the 60,000 record set only requires the
+    following change to the file’s `open` statement in the trainANN.py script :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: I made this change and reran the 10 test data records. I was pleasantly surprised
+    that the success rate now equaled 0.90\. Incidentally, the Raspberry Pi took about
+    5 minutes to process the full training set, which I didn’t think was very long
+    for a quad-core, 1.2GHz processor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The next step is to run the full 10,000-record test data set. You can do that
+    by again changing only one statement:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: This time, the script took about 8 minutes to complete and displayed a very
+    respectable 0.9381 success match rate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I next wanted to see wanted to see how the match success rate varied with different
+    learning rates. To do this, I added a new loop around both the train and test
+    code in the trainANN.py script, where the learn rate was changed in 0.1 increments
+    from 0.1 to 0.9\. Figure [9-12](#Fig12) shows the results for this test.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig12_HTML.jpg](A436848_1_En_9_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-12.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Match success rates with different learning rates
+  prefs: []
+  type: TYPE_NORMAL
+- en: The maximum success match rate of 0.9442 was for a learning rate equal to 0.1\.
+    This is a very good recognition rate, comparable with many larger and more complex
+    research-grade ANNs. I really believe that you will be pleased to have created
+    such a well-performing ANN if you have duplicated what I have done to this point.
+    I can say from personal experience that most college AI students have not accomplished
+    what you have done in this chapter. You should be very happy with the background
+    and education you have achieved to this point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, do not be timid about trying some additional experiments to see how
+    the ANN performs with different parameters, including changing the number of hidden
+    nodes. One technique that Tariq mentions in his book is the concept of epochs,
+    where the ANN is trained multiple times using the same training data set. Each
+    complete training cycle is termed an epoch. Tariq, as well as other AI researchers,
+    have found that it is often possible to over-train an ANN, resulting in an overall
+    poorer performance than could be expected from just running several epochs. The
+    exact reason for this phenomenon is unknown, except that researchers do speculate
+    that the ANN is over-fitted due to the excessive data inputs. See the previous
+    the discussion regarding over-fitting, which explains the symptoms that appear
+    with this type of training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The fun and interesting aspect of ANNs is that there is a lot of variety present,
+    with which you can experiment to try to tweak out additional performance. While
+    94 to 95 percent recognition accuracy is nothing to be ashamed of, it is also
+    worthwhile to try to improve the ANN just a little more. You could also try building
+    a convolutional ANN, which purportedly has a 98.5 percent success rate with the
+    MNIST test data set. A blog by Dr. Adrian Rosebrock at [`www.pyimagesearch.com`](http://www.pyimagesearch.com)
+    explains how this is done. It is a bit complicated, but using a great Python library
+    named Keras, along with Adrian’s custom libraries, allows a rapid and trouble-free
+    ANN build. These are highly recommended for those of you who want to go the extra
+    step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next section, I show you a complementary project that uses a Pi Camera
+    for handwritten number recognition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Demo 9-2: Handwritten Number Recognition with a Pi Camera'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The very first thing you must do is ensure that the Pi Camera has been enabled
+    in the Raspberry Pi configuration. The easiest way to do this is to run the raspi-config
+    utility by entering the following command at the command line:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: You then see the menu displayed, as shown in Figure [9-13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig13_HTML.jpg](A436848_1_En_9_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-13.
+  prefs: []
+  type: TYPE_NORMAL
+- en: raspi-config menu
+  prefs: []
+  type: TYPE_NORMAL
+- en: Select 6 Enable Camera. This option installs the drivers for the Pi Camera.
+    The drivers enable the camera device and the Jessie operating system to work together.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next step is to install the Pi Camera. The camera connects to the Raspberry
+    Pi using a flex ribbon cable that should already be attached to the camera when
+    purchased. The cable’s free end plugs into the camera serial interface (CSI) connector
+    , which is located on the board and directly behind the RJ-45 connector. To plug
+    in the cable, you must first carefully pull directly up on two black plastic tabs
+    on each side of a slim plastic bar. Be very careful because this is a flimsy piece
+    of plastic that can easily be broken from using too much force. The plastic piece
+    will become loose, yet is still attached to the connector body.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, carefully insert the flex cable into the socket with the exposed, silver-colored
+    contacts facing away from the RJ-45 connector. The blue backing on the ribbon
+    cable should face the RJ-45 connector. Ensure that the cable is firmly seated
+    at the bottom of the connector and that the cable is perpendicular to the board
+    and not slanted in any way in the connector. Next, gently push down on the black
+    plastic tabs to lock the cable in place. Note that there is no clicking or other
+    noise to indicate the plastic piece is completely seated. Just use firm but gentle
+    pressure to lock it in place. As a caution, I have noticed that the cable can
+    become dislodged if the camera is moved about, causing the ribbon cable to slightly
+    shift in the connector. If this happens, you usually see that the software reports
+    that it cannot connect with the camera any more. If you see that error, just reseat
+    the connector. Figure [9-14](#Fig14) is a close-up of the camera ribbon cable
+    connected to the CSI connector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig14_HTML.jpg](A436848_1_En_9_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-14.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Camera ribbon cable connected
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You will next need to install some Python libraries, which are required for
+    taking pictures with Python. That task is easily accomplished by entering the
+    following commands :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: You are ready to take pictures once all of the preceding is done. I will take
+    you through a step-by-step Python interactive session to demonstrate how to image
+    a handwritten number .
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, you need a handwritten number as the subject. I suggest using a black,
+    fine-point Sharpie to draw a single number on a piece of white paper that is approximately
+    4 × 4 inches. I drew the number 9 as my subject. You can draw whatever number
+    you want. Figure [9-15](#Fig15) shows my handwritten number.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig15_HTML.jpg](A436848_1_En_9_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-15.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Subject handwritten number
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It may look a bit odd because the image was captured using a monochrome effect
+    from the Pi Camera, which I explain shortly. Take my word for the fact that the
+    paper was white and the number was very dark. The following is the Python interactive
+    session, with comments following each command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: The picamera package contains all the modules needed to capture, save, and read
+    images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: This instantiates an object named `camera`, upon which the desired operations
+    can be called.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: This command sets up the Pi Camera to take black-and-white images, which are
+    more technically described as monochrome or even “shades of gray.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: The image is taken or captured with this command. In this case, it is stored
+    in the current directory with the name `ninebw.jpg`. It is in the default high-resolution
+    format of 1920 × 1080 pixels. I recommend that the piece of paper with the number
+    on it be placed about 5 inches in front of the camera and supported such that
+    it is perpendicular to the camera. The Pi Camera lens has a very wide angle, so
+    it will completely fill the sensor with the subject at such a close distance.
+    The resulting image will be drastically reduced and resized in the processing
+    script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-16](#Fig16) shows the Pi Camera version 2 in a clear plastic holder
+    facing the paper with the number written on it. Incidentally, the inexpensive
+    holder is available on Amazon.com.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig16_HTML.jpg](A436848_1_En_9_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-16.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pi Camera set up to capture image
+  prefs: []
+  type: TYPE_NORMAL
+- en: The complete interactive Python session that captures the number image is shown
+    in Figure [9-17](#Fig17).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig17_HTML.jpg](A436848_1_En_9_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-17.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interactive Python session
+  prefs: []
+  type: TYPE_NORMAL
+- en: I modified the trainANN.py script so that it used the image Figure [9-15](#Fig15)
+    as the test data input. The complete listing named trainANN_Image.py is shown
+    next, with clarifying explanations following the listing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Please note that I did not have to change the basic ANN class to incorporate
+    these modifications into the trainANN_Image script, which is a powerful reason
+    for separating class definitions from the functional or application code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next discussion just concerns the changes that were made to the original
+    trainAN.py script to accommodate the new imaging processing function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Modifying the trainAN.py Script
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Start with the following command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Python imaging library (PIL) and `Image`, one of its components, are required
+    to process an image using Python.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: These commands load the file, which is hard-coded in the script, and then proceeds
+    to resize it to just a 28 × 28 pixels–sized image. The anti-alias argument ensures
+    that no artifacts are created during the downsizing operation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: This command converts the 784 pixel values into a list named `pixels`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: The pixels list is then converted into an array suitable to be stored as a comma-separated
+    array in a file named `test.csv`. This newly created file is then processed in
+    exactly the same manner as all the other test files in the unmodified trainANN.py
+    script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-18](#Fig18) shows the output data array, in which you clearly see
+    that the very last element is the highest of the entire array that corresponds
+    to the ANN believing that it has recognize the number 9, which is the correct
+    answer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig18_HTML.jpg](A436848_1_En_9_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-18.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Output data array
+  prefs: []
+  type: TYPE_NORMAL
+- en: This demonstration took a considerable amount of effort to prepare and run to
+    show that a Raspberry Pi–controlled camera coupled with a well-trained ANN can
+    literally recognize a number written in a fashion it had never seen before.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The final portion of this demonstration describes how to automate the image-recognition
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Automated Number Recognition with an ANN
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Automating the process of imaging with an ANN is a fairly simple task. I used
+    an interrupt-driven structure wherein the image capture and processing is initiated
+    by pressing a push button connected to one of the Raspberry Pi GPIO pins.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first item is the hardware setup, which consists of connecting the Pi Camera,
+    a push button, and an LED to the Raspberry Pi using the Pi Cobbler I/O adapter.
+    Figure [9-19](#Fig19) is a Fritzing diagram showing the connections for the LED
+    and push button to the Pi Cobbler.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig19_HTML.jpg](A436848_1_En_9_Fig19_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-19.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LED and push button connections
+  prefs: []
+  type: TYPE_NORMAL
+- en: I saw no need for a separate schematic because the connections are clearly shown
+    in Figure [9-19](#Fig19). The Pi Camera is connected as previously discussed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is a “forever loop” in the new script, which I named automatedImager.py,
+    that simply flashes an LED while awaiting the interrupt signal to start the image
+    processing. The complete script is listed next with indicating the new modifications
+    from the trainANN_Image.py script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Test Run
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: I set up the Pi Camera in exactly the same manner as I did for the manual test
+    run. The LED started blinking after the training finished, indicating that the
+    system was ready for a push button press to activate the image capture and ANN
+    analysis. The results of the ANN test run are shown in Figure [9-20](#Fig20).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![A436848_1_En_9_Fig20_HTML.jpg](A436848_1_En_9_Fig20_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-20.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Automated test run output
+  prefs: []
+  type: TYPE_NORMAL
+- en: The last array element was the highest value in the array, indicating that the
+    ANN recognized the number as a 9, which is the correct number.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This project concludes the practical demonstrations that I wished to show you.
+    You should consider them as a starting point for further experimentation and practice
+    with ANNs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Two ANN demonstrations were presented in this chapter. These demonstrations
+    showed how a trained ANN could recognize handwritten numbers. The training data
+    set consisted of 60,000 records from the MNIST database.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first demonstration used 10,000 test data records from a database separate
+    from the MNIST training database. It turned out that a three-layer ANN achieved
+    a 94.5 percent successful recognition rate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second demonstration used a Pi Camera to recognize a handwritten number.
+    A Python script converted a captured image into an input data record that successfully
+    recognized the handwritten number.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A slightly modified version of the Python script was then demonstrated, which
+    fully automated the image-recognition process.
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,810 @@
+- en: 4. Recognizing handwritten digits with convolutional neural networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: The models we trained in the past chapters offered us a glimpse of what we can
+    do with TensorFlow.js. While insightful and useful, you could say that they were
+    also uncomplicated. Those algorithms (linear regression, logistic regression,
+    and k-means) were examples of traditional machine learning models. Typically,
+    you would not use a tool like TF.js to implement them. Instead, most people would
+    use a more specialized library like *scikit-learn*. Still, replicating them using
+    a network-like structure is an excellent way to get started with TensorFlow’s
+    Layers API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now that we have a good understanding of the basics of the Layers API, we will
+    move on from the simple networks and build our first complex one, a **convolutional
+    neural network** (CNN). This class of model—which is probably the most popular
+    deep learning algorithm—excels at extracting and recognizing visual features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The application you will develop here is a handwritten digit detection app powered
+    by a CNN trained on the **Modified National Institute of Standards and Technology
+    (MNIST)** dataset. This web app features a canvas where the user will draw a digit
+    that the model will identify in real-time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Understanding convolutional neural networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'When we see a cat, we just know it is a cat. Right? We do not even think about
+    it. But how does the brain do this? While the actual answer can span several books
+    about neuroscience and the brain’s visual cortex, for our purposes, we can summarize
+    the explanation in one word: **features**. When you look at a kitty, you discern
+    its features: the cute ears, whiskers, fluffy tail, and sharp claws—a cat.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A convolutional neural network (Y. LeCun et al., 1989) is a type of neural network
+    that simulates the brain’s visual cortex functions to extract and recognize the
+    features of an image. Once extracted, the network learns that these features form
+    the object, for example, a cat is a cat because of these features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At its core, a CNN involves two layers: **convolutional** layer and **pooling**
+    layer. The convolutional layer extracts the image’s features. This layer has a
+    convolutional kernel (often referred to as the **filter**), a tensor of size *height*
+    * *width* * *depth*, that scan (the proper term is **convolve**) an input image
+    (a tensor) starting from the top-left corner until it reaches the bottom-right.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: At each convolution, the layer calculates the sum of the element-wise multiplication
+    between the kernel and the area of the input it currently covers (known as the
+    **receptive field**). The kernel’s values, called the **weights**, are parameters
+    adjusted by the learning algorithm. After sliding over the complete input, the
+    result is a 2D array known as the **feature** (or activation) **map**, which is
+    a reduced representation of the input’s principal features. Note that a convolutional
+    layer can have more than one filter. In such a case, the depth size is the number
+    of filters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [4-1](#Fig1) presents an example of a convolution. At time *t*, the kernel
+    of size 3x3 evaluates the top-left corner of the input and produces the value
+    displayed on the feature map. Then, at *t* + 1 (Figure [4-2](#Fig2)), the kernel
+    slides one pixel to the right and repeats the process. By this point, since the
+    kernel is at the rightmost part of the tensor, during the next step *t* + 2, it
+    shifts down one unit and starts once again from the leftmost part of the input
+    (cell [2,1]). The length of the slide (how many units it shifts) is called the
+    **stride** . Figure [4-3](#Fig3) shows the last feature map.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig3_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The complete feature map
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig2_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The convolution at time *t* + 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig1_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example of a convolution with a kernel of size 3x3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another attribute of the convolutional layer is the **padding** , a technique
+    used to control the size of the layer’s output by adding zero padding (a “border”
+    of zeroes) to the input. That way, after the convolutions, the output’s size remains
+    the same as the input’s size. Using padding allows the network to conserve the
+    information at the edges of the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is a common practice adding a **pooling layer** after a convolutional layer.
+    These layers reduce (i.e., subsample) the spatial size of the input image to reduce
+    the number of parameters of the network, lessening the risk of overfitting the
+    model. As a direct consequence, having fewer parameters leads to a smaller model,
+    decreasing the training time and the memory footprint.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like a convolutional layer, a pooling layer involves a (pooling) kernel that
+    scans the input. But instead of multiplying the receptive field by some weights
+    (the pooling kernel has no weights), it aggregates and summarizes the receptive
+    field’s values using either a mean or max function. Figure [4-4](#Fig4) shows
+    an example of a max pooling layer. In the image, you can see how each cell of
+    the output is the max value of its receptive field.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig4_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: A max pooling layer and the feature map
+  prefs: []
+  type: TYPE_NORMAL
+- en: Last, a convnet requires a fully connected layer (known as a dense layer in
+    TF.js) to output the prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To summarize, a convolutional neural network has two principal layers: convolutional
+    and pooling. The first one extracts features from an image to learn how to identify
+    it. For example, the network might know that a cat is a cat because it has sharp
+    claws. After the convolution operation, the resulting tensor will have a smaller
+    height and width (depending on the attributes used) and a depth that equals the
+    number of filters used. The second layer, pooling, reduces the size of the input,
+    resulting in a smaller and faster network. To visualize these concepts, Figure
+    [4-5](#Fig5) presents the architecture of the CNN we will create, including the
+    sizes of the inputs and the filters.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig5_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: A convolutional neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: About the MNIST dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The dataset we will use to train the convnet is the **Modified National Institute
+    of Standards and Technology**, or MNIST (Yann LeCun et al., 2010), dataset of
+    handwritten digits. This well-known dataset, often used for benchmarking machine
+    learning models and architectures, has over 60,000 28x28 grayscale images of handwritten
+    digits between 0 and 9\. Figure [4-6](#Fig6) shows a sample.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig6_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample of MNIST digits
+  prefs: []
+  type: TYPE_NORMAL
+- en: Having more than two classes means that we will work in a **multiclass classification**
+    problem, the task of classifying examples into one of three or more categories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building the app
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: For this chapter’s exercise, you will make an app that fits a convolutional
+    neural network using the MNIST dataset to identify handwritten digits in real-time.
+    At first, as we did with the others, we will load the dataset, followed by designing
+    the model and training it. Then, we will develop the drawing functionality, which
+    involves setting up a canvas to draw the digit we wish to identify. After drawing
+    the number, the app converts the image to a tensor and feeds it to the model to
+    recognize the input value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To start the exercise, create a new directory and start a local server in the
+    same location.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The app's HTML file
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In the directory, create the app’s *index.html* file. At its top, after the
+    `<html>` tag, create a `<head>` tag and import TF.js, tfjs-vis, and a CSS file
+    named *style.css*. CSS, which stands for **Cascading Style Sheets**, is a language
+    that describes the style of an HTML document. We will use it to change the appearance
+    of several HTML elements:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After `<head>,` create a new `<body>` tag, and inside it, add a `<div>` with
+    `id` attribute `pipeline`. Inside this `<div>`, the app creates the buttons that
+    load the data, compile and train the model, and clear the canvas:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After the `<div>` comes the `<canvas>`, an element for drawing graphics. Its
+    `id` attribute is set to `draw-canvas` and the CSS `class` to `digits-canvas`.
+    This style changes the canvas background color to black and centers it. After
+    the canvas, add a `<p>` with `id predict-output` to present the model’s inferred
+    digit:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Last, load the app’s *index.js* JavaScript code and a second script named *data.js*.
+    This file—obtained from the official TensorFlow.js examples repo—loads and prepares
+    the MNIST dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: And that’s it for the HTML. As for the CSS content, create a *style.css* file
+    and add
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Loading and preparing the data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This exercise’s MNIST dataset comes in one large sprite file. Because of this
+    format, unraveling the data could get messy. To ease the task, we will use a script
+    from the official TF.js examples repository that downloads, processes, and converts
+    the data to a tensor.^([1](#Fn1)) But instead of just copying it and pasting it,
+    let’s go through it and understand what it does (then you can copy/paste without
+    remorse). So, as the first step, create a new file and name it *data.js* .
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The script starts with several variables related to the size of the images,
+    the number of elements, and the URL of the dataset and the labels:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then comes the `MnistData` class, the object that loads and processes the data.
+    This class involves five major components, a constructor, three methods, and one
+    static function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The constructor initializes two variables used to store the index of the last
+    returned batch of data:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After the constructor is the async method `load()`, responsible for loading
+    the data. This method starts by reading the dataset from a remote location and
+    assigning it to an instance of an `Image` object. Because the dataset is large,
+    the next steps entail dividing it in chunks of *N* elements and adding them to
+    an array:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After getting the image, the function fetches the dataset’s labels and assigns
+    it to another array. Once the arrays are ready, the last step is slicing them
+    to split the data and labels into a training and test dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: You may close the function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next is `nextBatch()`, a static function that returns a tensor containing a
+    batch of data from the dataset. It has three parameters: `batchSize`, `data`,
+    and `index`. `batchSize` refers to the size of the batch, `data` is the dataset,
+    and `index` indicates from what index onward you want to get the batch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'As for the last functions, we have `nextTrainBatch()` and `nextTestBatch()`
+    . They use `nextBatch()` to return the next batch of the train and test dataset,
+    respectively:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: To summarize, this file has a class `MnistData` that loads the data from a remote
+    location and returns it in batches. A copy of the dataset is available in the
+    book’s repository.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the network
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Because the model we are about to create is significantly larger than the past
+    ones, we will split the designing and the training part into two sections and,
+    thus, in two individual functions. In this part, we will focus only on defining
+    the architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This app’s convolutional neural network has seven layers (Figure [4-7](#Fig7))—a
+    big jump when compared to the earlier models made up of one layer. The model’s
+    first layer is a convolutional layer named `tf.layers.conv2d` in TensorFlow.js.
+    As we saw earlier, it is common to use a max pooling layer after a convolution,
+    and so the second layer is a max pooling or `tf.layers.maxPooling2d`. This combination
+    of convolutional and max pooling repeats once, making up layers 3 and 4\. At the
+    end of the network, we have a dropout layer (`tf.layers.dropout`), a flatten layer
+    (`tf.layers.flatten`), and a dense layer. We will get to know them better as we
+    design the network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig7_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model’s layers
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the project’s directory, create a file and name it *index.js*. In the file,
+    declare the variables `model`, `data`, and `isModelTrained` and two constant ones
+    that define the size of each data sample and depth. The first of these, `IMAGE_SIZE`,
+    equals 28 because an MNIST digit’s size is 28x28, while the second one, `IMAGE_CHANNELS`,
+    is 1 because the images are grayscale.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next write a new function, `defineModel()`. Inside it, create an instance of
+    `tf.Sequential` and assign it to `model`. Then, append the first convolutional
+    layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s describe what’s happening here. The attribute `inputShape` specifies the
+    shape of the input values, that is, 28x28x1\. Below it is the `kernelSize`, the
+    dimensionality of the convolutional kernel; for this model, we will use a window
+    of [5,5]. Then comes the number of `filters` (8) we will apply to the input. The
+    next hyperparameter, `stride`, has a value of 1, meaning that the kernel moves
+    one pixel at a time. Last, we have the activation function, which, in this case,
+    is ReLU, short for a **rectified linear unit**. After the convolutions, the output
+    of this layer is of shape [24, 24, 8] (see how the length and width decrease while
+    the depth increases?) As a side note, it is worth mentioning that the layer’s
+    name is conv2d because the kernel convolves along two spatial dimensions (x and
+    y).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: ReLU is a popular activation function used in convolutional neural networks
+    (LeCun et al., 2015). A ReLU layer applies the element-wise function *max*(0,
+    *x*) to the input tensor, introducing nonlinearity to the network. The result
+    is a tensor whose values are greater than 0, or 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The second layer you will add is a max pooling layer of filter size [2,2] and
+    stride 2\. After the pooling operation, the output tensor is of shape [12, 12,
+    8]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next comes a second convolutional layer. Its attributes are the same as the
+    last one, except for the number of filters (16) and the lack of input shape, which
+    you do not have to specify because it is not the network’s first layer. This layer
+    produces a tensor of shape [8, 8, 16]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You will also need another max pooling layer. After this one, the output’s
+    shape is [4, 4, 16] (see how it shrinks?):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now let’s introduce the **dropout** layer. Dropout (Srivastava et al., 2014)
+    is a very popular regularization technique that helps to prevent overfitting.
+    This operation forces a network to drop out and ignore a random fraction of input
+    units during the current training step. Dropping units causes the network to “reevaluate”
+    how it will train during the current iteration, which means trying to obtain a
+    low loss value while using fewer parts of the network. In simple words, dropouts
+    prevent the network from getting too comfortable. On this occasion, use a dropout
+    layer with a “dropping” rate of 0.3, meaning that the training will not use 30%
+    of the units. The shape of the output remains unchanged:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After the dropout, add a **flatten** layer. This layer flattens the input into
+    a 1D tensor of shape [256]. This tensor is the feature vector that the last layer
+    uses to produce the classification:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To conclude the model, we need a fully connected layer or dense in TensorFlow
+    speech. This layer produces the network’s output, which, in this case, is the
+    predicted digit. Our goal here is to produce a vector of length 10 (one for each
+    digit) where each value is the probability for each class. To achieve this, we
+    need to set the `units` attribute (the dimensionality of the output space) to
+    10 and use a **softmax** activation function. This function converts the raw and
+    non-normalized predictions (known as **logits**) to actual probabilities:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Phew! Those were a lot of layers. To make sure we got everything right, let’s
+    recap what we just did. The network has seven layers. The first four—two convolutional
+    and two max pooling—extract the features of the image and reduce its size. After
+    them is a dropout layer that ignores 30% of the units on each training iteration.
+    For the output, we used a flatten layer to flat the tensor and a dense layer with
+    a softmax activation function to produce a vector with the probabilities of the
+    predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As for the very last step, compile the model to prepare it for the training.
+    On this occasion, we will once again use the Adam optimizer and accuracy metric.
+    As for the loss function, the proper one for this case is **categorical cross-entropy**
+    (CCE). Like the binary cross-entropy (BCE) function from Chapter [2](494424_1_En_2_Chapter.xhtml),
+    this one also measures how far a prediction is from its real value and then averages
+    the errors to obtain the loss value. The distinction between them is that CCE
+    is for multiclass classification problems, while BCE suits binary classification
+    situations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: You could use `model.summary()` after compiling the model to print a table of
+    the layers and their output sizes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With this, we conclude the model (and this function). Before moving on, we need
+    to understand that the perfect architecture does not exist. Sure, there are common
+    practices, rules of thumb, and even architectures with proper names, for example,
+    *LeNet-5* (Yann LeCun et al., 1998), *AlexNet* (Krizhevsky et al., 2012), and
+    the humongous *ResNet* (He et al., 2015) with 152 layers. But in general, you
+    need to find a configuration that suits the data. I know it is easier said than
+    done, but with practice, I promise you will get better. The architecture we just
+    designed is a standard one you will find in the literature for the MNIST dataset.
+    Yet, for illustration and teaching purposes, I changed it by adding the dropout
+    layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'With the model compiled, let’s get into the fun part: the training. Even though
+    the model’s design differs from the ones we have already created, training it
+    follows the same procedure as the others: load data and fit.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Start by creating a new function, `train()`, and the variables `BATCH_SIZE`,
+    `TRAIN_DATA_SIZE`, and `TEST_DATA_SIZE`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After the variables, go to the very start of the file and add the following
+    line to import the `MnistData` class from *data.js*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Back in the function `train()`, add the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this statement, we are using `tf.tidy()` to assign to `xTrain` and `yTrain`
+    a part of the training set (and its labels) using `nextTrainBatch()`. `tf.tidy()`
+    is a function that takes as argument a function `fn` and cleans up the tensors
+    allocated by `fn` once `fn` finishes its execution (the tensors returned by `fn`
+    are not cleaned).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We are explicitly managing the memory because in the WebGL backend mode, the
+    tensors are not automatically garbage collected. But do not worry! In this example,
+    memory is not an issue. Nonetheless, it is good to acknowledge this limitation
+    and the `tf.tidy()` function. If you are curious about the app’s memory allocation,
+    use `tf.memory()` to get a summary of the memory usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use `tensor.dispose()` to dispose any tensor and release its memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Use the same approach to load the test dataset. Later, you will use this data
+    to test the model’s predictive capability with cases it did not encounter during
+    the training phase:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, we fit the model. Unlike the previous cases, we will train using `tf.Sequential.fit()`,
+    instead of the `tf.Sequential.fitDataset()` function because this time, the dataset
+    is not a `tf.data.Dataset` object. Besides this minor detail, both functions are
+    the same:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`model.fit()` has three arguments: the training data, the labels, and a `ModelFitConfig`
+    object that specifies the model’s hyperparameters and other attributes. The first
+    of these hyperparameters is `batchSize`, and we will set it to `BATCH_SIZE` (512).
+    This number defines the number of data samples the model examines before updating
+    its weights.^([2](#Fn2)) Before, we did not explicitly set this number and used
+    its default value, 32\. Then, set epochs to 30.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the hyperparameters, use the attribute `validationData` to set the validation
+    dataset and labels. During training, the model uses the validation dataset to
+    evaluate its performance, producing an extra set of loss (validation loss) and
+    metrics (validation accuracy) at the end of each epoch. This dataset is not part
+    of the training data. As the name points out, the validation data is to evaluate
+    the model with data it did not see during training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, set `shuffle` to `true` to shuffle the training data before each epoch,
+    and use `tfvis.show.fitCallbacks()` to create the visualization callbacks. This
+    time, the app will generate graphs of the loss and accuracy metric for both training
+    and validation data after each batch and epoch. Before closing the function, change
+    `isModelTrained` to `true`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating the drawing canvas
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The last component needed before completing the app is the drawing mechanism.
+    To draw the numbers, you will use the canvas element defined in the HTML and four
+    different event listeners.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To begin with, at the top of the file (beneath the const variables), add the
+    following new variables:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, create a new function and call it `prepareCanvas()`. In the first lines
+    of the function, get the canvas and its context using `getElementById()`. The
+    context object provides the properties and methods needed to draw and modify the
+    canvas. Through the context, change the `strokeStyle`, `fillStyle`, `lineJoin`
+    (the shape of the corner that joins two lines), `lineCap` (the shape of the endpoints),
+    and `lineWidth`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, create the first of the canvas event listeners. This one, of type `mousedown`,
+    sets `drawing` to `true` and gets the offsets of the mouse. The event triggers
+    when the user holds down the mouse button while inside the canvas. Conversely,
+    add a `mouseout` event to change the variable `drawing` to `false` when the user
+    moves the cursor out of the canvas:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then comes the `mousemove` event, triggered when the user moves the mouse within
+    the canvas. The event’s first line checks if `drawing` is `true`. If not, then
+    return; otherwise, draw. The drawing procedure involves using `moveTo` to set
+    the starting point of the line, `lineTo` to specify where you want to draw the
+    line, and `stroke` to outline the line:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: The last event needed, `mouseup`, fires up when the user removes the mouse from
+    the canvas. When this happens, the function reads the canvas’ image, converts
+    it to a tensor, and predicts. Converting the image to a tensor requires using
+    several methods to ensure that it has the right shape and format. These steps
+    are
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`resizeBilinear()`: Resizes the tensor to 28x28.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`mean()`: Converts the images to grayscale.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`expandDims()`: Reshapes the tensor to [1, 28, 28, 1].'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`float()`: Casts the values to floats.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`div()`: Divides the values by 255 to normalize them between 0 and 1\. Why
+    255? Because a grayscale image’s values are in the [0, 255] range.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'With the processed tensor, use `model.predict()` to predict and `tf.Tensor.dataSync()`
+    to retrieve the values of the resulting tensor. Then, use `tf.argMax()` to return
+    the index of the prediction’s vector maximum value—remember that softmax produces
+    a vector of probabilities where the largest number corresponds to the predicted
+    class, for example, in vector `[0, 0.10, 0.999, 0.093, 0.891, 0.673, 0.453, 0.381,
+    0.449, 0.300]`, the largest value is on index 2, so the predicted class is the
+    digit “2.” To present the prediction in the app, use the `<p>` with id `predict-output`
+    and the `innerHTML` attribute:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Putting it all together
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Almost there! By this point, we have yet created none of the app’s buttons,
+    and since the app needs several, we will use a function to produce them. That
+    way, we can avoid repeating the same code. The following is the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`createButton()` has five parameters, including an optional one. The first,
+    `innerText`, assigns the button’s text. Following it is `selector` used here to
+    select the `<div>` where you want to insert the button. The rest are the button’s
+    `id`, the event `listener`, and a flag to disable the button.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You will also need `drawData()`, a function that visualizes a sample of the
+    dataset in the tfjs-vis visor. Unlike the earlier visualizations, this one does
+    not use any prebuilt charts (like the scatter plot). Instead, we will add the
+    sample images to a canvas and display the canvas in the visor (yes, that is possible!):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: ESLint disapproves await in loops, but in this case, we can safely ignore the
+    rule.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you wish, you can move `dataSurface` to the top of the file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To conclude the app, create the following `init()` function and the helper
+    `enableButtons()`, used to enable the buttons at a particular stage of the app’s
+    life cycle:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function uses `prepareCanvas()` and `createButton()` to construct three
+    buttons. The first button loads and draws a sample of the data. Button number
+    two (disabled by default) compiles and trains the model, and the third one resets
+    the drawing canvas.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pat yourself in the back. You finished! Now, let’s see the app in action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trying the app
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To test the app, return to the terminal and start the local web server using
+    *http-server*. Then click the address shown to access the application. There,
+    you should see the three buttons and the canvas below them. Now click the “load”
+    button to load and visualize the data. It should take a few seconds to download
+    the dataset. Once downloaded, the tfjs-vis visor will open and display a sample
+    of the dataset like the one in Figure [4-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: By this point, the “train” button should be functional again—click it to compile
+    and train the model. If you added the call to `model.summary()` in `defineModel()`
+    , open the browser’s developer console to see the model’s summary, which includes
+    the layers and output shapes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since we have a deeper model and a larger dataset than those from Chapters [2](494424_1_En_2_Chapter.xhtml)
+    and [3](494424_1_En_3_Chapter.xhtml), the training time is significantly longer.
+    Instead of taking a few seconds, this one could extend up to 5 minutes. So, while
+    it trains, take a small break and get a glass of water.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you look at the visor, you will find the `onBatchEnd` and `onEpochEnd` charts.
+    From them, we can conclude that it took around 100 batches or 8 epochs to achieve
+    a reasonable accuracy greater than 80%. The final accuracy is around 95% for both
+    the training and validation set (Figure [4-8](#Fig8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig8_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model’s metrics
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once the training ends, the canvas is all yours to draw digits. Below it, you
+    will see the model’s prediction. To clear the canvas, click the “clear” button.
+    Figure [4-9](#Fig9) presents a screenshot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_4_Chapter/494424_1_En_4_Fig9_HTML.jpg](../images/494424_1_En_4_Chapter/494424_1_En_4_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: A drawn 8 and the model’s response
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recap and conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Convolutional neural networks have become a staple of deep learning and artificial
+    intelligence. Ever since their return in the early 2010s, this architecture has
+    become the principal component of numerous apps, systems, and platforms we have
+    heard of, encounter, and even use in our daily lives. For example, CNNs are the
+    engine that powers up self-driving cars, facial recognition software, and object
+    detection systems (we will build one later!), among others. Although visual applications
+    are their major target, it is not rare using convnets for other tasks, that is,
+    speech recognition (Abdel-Hamid et al., 2014).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this chapter, we built an app that uses a convolutional neural network trained
+    on the MNIST dataset to recognize handwritten digits. At its core, the model consists
+    of two convolutional layers, two max pooling layers, and a fully connected layer
+    that produces the result. After training it on 30 epochs, the model achieved an
+    accuracy of around 95%. As impressive as it sounds, we should know our score is
+    very far from some of the highest scores reached, for example, 99.80% (Wan et
+    al., 2013). But do not let this discourage you! As part of the exercises, I would
+    invite you to revisit the model and improve the score. And who knows, maybe I
+    see your paper sometime in the future.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs: []
+  type: TYPE_NORMAL
+- en: Modify the network to improve the error rate.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Fit a non-convolutional neural network with the dataset.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Implement a convolutional neural network architecture found in the literature,
+    for example, AlexNet.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What are stride and kernel size? How do they affect the tensor’s output shape?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: What is the difference between a convolutional and a pooling layer?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Check out the paper “Backpropagation applied to handwritten zip code recognition”
+    (Y. LeCun et al., 1989) to see one of the first mentions of a convolutional neural
+    network.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

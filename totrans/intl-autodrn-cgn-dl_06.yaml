@@ -1,0 +1,1126 @@
+- en: 6. Sense and Avoidance
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In Chapter [5](494112_1_En_5_Chapter.xhtml), we used Gazebo and RViz to simulate
+    the AI rover’s behavior. The input could be scripted or arrive through human control.
+    We also integrated a LiDAR sensor to “visualize” obstacles in the AI rover’s vicinity.
+    However, the AI rover’s differential drive controller plug-in and the LiDAR sensor
+    plug-in did not communicate with each other in Chapter [5](494112_1_En_5_Chapter.xhtml).
+    This lack of communication between these plug-ins led to less intelligent movement
+    around obstacles.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We need these plug-ins to share data for intelligent navigation and trajectory
+    control. To bridge this communication divide, we must create another plug-in with
+    Python that sends and retrieves data from the plug-ins. This chapter will develop
+    some simple controlling algorithms for the AI rover’s differential drive controller.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will then have an embedded, intelligent decision-making node that allows
+    our AI rover to explore the Egyptian catacombs by sensing and avoiding obstacles,
+    traps, and collapsed walls. This node will serve as the prototype for the cognitive
+    deep learning engine developed in later chapters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Objectives
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The following are the objectives required for successful completion of this
+    chapter:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Make the AI rover detect and avoid an obstacle.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Develop the first inertial navigation system.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Learn rover mission handling with Python.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Develop the first Python script for obstacle avoidance.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Understand how to upload and download Gazebo missions.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Verify and validate the first land rover controller within Gazebo simulations.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Discuss and review why deep learning is superior to standard state machine controller
+    designs.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Summary, exercises, and hints.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Understanding Coordinate Systems
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before we try to program the rover to sense its environment, we need to understand
+    how to identify locations, speeds, and velocities. For instance, while you are
+    reading this book, you are sitting still. Your speed is zero kph, right? Obviously!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Not so fast! From your point of view (POV), you are sitting still. But what
+    about the alien hovering near the moon? They see you briskly speeding along at
+    1,673 kph because of the Earth’s rotation.^([1](#Fn1)) Or the aliens hovering
+    near the sun that see you traveling at a whopping 107,000 kph.^([2](#Fn2))
+  prefs: []
+  type: TYPE_NORMAL
+- en: What may feel strange is that ALL of these measurements of your speed are correct.
+    It all depends on your POV. These POVs represent different coordinate systems.
+    Another way of thinking about this in mathematical terms is where is the origin,
+    O(0,0,0), of your “universe.” The stationary reader has an internal concept of
+    everything relative to its current location. In other words, their origin moves
+    with them. The alien near the moon sets its origin at the moon, with one face
+    always facing the rotating Earth. Hence, the rotational speed is observed. Finally,
+    the alien near the sun places its origin at the sun and it sees the Earth rotating
+    and orbiting the sun. The orbital speed dominates the observation. Keen observers
+    will notice this is a simplified explanation of Einstein’s theory of relativity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: So, when solving a problem in 3D space, we find that solutions to our questions
+    will change depending on our POV. We refer to these POVs as coordinate systems.
+    It behooves us to use the coordinate system that solves our problem the easiest
+    and translates into the other systems. Describing our speed and turning is easiest
+    to understand from our internal coordinate system. Creating a map or following
+    a path is easiest to describe from a local coordinate system. And, finally, creating
+    our simulated world is easiest to describe in a global system. Doing the math
+    to translate answers into the other coordinate systems is handled automatically
+    by Gazebo.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Modeling the AI Rover World
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Retrieve all of the Xacro, URDF, launch, and Python script files developed in
+    Chapter [5](494112_1_En_5_Chapter.xhtml). Use the same AI rover model, the differential
+    drive controller, and the LiDAR sensor plug-in. The LiDAR sensor plug-in determines
+    the distance between an obstacle and the AI rover. This is essential to identify
+    the nearest obstacles during exploration. What we expect to find is that this
+    is not enough information to navigate a maze. The rover will become trapped. Using
+    a camera *and* LiDAR sensors will supply enough information to navigate a maze.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The AI rover is composed of the following components:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Chassis and caster wheel: link type element'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Right and left wheels: both link type element'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Right and left wheel joints: both joint type element'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: LiDAR sensor package and plug-in
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Organizing the Project
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Add the following highlighted sub-directories to the project:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To generate the `ai_rover_worlds` ROS package directory, execute the following
+    Linux terminal commands:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: This directory organization efficiently manages the complex obstacles. The `ai_rover_worlds`
+    directory includes the URDF files describing the mazes and obstacles for each
+    generated world. The `launch` folder has the XML files that initiate the world
+    and obstacles required by Gazebo. The `worlds` folder has the XML files that describe
+    the world to be generated in Gazebo.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Modeling the Catacombs (Simplified)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We can now create our first AI rover’s exploration world layout for the Egyptian
+    catacombs by using the Gazebo editor, as we briefly reviewed in both Chapters
+    [4](494112_1_En_4_Chapter.xhtml) and [5](494112_1_En_5_Chapter.xhtml). We will
+    now create a simple one-room maze with a doorway and a cylindrical object (Figure
+    [6-1](#Fig1)). Refer to Chapter [5](494112_1_En_5_Chapter.xhtml) about operating
+    the Gazebo editor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the Gazebo editor. There are cubical objects arranged in the
+    shape of a square with a doorway, and a cylindrical object at the bottom right
+    is placed in it. It highlights A I rover on the top left within the catacomb.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: First design of Egyptian catacomb with the column
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now that we have created our first partially enclosed Egyptian catacomb with
+    a supporting column, we should save this 3D design in the following directory:
+    `~/sim_gazebo_rviz_ws/src/ai_rover_worlds/worlds`. The name for this file is `ai_rover_catacombs.world`.
+    We should save this design by using the Ctrl+Shift+S option. The design save option
+    allows us to store this initial design of the Egyptian catacombs without inadvertently
+    causing the Gazebo simulator to crash. The Gazebo environment, depending on your
+    particular computer hardware characteristics, has the potential to crash during
+    a save. We can also see that the simulated granite blocks are misaligned within
+    this simple catacomb design. This construction was typical for some of the earliest
+    Ancient Egyptian Old Kingdom funerary complexes (circa 3100 B.C.). These examples
+    of construction were especially true for those of the Ancient Egyptians who were
+    not of the nobility class. The misaligned granite blocks will also allow us to
+    test whether the AI rover’s LiDAR and camera sensors can determine and identify
+    uneven or misaligned surfaces’ boundaries during its simulation run. We will also
+    see the phenomenon of “blind spots” that the AI rover may not be able to locate
+    with its sensor arrangement. Once we have this design saved in the correct directory,
+    we must then launch it from ROS. We can launch this world within ROS, at first,
+    without a launch file. We can do this by executing the following Linux terminal
+    commands in two separate windows within the Terminator terminal command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Launch this initial design by using the Linux terminal commands. It appears
+    to be the best method to test ROS’s Gazebo interaction. However, this is still
+    a guess on our part. We modify the launch file from Chapter [5](494112_1_En_5_Chapter.xhtml)
+    to generate our “catacombs” and AI rover together. It is a simple exercise to
+    spawn additional AI rovers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once we have executed these Linux terminal commands, we should see the same
+    display found in Figure [6-2](#Fig2). We do this to test, verify, and validate
+    that the catacomb design can be successfully opened and operated by ROS. We will
+    then proceed to modify our original Gazebo and RViz launch file from Chapter [5](494112_1_En_5_Chapter.xhtml).
+    The name for this original launch file is `ai_rover_remastered_gazebo.launch`.
+    This launch file spawns and then activates a single AI rover within an empty world.
+    We will now modify this launch file so the AI rover spawns at the Egyptian catacombs'
+    origin coordinates developed in Figure [6-2](#Fig2). The origin coordinates have
+    been highlighted in the red box in Figure [6-2](#Fig2), which intersects the red
+    (x), green (y), and blue (z) lines. As such, the AI rover will spawn in the red
+    box with the Ancient Egyptian catacombs generated around it. We must also be certain
+    that the catacomb world never overlaps the spawn location of the AI rover. This
+    action would cause the Gazebo simulation to terminate. Listing [6-1](#PC4) is
+    the source code listing of this modified launch file for the AI rover model and
+    the generated catacombs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'There is only one modification to the original launch file from Chapter [5](494112_1_En_5_Chapter.xhtml):
+    to add the `<arg name="world_name" value="$(find ai_rover_worlds)/worlds/ai_rover_catacomb.world"/>`
+    line of XML source code following the line of source code that first launches
+    the empty world. This world acts similar to a clean canvas, after which we generate
+    the simulated world of the AI rover exploring the Egyptian catacombs. Therefore,
+    we add this line to find and initiate the `ai_rover_catacomb.world` in its correct
+    directory. We will now rename the modified version of the launch file from Chapter
+    [5](494112_1_En_5_Chapter.xhtml) as `ai_rover_cat.launch.` The following will
+    be the terminal Linux commands required to execute this launch file with both
+    the AI rover and its operational LiDAR system and the Egyptian catacombs generated
+    together:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We should now have two simulators: 1) The RViz simulator with the AI rover
+    at the origin; and 2) the Gazebo environment with the Egyptian catacombs, AI rover
+    (red box), and the LiDAR sensor sweep analysis (blue area). These generated items
+    are shown in Figure [6-2](#Fig2).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the Gazebo editor. It generates the Egyptian catacombs and A
+    I rover. There are cubical objects arranged in the shape of a square with a doorway,
+    and a cylindrical object at the bottom right is placed in it. A I rover is highlighted
+    at the top left within the catacomb.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generated Egyptian catacombs and AI rover
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Use the Teleops program to test the AI rover’s keyboard control commands within
+    the catacombs (Chapter [5](494112_1_En_5_Chapter.xhtml)). Reusing the Teleops
+    test and verification program reduces development time. We need to see if the
+    Teleops program still controls the AI rover prototype to circumvent the wall boundaries
+    and the column in the catacombs. Execute the following Linux terminal command
+    in a secondary shell window:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: If all has worked correctly, you can now control the AI rover by keyboard commands.
+    As such, you should now see something similar to Figure [6-3](#Fig3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the Gazebo editor. There are cubical objects arranged in the
+    shape of a square with a doorway, and a cylindrical object is placed in it. A
+    I rover is highlighted to the right of cylindrical object within the catacomb.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Manually controlled AI rover exploring catacombs
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now that we can navigate the AI rover in Gazebo, let us verify it works in RViz.
+    Launch RViz by initiating `ai_rover.cat.launch`. Add `Laser_scan` as a topic to
+    the Displays options found within RViz. We will now see the display shown in Figure
+    [6-4](#Fig4) (see Chapter [5](494112_1_En_5_Chapter.xhtml) for appropriate settings).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the R V i z. It explore catacombs with the A I rover. There
+    are semi arcs above the A I rover which are the Lidar signals. A box at the bottom
+    right gives information about the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: RViz data display of AI rover exploring catacombs
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you receive the following error:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`RLException: [ai_rover_teleop.launch] is neither a launch file in package
+    [ai_rover_remastered_description] nor is [ai_rover_remastered_description] a launch
+    file name. The traceback for the exception was written to the log file.`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Re-execute the following Linux terminal commands (source code or launch files
+    might need recompilation at the home directory):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`$ cd ~/sim_gazebo_rviz_ws/`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`$ catkin_make`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`$ source devel/setup.sh`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, we design, develop, test, verify, and validate the motion-planning, navigation,
+    and map-creating script files using the simulated worlds in the `ai_rover_worlds`
+    directory. We want to expand the `catkin_ws` directory to include intelligent
+    control scripts, such as laser scan data extraction, to control the AI rover’s
+    differential drive. Our goal is to create the following directory tree for the
+    `catkin_ws` workspace:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Enter the following Linux terminal commands to create the directory tree listing
+    for the `catkin_ws` workspace:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Create the `catkin` ROS package `Motion_Planning_Navigation_Goals` using the
+    following Linux terminal commands:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let us quickly review the ROS package dependencies. The `rospy` package is a
+    Python client library for ROS, allowing programmers to access the ROS control
+    libraries. However, the `rospy` library is not computationally efficient. Instead,
+    the library allows the programmer to quickly and efficiently develop ROS applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `std_msgs` dependency develops standard publisher/subscriber ROS messages,
+    including common data types. These data types include float and double built-in
+    data types and user-defined data types, such as the deep learning neural network
+    or multi-arrays for geospatial processing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `geometry_msgs` dependency provides messages for geometric elements (points,
+    vectors, and poses). The `geometry_msgs` offer standard functions, such as `twist`.
+    The `twist` function describes an element’s linear and angular velocities for
+    both subscribers and publishers. The differential drive plug-in uses these velocities.
+    We need this `geometry_msgs` dependency to communicate the Python autonomous program’s
+    linear and angular velocities to control the rover’s differential drive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `sensor_msgs` dependency provides sensor messages, such as cameras and range-finding
+    laser scanners. This dependency allows for information exchange from both the
+    publishers (sensors) and subscribers (Python autonomous programs). These sensor
+    messages influence the Python autonomous programs to vary the differential drive
+    plug-in’s linear and angular velocities. For more information on the LiDAR’s laser
+    pipeline stacks, please refer to [`http://wiki.ros.org/sensor_msgs`](http://wiki.ros.org/sensor_msgs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Laser Range-Finding Filter Settings
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Set the LiDAR sensor settings to the values shown in Table [6-1](#Tab1) in the
+    LiDAR sensor section of the `ai_rover_gazebo_plug-in.xacro` file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: LiDAR-Specific Program Settings
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| XML Setting | Value | Definition |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `<update_rate>` | 20 | Controls the sample rate (speed) of the laser data
+    capture rate |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `<samples>` | 1440 | How many samples for one LiDAR range sweep [`minAngle..maxAngle`]
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `<frameName>` | `sensor_laser` | Virtual link between LiDAR sensor and chassis
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: Verify the program values fall within the LiDAR sensor’s actual physical specifications.
+    The Gazebo simulator creates a more realistic LiDAR sensor with these values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After saving these values, determine if the updates were successful by executing
+    the following in one window:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And execute the following in a second window:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once we have executed these commands, we can control the AI rover displayed
+    in a simulation using the keyboard. Next, we will develop a Python script code
+    to process and display the LiDAR sensor data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Laser Range-Finding Data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'We will create our Python script within the `catkin_ws` workspace `Motion_Planning_Navigation_Goals`
+    ROS package. This script will retrieve data from the `/ai_rover_remastered/laser_scan/scan`
+    topic. Create the following Python script:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `touch` command creates a file within directories without launching an application,
+    such as a word processor or a development environment. The created files are empty.
+    To create content, the appropriate application must be launched. The `chmod` command
+    makes the `read_Lidar_data.py` file executable via `rosrun`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Enter the script found in Listing [6-2](#PC13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `clbk_laser` function passes the `msg` argument to `min(min(msg.ranges[xxxx:yyyy]),
+    10)`, which then reads the data for each of the ten LiDAR sensor sectors, guaranteeing
+    a maximum value of 10 meters. It converts the 1,440 samples into ten aggregated
+    sectors. Each sector returns the minimum value from the samples or caps the value
+    at 10 meters (LiDAR max range). The minimum value is the distance to the obstacle
+    closest to the AI rover in that sector. Each sector is 36 degrees in coverage
+    (36° x 10 = 360°). As such, the AI rover has no “blind spots” during its continuous
+    LiDAR sensor sweep. Because the AI rover has no blind spots, it can also travel
+    backward if necessary. Figure [6-5](#Fig5) is the orientation layout of the LiDAR
+    sensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A layout of the LiDAR sensor orientation. There is a square and at the top corners
+    are two rectangular objects. Between them is a large circle and below it is a
+    small circle. The arrows from large circle point toward degrees. 0 or 360, 90,
+    180, and 270 degree.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: LiDAR sensor orientation and layout
+  prefs: []
+  type: TYPE_NORMAL
+- en: The larger solid black circle in the center of Figure [6-5](#Fig5) is the LiDAR
+    sensor. The smaller solid black circle toward the bottom of Figure [6-5](#Fig5)
+    is the caster wheel. The LiDAR sweep begins at 180° and then ends at 180°. The
+    red arrow is the propagating LiDAR laser beam.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To run our program `read_Lidar_data.py`, add the following main test driver
+    found in lines 23–32\. The source code contained within `main()` performs the
+    following functions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**rospy.init_node(‘read_Lidar_data’)**: Attaches to ROS.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**rospy.Subscriber():** Subscribes to the `Laser_scan` and `msg_Lidar_laser`
+    topics.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**rospy.Publisher():** Publishes to the `ai_rover_remastered base_controller/cmd_vel`
+    topic for controlling the AI rover.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**rospy.spin():** Keeps the program from shutting down on its own. The program
+    can only be shut down by the operator.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'To run the `read_Lidar_data.py rosrun` executable, reenter the following Linux
+    terminal commands:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After recompiling everything, run the program with the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If either the Gazebo AI rover catacomb program or keyboard Teleops is not running,
+    recompile/load both launch files and try running the `read_Lidar_data.py` program
+    again.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Your data should look like that in Figure [6-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A schematic of the LiDAR sensor. At the top, a box highlights the distance 0.7486084699630737\.
+    Below it is the catacomb which has a cylindrical object and highlights the A I
+    rover, and on the right is a box which provides information about the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: LiDAR sensor analysis at 0.748 meters
+  prefs: []
+  type: TYPE_NORMAL
+- en: We should perform a sanity check and visually inspect that the AI rover is currently
+    0.75 meters from the wall. Figure [6-7](#Fig7) shows our numbers make sense. Moving
+    the AI rover a little southeast, our numbers change to those in the figure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A schematic of the LiDAR sensor. At the top, a box highlights the distance 1.736396312713623\.
+    Below it is the catacomb which has a cylindrical object and highlights the A I
+    rover, and on the right is a box which provides information about the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: LiDAR sensor analysis at 1.736 meters
+  prefs: []
+  type: TYPE_NORMAL
+- en: We have determined that the LiDAR sensor system is operational. We conducted
+    this small distance test to verify the Gazebo simulations are working correctly.
+    The simulated AI rover must as closely as possible operate within the laws of
+    physics. By performing these iterative tests of every single development of the
+    AI rover, our odds of building a fully operational AI rover are improved. It also
+    narrows the location we need to search when looking for the source of an error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use Table [6-2](#Tab2) to visualize and interpret the 10-element array shown
+    in Figure [6-7](#Fig7). The sensor data is simplified to [INFO] [1598600815.242010]
+    [1.76, 2.57, 2.56, 3.29, 2.06, 2.14, 2.44, 2.45, 1.71, 1.63].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: LiDAR Sensor Readings from Figure [6-7](#Fig7), Interpreted
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Sector | Direction | Degrees of Coverage | Nearest Object |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorA | back_right | 144° to 180° | 1.76 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorB | back_center_right | 108° to 144° | 2.57 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorC | Right | 72° to 108° | 2.56 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorD | front_center_right | 36° to 72° | 3.29 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorE | front_right | 0° to 36° | 2.06 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorF | front_left | 324° to (360° or 0°) | 2.14 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorG | front_center_left | 288° to 324° | 2.44 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorH | Left | 252° to 288° | 2.45 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorI | back_center_left | 216° to 252° | 1.70 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: '| SectorJ | back_left | 180° to 216° | 1.62 meters |'
+  prefs: []
+  type: TYPE_TB
+- en: Each sector represents 1/10th of the LiDAR sweep (Figure [6-8](#Fig8)). SectorA
+    detected an object ~1.76 m away from the AI rover. There may be other objects
+    in the sector, but none closer. The object in SectorA is located between 144°
+    and 180° with respect to the AI rover. The object may also be in two sectors;
+    i.e., the sensor data does not infer size. All of the other sectors can be interpreted
+    similarly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A schematic of the LiDAR sensor sector orientation. It has 10 sectors labeled
+    a to j from bottom right to the bottom left. On the top 0, positive negative 2
+    of pi, on the right negative pi over 2, on the bottom positive negative pi, and
+    on the left positive pi over 2 are labeled.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: LiDAR sensor sector orientation and layout
+  prefs: []
+  type: TYPE_NORMAL
+- en: Obstacle Sense-and-Avoidance
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section bridges the information presented in Chapters [1](494112_1_En_1_Chapter.xhtml)
+    through [5](494112_1_En_5_Chapter.xhtml) (manual control) with the remaining chapters
+    (intelligent autonomous control). We now take our first steps toward developing
+    an autonomous rover; i.e., it makes its own decisions through the maze. It achieves
+    this through a simple control algorithm. The control algorithm sends commands
+    to the actuators/motors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Organize the control algorithm folder directories as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This creates an empty `sense_avoid_obstacle.py` file in the `scripts` directory.
+    The following is the tree structure of listing files and folder directories:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now that we have an understanding of our tree-structure organization, we must
+    return our attention to the source code contained within the `sense_avoid_obstacle.py`
+    ROS program node. Listing [6-3](#PC18) provides this source code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Source Code Analysis
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: There are ten functions defined within this program, including six for wheel
+    movement. The last function (`main` 108–119) is similar to the other versions
+    of the `main` previously discussed in the `read_Lidar_data.py` program. We will
+    ignore lines of code that are repeated from previous iterations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will now define the following contents of the `main` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Lines 13–25\. Retrieves data from the LiDAR sensor arcs, capping them at a
+    maximum of 10 meters. For instance, `''sectorA'': min(min(msg.ranges[0:143]),
+    10)` grabs the smallest value from all 144 data samples from the first arc, SectorA,
+    and then caps that at 10\. So, if all 144 data samples are greater than 10, SectorA
+    will be assigned the value of 10\. For more information about the interpretation
+    of the LiDAR data, refer to the “Interpreting the LiDAR” section in this chapter.
+    Additionally, review the `read_Lidar_data.py` program in “Laser Range Finding
+    Data.”'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Lines 26–27\. Saves values to log file and then calls `sense_and_avoid` (line
+    94)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Lines 28–70\. These similar-looking functions just set the linear velocity in
+    the x-axis (how fast we are going forward) and the angular velocity in the z-axis
+    (how fast we turn). For instance, if there are objects in the right quadrant,
+    we can turn left at a relatively slow speed. If there are objects directly in
+    front of us, we want to quickly turn in another direction.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: When we turn, there is no forward momentum. We either move forward or we turn,
+    not both. This makes coding a lot easier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The turning command is how fast we turn in a given direction, not a target
+    angle. The sensor readings happen approximately 10 times per second. Therefore,
+    if we tell the rover to turn at a rate of 45° per second, the rover will have
+    turned only 4.5° when a new sensor reading takes place. This new reading overrides
+    the previous `Twist()` command: 1) This is why we use “soft” and “hard” turns.
+    2) This can and will cause an infinite loop, where the rover turns back and forth.
+    We will talk about and review a control systems solution to this issue in the
+    Chapter [5](494112_1_En_5_Chapter.xhtml) “Summary” section.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Taking the next section of code out of order:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of four sensors labeled 8, 4, 2, and 1, with sectors and bits.
+    Sensor 8 consists of sector G and 0 b x 000 bit, sensor 4 consists of sector F
+    and 0 b 0 x 00, sensor 2 consists of sector E and 0 b 00 x 0, and sensor 1 consists
+    of sector D and 0 b 000 x.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bit location encoding for each forward sector
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lines 74–99\. This section encodes the four sensors. Initially, we assume there
+    are no close objects (set `bitVar` to `0b0000`). If an object is close (sector
+    value < 1m), we set the appropriate bit in `bitVar` to `1`. As illustrated in
+    Figure [6-9](#Fig9), if there is an object in Sector E, we “flip” the SectorE
+    bit (`0b00x0`), where the bit in the second location is changed. This is the “2’s”
+    place, hence the bit-or bitVar = bitVar | 2; flips the “2’s” place (See Figure
+    [6-9](#Fig9)). For more information regarding the `sense_and_avoid` function please
+    refer to the “Sensing and Avoiding Obstacles” section.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is not our first iteration of this piece of code. After our first iteration,
+    we recognized that the sixteen different cases represented by the four sensors
+    (D, E, F, and G) only resulted in six possible outcomes (`Forward, Soft_Left,
+    Hard_Left, Hard_Right, Soft_Right,` and `Retreat`). Furthermore, encoding the
+    four sectors into a single 4-bit variable sped up the code tremendously. This
+    code rewriting is called *refactoring*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lines 52–72\. With the encoded `bitVar`, we can do a quick “dictionary” lookup
+    of the appropriate rover movement. The movement decision is based on the location
+    of nearby objects encoded in “arguments.” Line 125 passes the encoded `bitVar`
+    to switch_movement_options(arguments), and this chooses the “correct” direction
+    to move.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Interpreting the LiDAR Sensor Data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The callback function, `msg_Lidar_laser`, handles information and messages from
+    the LiDAR sensor for the subscriber defined in the main function (line 112). The
+    `msg_Lidar_laser` function partitions the LiDAR sensor sweep messages into ten
+    equally spaced 36-degree sectors for the AI rover. The LiDAR sends 1,440 laser
+    pulses every revolution. Every pulse is a ray originating from the LiDAR and going
+    to infinity UNLESS the ray encounters an obstruction. The pulse reflects the LiDAR,
+    and, based on the return time, the distance to the obstruction is calculated.
+    All 1,440 data points are sent by the LiDAR as an event that the `msg_Lidar_laser`
+    is listening for and are processed into the ten equally spaced sectors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The purpose of having ten equally spaced 36-degree sectors is to cover one entire
+    revolution around the AI rover. This allows the AI rover to “see” and travel in
+    any required direction, including forward, left, right, and backward. Traveling
+    in any direction allows the AI rover to navigate and avoid obstacles and cave-ins
+    within the Egyptian catacombs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sensing and Avoiding Obstacles
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The `sense_and_avoid` function is a simple finite state machine (FSM) implementing
+    simplistic behavior (see Figure [6-10](#Fig10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A decision diagram. There is a double headed arrow between turn completed and
+    forward at the top and bottom, respectively. The flow is in upward direction from
+    the forward to the turn completed through hard left, soft left and reverse on
+    the left, and soft right and hard right on the right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decision finite state machine showing different turning decisions
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When developing a complex system, such as an intelligent drone, approach the
+    solution in small, incremental steps. To simplify our decision-making choices
+    about turning, we are only going to use the front four sectors’ data; i.e., sectors
+    D, E, F, and G. This sensor data is used to determine if objects exist in our
+    path that are less than one meter away. These four sectors make sixteen combinations
+    that determine the direction the rover will go. There are only six possible directions:
+    forward, soft left, soft right, hard left, hard right, and turn around (see Figure
+    [6-11](#Fig11)). (If the “front six” sectors were used for the decision-making,
+    we would have 64 combinations! Much more complex!)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A schematic of the forward-facing sectors of LiDAR sensor. The sectors are labeled
+    c to h. The directions from bottom left to bottom right are as follows. Positive
+    pi over 2; front, center, left; front, left; 0, positive negative 2 of pi; front,
+    right; front, center, right; and negative pi over 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Forward-facing sectors are used to decide the next move
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Each of the four forward-facing sectors returns the distance of the nearest
+    object in that sector. As can be seen in Table [6-3](#Tab3), we encode the results
+    in `bitVar`. For example, SectorG might return the value `10`. That means the
+    object is 10 meters away and not of immediate concern. Assume that SectorF and
+    SectorE are similarly large numbers and no danger. Let us say that SectorD returns
+    0.9\. This object is less than 1m away and a possible hazard that we should avoid.
+    Testing whether each returned value is less than one (i.e., SectorG < 1) returns
+    a `true` or a `false`. In this example, values returned by SectorG, SectorF, and
+    SectorE are large, and the comparison will return `false`. In contrast, SectorD’s
+    comparison will return `true`. The four comparisons are `false, false, false,
+    true`, which can be encoded as `bitVar = 0001`. Interpreting Table [6-3](#Tab3):
+    If a cell is blank, the nearest object in that direction is far away and of no
+    immediate danger. If the cell has “< 1m,” then an object is very close and should
+    be avoided.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decision Table Using the Four Forward Sectors to Choose One of Six Decisions.
+    Blank Cell Indicates No Nearby Object Detected in Those Sectors
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Case | bitVar | SectorG | SectorF | SectorE | SectorD | Decision |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 0 | 0000 | No nearby objects * | Forward |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 1 | 0001 |   |   |   | < 1 m | Soft Left |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 2 | 0010 |   |   | < 1 m |   | Soft Left |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 3 | 0011 |   |   | < 1 m | < 1 m | Soft Left |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 4 | 0100 |   | < 1 m |   |   | Soft Right |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 5 | 0101 |   | < 1 m |   | < 1 m | Hard Left |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 6 | 0110 |   | < 1 m | < 1 m |   | Hard Left |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 7 | 0111 |   | < 1 m | < 1 m | < 1 m | Hard Left |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 8 | 1000 | < 1 m |   |   |   | Soft Right |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 9 | 1001 | < 1 m |   |   | < 1 m | Forward |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 10 | 1010 | < 1 m |   | < 1 m |   | Hard Right |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 11 | 1011 | < 1 m |   | < 1 m | < 1 m | Turn Around |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 12 | 1100 | < 1 m | < 1 m |   |   | Soft Right |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 13 | 1101 | < 1 m | < 1 m |   | < 1 m | Turn Around |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 14 | 1110 | < 1 m | < 1 m | < 1 m |   | Hard Right |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 15 | 1111 | < 1 m | < 1 m | < 1 m | < 1 m | Turn Around |'
+  prefs: []
+  type: TYPE_TB
+- en: Formally, the rover’s speed and direction are called the linear velocity and
+    angular rotation in the rover’s internal coordinate system. The linear velocity
+    is expressed along the x-axis (red), and the angular rotation is about the z-axis
+    (blue), as shown in Figure [6-12](#Fig12). Since we are using a rover and assuming
+    flat ground at this time, the system reduces to 2D. After removing the “flat ground”
+    assumption, our model will become more complex. But that is for a later chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of the rover's internal coordinate system. The x-axis forward
+    is the linear velocity, y-axis, and the z-axis turn is the angular rotation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: X-, y-, and z-axes are relative to the rover
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two types of angular velocity: orbital and spin. For example, the
+    Earth orbits the sun; i.e., the Earth rotates around an external point (sun).
+    The Earth also spins about the north/south pole axis; i.e., the Earth rotates
+    around an internal point. We use `Twist()` (line 96) to send the spin angular
+    velocity to the AI rover. This causes the AI rover to rotate around the internal
+    z-axis.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another way of looking at orbital angular velocity (OAV) versus spin angular
+    velocity (SAV) is the point of view. OAV is observed from outside the rover; i.e.,
+    it interacts with multiple objects in the universe. The OAV for the Earth/sun
+    combination is 365 days, while the OAV of the moon/Earth orbit is 28 days. OAV
+    depends on other objects. On the other hand, SAV is an internal attribute. The
+    SAV of the Earth is 24 hours. It does not change concerning other objects. Thus,
+    we say the SAV is independent of the observer, whereas OAV is dependent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When we control the rover, we are using SAV. In other words, if we want to turn
+    right 45°, we inform ROS to turn the rover 45°. But remember, ROS uses radians
+    instead of degrees when calculating angles. Angular velocities are expressed as
+    radians per second, where one radian is equal to an angle at the center of the
+    circle whose arc is equal to the radius. From our internal perspective, if we
+    “turn left,” we pass a positive value. If we “turn right,” we pass a negative
+    value. So our “turn left 45°” becomes “turn left π/4.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Executing the Avoidance Code
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Execute the following Linux terminal commands in one opened terminal:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then, execute the following Linux terminal commands in a second terminal:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Our rover now avoids simple obstacles, such as the support column. But this
+    avoidance algorithm is not very smart! It only uses four specific sectors, and
+    each avoidance decision was explicitly chosen by the programmer. What if the programmer
+    did not understand all the possible situations and all the possible decisions?
+    What if the actual world is so sophisticated that four sectors do not supply enough
+    information to always make the correct decision?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using an artificial intelligence deep learning system (DLS) will allow the AI
+    rover to have evolutionary and adaptive behaviors. The use of these advanced methods
+    eliminates the programmer’s need to explicitly program all of these behaviors
+    and decisions with a finite-state machine (FSM). To achieve these behaviors we
+    replace the FSM with a DLS. For example, in Figure [6-13](#Fig13), the FSM-based
+    rover may get stuck in the corner because of the collapsed wall. The DLS AI rover
+    should be able to intelligently escape the collapsed wall. We will add the DLS
+    intelligence in the next chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the Gazebo editor. There are cubical objects arranged in the
+    shape of a square with a doorway and a cylindrical object is placed in it. A I
+    rover is highlighted to the left of cylindrical object, and the collapsed wall
+    is highlighted at the top.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 6-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Scenario with AI rover (red) and collapsed wall (yellow)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The purpose of this chapter is to convey to the reader that the development
+    of simple control is possible for the first generation of the AI rover. This chapter
+    also exposes the severe limits of finite state machines in the creation of ever
+    more sophisticated robots, thereby necessitating the creation of deep learning,
+    reinforcement deep learning, Bayesian learning, and ultimately artificial cognitive
+    intelligence–based controllers that will allow a robot to explore an unknown environment,
+    such as the Egyptian catacombs. We should also point out to the reader that we
+    have not used any type of probability or statistical analysis on the sensor data
+    to determine sensor noise or error. We will revisit this topic in the chapters
+    on Bayesian deep learning and statistical analysis for sensor noise and uncertainty.
+    We will talk in the next chapter about the development of the first navigational
+    and mapping techniques based on SLAM (Simultaneous Localization and Mapping).
+    The discussion of navigation and mapping will also require the use of control
+    system theory to allow us to understand why it is important to have two main control
+    systems to control the angle heading of the AI rover itself and the direction
+    of the AI rover’s goal position. The next chapter will be a small but critical
+    step in the development of an autonomous rover.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Extra Credit
+  prefs: []
+  type: TYPE_NORMAL
+- en: During the AI rover/catacomb simulations, you must have noticed that if the
+    AI rover collides with a granite block it can push it to one side. In reality,
+    this would never happen due to the AI rover’s small size, mass, and speed. How
+    would you alter the URDF XML files to allow the granite blocks and supporting
+    column found in the Egyptian catacombs to have the same simulated mass and moment
+    of inertia as a real-world granite block and column with the same dimensions?
+    (Look to Chapters [4](494112_1_En_4_Chapter.xhtml) and [5](494112_1_En_5_Chapter.xhtml)
+    on modifying the URDF source code.)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Is the AI rover still able to push the granite blocks to one side if it collides
+    with a block with a real-world mass and moment of inertia?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We know that we currently have 16 combinations for `bitVar` and for the four
+    front sectors that we have used (D, E, F, and G) in `sense_avoid_obstacle.py`.
+    How many combinations for `bitVar` would we have if we added both the left (SectorH)
+    and the right (SectorC) LiDAR sectors? Please list all of the combinations of
+    `bitVar` by using Sectors C, D, E, F, G, and H.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We can see that we are only using the four front LiDAR sectors. What gains could
+    we make if we were to incorporate both the left (SectorH) and the right (SectorC)
+    LiDAR sectors into `sense_avoid_obstacles.py`? How would we go about reprogramming
+    this particular Python ROS node program?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We are currently using ten sectors for the LiDAR sensor array sweep? Is this
+    the only number of LiDAR sectors we could use? If not, then what would be the
+    ideal number of LiDAR sensor sweep sectors?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: How do we modify the source code for the simulated LiDAR sensor range from 10
+    meters to 30 meters?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

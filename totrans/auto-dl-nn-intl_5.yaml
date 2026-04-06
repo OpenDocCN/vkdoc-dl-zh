@@ -1,0 +1,1998 @@
+- en: 5. One-Shot Neural Architecture Search
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In the previous chapter, we explored Multi-trial Neural Architecture Search,
+    which is a very promising approach. And the reader might wonder why Multi-trial
+    NAS is called that way. Are there any other non-Multi-trial NAS approaches, and
+    is it really possible to search for the optimal neural network architecture in
+    some other way without trying it? It looks pretty natural that the only way to
+    find the optimal solution is to try different elements in the search space. In
+    fact, it turns out that this is not entirely true. There is an approach that allows
+    you to find the best architecture by training some Supernet. And this approach
+    is called **One-shot Neural Architecture Search**. As the name “one-shot” implies,
+    this approach involves only one try or shot. Of course, this “shot” is much longer
+    than single neural network training, but nevertheless, it saves a lot of time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this chapter, we will study what One-shot NAS is and how to design architectures
+    for this approach. We will examine two popular One-shot algorithms: **Efficient
+    Neural Architecture Search via Parameter Sharing** (**ENAS**) and **Differentiable
+    Architecture Search** (**DARTS**). Of course, we will apply these algorithms to
+    solve practical problems.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`NNI 2.7` version (which is used in this book) has ENAS algorithm implementation
+    for the TensorFlow framework, but it doesn’t have one for the DARTS algorithm.
+    Anyway, ENAS algorithm is one of the most popular and efficient One-shot NAS implementations,
+    so TensorFlow users shouldn’t get too frustrated.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-Shot NAS in Action
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Interest in automating neural network architecture design is growing, but the
+    classical Multi-trial NAS approach is too computationally expensive, requiring
+    thousands and millions of different architectures to be trained from scratch.
+    This fact, unfortunately, makes Multi-trial NAS not applicable in practice. Indeed,
+    some Multi-trial experiments can take weeks or months on the most modern computing
+    resources. A new One-shot NAS approach has been proposed to address this weakness
+    of Multi-trial architecture search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The best way to introduce One-shot NAS is to provide an example. Let’s say we
+    are looking for the optimal architecture for the MNIST problem. And we have the
+    Model Space shown in Figure [5-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model Space for MNIST problem
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Figure [5-1](#Fig1) shows the Model Space with two mutable layers. Each mutable
+    layer has the following choices: `Conv 1×1`, `Conv 3×3`, and `Conv 5×5`. In a
+    classic Multi-shot scenario, we would perform 3×3=9 trials for each combination
+    of parameters and pick the best one. While the One-shot NAS approach follows another
+    technique, we create one *Supernet* that merges or reduces the output of each
+    mutable layer and train the resulting neural network only once. Figure [5-2](#Fig2)
+    demonstrates this Supernet.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Supernet for MNIST problem
+  prefs: []
+  type: TYPE_NORMAL
+- en: After training the Supernet, we evaluate it by activating each combination of
+    layers and zeroing out other layers. Figure [5-3](#Fig3) illustrates this concept.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Supernet for MNIST problem
+  prefs: []
+  type: TYPE_NORMAL
+- en: And finally, we pick the combination which demonstrated the best performance.
+    This combination represents the result of the One-shot NAS algorithm. For example,
+    if a combination (`Conv 5×5`, `Conv 5×5`) showed the best accuracy, then our target
+    network design is `Conv 5×5` → `Conv 5×5` → `Linear` → `Linear`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s summarize what exactly we did during the One-shot NAS algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We created a single *Supernet* derived from Model Space.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We *trained* it.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We *evaluated* it nine times, activating different layers in turn.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We picked the *best* neural design for the problem.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The main benefit we have here is that we trained Supernet only once instead
+    of training each of nine candidate networks! It speeds up the whole neural architecture
+    search dramatically, because the network training is the longest part of NAS process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A reader may have a fair question: *“But wait! We trained a single Supernet
+    network. All candidate layers learned to work together! But then we decided to
+    break it into different parts, leaving the same weights. This is nonsense!”* I
+    agree. This is a very counterintuitive concept. Indeed, all layers were trained
+    together, and they learned to complement and help each other in solving the problem.
+    Surely you can’t just throw out some layers from a neural network searching for
+    the best architecture. But the most fantastic thing about One-shot NAS is that
+    you can! There is still no sufficient mathematical basis for this approach, but
+    it works in practice. Let’s implement this approach in practice using the example
+    we considered earlier. In this section, we will not be using the NNI toolkit.
+    Here, our goal is to get an intuition about the One-shot NAS approach.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To begin with, we will make a vanilla Multi-trial NAS. Listing [5-1](#PC1) (TensorFlow
+    implementation) and Listing [5-2](#PC3) (PyTorch implementation) implement the
+    model shown in Figure [5-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following model accepts two parameters, `kernel1` and `kernel2`, that define
+    the `conv1` and `conv2` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following model below accepts two parameters, `kernel1` and `kernel2`,
+    that define the `conv1` and `conv2` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And now, let’s execute Multi-trial NAS iterating through the various `kernel_size`
+    parameters (`kernel1: [1, 3, 5], kernel2: [1, 3, 5]`) using the script in Listing
+    [5-3](#PC5) (TensorFlow implementation) and Listing [5-4](#PC9) (PyTorch implementation).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining the search space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Performing Multi-trial search:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Displaying results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining the search space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Performing Multi-trial search:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining the search space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: The results of the Multi-trial NAS we performed are listed in Table [5-1](#Tab1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multi-trial NAS results
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Trial | Conv1 | Conv2 | Accuracy |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `1` | `Conv1×1` | `Conv1×1` | `0.9446` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `2` | `Conv1×1` | `Conv3×3` | `0.9849` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `3` | `Conv1×1` | `Conv5×5` | `0.9864` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `4` | `Conv3×3` | `Conv3×3` | `0.9851` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `5` | `Conv3×3` | `Conv3×3` | `0.9881` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `6` | `Conv3×3` | `Conv5×5` | `0.9909` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `7` | `Conv5×5` | `Conv1×1` | `0.9872` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `8` | `Conv5×5` | `Conv3×3` | `0.9901` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `9` | `Conv5×5` | `Conv5×5` | `0.9917` |'
+  prefs: []
+  type: TYPE_TB
+- en: According to Table [5-1](#Tab1), the best candidate is (`Conv5×5, Conv5×5`).
+    Well, we tried every neural design candidate and found the most suitable one for
+    the MNIST problem. Of course, the Multi-trial NAS we implemented earlier is quite
+    simple, but that’s how all Multi-trial approaches act in general.
+  prefs: []
+  type: TYPE_NORMAL
+- en: But for now, let’s try to get the same result using the One-shot NAS approach!
+    First, we create the Supernet model depicted in Figure [5-2](#Fig2) (in Listing
+    [5-5](#PC13) [TensorFlow implementation] and Listing [5-6](#PC19) [PyTorch implementation]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`TfLeNetNaiveSupernet` implements Supernet depicted in Figure [5-2](#Fig2):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We define each candidate for `conv1` and `conv2` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next are the other Supernet layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`call` method accepts `mask` parameter, which activates candidate layer in
+    a `sum` merge operation. The `mask` parameter is not passed in the training mode,
+    and all candidates are summed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'But in evaluation mode, we pass `mask` parameter and activate only particular
+    layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`PtLeNetNaiveSupernet` implements Supernet depicted in Figure [5-2](#Fig2):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We define each candidate for `conv1` and `conv2` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next are the other Supernet layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`forward` method accepts `mask` parameter, which activates candidate layer
+    in a `sum` merge operation. The `mask` parameter is not passed in the training
+    mode, and all candidates are summed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'But in evaluation mode, we pass `mask` parameter and activate only particular
+    layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we train the Supernet and evaluate different candidate layer combinations
+    in Listing [5-7](#PC25) (TensorFlow implementation) and Listing [5-8](#PC31) (PyTorch
+    implementation).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing Supernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Training Supernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading test dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Evaluating Supernet activating each candidate:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Displaying results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We import necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing Supernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Training Supernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading test dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Evaluating Supernet activating each candidate:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Displaying results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: The results of the One-shot NAS are listed in Table [5-2](#Tab2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-shot NAS results
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Trial | Conv1 | Conv2 | Accuracy |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `1` | `Conv1×1` | `Conv1×1` | `0.2343` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `2` | `Conv1×1` | `Conv3×3` | `0.1789` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `3` | `Conv1×1` | `Conv5×5` | `0.2127` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `4` | `Conv3×3` | `Conv3×3` | `0.2755` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `5` | `Conv3×3` | `Conv3×3` | `0.8515` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `6` | `Conv3×3` | `Conv5×5` | `0.8786` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `7` | `Conv5×5` | `Conv1×1` | `0.3486` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `8` | `Conv5×5` | `Conv3×3` | `0.8882` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `9` | `Conv5×5` | `Conv5×5` | `0.9001` |'
+  prefs: []
+  type: TYPE_TB
+- en: The best neural architecture found by One-shot NAS is (`Conv 5×5, Conv 5×5`),
+    which is exactly the same as the result of Multi-trial NAS. Incredible, isn’t
+    it? We found the same result in a much shorter time!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The results presented in Table [5-2](#Tab2) are only needed to rank various
+    combinations of architectures to pick the best one. These results do not characterize
+    the accuracy of the corresponding combination. One-shot models are typically only
+    used to rank architectures in the Model Space. The best-performing architectures
+    are retrained from scratch after the search is completed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Intuitively, the One-shot NAS approach can be illustrated as follows: *during
+    Supernet training, the best performing candidate layers play much more significant
+    roles in the Data Flow Graph of the Supernet neural network*. This fact allows
+    finding these candidates by deactivating others during the evaluation process.
+    Figure [5-4](#Fig4) demonstrates this concept.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Different layer importance in the Supernet
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since we have an intuition about the One-shot NAS approach, we can start implementing
+    it using the NNI framework.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Supernet Architecture
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As we saw in the previous section, one of the main concepts in One-shot NAS
+    is the *Supernet*. Supernet is a single neural network that contains all the various
+    neural network architectures from the defined Model Space. Supernet is trained
+    once according to the One-shot NAS technique, and then the optimal subnet is selected.
+    In Multi-trial NAS, each Data Flow Graph is tried separately. But One-shot NAS
+    creates a single Supernet based on all possible Data Flow Graphs in Model Space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NNI creates Model Space for One-shot NAS using `LayerChoice` and `InputChoice`
+    operations. `LayerChoice` candidates form a special block in the Supernet. Each
+    `LayerChoice` candidate transforms input tensor, and then their output tensors
+    are reduced according to a particular One-shot NAS algorithm. The reduce operation
+    can be `sum`, `mean`, or any other operation that merges tensors. `InputChoice`
+    candidate tensors are reduced in Supernet in the same way as `LayerChoice` candidates.
+    Figure [5-5](#Fig5) demonstrates Model Space constructed with `LayerChoice` and
+    `InputChoice` operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model Space
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model Space depicted in Figure [5-5](#Fig5) generates Supernet with reduce operations.
+    Figure [5-6](#Fig6) demonstrates Supernet with `sum` as reduce operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-shot NAS Supernet
+  prefs: []
+  type: TYPE_NORMAL
+- en: Supernet is trained according to a specific One-shot NAS algorithm. After the
+    training, each subnet is evaluated, and the subnetwork with the best accuracy
+    forms the target neural architecture. Figure [5-7](#Fig7) demonstrates the evaluation
+    of a specific subnet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Subnet Evaluation
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-shot NAS sets a strict restriction on the `LayerChoice` and `InputChoice`
+    candidates. Each of the candidates must return a tensor of the same size. Otherwise,
+    it will be impossible to implement the reduce operation. In the previous section,
+    candidates for `conv1` layer returned 16×28×28 tensors, and candidates for `conv2`
+    layer returned 32×14×14 tensors. Figure [5-8](#Fig8) demonstrates this fact.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Same size tensor outputs
+  prefs: []
+  type: TYPE_NORMAL
+- en: This restriction does not exist in Multi-trial NAS since TensorFlow and PyTorch
+    frameworks allowed layer parameters to be calculated depending on the input tensor;
+    therefore, `LayerChoice` candidates could return tensors of various sizes. In
+    the case of One-shot NAS, we must be sure that the candidates return tensors of
+    the same size. Otherwise, the NAS algorithm fails with an error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s create our first Model Space for One-shot NAS. It will be a “*Hello World*”
+    model, which we will use to test One-shot NAS algorithms in the next section.
+    We will define Model Space for One-shot search using LeNet architecture variations
+    depicted in Figure [5-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: LeNet One-shot Model Space
+  prefs: []
+  type: TYPE_NORMAL
+- en: NNI implementation for TensorFlow of the Model Space depicted in Figure [5-9](#Fig9)
+    is provided in Listing [5-9](#PC37).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'LayerChoice and InputChoice methods are implemented in nni.nas.tensorflow.mutables
+    package:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Importing `tensorflow.keras` modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining helper function creating convolution layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `LayerChoices` for `conv1` and `conv2` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `InputChoice` for linear layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `call` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: NNI implementation for PyTorch of the Model Space depicted in Figure [5-9](#Fig9)
+    is provided in Listing [5-10](#PC43).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'LayerChoice and InputChoice methods are implemented in nni.retiarii.nn.pytorch
+    package:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Importing other modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining helper function creating convolution layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `LayerChoices` for `conv1` and `conv2` layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `InputChoice` for linear layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we defined One-shot Model Space using NNI, we can move on to implementing
+    advanced One-shot algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-Shot Algorithms
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'At the moment, One-shot NAS is a young area and is developing rapidly. Many
+    algorithms that implement the One-shot concept are being invented at the moment.
+    This section will study two of the most popular One-shot algorithms: Efficient
+    Neural Architecture Search (ENAS) and Differentiable Architecture Search (DARTS).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Efficient Neural Architecture Search (ENAS)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Efficient Neural Architecture Search (ENAS) is a fast and inexpensive approach
+    for automatic model design. In ENAS, a controller discovers neural network architectures
+    by searching for an optimal subnet within a large Supernet. The controller is
+    trained with a policy gradient to select a subnet that maximizes the expected
+    reward on a validation set. Meanwhile, the model corresponding to the selected
+    subnet is trained to minimize the loss function. Sharing parameters among child
+    models allows ENAS to deliver strong empirical performances. It uses much fewer
+    GPU hours than classical Multi-trial NAS approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The original paper “Efficient Neural Architecture Search via Parameter Sharing”
+    ([`https://arxiv.org/pdf/1802.03268.pdf`](https://arxiv.org/pdf/1802.03268.pdf))
+    has a lot of formulas and can be too complicated. Let’s study the idea of this
+    approach in a more practical way.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the key concepts in ENAS is Reinforcement Learning Controller or RL Controller
+    or simply Controller. RL Controller contains a neural network *θ* that learns
+    how to extract the most efficient subnets from the Supernet. The main task of
+    the RL Controller is to find the optimal subnet in the Supernet, and it is trained
+    according to the Reinforcement Learning algorithm. The Controller creates a subnet
+    by defining a binary mask, where 1 activates layer and 0 disables it. Figure [5-10](#Fig10)
+    shows how RL Controller selects subnet from the Supernet using binary mask.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig10_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL Controller subnet selection
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL Controller picks a subnet and runs one or several training epochs. The core
+    of the ENAS approach is the weight-sharing technique. The same layers in different
+    subnets share the same weights. When Controller picks a subnet, it is not being
+    trained from scratch; layers share weights that have already been trained. Weight-sharing
+    concept is demonstrated in Figure [5-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig11_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight sharing
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The weight-sharing approach allows the Controller to find the best architecture
+    with small iterations and without retraining a new subnet from scratch each time.
+    ENAS algorithm can be demonstrated using the following pseudo-code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We initialize a Supernet: `S`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'And load train and validation datasets: `train_ds, val_ds`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, the algorithm initializes ENAS Controller (Controller(S, θ)), where *θ*
+    denotes Controller weights that help choose optimal subnet from `S` Supernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Main training loop:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Supernet training loop:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Controller implements stochastic policy, which means that it operates with
+    probabilities. The most promising subnet has the highest probability to be chosen:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Subnet network is trained once (i.e., only one training epoch) on a training
+    batch using weight-sharing technique (Figure [5-11](#Fig11)):'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Controller training loop. In this loop, Controller learns how to find a subnet
+    that gives the highest reward, that is, accuracy on validation dataset:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Controller chooses subnet and calculates its accuracy on validation dataset
+    batch:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Controller collects experience about subnet performance:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Controller updates its weights *θ* according to new experience:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After training, Controller returns the best subnet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the algorithm described earlier, the Controller trains various subnets on
+    the training dataset and then tests them on the validation dataset. By repeating
+    this process many times, the Controller understands which architectures show the
+    best accuracy and gradually reduces the exploration process to a limited number
+    of architectures. At the end of the training process, the Controller converges
+    to one or several of the best architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s see how ENAS works in practice:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initially, the Controller has no assumptions about subnets, and it chooses random
+    subnets for single training (subnet is trained for one training epoch only) using
+    the weight-sharing technique as depicted in Figure [5-11](#Fig11).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: After, Controller generates subnets based on *θ* weights and collects accuracy
+    on the validation dataset.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Based on experience gained in step 2, Controller updates *θ* values.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Figure [5-12](#Fig12) demonstrates steps 1–3 we described earlier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: ENAS in action. Initial epoch
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, Controller chooses the most promising subnets to train using the weight-sharing
+    technique and tests their accuracy on the validation dataset, as shown in Figure
+    [5-13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: ENAS in action. Middle training
+  prefs: []
+  type: TYPE_NORMAL
+- en: After training Supernet layers separately and updating *θ* experience, Controller
+    converges to some subnet that it considers the best. Figure [5-14](#Fig14) illustrates
+    it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: ENAS in action. End training
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-shot ENAS algorithm is close to RL Strategy from Multi-trial NAS, but with
+    one significant difference. ENAS does not make a complete subnet training cycle
+    but uses weight sharing and incremental one-step training. This difference dramatically
+    speeds up the process of finding the best architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NNI implements ENAS using the following classes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**PyTorch**: `nni.retiarii.oneshot.pytorch.enas.EnasTrainer`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**TensorFlow**: `nni.algorithms.nas.tensorflow.enas.EnasTrainer`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Table [5-3](#Tab3) shows `EnasTrainer` parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: EnasTrainer parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Parameter | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `model` | PyTorch or TensorFlow model to be trained |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `loss` | `Type: callable`Loss function |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `metrics` | `Type: callable`Measures model accuracy |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `reward_function` | `Type: callable`Is used by ENAS Controller to calculate
+    reward. Usually, `reward_function` returns model accuracy |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `optimizer` | `Type: Optimizer`Optimizer for model training |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `num_epochs` | `Type: int`Number of epochs planned for training |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `dataset` | `Type: Dataset`Training dataset |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `batch_size` | `Type: int, Default: 64`Training batch size |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `workers` | `Type: int, Default: 4`Workers for data loading |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `log_frequency` | `Type: int, Default: None`Logging step count |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `grad_clip` | `Type: float, Default: 5.0`Gradient clipping. Set to 0 to disable
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `entropy_weight` | `Type: float, Default: 0.0001`Sample entropy loss weight
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `skip_weight` | `Type: float, Default: 0.8`Skip penalty loss weight |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `baseline_decay` | `Type: float, Default: 0.999`Baseline decay rate. New
+    baseline is calculated as`baseline_decay * baseline_old + reward * (1 - baseline_decay`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `ctrl_lr` | `Type: float, Default: 0.00035`Controller learning rate |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `ctrl_steps_aggregate` | `Type: int, Default: 20`Number of steps that will
+    be aggregated into one mini-batch for Controller |'
+  prefs: []
+  type: TYPE_TB
+- en: Now let’s move on to the practical application of the ENAS algorithm for the
+    LeNet Model Space we defined in the previous section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TensorFlow ENAS Implementation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Listing [5-11](#PC59) demonstrates ENAS application using TensorFlow LeNet Model
+    Space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing LeNetSupernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining loss function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining optimizer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'ENAS training params:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing `EnasTrainer`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching One-shot search:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Returning best subnet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Listing [5-11](#PC59) returns the following best model as the result of ENAS
+    algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`conv1: 1 (Conv3×3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`conv2: 2 (Conv5×5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dm: 0 (Linear256`→`Linear10)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PyTorch ENAS Implementation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Listing [5-12](#PC68) demonstrates ENAS application using PyTorch LeNet Model
+    Space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing LeNetSupernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining loss function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining optimizer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'ENAS training params:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing `EnasTrainer`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching One-shot search:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Returning best subnet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Listing [5-12](#PC68) returns the following best model as the result of ENAS
+    algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`conv1: 1 (Conv3×3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`conv2: 1 (Conv3×3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dm: 0 (Linear256`→`Linear10)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ENAS is one of the first One-shot NAS algorithms that made the community rethink
+    the whole approach to Neural Architecture Search. But ENAS may seem complicated
+    to an inexperienced reader due to the complex internal algorithm and nontrivial
+    tuning. In the next section, we’ll study a more elegant One-shot NAS technique.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Differentiable Architecture Search (DARTS)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'From calculus, we know that one of the most efficient ways to find the maxima
+    of a continuous differentiable surface is to use derivatives and gradient-based
+    methods. Neural networks use gradient descent based on the principle of computing
+    derivatives. It would also be very convenient to reduce NAS to a differentiation
+    problem, and the DARTS algorithm does that. DARTS algorithm was proposed in the
+    original paper “DARTS: Differentiable Architecture Search” ([`https://arxiv.org/abs/1806.09055`](https://arxiv.org/abs/1806.09055)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using binary masks, ENAS algorithm chooses subnets from the Supernet, but this
+    approach is discrete. ENAS Controller jumps from one subnet to another, trying
+    to discover the best one. DARTS algorithm makes the search space continuous; it
+    relaxes the categorical choice of a particular operation to a softmax over all
+    possible operations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*o*^′(*x*) = ![$$ \sum \limits_i\frac{\exp \left({\alpha}_i\right)\ {o}_i(x)}{\sum
+    \limits_j\exp \left({\alpha}_j\right)} $$](../images/526245_1_En_5_Chapter/526245_1_En_5_Chapter_TeX_IEq1.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This means that the DARTS algorithm creates a Supernet derived from Model Space
+    with sum reducing, and each choice operation is followed with *α*[*i*] parameter
+    that specifies the weight of the operation. This makes the {*α*} parameter set
+    trainable as Supernet weights. At the end of Supernet training, the choices with
+    the highest *α* values ​​are chosen as the optimal subnet operations. Figure [5-15](#Fig15)
+    illustrates this concept.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: DARTS operation relaxation
+  prefs: []
+  type: TYPE_NORMAL
+- en: During Supernet training using the DARTS algorithm, inefficient choices tend
+    to be zeroed, and the search converges to a single architecture, which is the
+    search result. Figure [5-16](#Fig16) visualizes the DARTS algorithm applied to
+    the LeNetSupermodel. It gradually relaxes inefficient layers showing the best
+    architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig16_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: DARTS in action
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NNI 2.7 implements DARTS only for PyTorch framework using the following class:
+    `nni.retiarii.oneshot.pytorch.DartsTrainer.`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table [5-4](#Tab4) shows `DartsTrainer` parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: DartsTrainer parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Parameter | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `model` | PyTorch model to be trained |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `loss` | `Type: callable`Loss function |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `metrics` | `Type: callable`Measures model accuracy |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `optimizer` | `Type: Optimizer`Optimizer for model training |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `num_epochs` | `Type: int`Number of epochs planned for training |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `dataset` | `Type: Dataset`Training dataset |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `batch_size` | `Type: int, Default: 64`Training batch size |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `workers` | `Type: int, Default: 4`Workers for data loading |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `log_frequency` | `Type: int, Default: None`Logging step count |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `grad_clip` | `Type: float, Default: 5.0`Gradient clipping. Set to 0 to disable
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `arc_learning_rate` | `Type: float, Default: 0.0001`Learning rate of architecture
+    parameters |'
+  prefs: []
+  type: TYPE_TB
+- en: Listing [5-13](#PC77) implements DARTS algorithm using NNI.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing LeNetSupernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining loss function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining optimizer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'ENAS training params:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing `DartsTrainer`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching One-shot search:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Returning best subnet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Listing [5-13](#PC77) returns the following best model as the result of DARTS
+    algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`conv1: conv5x5->16`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`conv2: conv5x5->32`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dm: 1 (Linear10)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: DARTS is a clear and straightforward One-shot algorithm. It has an intuitive
+    logic and is easy to tune. But DARTS requires more memory than ENAS because DARTS
+    trains the whole Supernet, while ENAS trains the various subnets only. Anyway,
+    DARTS is a good choice to implement Neural Architecture Search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: GeneralSupernet Solving CIFAR-10
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We considered the application of One-shot algorithms on the simplest LeNet Model
+    Space solving the trivial MNIST problem. These examples are good as entry points,
+    but they don’t show the power of the One-shot NAS approach. In this section, we
+    will examine a more complex Model Space for solving the CIFAR-10 problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Usually, One-shot NAS deals with cell-designed Supernets. As the name suggests,
+    a cell-designed Supernet consists of various cells. Each **cell** accepts a different
+    number of inputs and creates a computational graph using a deep learning block
+    operation inside. Each **block operation** is a `LayerChoice` of deep learning
+    layers. Let’s build a cell-designed Supernet called **GeneralSupernet** to solve
+    the CIFAR-10 problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In GeneralSupernet, we define block operation as a `LayerChoice` from
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`SepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`NonSepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`SepConvBranch(5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`NonSepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`AvgPoolBranch`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`MaxPoolBranch`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The implementations of these layers are not provided here, but the reader can
+    get details in the following source code files:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**TensorFlow**: ch5/model/general/tf_ops.py'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**PyTorch**: ch5/model/general/pt_ops.py'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [5-17](#Fig17) depicts block operation space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig17_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: GeneralSupernet block operation
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each *n*th cell accepts one required input which is transformed by block operation
+    and *n* additional inputs. Additional inputs are not required and can be zeroed
+    in different subnets. The normalized sum of block operation output and additional
+    inputs forms cell output. Figure [5-18](#Fig18) demonstrates examples of cell
+    spaces.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig18_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: GeneralSupernet cell
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sequence of cells forms the GeneralSupernet, and the output of each cell
+    can be the input of the subsequent cell. After every three cells, a `FactorizedReduced`
+    layer is inserted. In this section, we will use a GeneralSupernet with six cells.
+    Figure [5-19](#Fig19) depicts GeneralSupernet architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: GeneralSupernet
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s calculate how many subnets GeneralSupernet has: (6) × (6×2) × (6×2²)
+    × (6×2³) × (6×2⁴) × (6×2⁵) = 6⁶ × 2^(1+2+3+4+5) ~ 1,500,000,000\. Of course, it
+    is not possible to efficiently explore this Model Space using a Multi-trial NAS
+    approach. It is also possible to use the GeneralSupernet with 9, 12, or 24 cells.
+    In this case, the number of subnets will become enormous.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are a lot of predefined Supernets for One-shot NAS that are aimed at solving
+    a specific class of problems. And GeneralSupernet we defined earlier is one of
+    the simplest. Let’s implement GeneralSupernet and run One-shot NAS on the CIFAR-10
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training GeneralSupernet Using TensorFlow and ENAS
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s implement GeneralSupernet and find the best architecture using ENAS algorithm.
+    Listing [5-14](#PC86) defines GeneralSupernet using TensorFlow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `Cell` depicted in Figure [5-18](#Fig18):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `LayerChoice` for block operation depicted in Figure [5-17](#Fig17):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `InputChoice` for additional `Cell` inputs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Last cell layer – `BatchNormalization`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `call` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Main input is processed by `block_op`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Additional inputs are selected by `self.connections` and summed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining GeneralSupernet depicted in Figure [5-19](#Fig19):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE93]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting the positions for pool layers (`FactorizedReduce`):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE94]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing `cells` and `pool_layers` lists:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE95]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining final layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE96]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define `call` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE97]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Passing `Cell` outputs through `FactorizedReduce` pooling layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE98]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we defined GeneralSupernet, we can launch ENAS using the following script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE99]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing GeneralSupernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE100]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE101]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Declaring loss function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE102]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Declaring optimizer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE103]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting ENAS trainer parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE104]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing `EnasTrainer`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE105]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching training:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE106]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Displaying results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE107]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Duration ~ 6 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After the search was completed, the following report was returned:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`op_layer_0: 3 SepConvBranch(5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_1: 3 SepConvBranch(5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_2: 1 SepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_3: 4 NonSepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_4: 1 SepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_5: 1 SepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_1: 0 Additional input from Cell0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_2: 0 Additional input from Cell0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_3: None No additional inputs`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_4: [0, 2, 3] Additional inputs from: Cell0, Cell2, Cell3`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_5: 3 Additional input from Cell3`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [5-20](#Fig20) visualizes the result returned by ENAS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig20_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: ENAS GeneralSupernet best architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: As see in Figure [5-20](#Fig20), the best architecture does not use pooling
+    operations, `AvgPoolBranch` and `MaxPoolBranch`, and this makes sense because
+    GeneralSupernet has built-in `FactorizedReduced` layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training GeneralSupernet Using PyTorch and DARTS
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s implement GeneralSupernet and find the best architecture using DARTS algorithm.
+    First, we need to define GeneralSupernet using PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE108]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `Cell` depicted in Figure [5-18](#Fig18):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE109]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `LayerChoice` for block operation depicted in Figure [5-17](#Fig17):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE110]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `InputChoice` for additional `Cell` inputs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE111]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Last cell layer – `BatchNormalization`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE112]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE113]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Main input is processed by `block_op`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE114]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Additional inputs are selected by `self.connections` and summed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE115]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining GeneralSupernet depicted in Figure [5-19](#Fig19):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE116]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting the positions for pool layers (`FactorizedReduce`):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE117]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing `cells` and `pool_layers` lists:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE118]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining final layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE119]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE120]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Passing `Cell` outputs through `FactorizedReduce` pooling layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE121]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we defined GeneralSupernet, we can launch DARTS using Listing [5-17](#PC123).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE122]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing GeneralSupernet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE123]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Loading datasets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE124]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Declaring loss function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE125]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Declaring optimizer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE126]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting DARTS trainer parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE127]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing `DartsTrainer`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE128]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching training:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE129]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Displaying results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE130]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Duration ~ 4 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After the search was completed, the following report was returned:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`op_layer_0: SepConvBranch(3)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_1: SepConvBranch(5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_2: SepConvBranch(5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_3: SepConvBranch(5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_4: SepConvBranch(5)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`op_layer_5: MaxPoolBranch`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_1: 0 Additional input from Cell0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_2: 0 Additional input from Cell0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_3: 0 Additional input from Cell0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_4: 2 Additional input from Cell2`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`con_layer_5: 4 Additional input from Cell4`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [5-21](#Fig21) visualizes the result returned by DARTS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_5_Chapter/526245_1_En_5_Fig21_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: DARTS GeneralSupernet best architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: The architectures obtained using ENAS (Figure [5-20](#Fig20)) and DARTS (Figure-21)
+    are similar. They tend to use the `SepConvBranch(5)` operation and share `Cell0`
+    output. ENAS best architecture and DARTS best architecture achieve 91.2% and 92.8%
+    accuracy, respectively. But we can further improve the accuracy if we increase
+    the number of cells (`num_cells`) in the GeneralSupernet. This will make the search
+    longer, but it will result in a more accurate target architecture. The beautiful
+    thing is that we can use the same GeneralSupernet and One-shot algorithm for any
+    pattern recognition problem. This gives us a universal approach to solving typical
+    deep learning problems. Absolutely One-shot NAS is one of the most significant
+    achievements of automated deep learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: HPO vs. Multi-trial NAS vs. One-Shot NAS
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'And so, at the moment, we have three different approaches to optimize and construct
+    deep learning models: HPO, Multi-trial NAS, and One-shot NAS. And a fair question
+    may arise: which method is better to choose? But this question does not have a
+    clear answer. Each approach is better suited for a specific task.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**HPO** deals with black-box optimization and is suitable for selecting optimization
+    algorithms, training batch size, and tuning the predesigned model. HPO results
+    can be visualized and easily analyzed. HPO can be a good starting point to dive
+    into a completely new problem or a good finishing point when the final tuning
+    is performed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Multi-trial NAS** is only concerned with finding the optimal architecture.
+    Despite its durability, Multi-trial NAS is more accurate than One-shot NAS. Multi-trial
+    NAS results are much easier to interpret because this approach provides metrics
+    for each tried architecture.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**One-shot NAS** is well suited for finding complex architectures for very
+    tough tasks. One-shot NAS is good at finding optimal subnets in Model Space with
+    millions and billions of elements. It is fast, but it is hard to interpret because
+    you get only the best subnet, and you don’t know any additional information about
+    another possible solution.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Table [5-5](#Tab5) shows a comparison of different approaches, where
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: AutoDL approaches comparison
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | HPO | Multi-trial NAS | One-shot NAS |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Ease of setup | ✓✓✓ | ✓✓ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Search flexibility | ✓✓✓ | ✓✓ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Interpretability of results | ✓✓✓ | ✓✓ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Designing the neural network search space | ✓ | ✓✓✓ | ✓✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Search for small neural networks for simple tasks | ✓ | ✓✓✓ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Search for complex architectures for challenging tasks | ✓ | ✓✓ | ✓✓✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Optimization of the predesigned architecture for a specific dataset | ✓✓✓
+    | ✓✓ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '✓✓✓: Well suited'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '✓✓: Suited'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '✓: Poorly suited'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: And here, we again face the problem that there is no unique approach for solving
+    any situation, and the No Free Lunch theorem applies here as well. But understanding
+    how each algorithm acts will help you make the right choice for solving a particular
+    problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'One-shot NAS is a very promising area of ​​study. It allows you to find neural
+    network solutions in a reasonable time. Currently, One-shot algorithms can discover
+    completely new architectural keys to solve the most complex problems. This field
+    is developing rapidly and will be a handy tool in any researcher’s toolkit. In
+    this chapter, we introduced the basic concepts of One-shot NAS and mastered using
+    two of its algorithms: ENAS and DARTS. This can be a good starting point for putting
+    One-shot NAS into practice. In the next chapter, we will consider the important
+    problem of model compression, which allows you to eliminate unnecessary neural
+    network elements without losing its accuracy.'
+  prefs: []
+  type: TYPE_NORMAL

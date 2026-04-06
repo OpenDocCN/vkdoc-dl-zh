@@ -1,0 +1,663 @@
+- en: 5. Adding Sensors to Our Simulation
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In Chapter [4](494112_1_En_4_Chapter.xhtml), we created our first Gazebo simulation
+    of the rover. We manually drove the rover around the empty environment. We used
+    URDF files to define what our rover looked like and the launch files to define
+    the rover controls in the Gazebo environment. Now we want to add sensors so that
+    the rover can “see” obstacles. Unfortunately, the URDF files will get very big
+    and hard to maintain without a little help. Enter the Xacro XML language extension
+    (Xacro stands for XML Macro). It helps add standard sensors via simple blocks
+    of code, called plug-ins. The plug-ins support sensors such as LiDAR, radar, cameras,
+    etc. Our LiDAR sensor develops the first distance-ranging capabilities of the
+    rover. We will develop Python scripts that directly control the rover’s wheels
+    through the differential drive plug-in. Finally, we will experiment with a keyboard
+    control (Teleops) of the rover via a Python script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Objectives
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The following are the objectives required for successful completion of this
+    chapter:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Learn XML Macro programming language (Xacro)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Remaster the rover model with the Xacro language for simplicity and expandability
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Develop Xacro programming language routines for the sensors and motors
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Test the rover in RViz and Gazebo simulators
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Control the rover
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: XML Macro Programming Language
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The Xacro programming language is a macro language used to develop maintainable
+    and modular XML files. We will have a brief overview of Xacro to optimize the
+    URDF robot and Gazebo simulation files.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A macro is a simple substitution of a “name” with a “value.” The most straightforward
+    macro is property substitution. A property is typically a constant used throughout
+    a file. Replacing the constant with a “name” placeholder allows the programmer
+    to define properties in a single location, allowing easier maintenance. Changing
+    the value at that single location changes the named constant at all locations
+    in the file. The format is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|                                 **Preferred Style**`<xacro:property name="propertyName"
+    value="propertyValue"/>` |'
+  prefs: []
+  type: TYPE_TB
+- en: '|                                 **Equivalent Block** |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `<xacro:property>`      `<name="propertyName">`      `<value="propertyValue"
+    />``</xacro:property>` |'
+  prefs: []
+  type: TYPE_TB
+- en: 'The property name is found in an XML file, and the property value is substituted
+    there. The value can be a simple number or a string. The following example shows
+    how to declare and use a property:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The properties substitute the geometry expression by replacing the names inside
+    dollar-braces (${}).^([1](#Fn1)) We will use property blocks to define the dimensions
+    of the rover chassis. If we ever want to change the size of our rover, we just
+    change the property block.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A more sophisticated substitution allows multiple values for one property name.
+    Here’s an example of using a property block to place values for the cartesian
+    (x, y, z) and orientation (roll, pitch, yaw) values for the geometry expression:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We define within the `front_left_origin` property block `xyz` values as being
+    “0.3 0 0” and the `rpy = "0 0 0"`. If we get a new rover with a new chassis, we
+    could update the entire system by changing the `front_left_origin` property block.
+    We do not have to track down every instance of “`front_left_origin`” in all the
+    files for the required changes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can use Xacro for simple math expressions for sensor processing or for rover
+    component dimensions. Only basic arithmetic and variable substitution are supported.
+    For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Xacro `${}` is also an extension for the Python arithmetic library. Both
+    constants (**pi**) and functions (**radians**, a degrees-to-radians conversion)
+    defined in the library are accessible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Xacro has conditional blocks (if..unless) similar to programming languages
+    (if..else), such as Python. The syntax format of the Xacro conditional blocks
+    are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The conditional blocks must always return a Boolean value; i.e., `true` (1)
+    or `false` (0). Any other return throws an exception, an invalid return value.
+    In the following five statements, the first line defines `var` as `useit`. The
+    second line checks whether `var` is equal to `useit` and returns a `true`. The
+    third line looks at the substrings of `var` and returns a `true`. The fourth line
+    defines an array of values called `allowed`. The fifth line checks to see if the
+    `"1"` is allowed in the array. When determining the value, we used double quotes
+    “ ”, and we used single quotes ‘ ‘ when using a string constant.
+  prefs: []
+  type: TYPE_NORMAL
+- en: More Examples of XML
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To show the power of XML and Xacro, we will create a few example macros. This
+    XML example declares a joint and link pair. The dynamic joint is named `caster_front_left_joint`
+    with an axis value of `xyz="0 0 1"`. The link component, `caster_front_left`,
+    defines the coordinates (`xyz="0 1 0"`), orientation {`rpy="0 0 0"`), color (name=“yellow”),
+    and the mass constant (0.1). Furthermore, we define inertial (moment of inertia)
+    values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: To illustrate the capabilities of Xacro, the next macro creates a macro that
+    receives two macros as parameters, “first” and “second”! These two macros are
+    defined elsewhere. The two parameters inserted sequentially create a larger macro
+    called “reorder.” These multiple block parameters execute in the specified linear
+    order. These executed parameters might pass the left/right, front/back wheels
+    as macros in a single control macro to generate four individual control macros
+    (left/front, right/front, left/back, right/back).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Macros may contain other macros, called nesting. The outer macro expands first,
+    and then the inner macro expands. A full description is beyond the scope of this
+    text. To include nested macros in the main macro, do the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ mkdir -p catkin_ws/src/ai_rover_remastered
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ cd catkin_ws/src/ai_rover_remastered
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ mkdir launch urdf config
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'false'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'false'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '20'
+  prefs: []
+  type: TYPE_NORMAL
+- en: left_wheel_joint
+  prefs: []
+  type: TYPE_NORMAL
+- en: right_wheel_joint
+  prefs: []
+  type: TYPE_NORMAL
+- en: ${wheel_separation}
+  prefs: []
+  type: TYPE_NORMAL
+- en: ${wheel_radius * 2}
+  prefs: []
+  type: TYPE_NORMAL
+- en: '20'
+  prefs: []
+  type: TYPE_NORMAL
+- en: /ai_rover_remastered/base_controller/cmd_vel
+  prefs: []
+  type: TYPE_NORMAL
+- en: /ai_rover_remastered/base_controller/odom
+  prefs: []
+  type: TYPE_NORMAL
+- en: odom
+  prefs: []
+  type: TYPE_NORMAL
+- en: base_footprint
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: <!--
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: -->
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'false'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'false'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '20'
+  prefs: []
+  type: TYPE_NORMAL
+- en: left_wheel_joint
+  prefs: []
+  type: TYPE_NORMAL
+- en: right_wheel_joint
+  prefs: []
+  type: TYPE_NORMAL
+- en: ${wheel_separation}
+  prefs: []
+  type: TYPE_NORMAL
+- en: ${wheel_radius * 2}
+  prefs: []
+  type: TYPE_NORMAL
+- en: '20'
+  prefs: []
+  type: TYPE_NORMAL
+- en: /ai_rover_remastered/base_controller/cmd_vel
+  prefs: []
+  type: TYPE_NORMAL
+- en: /ai_rover_remastered/base_controller/odom
+  prefs: []
+  type: TYPE_NORMAL
+- en: odom
+  prefs: []
+  type: TYPE_NORMAL
+- en: base_footprint
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 0 0 0 0 0 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'true'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '20'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '1440'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '1'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '-3.14159'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '3.14159'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.10'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '30.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.01'
+  prefs: []
+  type: TYPE_NORMAL
+- en: gaussian
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.01'
+  prefs: []
+  type: TYPE_NORMAL
+- en: /ai_rover_remastered/laser_scan/scan
+  prefs: []
+  type: TYPE_NORMAL
+- en: sensor_laser
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ roslaunch ai_rover_remastered ai_rover_remastered_gazebo.launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '30.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1.3962634 -->
+  prefs: []
+  type: TYPE_NORMAL
+- en: '1.57'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '800'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '800'
+  prefs: []
+  type: TYPE_NORMAL
+- en: R8G8B8
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.02'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '300'
+  prefs: []
+  type: TYPE_NORMAL
+- en: gaussian
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.007'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'true'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ai_rover_remastered/camera1
+  prefs: []
+  type: TYPE_NORMAL
+- en: image_raw
+  prefs: []
+  type: TYPE_NORMAL
+- en: camera_info
+  prefs: []
+  type: TYPE_NORMAL
+- en: camera_link
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.07'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'true'
+  prefs: []
+  type: TYPE_NORMAL
+- en: IMU_link
+  prefs: []
+  type: TYPE_NORMAL
+- en: imu
+  prefs: []
+  type: TYPE_NORMAL
+- en: imu_service
+  prefs: []
+  type: TYPE_NORMAL
+- en: '0.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '20.0'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gazebo/Orange
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gazebo/Blue
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gazebo/Blue
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ rosrun xacro xacro ai_rover_remastered.xacro > rover.urdf
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ check_urdf  rover.urdf
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Robot name is: ai_rover_remastered'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '-----------Successfully Parsed XML ------------------'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Root Link: base_footprint has 1 child(ren)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'child(1): base_link'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'child(1): caster_wheel'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'child(2): left_wheel'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'child(3): right_wheel'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ cd ~/catkin_ws/src/
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ catkin_create_pkg ai_rover_remastered
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ cd catkin_ws/
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ catkin_make
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ source devel/setup.sh
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ roslaunch ai_rover_remastered ai_rover_remastered_RViz.launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ rosrun xacro xacro ai_rover_remastered.xacro > ai_rover_remastered.urdf
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ roslaunch ai_rover_remastered ai_rover_remastered_gazebo.launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ sudo apt-get install ros-noetic-teleop-twist-keyboard
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ roscore
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: $rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: rostopic echo /cmd_vel
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ cd catkin_ws/src
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ catkin_create_pkg ai_rover_simple_control
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ cd ai_rover_simple_control
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ mkdir -p launch src
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ cd ~/catkin_ws
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ catkin_make
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ source devel/setup.sh
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ cd catkin_ws/src/ai_rover_simple_control/launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ chmod +rwx ai_rover_teleops.launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ roslaunch ai_rover_remastered ai_rover_remastered_gazebo.launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ roslaunch ai_rover_remastered_simple_control ai_rover_remastered_teleops.launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ cd ~/catkin_ws/
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ ~/catkin_ws/ source devel/setup.sh
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ ~/catkin_ws/ rosrun tf2_tools view_frames.py
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: ai_rover_remastered_simple_control/config/
+  prefs: []
+  type: TYPE_NORMAL
+- en: rviz_odom.rviz
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: ai_rover_remastered_simple_control/src /ai_rover_simple_twist_pub.py
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '#!/usr/bin/env python3'
+  prefs: []
+  type: TYPE_NORMAL
+- en: import rospy
+  prefs: []
+  type: TYPE_NORMAL
+- en: import sys
+  prefs: []
+  type: TYPE_NORMAL
+- en: from geometry_msgs.msg import Twist
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'def publish_velocity_commands():'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Velocity publisher
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: vel_pub = rospy.Publisher('/ai_rover_remastered/base_controller/cmd_vel', Twist,
+    queue_size=10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: rospy.init_node('ai_rover_simple_twist_pub', anonymous=True)
+  prefs: []
+  type: TYPE_NORMAL
+- en: msg = Twist()
+  prefs: []
+  type: TYPE_NORMAL
+- en: msg.linear.x = 0.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: msg.linear.y = 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: msg.linear.z = 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: msg.angular.x = 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: msg.angular.y = 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: msg.angular.z = 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'rate = rospy.Rate(10) # 10hz'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'while not rospy.is_shutdown():'
+  prefs: []
+  type: TYPE_NORMAL
+- en: vel_pub.publish(msg)
+  prefs: []
+  type: TYPE_NORMAL
+- en: rate.sleep()
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'if __name__ == ''__main__'':'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'if len(sys.argv) == 1:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'try:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: publish_velocity_commands()
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: $ roslaunch ai_rover_remastered ai_rover_remastered_gazebo.launch
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ chmod +rwx src/ai_rover_remastered_simple_control/src/ai_rover_remastered_simple_twist_pub.py
+  prefs: []
+  type: TYPE_NORMAL
+- en: $ rosrun ai_rover_remastered_simple_control ai_rover_remastered_simple_twist_pub.py
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE

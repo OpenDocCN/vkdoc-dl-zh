@@ -1,0 +1,2114 @@
+- en: 9. Combining Policy Gradient and Q-Learning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: So far in this book, in the context of deep learning combined with reinforcement
+    learning, Chapters [6](502835_2_En_6_Chapter.xhtml) and [7](502835_2_En_7_Chapter.xhtml)
+    explained deep Q-learning with its variants. You looked at policy gradients in
+    Chapter [8](502835_2_En_8_Chapter.xhtml). Neural network training requires multiple
+    iterations, and Q-learning, an off-policy approach, enables you to reuse sample
+    transitions multiple times, giving you sample efficiency. However, Q-learning
+    can be unstable at times. Further, it is an indirect way of learning. Instead
+    of learning an optimal policy directly, you first learn q-values and then use
+    these action values to learn optimal behavior. Chapter [8](502835_2_En_8_Chapter.xhtml)
+    looked at the approach of learning a policy directly, giving you much better improvement
+    guarantees. However, all the policy learning algorithms in Chapter [7](502835_2_En_7_Chapter.xhtml)
+    were on-policy. You used a policy to interact with the environment and made updates
+    to the policy weights to increase the probability of good trajectories/actions
+    while reducing the probability of bad ones. After each update the policy is changed,
+    making the previous sample rollouts useless. Therefore, you had to discard the
+    old ones and collect new trajectory rollouts after each update, making the process
+    an on-policy leaning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This chapter looks at combining the benefits of both approaches—that is, off-policy
+    learning while learning the policy directly. I first talk about the tradeoffs
+    of Q-learning versus policy gradient methods. After this, you will look at three
+    popular approaches of combining Q-learning with policy gradients: deep deterministic
+    policy gradients (DDPG), twin delayed DDPG (TD3), and soft actor-critic (SAC).
+    I largely follow the notations, approach, and sample code documented in the OpenAI
+    Spinning Up library.^([1](#Fn1)) CleanRL^([2](#Fn2)) is another good library to
+    explore for code implementations of these.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tradeoffs in Policy Gradient and Q-Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Chapter [6](502835_2_En_6_Chapter.xhtml) looked at DQN, the deep learning version
+    of Q-learning. In Q-learning, an off-policy method, you collect transitions from
+    an exploratory behavior policy and then use these transitions in a batch stochastic
+    gradient update to learn the q-values. As you learn the q-values, you improve
+    the policy by taking the max over the q-values of all possible actions in a state
+    to choose the best action. This was the equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{r}_i+\gamma
+    .{\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime
+    };{w_t}^{-}\right)-\hat{q}\left({s}_i,{a}_i;{w}_t\right)\right].{\nabla}_{w_t}\
+    \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note the max. By taking max, that is, ![$$ {\mathit{\max}}_{a_i^{\prime }}\overset{\sim
+    }{q}\left({s}_i^{\prime },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq1.png),
+    you are defining the TD(0) target value as ![$$ {r}_i+\gamma .{\mathit{\max}}_{a_i^{\prime
+    }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq2.png),
+    which is the maximum value under best action ![$$ {a}_i^{\prime } $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq3.png).
+    This forces the current state-action q-value ![$$ \hat{q}\left({s}_i,{a}_i;w\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq4.png) to update
+    the weights to reach the higher target. In other words, you are guiding network
+    updates to follow the Bellman optimality equation. The learning is off-policy
+    because the Bellman optimality equations hold no matter what policy was followed.
+    It needs to be satisfied for all the (*s*, *a*, *r*, *s*^’) transitions, no matter
+    which policy these were generated from. You can reuse the transitions with the
+    replay buffer, which makes this learning very sample-efficient. However, there
+    are a few issues that Q-learning suffers from.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first one is about using Q-learning in its current form for continuous actions.
+    Look at ![$$ {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq5.png).
+    All the examples in Chapters [6](502835_2_En_6_Chapter.xhtml) and [7](502835_2_En_7_Chapter.xhtml)
+    had discrete actions. Do you know why? How do you think you will perform *max*
+    when the action space is continuous and multidimensional, for example, moving
+    multiple joints of a robot together?
+  prefs: []
+  type: TYPE_NORMAL
+- en: When the actions are discrete, it is easy to take *max*. You input state *s*
+    to the model, and you get *Q*(*s*, *a*) for all the possible actions, that is,
+    *Q*(*s*, *a*[1]), ⋯*Q*(*s*, *a*[*m*]). With a limited number of discrete actions,
+    choosing the *max* is easy. Figure [9-1](#Fig1) shows a sample model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A block diagram for D Q N learning. S is sent to a W block which gives outputs
+    q circumflex of s, a 1, w to q circumflex of s, a m, w.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generic model for DQN learning with discrete actions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now imagine the actions being continuous! How would you take the maximum? To
+    find ![$$ {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq6.png),
+    you will have to run another optimization algorithm, which will find the q-value
+    maximizing ![$$ {a}_i^{\prime } $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq7.png).
+    And you will have to do for every value of the state *s* in the training samples.
+    You can imagine how expensive this process would be—running maximizing action
+    search for every transition in the batch as part of policy improvement.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second issue is that of learning the wrong objective. You want an optimal
+    policy, but you do not do this directly under DQN. You learn the action-value
+    functions and then use *max* to find the optimal q-value/optimal action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The third issue is that DQN is also not stable at times. There are no theoretical
+    guarantees, and you are trying to update the weights using the semi-gradient update
+    covered in Chapter [5](502835_2_En_5_Chapter.xhtml). You are essentially trying
+    to follow the process of supervised learning with changing targets. What you learn
+    can impact the new trajectory generation, which in turn can impact your quality
+    of learning. All the training progress curves for the average return per episode
+    that you saw for DQN in previous chapters did not continually improve. They were
+    choppy and required careful adjustment of hyperparameters to ensure that the algorithm
+    settled toward a good policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, the fourth issue is that DQN learns a deterministic policy. You use
+    an exploratory behavior policy to generate samples and add exploration while the
+    agent learns a deterministic policy. Experiments, especially in robotics, have
+    shown that some amount of stochastic policy is better, as the modeling of the
+    world and manipulations one does with joints are not always perfect. You need
+    to have some amount of randomness to adjust for imperfect modeling or conversion
+    of action values to actual robot joint movements. Also, deterministic policies
+    are a limiting case of stochastic policies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Turn your attention now to policy gradient methods. In policy gradient methods,
+    you input the state and the output you get is the policy, that is, the probability
+    of actions for discrete actions or the parameters of a probability distribution
+    in the case of continuous actions. The policy gradients allowed you to learn the
+    policies for both discrete and continuous actions. However, learning continuous
+    actions is not feasible in DQN. Figure [9-2](#Fig2) shows the model used in policy
+    gradients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 block diagrams for policy gradient methods. For discrete actions, s is sent
+    to a theta block which gives categorical distribution outputs pi theta of a 1,
+    s to pi theta of a m, s. For continuous actions, s is sent to a theta block which
+    gives outputs mu theta of s and sigma square theta of s.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy networks for policy gradient methods
+  prefs: []
+  type: TYPE_NORMAL
+- en: Chapter [8](502835_2_En_8_Chapter.xhtml) showed discrete actions, but the process
+    works out fine for continuous actions, as discussed in that chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Further, using the policy gradient approach, you directly learn to improve the
+    policy instead of the roundabout way of first learning the value functions and
+    then using them to find the optimal policy. The vanilla policy gradient did suffer
+    from a collapse to a bad region, and you saw approaches like TRPO and PPO controlling
+    the step size to improve the guarantee of policy gradients, leading to a better
+    policy learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy gradients, unlike DQN, learn a stochastic policy, and thereby exploration
+    is built into the policy you are trying to learn. However, the biggest lacuna
+    in the policy gradient method was that it is an on-policy approach. Once you use
+    the transitions to calculate the gradient update, the model has moved to a new
+    policy. The earlier transitions are not relevant anymore in this updated policy
+    world. You need to discard the previous transitions after an update and generate
+    new trajectory/transitions to train the model on. This makes the policy learning
+    very sample inefficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You did use value learning as part of policy gradients using the actor-critic
+    methods in which the policy network was the actor trying to learn the best actions,
+    and the value network was the critic informing the policy network of how good
+    or bad the actions are. However, even using the actor-critic methods, the learning
+    was on-policy. You used the critic to guide the actor. The critic is based on
+    the current policy. Therefore, as the policy changes with updates, you need to
+    keep discarding all the current sample transitions after each update to the policy
+    (and/or value) networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Is there a way you could learn the policy directly but somehow leverage Q-learning
+    to learn off-policy? And could you this so for the continuous action space? This
+    is covered in this chapter. You will learn how to combine Q-learning with policy
+    gradients to come up with algorithms that are off-policy and work well for continuous
+    actions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: General Framework to Combine Policy Gradient with Q-Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'This section looks at continuous action policies. There are two networks—one
+    for learning the optimal action for a given state, the actor network. Suppose
+    the policy network is parameterized by *θ*, and the network learns a policy that
+    produces the action *a* = *μ*[*θ*](*s*), which maximizes *Q*(*s*, *a*). In mathematical
+    notation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{a^{\prime }}{\mathit{\max}}{Q}^{\ast}\left({s}^{\prime },{a}^{\prime}\right)\approx
+    {Q}^{\ast}\left({s}^{\prime },{\upmu}_{\uptheta}(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The second network, the critic network, will also take state *s* as one input
+    and the optimal action from the first network, *μ*[*θ*](*s*), as the other input
+    to produce the q-value *Q*[ϕ](*s*, μ[θ](*s*)). Figure [9-3](#Fig3) shows the interaction
+    of the two networks conceptually.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A block diagram for interactions of two networks. S is sent to N N of theta
+    and N N of phi. N N of theta sends a to N N of phi. N N of phi gives Q of s, a.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Combining the policy and Q-learning. You learn the policy directly as well as
+    Q using two networks in which the action output from the first network (actor)
+    is fed into the second network (critic), which learns *Q*(*s*, *a*)
+  prefs: []
+  type: TYPE_NORMAL
+- en: To ensure exploration, take action *a*, which is exploratory. This is similar
+    to the approach taken in Q-learning, where you learned a deterministic policy
+    but generated transitions from an exploratory *ε*-greedy policy. Similarly, here,
+    while you learn **a**, you add a bit of randomness *ϵ*~*N*(0, *σ*²) and use the
+    **a** + **ε** action to explore the environment and generate trajectories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As with Q-learning, you will use a replay buffer to store the transitions and
+    reuse the these during learning. This is one of the big benefits common to all
+    the approaches discussed in this chapter. It will make policy learning off-policy
+    and hence sample efficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In Q-learning, you had to use a target network that was a copy of the Q-network.
+    The reason was to provide some kind of stationery target while learning q-values.
+    You can revisit the discussion of target networks in Chapters [5](502835_2_En_5_Chapter.xhtml)
+    and [6](502835_2_En_6_Chapter.xhtml). In those approaches, the target network
+    weights were updated with the online/agent network weights periodically. Here,
+    you will also use a target network. However, the approach for updating the target
+    network weights for algorithms in this chapter is that of *polyak averaging* (*exponential
+    averaging*), as given by the following equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\upphi}_{target}\leftarrow \uprho .{\upphi}_{target}+\left(1-\uprho \right)\upphi
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will also be using a target network for the policy network. It is for the
+    same reason as in q-value networks, that is, providing stable targets. With stable
+    targets, you can carry out the supervised learning style of gradient descent and
+    adjust the weights to the approximate *Q*(*s*, *a*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: With this background, you are ready to look at the first algorithm—deep deterministic
+    policy gradient (DDPG).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deep Deterministic Policy Gradient
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In 2016, in a paper titled “Continuous Control with Deep Reinforcement Learning,”^([3](#Fn3))
+    authors from DeepMind introduced the DDPG algorithm. The authors had the following
+    points to make about their approach:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: While DQN solves high-dimensional state space, it can only handle discrete and
+    low-dimensional action space. DQN cannot be applied to continuous and high-dimensional
+    action domains, such as physical control tasks like robots.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Discretizing action space is not an option due to the *curse of dimensionality*.
+    Assume that you have a robot with seven joints and each joint can move in the
+    range (−*k*, *k*). Do a coarse discretization of each joint having three possible
+    values {−*k*, 0, *k*}. Even with this coarse discretization, the total combinations
+    of discrete actions in all seven dimensions work out to 3⁷ = 2187\. Instead, if
+    you decide to divide the discrete range for each joint in ten possible values
+    in the range (−*k*, *k*), you get 10⁷ = 10 *million* options. This is the *curse
+    of dimensionality,* where the set of possible action combinations grows exponentially
+    with each new dimension/joint.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The DDPG algorithm is as follows:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Model free*: You do not know the model. You learn it from the interaction
+    of the agent with the environment.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Off-policy*: DDPG, like DQN, uses an exploratory policy to generate transitions
+    and learns a deterministic policy.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Continuous and high-dimensional action space*: DDPG works only for a continuous
+    action domain and works well with high-dimensional action spaces.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Actor-critic*: This means you have an actor (policy network) and critic, the
+    action-value (q-value) network.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Replay buffer*: Like DQN, DDPG uses a replay buffer to store transitions and
+    uses them to learn. This breaks the temporal dependence/correlation of training
+    examples, which could otherwise mess up the learning.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Target network*: Like DQN, DDPG uses a target network to provide stable targets
+    for the q-value to learn. However, unlike DQN, it does not update the target network
+    by copying over the weights of the online/agent/main network periodically. Rather,
+    it uses the polyak/exponential average to keep moving the target network a little
+    bit after every update to the main network.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Now turn your attention to the network architecture and losses you calculate.
+    First you’ll look at the Q-learning part, and then you will look at the policy
+    learning network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Q-Learning in DDPG (Critic)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In DQN, you calculated a loss that was minimized by gradient descent. The loss
+    is given by Equation [6-3](502835_2_En_6_Chapter.xhtml#PC4), reproduced here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{L}=\frac{1}{\mathrm{N}}{\sum}_{i=1}^N{\left[{r}_i+\left(\left(1-
+    don{e}_i\right).\gamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s rewrite the equation. Drop subindex **i** and **t** to reduce the clutter
+    of notation. Change the summation to expectation to emphasize that what you usually
+    want is an expectation, but it is estimated by average over samples under Monte
+    Carlo. Eventually in the code you have sums, but they are Monte Carlo estimations
+    of some expectation. Also replace ![$$ {w}_t^{-} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq8.png),
+    the target network weights, with ϕ[*targ*]. Similarly, replace the main weights
+    *w*[*t*] with ϕ. Further, move the weights from inside the function parameter
+    to the sub-indices on the function, that is, *Q*[ϕ](...) ← *Q*(...; ϕ). With all
+    these symbol changes, Equation [9-4](#Fig4) now looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left(\upphi, D\right)=\underset{\left(s,a,r,{s}^{''},d\right)\sim D}{E}\left[{\left({Q}_{\upphi}\left(s,a\right)-\left(r+\upgamma
+    \left(1-d\right)\underset{a^{\prime }}{\mathit{\max}}{Q}_{\upphi_{targ}}\left({s}^{\prime
+    },{a}^{\prime}\right)\right)\right)}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is still the DQN formulation where you take a max of discrete actions
+    in state *s*^’ to get ![$$ \underset{a^{\prime }}{\mathit{\max}}{Q}_{\upphi_{targ}}\left({s}^{\prime
+    },{a}^{\prime}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq9.png).
+    In continuous space, you cannot take *max*, and hence you have another network
+    (actor) to take input state *s* and produce the action, which maximizes ![$$ {Q}_{\upphi_{targ}}\left({s}^{\prime
+    },{a}^{\prime}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq10.png).
+    That is, you replace ![$$ \underset{a^{\prime }}{\mathit{\max}}{Q}_{\upphi_{targ}}\left({s}^{\prime
+    },{a}^{\prime}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq11.png)
+    with ![$$ {Q}_{\upphi_{targ et}}\left({s}^{''},{\upmu}_{\uptheta_{targ}}\left({s}^{''}\right)\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq12.png) where
+    ![$$ {a}^{\prime }={\mu}_{\theta_{targ}}\left({s}^{''}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq13.png)
+    is the target policy. The updated loss expression is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left(\phi, D\right)=\underset{\left(s,a,r,{s}^{''},d\right)\sim D}{E}\left[{\left({Q}_{\phi}\left(s,a\right)-\left(r+\gamma
+    \left(1-d\right){Q}_{\phi_{targ et}}\left({s}^{''},{\mu}_{\theta_{targ}}\left({s}^{''}\right)\right)\right)\right)}^2\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is the updated mean squared Bellman error (MSBE) that you will implement
+    in code and then do back propagation to minimize the loss function. Note that
+    this is only a function of ϕ and so the gradient of *L*(*ϕ*, *D*) is with respect
+    to *ϕ*. As discussed earlier, in the code you will replace the expectation with
+    the sample average being the MC estimate of the expectation. Next let’s look at
+    the policy learning part.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Learning in DDPG (Actor)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In the policy learning part, you are trying to learn *a* = *μ*[*θ*](*s*), a
+    deterministic policy that gives the action that maximizes *Q*[*ϕ*](*s*, *a*).
+    As the action space is continuous and you assume that the *Q* function is differentiable
+    with respect to the action, you can just perform gradient ascent with respect
+    to the policy parameters to solve.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{\theta }{\mathit{\max}}\ J\left(\theta, D\right)=\underset{\theta
+    }{\mathit{\max}}\underset{s\sim D}{E}\left[{Q}_{\upphi}\left(s,{\upmu}_{\uptheta}(s)\right)\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As the policy is deterministic, the expectation in Equation [9-7](#Equ7) does
+    not depend on the policy, which is different than what you saw in stochastic gradients
+    in the previous chapter. The expectation operator there depended on policy parameters
+    because the policy was stochastic, which in turn impacted the expected q-value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can take the gradient of *J* about *θ* to get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\theta}\;J\left(\theta, D\right)=\underset{s\sim D}{E}\left[{\nabla}_a{Q}_{\phi}\left(s,a\right){\left.\kern0em
+    \right|}_{a={\mu}_{\theta }(s)}{\nabla}_{\theta }{\mu}_{\theta }(s)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is straight application of chain rule. Also note that you do not get any
+    ∇ *log* (...) terms inside the expectation, as the state *s* over which the expectation
+    is being taken is coming from the replay buffer, and it has no dependence on the
+    parameter *θ* with respect to which gradient is being taken.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Further, in a 2014 paper titled “Deterministic Policy Gradient Algorithms,”^([4](#Fn4))
+    the authors showed that Equation [9-8](#Equ8) is the policy gradient; that is,
+    the gradient of the policy’s performance. You are advised to read through both
+    papers to get a deeper theoretical understanding of the math behind DDPG.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As discussed earlier, to aid in exploration, while you learn a deterministic
+    policy, you will use a noisy exploratory version of the learned policy to explore
+    and generate transitions. You do this by adding a mean zero Gaussian noise to
+    the learning policy. Adding noise is a standard process in ML and it acts as a
+    regularizer, making sure that the learned policy has good generalization capabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pseudocode and Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: At this point, you are ready to see the complete pseudocode. Refer to Figure
+    [9-4](#Fig4) for this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 14-step pseudocode for deep deterministic policy gradient. Input initial policy
+    parameters theta, Q-function parameter phi, and empty relay buffer D is followed
+    by set target parameters equal to online parameters, update Q-function and policy,
+    and update target networks using poly a k averaging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deep deterministic policy gradient algorithm
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gymnasium Environments Used in Code
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Turning to the implementation, you will be using two environments in this chapter
+    to run the code. The first one is a pendulum swing environment called `Pendulum-v1`.
+    Here, the state is a three-dimensional vector giving the angle of the pendulum
+    (i.e., its *cos* and *sin* components), with the third dimension being the angular
+    velocity (theta-dot): ![$$ \left[\mathit{\cos}\left(\uptheta \right),\mathit{\sin}\left(\uptheta
+    \right),\kern0.5em \dot{\theta}\right]. $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq14.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The action is a single continuous value in the range of [-2.0, 2.0]—the torque
+    being applied to the pendulum. The idea is to balance the pendulum in an upright
+    position for as long as possible. See Figure [9-5](#Fig5). You may also refer
+    to the documentation inside the Gymnasium library.^([5](#Fn5))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A graphical representation of a pendulum that swings clockwise. The state shape
+    is (3, ) and action shape is (1, ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pendulum environment from the Gymnasium library
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You will train the algorithm on another environment—the continuous version
+    of Lunar-Lander called `LunarLanderContinuous-v2`. In this environment, you try
+    to land the lunar module on the moon between the flags. The state vector is eight-dimensional:
+    `[x_pos, y_pos, x_vel, y_vel, lander_angle, lander_angular_vel, left_leg_ground_contact_flag,
+    right_leg_ground_contact_flag]`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The action is two-dimensional floats: `[main engine, left-right engines]`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Main engine: Range (-1..0) is for engine off, and range (0,1) is the engine
+    throttle from 50% to 100% power. The engine can’t work with less than 50 percent
+    power.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Left/Right – lateral boosters: Range (-1.0, -0.5) fires the left booster, range
+    (+0.5, +1.0) fires the right booster, and range (-0.5, 0.5) is for both boosters
+    off.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [9-6](#Fig6) shows a snapshot of the environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A screenshot of the lunar lander environment video. A lunar lander hovers in
+    between 2 flags, above an irregular surface.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lunar-lander continuous from the Gymnasium library
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code Listing
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now turn your attention to the actual code for implementing the DDPG pseudocode
+    in Figure [9-4](#Fig4). The code is from the `9.a-ddpg.ipynb` file. This section
+    first explains the Q and policy networks, followed by loss calculation and then
+    the training loop. Finally, you will learn about the code and test the performance
+    of the trained agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Network Actor
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: First let’s look at the *actor/policy* network. Listing [9-1](#PC1) shows the
+    policy network code in PyTorch. You define a simple neural network with two hidden
+    layers of size 256, each with ReLU activation. If you look at the `forward` function`,`
+    you will notice that the final layer (`self.actor`) is passed through the `tanh`
+    activation. `Tanh` is a squashing function; it re-maps the values in (−∞, ∞) to
+    a squashed range of (−1, 1). You then multiply this squashed value with the action
+    limit (`self.act_limit`) so that the continuous output from `MLPActor` is within
+    the valid range of action values that the environment accepts. You create a network
+    class by extending the PyTorch `nn.Module` class, which requires you to define
+    a `forward` function with input state *s* as input, thus producing the action
+    value *a* as the network output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Q-Network Critic Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Next, you look at the Q-network (*critic*). This is also a simple two-layer
+    hidden network with ReLU activation and then a final layer with output dimension
+    equal to one, the dimensionality of action space for the environment. The final
+    layer does not have any activation, enabling the network to produce any value
+    as output of the network. This network is outputting the q-value, and that is
+    why you need to have a possible range of (−∞, ∞).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [9-2](#PC2) shows the code for the critic network in PyTorch. This is
+    pretty similar to the implementation of the actor/policy network, except for the
+    minor differences discussed earlier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Combined Model-Actor-Critic Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Once both the networks are defined, you combine them into a single class that
+    allows you to manage the online and target networks in a more modular way. This
+    is just for better code organization and nothing more. The class combining the
+    two networks is implemented as `MLPActorCritic`. In this class, you also define
+    a `get_action` function, which takes the state and a noise scale. It passes the
+    state through the policy network to get *μ*[*θ*](*s*), and then it adds a noise
+    (zero mean Gaussian noise) to give a noisy action for exploration. This function
+    implements Step 4 of the algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ a= clip\left({\upmu}_{\uptheta}(s)+\upalpha \cdotp \upvarepsilon, {a}_{Low},{a}_{High}\right)\mathrm{where}\
+    \upvarepsilon \sim N,\mathrm{and}\ \upalpha \kern0.5em \mathrm{is}\ \mathrm{the}\
+    \mathrm{scale}\ \mathrm{of}\ \mathrm{noise} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '`The get_action` method is the one you will be using to get the action from
+    a policy instead of directly calling `MLPActor` from Listing [9-1](#PC1). Listing
+    [9-3](#PC3) shows the implementation of `MLPActorCritic` in PyTorch.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Experience Replay
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: As with DQN, you will again use experience replay in DDPG to store the prior
+    transition. The implementation of experience replay stays the same as that for
+    DQN. I am not listing the code for it. Interested readers can review the code
+    from the Jupyter notebook called `9.a-ddpg.ipynb`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Q-Loss Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: This section investigates the Q-loss calculation. You are essentially implementing
+    the equations from Steps 11 and 12 of the pseudocode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ y\left(r,{s}^{\prime },d\right)=r+\upgamma \left(1-d\right){Q}_{\upphi_{\mathrm{targ}}}\left({s}^{\prime
+    },{\upmu}_{\uptheta_{\mathrm{targ}}}\left({s}^{\prime}\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {Q}_{\mathrm{loss}}=\frac{1}{\left|B\right|}{\sum}_{\left(s,a,r,{s}^{\prime
+    },d\right)\in B}{\left({Q}_{\upphi}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Listing [9-4](#PC4) gives the PyTorch implementation. You first convert the
+    batch of (*s*, *a*, *r*, *s*^’, *d*) into PyTorch tensors. Next, you calculate
+    *Q*[*ϕ*](*s*, *a*) using the batch of (*s*, *a*) and pass it through the *policy*
+    network. The code that implements this is `predicted_qvalues = agent.q(states,
+    actions).`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Following this, you calculate the target *y*(*r*, *s*^′, *d*) as per the previous
+    expression. You use `torch.no_grad()` for efficiency purposes to disable the gradient
+    calculation while computing the target, as you do not want to adjust the target
+    network weights using auto-diff from PyTorch. Rather, you adjust the target network
+    weights manually using polyak averaging. Stopping the calculation of unwanted
+    gradients can speed up the training, and it ensures that you do not have any unintended
+    side-effects of a gradient step impacting the weights that you want to keep frozen
+    or adjust manually. Finally, you calculate the *Q*[Loss] as per the previous expression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch carries out the back propagation to calculate the gradient. You do not
+    need to calculate the gradient explicitly in the code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Policy Loss Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Next, you need to calculate the policy loss as per Step 13 of the pseudocode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\mathrm{Policy}}_{\mathrm{Loss}}=-\frac{1}{\left|B\right|}{\sum}_{s\in
+    B}{Q}_{\phi}\left(s,{\mu}_{\theta }(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is a straightforward computation. It is just a three-line code implementation
+    in PyTorch. Listing [9-5](#PC5) contains the code in PyTorch. Note the -ve sign
+    in the loss. The algorithm needs to do gradient ascent on the policy objective,
+    but auto-differentiation libraries like PyTorch and TensorFlow implement gradient
+    descent. Multiplying the policy objective by -1.0 makes it a loss, and gradient
+    descent on a loss is the same as gradient ascent on a policy objective.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: One-Step Update Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Next you define a function called `one_step_update` that gets a batch of (*s*,
+    *a*, *r*, *s*^’, *d*) and computes the Q-loss followed by back propagation, and
+    then a similar step of policy-loss computation followed by the gradient step.
+    It finally carries out an update to the target network weights using polyak averaging.
+    Essentially, this step with the previous two functions `compute_q_loss` and `compute_policy_loss,`
+    implements Steps 11 to 14 of the pseudocode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [9-6](#PC6) shows the PyTorch code for `one_step_update`. The first
+    step is to calculate the Q-loss and carry out gradient descent on the critic/Q
+    network weights. This is followed by computing the policy loss and gradient descent
+    on the actor/policy network weights. In certain versions of DDPG, the update to
+    policy is delayed as compared to update to Q-network, that is, one update of policy
+    is carried out for every “k” updates of the Q network. The logic to control the
+    “k” is by using the function input parameter called `update_every``.` This implementation
+    uses a value of 1 so that every update of Q is followed by an update of the policy
+    as well. Lastly, you update the target network weights using polyak averaging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'DDPG: Main Loop'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The final step is the implementation of the DDPG algorithm, which uses the earlier
+    `one_step_update` function. It creates the optimizers and initializes the environment.
+    It keeps stepping through the environment using the current online policy. It
+    also maintains a history of `q_loss`, `policy_loss`, and average return per episode
+    so that you can plot the trends of these three key metrics during the progress
+    of training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initially, for the first `start_steps=10000`, it takes a random action to explore
+    the environment, and once enough transitions are collected, it uses the current
+    policy with scaled Gaussian noise to selection actions. The transitions are added
+    to the `ReplayBuffer`, dropping the earliest one from buffer if the buffer has
+    reached full capacity. Once `start_steps` count is reached, it starts gradient
+    updates inside the main training loop. This happens using the `one_step_update`
+    function defined in Listing [9-6](#PC6). You then run the training loop for a
+    total of 20,000 steps, the first 10,000 to collect transitions to fill the replay
+    buffer, followed by the next 10,000 steps of gradient updates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The loop also has code to update the plots of training progress for Q-loss,
+    policy-loss, and average return per episode. The update frequency of graphs is
+    controlled with the `eval_freq` parameter. The training loop code is shown in
+    Listing [9-7](#PC7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: There are additional utility codes used to record the trained agent videos.
+    The rest of the code trains the agent and then records the performance of the
+    trained agent. You run the algorithm first for the Pendulum environment. These
+    code versions are interesting, but as they are incidental to the objective of
+    learning about DDPG, I do not dive into the details of these code implementations.
+    However, interested readers may want to check out the relevant library documentation
+    and step through the code. Figure [9-7](#Fig7) shows the graph as training progresses.
+    If you watch the video of the trained agent in the `9.a-ddpg.ipynb` notebook,
+    you will see that the agent quickly learns to balance the pole in an upright position,
+    within 10,000 steps of gradient updates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 3 line graphs for pendulum using D D P G. Left. Mean return per episode has
+    a fluctuating line. Center. A fluctuating line for loss of Q decreases logarithmically
+    from (0, 95) to (8000, 15). Right. A noisy line for loss of actor decreases from
+    (0, 2.5) to (8000, negative 24). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training progress for Pendulum using DDPG
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can also run the same code train an agent for Lunar-Lander Continuous environment.
+    You can refer to the notebook for observing the training graphs and videos.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you look at twin delayed DDPG, also known as TD3\. It has some other enhancements
+    and tricks to address some of the stability and convergence speed issues seen
+    in DDPG.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Twin Delayed DDPG
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Twin delayed DDPG (TD3) was proposed in 2018 in a paper titled “Addressing
+    Function Approximation Error in Actor-Critic Methods.”^([6](#Fn6)) DDPG suffers
+    from the overestimation bias that you saw in Q-learning in Chapter [4](502835_2_En_4_Chapter.xhtml)
+    (in the section “Maximization Bias and Double Q-learning”). You saw the approach
+    of double DQN in Chapter [7](502835_2_En_7_Chapter.xhtml) to address the bias
+    by decoupling the maximizing action and maximum q-value. In the previously mentioned
+    paper, the authors show that DDPG also suffers from the same overestimation bias.
+    They propose a variant of double Q-learning, which addresses this overestimation
+    bias in DDPG. The approach uses the following modifications:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Clipped double Q-learning*: TD3 uses two independent Q-functions and takes
+    the minimum of the two while forming targets under Bellman equations, that is,
+    the targets in Step 11 of the DDPG pseudocode in Figure [9-4](#Fig4). This modification
+    is the reason the algorithm is called *twin*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Delayed policy updates*: TD3 updates the policy and target networks less frequently
+    as compared to the Q-function updates. The paper recommends one update to the
+    policy and target networks for every two updates of the Q function. It means carrying
+    out updates in Steps 13 and 14 of the DDPG pseudocode in Figure [9-4](#Fig4) once
+    for every two updates of the Q-function in Steps 11 and 12\. This modification
+    is the reason to call this algorithm *delayed*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Target policy smoothing*: TD3 adds noise to the target action, making it harder
+    for the policy to exploit Q-function estimation errors and control the overestimation
+    bias.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Target-Policy Smoothing
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The action used to calculate the target *y*(*r*, *s*^’, *d*) is based on the
+    target networks. In DDPG, you calculated ![$$ {a}^{\prime}\left({s}^{\prime}\right)={\mu}_{\theta_{\mathrm{targ}}}\left({s}^{\prime}\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq15.png) in step
+    11 of Figure [9-4](#Fig4). However, in TD3, you carry out the target policy smoothening
+    by adding noise to the action. To the deterministic action ![$$ {\mu}_{\theta_{\mathrm{targ}}}\left({s}^{\prime}\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq16.png), you
+    add a mean zero Gaussian noise with some clip ranges. The action is then further
+    clipped using *tanh* and multiplied with `max_action_range` to make sure that
+    action values fit within the range of accepted action values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ a= clip\left({\mu}_{\theta }(s)+\alpha \cdotp \epsilon, {a}_{Low},{a}_{High}\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-9)
+  prefs: []
+  type: TYPE_NORMAL
+- en: where *ϵ* ∼ *N*, and *α* is the scale of noise equal to range of action values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Q-Loss (Critic)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'You’ll use two independent Q-functions. The minimum of the two Q functions
+    is used in the TD(0) target and this target is then used for the combined Q-loss,
+    which is minimized to update the parameters of the two agent Q networks. Expressing
+    the target mathematically looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ y\left(r,{s}^{\prime },d\right)=r+\gamma \left(1-d\right)\underset{i=1,2}{\min
+    }{Q}_{\phi_{\mathrm{targ},i}}\left({s}^{\prime },{a}^{\prime}\left({s}^{\prime}\right)\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ10.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This first uses Equation [9-9](#Equ9) to find the noisy target action *a*^′(*s*^′).
+    This in turn is used to calculate the target q-values: the q-value of the first
+    and second Q target networks ![$$ {Q}_{\phi_{\mathrm{targ},1}}\left({s}^{\prime
+    },{a}^{\prime}\left({s}^{\prime}\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq17.png)
+    and ![$$ {Q}_{\phi_{\mathrm{targ},2}}\left({s}^{\prime },{a}^{\prime}\left({s}^{\prime}\right)\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq18.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The common target in Equation [9-10](#Equ10) is used next to find the losses
+    for both Q-networks, as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{Loss,1}=\frac{1}{B}{\sum}_{\left(s,a,r,{s}^{\prime },d\right)\in
+    B}{\left({Q}_{\upphi_1}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ11.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-11a)
+  prefs: []
+  type: TYPE_NORMAL
+- en: And,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{Loss,2}=\frac{1}{B}{\sum}_{\left(s,a,r,{s}^{\prime },d\right)\in
+    B}{\left({Q}_{\upphi_2}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ12.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-11b)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The losses are added and then minimized independently to train the ![$$ {Q}_{\phi_1}
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq19.png) and ![$$
+    {Q}_{\phi_2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq20.png)
+    networks (i.e., two online Critic networks).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{Loss}={\sum}_{i=1,2}{Q}_{Loss,i} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ13.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-12)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Loss (Actor)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The policy loss calculation remains unchanged, the same as what was used in
+    DDPG.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{Polic}{\mathrm{y}}_{\mathrm{Loss}}=-\frac{1}{\mathrm{B}}{\sum}_{\mathrm{s}\in
+    B}{\mathrm{Q}}_{\upphi_1}\left(s,{\mu}_{\theta }(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-13)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that you use only ![$$ {\mathrm{Q}}_{\upphi_1} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq21.png)
+    in the equation. As with DDPG, also note the -ve sign. You need to do gradient
+    ascent, but PyTorch does gradient descent. You can convert the ascent to descent
+    using a -ve sign.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Delayed Update
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Update the online policy and the agent network weights in a delayed manner—one
+    update for every two updates of the online Q networks ![$$ {Q}_{\phi_1} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq22.png)
+    and ![$$ {Q}_{\phi_2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq23.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pseudocode and Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: At this point, you are ready to see the complete pseudocode. Refer to Figure
+    [9-8](#Fig8).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A pseudocode for twin delayed D D P G. Input initial policy parameters theta,
+    Q-function parameters phi 1 and 2, and empty relay buffer D is followed by set
+    target parameters, compute target actions and action targets, update Q-function
+    and policy, and update target networks using poly a k averaging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Twin delayed DDPG algorithm
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now you walk through the code implementation. As with DDPG, you will run the
+    algorithm on Pendulum and Lunar-Lander. Most of the code is similar to that of
+    DDPG except for the three modifications covered earlier. Accordingly, I will only
+    walk through just the highlights. You can find the complete code for the PyTorch
+    version in the `9.b-td3.ipynb` file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Combined Model-Actor-Critic Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: You’ll first look at the agent networks. The individual Q-network (critic) `MLPQFunction`
+    and policy-network (actor) `MLPActor` are the same as before. However, the agent
+    where you combine the actor and critic, that is, `MLPActorCritic`, sees a minor
+    change. You now have two Q-networks in line with the “twin” part of TD3\. Listing
+    [9-8](#PC8) contains the code for `MLPActorCritic`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Q-Loss Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The replay buffer remains the same. The next change is in the way Q-loss is
+    calculated. You implement target policy smoothing and clipped double Q-learning
+    as per Equations [9-9](#Equ9) to [9-12](#Equ13). Listing [9-9](#PC9) contains
+    the code for `compute_q_loss` in PyTorch. Similar to DDPG, you first convert all
+    the inputs from NumPy array to PyTorch tensors, moving these to GPU if required.
+    `q1 = agent.q1(states, actions)` and `q2 = agent.q2(states, actions)` pass the
+    batch of `(state,action)` tuples through the two Q-networks for the online agent
+    and obtain the two q-values—the twin part of the TD3\. Next, you target the policy
+    to form `action_target`, which are the noisy actions with smoothing for next state
+    in line with Equation [9-9](#Equ9). `action_target` is then passed through the
+    target Q-networks to `obtain q1_target` and then to `q2_target`, followed by the
+    minimum of the two values to get `q_target`. Once `q_target` is obtained, you
+    form the *TD*(0) target, as shown in Equation [9-10](#Equ10). Next, you form the
+    joint MSE loss between `q1` and `target` as well as between `q2` and `target`
+    in line with Equations [9-11](#Equ11) and [9-12](#Equ13). The calculations not
+    involving the online q-network are carried out under `torch.no_grad()` to stop
+    gradient accumulation, speed up the calculation, and save memory. This is because
+    `q_loss` is used to adjust only the weights of online q-networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Policy-Loss Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Policy loss calculation remains the same except that you use only one of the
+    Q-networks, which is the first one with weights *ϕ*[1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-Step Update Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The implementation of the `one_step_update` function is also pretty similar,
+    except for the fact that you need to carry out the gradient of q-loss with respect
+    to the combined network weights of the Q1 and Q2 networks passed into the function
+    as `q_params`. Further, you carry out online policy updates and updates to target
+    Q-networks and the target policy network once every two updates of the online
+    Q-network update. Listing [9-10](#PC10) contains the implementation of `one_step_update`
+    in PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: TD3 Main Loop
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The next change is to the frequency of updates. Unlike DDPG, in TD3 you update
+    the online policy and target weights once for every two updates of Q-networks,
+    which is controlled inside the `one_step_update` function shown in Listing [9-10](#PC10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now run TD3 first for the Pendulum environment and then for the Lunar-Lander
+    Gymnasium environment. Figure [9-9](#Fig9) shows the graph as training progresses.
+    If you watch the video of the trained agent in the `9.b-td3.ipynb` notebook, you
+    will see that the agent learns to balance the pole in an upright position fairly
+    quickly, within 10,000 steps of gradient updates. Also, if you compare the average
+    return per episode for DDPG, as shown in Figure [9-7](#Fig7), with the return
+    under TD3 shown in Figure [9-9](#Fig9), you can see that under TD3, the return
+    improves almost monotonically as training progresses, while in DDPG there is an
+    initial dip before the return starts moving up. This points to the stability of
+    the learning process displayed in TD3 due to the multiple enhancements implemented
+    in TD3 over the DDPG versions. Interested readers can refer to the original paper
+    of TD3 to check out the benchmark studies that the authors of TD3 did with respect
+    to other algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 3 line graphs for pendulum using T D 3\. Left. The mean return per episode increases
+    from (0, negative 1550) to (19, negative 150). Center. The line for loss of Q
+    decreases logarithmically from (0, 11.5) to (9500, 1). Right. The loss of actor
+    increases from (0, 5) to (4800, 70). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training progress for Pendulum using TD3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Soon you will look at the last algorithm in this chapter, an algorithm called
+    *soft actor-critic (SAC)*. However, before you do that, the chapter takes a short
+    detour to explain something called the *reparameterization trick* that SAC uses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reparameterization Trick
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The reparameterization trick is a “change in the variable” approach that is
+    used in variational auto-encoders (VAEs). There, it is needed to propagate gradients
+    through nodes, which are stochastic. Reparameterization is also used to bring
+    down the variance of gradient estimates. The second reason is explored here. This
+    deep dive follows a blog post by Goker Erdogan^([7](#Fn7)) with additional analytical
+    derivations and explanations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Suppose you have a random variable *x*, which follows a normal distribution
+    with mean θ and unit variance. Let the distribution be parameterized by mean *θ*
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ x\sim {p}_{\uptheta}(x)=N\left(\uptheta, 1\right)=\frac{1}{\sqrt{2\uppi}}{e}^{-\frac{1}{2}{\left(x-\uptheta
+    \right)}^2} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ15.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-14)
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, you draw samples from it. Next, you assume that you do not know θ and
+    use these samples from the true distribution to find the estimated value of θ,
+    using mean square error (MSE) *J*(θ) with the help of gradient descent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J\left(\uptheta \right)={E}_{x\sim {p}_{\uptheta}(x)}\left[{x}^2\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The focus is on finding two different approaches for determining the estimate
+    of the derivate/gradient ∇[θ]*J*(θ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Score/Reinforce Way
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Since the parameter `\theta` over which you want to find the gradient also impacts
+    the distribution over which expectation is carried out in the expression for *J*(θ),
+    you can follow the log trick, which is what you did with REINFORCE and policy
+    gradient in Chapter [8](502835_2_En_8_Chapter.xhtml). You saw that it has high
+    variance, and that’s what I want to demonstrate for a simple example distribution
+    shown earlier. Take the derivative of *J*(θ) with respect to *θ*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ ={\nabla}_{\uptheta}{E}_{x\sim {p}_{\uptheta}(x)}\left[{x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ ={\nabla}_{\uptheta}\int {p}_{\uptheta}(x){x}^2 dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {\nabla}_{\uptheta}{p}_{\uptheta}(x){x}^2 dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int \frac{p_{\uptheta}(x)}{p_{\uptheta}(x)}{\nabla}_{\uptheta}{p}_{\uptheta}(x){x}^2
+    dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {p}_{\uptheta}(x)\frac{\nabla_{\uptheta}{p}_{\uptheta}(x)}{p_{\uptheta}(x)}{x}^2
+    dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int {p}_{\uptheta}(x){\nabla}_{\uptheta}\mathit{\log}\ {p}_{\uptheta}(x){x}^2
+    dx $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ ={E}_{x\sim {p}_{\uptheta}(x)}\left[{\nabla}_{\uptheta}\mathit{\log}\
+    {p}_{\uptheta}(x){x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Next, use Monte Carlo to form an estimate of ∇[θ]*J*(θ) using samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\nabla}_{\uptheta}\mathit{\log}\;{p}_{\uptheta}\left({x}_i\right){x}_i^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Substituting the expression for *p*[*θ*](*x*) from Equation [9-14](#Equ15)
+    and taking a log followed by gradient w.r.t. *θ*, you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N\left({x}_i-\uptheta
+    \right){x}_i^2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ16.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-15)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reparameterization Trick and Pathwise Derivatives
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The second approach is that of the reparameterization trick. You will redefine
+    random variable *x* as a composition of a constant and a normal distribution that
+    has no parameter *θ*. Let *x* be defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ x=\uptheta +\upvarepsilon \kern1em \mathrm{where}\kern0.75em \upvarepsilon
+    \sim N\left(0,1\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that the previous reparameterization leaves the distribution for *x* unchanged.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {p}_{\uptheta}(x)=N\left(\uptheta, 1\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now calculate: ![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={\nabla}_{\uptheta}{E}_{x\sim
+    {p}_{\uptheta}(x)}\left[{x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq24.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ ={\nabla}_{\uptheta}{E}_{x\sim {p}_{\uptheta}(x)}\left[{x}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ ={\nabla}_{\uptheta}{E}_{\upvarepsilon \sim N\left(0,1\right)}\left[{\left(\uptheta
+    +\upvarepsilon \right)}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: As the expectation does not depend on *θ*, you can move the gradient inside
+    without running into the *log* issue (i.e., finding log inside the derivate) shown
+    in the previous method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}J\left(\uptheta \right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ ={\nabla}_{\uptheta}\int p\left(\upvarepsilon \right){\left(\uptheta +\upvarepsilon
+    \right)}^2d\upvarepsilon $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int p\left(\upvarepsilon \right){\nabla}_{\uptheta}{\left(\uptheta +\upvarepsilon
+    \right)}^2d\upvarepsilon $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\int p\left(\upvarepsilon \right)2\left(\uptheta +\upvarepsilon \right)d\upvarepsilon
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ ={E}_{\upvarepsilon \sim N\left(0,1\right)}\left[2\left(\uptheta +\upvarepsilon
+    \right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Next, convert the expectation to the Monte Carlo (MC) estimate to get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N2\left(\uptheta
+    +{\upvarepsilon}_i\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ17.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-16)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Take a moment to compare the two estimates of ∇[θ]*J*(θ) given in Equations
+    [9-15](#Equ16) and [9-16](#Equ17). Remember these two are the estimates of the
+    true gradient ∇[θ]*J*(θ) and therefore may show different convergence properties
+    toward the actual value. This convergence will be a function of the number of
+    samples of the true distribution you have. Both will converge to the true distribution
+    as N, the number of training samples increase. However, one of them will converge
+    to the true value a lot faster and in a more stable way, while the other one will
+    take a large number of training samples. Can you guess which one is better? Ponder
+    this for a few minutes before proceeding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Equations [9-15](#Equ16) and [9-16](#Equ17) are used to calculate the mean and
+    variance of the estimates using two approaches. They do so using different values
+    of *N* to calculate the estimate as per Equations [9-15](#Equ16) and [9-16](#Equ17),
+    and then repeat the experiment 10,000 times for each value of *N* to calculate
+    the mean and variance of the gradient estimates under two approaches. This experiment
+    will show that the mean is the same for both equations. In other words, they estimate
+    the same value, but the variance of the estimate in Equation [9-15](#Equ16) is
+    higher than the variance of the estimate in Equation [9-16](#Equ17) by almost
+    one order of magnitude. It’s higher by a factor of 21.75 in this case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To carry out this experiment, follow the steps listed here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Freeze: θ = 2'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Generate samples for *x* ∼ *N*(θ, 1) and use these samples in Equation [9-15](#Equ16)
+    to calculate the REINFORCE estimate of ∇[θ]*J*(θ).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Generate samples for ϵ ∼ *N*(0, 1) and use these samples in Equation [9-16](#Equ17))
+    to calculate the reparameterized estimate of ∇[θ]*J*(θ).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You can see the details of the experiment and code in `9.c-reparam.ipynb`. When
+    you run the code for different values of N, you’ll get the convergence graphs
+    of mean and the variance of estimates for different values of N, as shown in Figure
+    [9-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 double line graphs. Left. Gradient estimate of mean versus sample size. Reinforce
+    and re-param increase from (10, 3.96) and (10, 3.995) to (100000, 4). Right. Gradient
+    estimate of variance versus N. Reinforce and re-param decrease from (10, 8,5)
+    and (10, 0.5) to (100000, 0). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convergence of the reinforce(log trick) and reparameterization approaches to
+    gradient estimates
+  prefs: []
+  type: TYPE_NORMAL
+- en: Do these make sense? You can derive the mean and variance of two gradient estimates
+    that are given in Equations [9-15](#Equ16) and [9-16](#Equ17) analytically. Start
+    with Equation [9-15](#Equ16), which is an estimate of ∇[θ]*J*(θ) under the reinforce/log-trick
+    approach, and find its expected value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\mathrm{E}\left[\frac{1}{N}{\sum}_{i=1}^N\left({x}_i-\uptheta
+    \right){x}_i^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: For now, assume that *x*[*i*] ∼ *N*(μ, σ²).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Taking expectation operation inside the summation, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\frac{1}{N}{\sum}_{i=1}^NE\left[\left({x}_i-\uptheta
+    \right){x}_i^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N}{\sum}_{i=1}^NE\left[{x}_i^3\right]-\uptheta E\left[{x}_i^2\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N}{\sum}_{i=1}^NE\left[{x}_i^3\right]-\uptheta E\left[{x}_i^2\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Using the standard results for a normal distribution *x*[*i*] ∼ *N*(*μ*, *σ*²),
+    you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\frac{1}{N}{\sum}_{i=1}^N\left({\upmu}^3+3\upmu
+    {\upsigma}^2\right)-\uptheta \left({\upmu}^2+{\upsigma}^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equab.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\left({\upmu}^3+3\upmu {\upsigma}^2\right)-\uptheta \left({\upmu}^2+{\upsigma}^2\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equac.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In this case, under reinforce, the samples *x*[*i*] come from *N*(θ, 1). Accordingly,
+    substituting, μ = θ and σ = 1, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\left({\uptheta}^3+3\uptheta
+    .1\right)-\uptheta \left({\uptheta}^2+{1}^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equad.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In the experiment, you took θ = 2\. Accordingly, making a further substitution
+    of θ = 2, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\left({2}^3+\mathrm{3.2.1}\right)-2.\left({2}^2+1\right)=14-10=4
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equae.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: As you can see from Figure [9-10](#Fig10), the mean of the estimate of ∇[θ]*J*(θ)
+    under reinforce converges to a value of 4 as derived analytically. But it does
+    so only for larger Ns, the number of samples. At *N* = 100, the mean is incorrect
+    and well above the value of 4\. This indicates that the variance of the reinforce
+    estimate must be high. Now analytically derive the variance of the reinforce estimate
+    to show that indeed is the case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\operatorname{var}\left(\frac{1}{N}{\sum}_{i=1}^N\left({x}_i-\uptheta
+    \right){x}_i^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'By using the property of variance of the sum of the random variables, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{1}{N^2}{\sum}_{i=1}^N\mathit{\operatorname{var}}\left({x}_i^3-\uptheta
+    .{x}_i^2\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equag.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^NE\left[{\left({x}_i^3-\uptheta .{x}_i^2\right)}^2\right]-{\left(E\left[{x}_i^3-\uptheta
+    .{x}_i^2\right]\right)}^2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equah.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^NE\left[{x}_i^6+{\uptheta}^2{x}_i^4-2.\uptheta
+    .{x}_i^3{x}_i^2\right]-{\left(E\left[{x}_i^3-\uptheta .{x}_i^2\right]\right)}^2
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equai.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Using the standard results for the normal distribution, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Var\left({\nabla}_{\uptheta}\hat{\mathrm{J}}\left(\uptheta \right)\right)=\frac{1}{\mathrm{N}}\left[{\upmu}^6+15{\upmu}^4{\upsigma}^2+45{\upmu}^2{\upsigma}^4+15{\upsigma}^6+{\uptheta}^2\left({\upmu}^4+6{\upmu}^2{\upsigma}^2+3{\upsigma}^4\right)-2.\uptheta
+    \left({\upmu}^5+10{\upmu}^3{\upsigma}^2+15\upmu {\upsigma}^4\right)-{\left({\upmu}^3+3\upmu
+    {\upsigma}^2-\uptheta .\left({\upmu}^2+{\upsigma}^2\right)\right)}^2\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Substituting, putting μ = θ = 2, and σ = 1, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{1}{N}\left[{2}^6+{15.2}^4+{45.2}^2+15+4\left({2}^4+{6.2}^2+3\right)-4\left({2}^5+{10.2}^3+15.2\right)-{\left({2}^3+3.2-2\left({2}^2+1\right)\right)}^2\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equak.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N}\left[64+240+180+15+4\left(16+6.4+3\right)-4\left(32+10.8+15.2\right)-{\left(8+3.2-2\left(4+1\right)\right)}^2\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equal.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N}\left[64+240+180+15+4\left(16+6.4+3\right)-4\left(32+10.8+15.2\right)-{\left(8+3.2-2\left(4+1\right)\right)}^2\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equam.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{87}{N}
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equan.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Referring to right-side graph in Figure [9-10](#Fig10), you can see that N =
+    100\. You get a variance of estimate around 0.9, which tallies with the analytically
+    derived result of 87/100=0.87.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Having derived the mean and variance of the reinforce gradient estimate given
+    in Equation [9-15](#Equ16) analytically, next turn your attention to a similar
+    analytical derivation of the mean and variance for the reparametrized gradient
+    estimate given in Equation [9-16](#Equ17). First calculate the mean of the estimate:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\mathrm{E}\left[\frac{1}{N}{\sum}_{i=1}^N2\left(\uptheta
+    +{\upvarepsilon}_i\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equao.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that under reparameterization, you now have ϵ[*i*] ∼ *N*(0, 1) and θ is
+    a constant equal to 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=\frac{1}{N}{\sum}_{i=1}^N2E\left[\left(\uptheta
+    +{\upvarepsilon}_i\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equap.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N}{\sum}_{i=1}^N2.\uptheta $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \mathrm{E}\left[{\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right]=2.\uptheta
+    =4 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equar.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The estimate’s mean is 4 and this is what you see in left side graph in Figure
+    [9-10](#Fig10). You can also observe that convergence of mean around 4 is lot
+    smoother for estimates using the reparameterization approach given in Equation
+    [9-16](#Equ17) versus the convergence of estimate’s mean under Equation [9-15](#Equ16)
+    using the reinforce approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can proceed with a similar analysis to calculate the variance of the reparametrized
+    estimate of the gradient in Equation [9-16](#Equ17).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)= Var\left(\frac{1}{N}{\sum}_{i=1}^N2\left(\uptheta
+    +{\upvarepsilon}_i\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equas.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N Var\left(2\left(\uptheta +{\upvarepsilon}_i\right)\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equat.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N Var\left(2{\upvarepsilon}_i\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equau.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N4\. Var\left({\upvarepsilon}_i\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equav.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\frac{1}{N^2}{\sum}_{i=1}^N4.1 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ Var\left({\nabla}_{\uptheta}\hat{J}\left(\uptheta \right)\right)=\frac{4}{N}
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equax.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Again, refer to the right-side graph in Figure [9-10](#Fig10). Notice that variance
+    of the estimate under the reparameterization approach is smaller than the variance
+    under the reinforce/log-trick approach. This is exactly what the analytical derivations
+    also show. A variance of 4/N for the reparameterization approach versus a variance
+    of 87/N for the reinforce approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In summary, you have shown that for REINFORCE, the gradient estimate using
+    Equation [9-15](#Equ16) has the following mean and variance:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ mean=4 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equay.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \mathrm{variance}=\frac{87}{N} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equaz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'And, under the REPARAMETERIZED gradient using Equation [9-16](#Equ17), the
+    gradient estimate has the following mean and variance:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ mean=4 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equba.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \mathrm{variance}=\frac{4}{N} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You can see that the gradient estimate has the same mean under both approaches.
+    However, the variance in the reparametrized approach is a lot smaller, by one
+    order of magnitude.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Readers may wonder how this really helps you and how to use the lower variance
+    approach. Suppose you have a policy network that takes state *s* as input, and
+    the network is parameterized by *θ*. The policy network produces the mean and
+    variance of the policy, that is, a stochastic policy with normal distribution
+    whose mean and variance are the outputs of the network, as shown in Figure [9-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A block diagram for the stochastic policy network. Continuous actions s are
+    given to a theta block which gives mu theta of s and sigma square theta of s.
+    The outputs are parameters of a continuous distribution, that is, model outputs
+    mean, and additionally, variance of the normal distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stochastic policy network
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Define the action *a* as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ a\sim N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ18.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-17)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reparametrize action *a* to decompose the deterministic and stochastic part
+    out so that the stochastic part does not depend on the network parameters *θ*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ a\sim N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right)\kern0.5em
+    \mathrm{where}:\kern1em \upvarepsilon \sim N\left(0,1\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ19.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-18)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reparameterization allows you to calculate the policy gradients that have lower
+    variance as compared to using a non-parametrized approach log-trick. In addition,
+    reparameterization gives you an alternative way to flow the gradient back through
+    the network by separating out the stochastic part into a nonparameterized part.
+    You will use this approach in the soft actor-critic algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is a very common approach when you need to build neural networks using stochastic
+    nodes and need to flow back the gradients. The foundational paper that formalized
+    the concept is “Gradient Estimation Using Stochastic Computation Graphs” by Schulman
+    et al., 2015.^([8](#Fn8)) There has been a lot more work after this paper was
+    published. Interested readers may want to refer to this paper and then refer to
+    the various subsequent works on the topic of stochastic computation graphs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Entropy Explained
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Just one more thing before you start digging into the details of SAC: let’s
+    revisit entropy. I talked about entropy as a regularizer as part of the REINFORCE
+    code walk-through in the previous chapter. You will be doing something similar.
+    Let’s look at what entropy is.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Suppose you have a random variable *x* following some distribution *P*(*x*).
+    The entropy of *x* is defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ H(P)=\underset{x\sim P}{E}\left[- logP(x)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ20.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-19)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Suppose you have a coin with *P*(*Head*) = *ρ* and *P*(*Tail*) = 1 − *ρ*. Calculate
+    the entropy *H* for different values of *ρ ε* (0, 1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ H(x)=-\left[\rho\ log\rho +\left(1-\rho \right)\ \mathit{\log}\left(1-\rho
+    \right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You can plot the curve of *H*(*x*) versus *ρ*, as shown in Figure [9-12](#Fig12).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph plots entropy H versus probability p. A down-ward open parabola
+    for H of p is between (0.0, 0.0), (0.5, 0.68), and (1.0, 0.0), approximately.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Entropy of a Bernoulli distribution as a function of p, which is the probability
+    of getting 1 in a trial
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see that entropy *H* is the maximum for *ρ* = 0.5, that is, when you
+    have maximum uncertainty between getting a 1 or a 0\. In other words, by maximizing
+    the entropy, you are ensuring that the stochastic action policy has a broad distribution
+    and does not collapse into a sharp peak too early. A sharp peak will reduce the
+    exploration of state action space. Readers may refer to the `9.d-entropy_bernoulli.ipynb`
+    notebook for the code that generated Figure [9-12](#Fig12). You can modify the
+    code to try various other probability distributions and vary the parameters to
+    find the points that maximize the entropy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Soft Actor-Critic
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The soft actor-critic came about around the same time as TD3\. Like DDPG and
+    TD3, SAC also uses an actor-critic construct with off-policy learning for continuous
+    controls. However, unlike DDPG and TD3, SAC learns a stochastic policy. Hence,
+    SAC forms a bridge between the deterministic policy algorithms like DDPG and TD3
+    with the stochastic policy optimization. The algorithm was introduced in a 2018
+    paper titled “Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement
+    Learning with a Stochastic Actor.”^([9](#Fn9))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It uses the clipped double-Q trick like TD3, and due to its learning stochastic
+    policy, it indirectly benefits from the target policy smoothing without an explicit
+    need to add noise to the target policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A core feature of SAC is the use of entropy as part of the maximization. To
+    quote the authors of the paper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: “In this framework, the actor aims to simultaneously maximize expected return
+    and entropy; that is, to succeed at the task while acting as randomly as possible.”
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: SAC vs. TD3
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Here are the similarities:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Both approaches use mean squared Bellman error (MSBE) minimization toward a
+    common target.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A common target is calculated using target Q networks that are obtained using
+    polyack averaging.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Both approaches use clipped double Q, which consists of a minimum of two q-values
+    to avoid overestimation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Here are the differences:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: SAC uses entropy regularization, which is absent in TD3.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The TD3 target policy is used to calculate the next-state actions, while in
+    SAC, you use the current policy to get actions for the next states.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In TD3, the target policy uses smoothing by adding random noise to actions.
+    However, in SAC, the policy learned is a stochastic one that provides a smoothing
+    effect without any explicit noise addition.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Q-Loss with Entropy-Regularization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Entropy measures randomness in the distribution. The higher the entropy, the
+    flatter the distribution. A sharp peaked policy has all its probability centered
+    around that peak, and hence it will have low entropy. With entropy regularization,
+    the policy is trained to maximize a tradeoff between the expected return and entropy
+    with *α* controlling the tradeoff. The policy is trained to maximize a tradeoff
+    between the expected return and entropy, a measure of randomness in the policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\pi}^{\ast }=\arg \underset{\pi }{\max}\underset{\tau \sim \pi }{E}\left[{\sum}_{t=0}^{\infty
+    }{\gamma}^t\left(R\left({s}_t,{a}_t,{s}_{t+1}\right)+\alpha\;H\left(\pi \left(\cdotp
+    |\;{s}_t\right)\right)\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ21.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-20)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this setting, *V*^(*π*) is changed to include the entropy from every timestep.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}^{\pi }(s)=\underset{\tau \sim \pi }{E}\left[\left.{\sum}_{t=0}^{\infty
+    }{\gamma}^t\left(R\left({s}_t,{a}_t,{s}_{t+1}\right)+\alpha H\left(\pi \left(\cdotp
+    |{s}_t\right)\right)\right)\right|{s}_0=s\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ22.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-21)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition, *Q*^(*π*) is changed to include the entropy bonuses from every
+    timestep except the first.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}^{\pi}\left(s,a\right)=\underset{\tau \sim \pi }{E}\left[\left.{\sum}_{t=0}^{\infty
+    }{\gamma}^tR\left({s}_t,{a}_t,{s}_{t+1}\right)+\alpha {\sum}_{t=1}^{\infty }{\gamma}^tH\left(\pi
+    \left(\cdotp |{s}_t\right)\right)\right|{s}_0=s,{a}_0=a\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ23.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-22)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With these definitions, *V*^(*π*) and *Q*^(*π*) are connected by the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}^{\pi }(s)=\underset{a\sim \pi }{E}\left[{Q}^{\pi}\left(s,a\right)+\alpha
+    H\left(\pi \left(\cdotp |s\right)\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ24.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-23)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Bellman equation for *Q*^(*π*) is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}^{\pi}\left(s,a\right)=\underset{s^{\prime}\sim P,a^{\prime}\sim \pi
+    }{E}\left[R\left(s,a,{s}^{\prime}\right)+\gamma \left({Q}^{\pi}\left({s}^{\prime
+    },{a}^{\prime}\right)+\alpha H\left(\pi \left(\cdotp |{s}^{\prime}\right)\right)\right)\right]=\underset{s^{\prime}\sim
+    P}{E}\left[R\left(s,a,{s}^{\prime}\right)+\gamma {V}^{\pi}\left({s}^{\prime}\right)\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ25.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-24)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The right side is an expectation that you convert into a sample estimate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}^{\pi}\left(s,a\right)\approx r+\gamma \left({Q}^{\pi}\left({s}^{\prime
+    },\overset{\sim }{a^{\prime }}\right)-\alpha \log \pi \left(\overset{\sim }{a^{\prime
+    }}|{s}^{\prime}\right)\right),\kern1.25em \overset{\sim }{a^{\prime }}\sim \pi
+    \left(\cdotp |{s}^{\prime}\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ26.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-25)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this equation, (*s*, *a*, *r*, *s*^′) all come from the replay buffer, and
+    ![$$ \overset{\sim }{a^{\prime }} $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq25.png)
+    comes from sampling the online/agent policy. *In SAC, you do not use the target
+    network policy at all.*
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Like TD3, SAC uses clipped double Q and minimizes the mean squared Bellman
+    error (MSBE). Putting it all together, the loss functions for the Q-networks in
+    SAC are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left({\upphi}_i,D\right)=\underset{\left(s,a,r,{s}^{\prime },d\right)\sim
+    D}{E}\left[{\left({Q}_{\upphi_i}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2\right],\kern1.25em
+    i=1,2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ27.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-26)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'where the target is given by the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ y\left(r,{s}^{\prime },d\right)=r+\upgamma \left(1-d\right)\left(\underset{i=1,2}{\min
+    }{Q}_{\upphi_{\mathrm{targ},i}}\left({s}^{\prime },\overset{\sim }{a^{\prime }}\right)-\upalpha
+    \mathrm{log}{\uppi}_{\uptheta}\left(\overset{\sim }{a^{\prime }}|{s}^{\prime}\right)\right),\kern0.5em
+    \overset{\sim }{a^{\prime }}\sim {\uppi}_{\uptheta}\left(\cdotp |{s}^{\prime}\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ28.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-27)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convert the expectations to sample averages.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left({\upphi}_i,\mathcal{D}\right)=\frac{1}{\left|B\right|}{\sum}_{\left(s,a,r,{s}^{\prime
+    },d\right)\in B}{\left({Q}_{\upphi_i}\left(s,a\right)-y\left(r,{s}^{\prime },d\right)\right)}^2,\kern1.25em
+    \mathrm{for}\ i=1,2 $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ29.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-28)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The final Q-loss you will minimize is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}_{Loss}=L\left({\upphi}_1,\mathcal{D}\right)+L\left({\upphi}_1,\mathcal{D}\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ30.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-29)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Loss with the Reparameterization Trick
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The policy should choose actions to maximize the expected future return and
+    future entropy, that is, *V*^(*π*)(*s*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}^{\pi }(s)=\underset{a\sim \pi }{E}\left[{Q}^{\pi}\left(s,a\right)+\alpha
+    H\left(\pi \left(\cdotp |s\right)\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equbd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Rewrite this as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}^{\pi }(s)=\underset{a\sim \pi }{E}\left[{Q}^{\pi}\left(s,a\right)-\alpha
+    \log \pi \left(a|s\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ31.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-30)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The authors of the paper use reparameterization along with the squashed Gaussian
+    policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \overset{\sim }{a_{\theta }}\left(s,\xi \right)=\tanh \left({\mu}_{\theta
+    }(s)+{\sigma}_{\theta }(s)\odot \xi \right),\kern1.25em \xi \sim \mathcal{N}\left(0,I\right)
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ32.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-31)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Combining the previous two Equations [9-30](#Equ31) and [9-31](#Equ32) and
+    noting that the policy network is parameterized by *θ*, the policy network weights,
+    you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{a\sim {\pi}_{\theta }}{E}\left[{Q}^{\pi_{\theta }}\left(s,a\right)-\alpha
+    \log {\pi}_{\theta}\left(a|s\right)\right]=\underset{\xi \sim \mathcal{N}}{E}\left[{Q}^{\pi_{\theta
+    }}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right)-\alpha \log {\pi}_{\theta}\left(\overset{\sim
+    }{a_{\theta }}\left(s,\xi \right)|s\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ33.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-32)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, substitute the function approximator for Q, taking the minimum of the
+    two Q-functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {Q}^{\pi_{\theta }}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right)=\underset{i=1,2}{\min
+    }{Q}_{\phi_i}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ34.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-33)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The policy objective is accordingly transformed into the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{\theta }{\max}\underset{\underset{\xi \sim \mathcal{N}}{s\sim
+    \mathcal{D}}}{E}\left[\underset{i=1,2}{\min }{Q}_{\phi_i}\left(s,\overset{\sim
+    }{a_{\theta }}\left(s,\xi \right)\right)-\alpha \log {\pi}_{\theta}\left(\overset{\sim
+    }{a_{\theta }}\left(s,\xi \right)|s\right)\right] $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ35.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-34)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like before, you should use minimizers in PyTorch/TensorFlow. Accordingly, you’ll
+    introduce a -ve sign to convert maximization to a loss minimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Polic{y}_{Loss}=-\underset{\underset{\xi \sim \mathcal{N}}{s\sim \mathcal{D}}}{E}\left[\underset{i=1,2}{\min
+    }{Q}_{\phi_i}\left(s,\overset{\sim }{a_{\theta }}\left(s,\xi \right)\right)-\alpha
+    \log {\pi}_{\theta}\left(\overset{\sim }{a_{\theta }}\left(s,\xi \right)|s\right)\right]
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ36.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-35)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Also convert the expectation to an estimate using samples to get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Polic{y}_{Loss}=-\frac{1}{\left|B\right|}{\sum}_{s\in B}\left(\underset{i=1,2}{\min
+    }{Q}_{\phi_i}\left(s,\overset{\sim }{a_{\theta }}(s)\right)-\alpha \log {\pi}_{\theta}\left(\left.\overset{\sim
+    }{a_{\theta }}(s)\right|s\right)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Equ37.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9-36)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pseudocode and Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: At this point, you are ready to see the complete pseudocode. Refer to Figure
+    [9-13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A pseudocode for soft actor critic or S A C. Input initial policy parameters
+    theta, Q-function parameters phi 1 and 2, and empty relay buffer D is followed
+    by set target parameters, compute target for Q-function, update Q-function and
+    policy, and update target networks using poly a k averaging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Soft actor-critic algorithm
+  prefs: []
+  type: TYPE_NORMAL
+- en: With all the mathematical derivations and pseudocode, it is time to dive into
+    the implementation in PyTorch. The implementation using PyTorch is in the `9.e-sac.ipynb`
+    file. Like before, you’ll train the agent using SAC on the Pendulum and Lunar-Lander
+    environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy Network-Actor Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Let’s first look at the actor network. The actor network implementation takes
+    the state as input, which is the same as before. However, the output has two components:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Either squashed (i.e., passing the action value through tanh) deterministic
+    action *a*, which is μ[θ](*s*), or a sample action *a* from the distribution ![$$
+    N\left({\upmu}_{\uptheta}(s),{\upsigma}_{\uptheta}^2(s)\right) $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_IEq26.png).
+    The sampling uses the reparameterization trick, and PyTorch implements this for
+    you as `distribution.rsample()`. You can read about it at [`https://pytorch.org/docs/stable/distributions.html`](https://pytorch.org/docs/stable/distributions.html)
+    under the topic, “Pathwise Derivative.”
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The second output is the log probability that you will need for calculating
+    entropy inside the Q-loss, as per Equation [9-27](#Equ28). Since you are using
+    squashed/tanh transformation, the log probability needs to apply a change of variables
+    for random distribution using the following:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ {f}_Y(y)={f}_X\left({g}^{-1}(y)\right)\left|\frac{d}{dy}\left({g}^{-1}(y)\right)\right|
+    $$](../images/502835_2_En_9_Chapter/502835_2_En_9_Chapter_TeX_Eqube.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: The code uses some tricks to calculate a numerically stable version. You can
+    find more details in the original paper.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Listing [9-11](#PC11) lists the code for `SquashedGaussianMLPActor`, as discussed
+    earlier. The neural network continues to be the same as before: two hidden layers
+    of size 256 units with ReLU activations.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Q-Network, Combined Model, and Experience Replay
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The Q-function network `MLPQFunction`, which combines the actor and critic into
+    an agent in the `MLPActorCritic` class, as well as the `ReplayBuffer` implementations,
+    are mostly the same. Accordingly, I do not list these parts of the code here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Q-Loss and Policy-Loss Implementation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Next, you’ll look at `compute_q_loss` and `compute_policy_loss`. This is a straight
+    implementation of Steps 11 to 13 of the SAC pseudocode in Figure [9-13](#Fig13).
+    If you compare these steps with Steps 11 to 14 of TD3 in Figure [9-8](#Fig8),
+    you will see lots of similarities, except for the fact that the action is sampled
+    from the online network and SAC has an additional term of entropy in both losses.
+    These changes are minor, and hence I do not list the code explicitly here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One-Step Update and SAC Main Loop
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Again, the code for `one_step_update` and the overall training algorithm follows
+    a similar pattern as before. For SAC, like TD3, the policy and target networks
+    are updated once for every “x” update of the online Q-network. However, unlike
+    TD3 where the update is only done once, SAC updates it “x” times in a loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once you run and train the agent, you’ll see similar outcomes as DDPG and TD3\.
+    Figure [9-14](#Fig14) shows the graphs as training progresses. You can see that
+    performance characteristics match those of TD3 shown in Figure [9-9](#Fig9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_9_Chapter/502835_2_En_9_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 3 line graphs for pendulum using S A C. Left. The mean return per episode increases
+    from (0, negative 1300) to (19, negative 150). Center. The loss of Q decreases
+    logarithmically from (0, 11.5) to (9500, 3.5). Right. The loss of actor increases
+    from (0, 5) to (9500, 68). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training progress for Pendulum using SAC
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter uses simple environments, and hence all three continuous control
+    algorithms (DDPG, TD3, and SAC) in this chapter behave well. Consult the various
+    papers referenced in this chapter to do a deep dive into the official performance
+    comparisons of various approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This brings you to the end of this chapter of continuous control in actor-critic
+    settings. By now, you have seen model-based policy iteration approaches, deep
+    learning–based Q-learning (DPN) approaches, policy gradients for discrete actions,
+    and policy gradients for continuous control. This covers most of the popular approaches
+    of reinforcement learning. You have one more major topic to learn about before
+    you finish your journey: that of using model learning in a model-free world and
+    efficient model exploration for environments where you know the model, but it
+    is too complex or vast to be explored exhaustively.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, you learned about the actor-critic methods for continuous control
+    where off-policy Q-learning types are combined with policy gradients to derive
+    off-policy continuous control actor-critic methods. Q-learning has the benefits
+    of being sample efficient, off-policy, and indirect, but it also has the drawbacks
+    of being unstable and difficult to apply to continuous actions. Policy gradients
+    have the benefits of being direct, stable, and suitable for continuous actions,
+    but they also have the drawbacks of being on-policy and sample inefficient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The common framework for combining Q-learning and policy gradient consists
+    of two networks: an actor network that learns a deterministic policy that maximizes
+    the Q-value, and a critic network that learns the Q-value using the Bellman equation.
+    The framework also employs a replay buffer, a target network, and an exploratory
+    policy.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You first looked at deep deterministic policy gradients, which was introduced
+    in 2016\. It was the first continuous control algorithm. DDPG is an actor-critic
+    method with deterministic continuous control policies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, you looked at TD3 (twin delayed DDPG), which came out in 2018 and addressed
+    some of the stability and inefficiency challenges found in DDPG. Like DDPG, it
+    also learned a deterministic policy in an off-policy setting with the actor-critic
+    architecture. It used clipped double Q-learning, delayed policy updates, and target
+    policy smoothing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lastly, you looked at Soft Actor-Critic (SAC), which bridged the DDPG style
+    of learning with stochastic policy optimization using entropy. SAC is an off-policy
+    stochastic policy optimization using the actor-critic setup. It uses entropy regularization,
+    the reparameterization trick, and clipped double Q-learning.
+  prefs: []
+  type: TYPE_NORMAL

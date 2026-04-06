@@ -1,0 +1,1022 @@
+- en: 5. Regularization
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 'In this chapter, you will look at a very important technique often used when
+    training deep networks: regularization. You will look at techniques such as the
+    *ℓ*[2] and *ℓ*[1] methods, dropout, and early stopping. You will see how these
+    methods help avoid the problem of overfitting and achieve much better results
+    from your models, when applied correctly. You will look at the mathematics behind
+    the methods and at how to implement it in Python and TensorFlow correctly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complex Networks and Overfitting
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In the previous chapters, you have learned how to build and train complex networks.
+    One of the most common problems you will encounter when using complex networks
+    is overfitting. Review Chapter [3](463356_1_En_3_Chapter.xhtml) for an overview
+    of what overfitting is. In this chapter, you will face an extreme case of overfitting,
+    and I will discuss a few strategies to avoid it. A perfect dataset to study this
+    problem is the Boston housing price dataset discussed in Chapter [2](463356_1_En_2_Chapter.xhtml).
+    Let’s review how to get the data (for a more detailed discussion, please refer
+    to Chapter [2](463356_1_En_2_Chapter.xhtml)). Start with the packages we need.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then import the dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The dataset has 13 features (contained in the `features NumPy` array) and the
+    house price contained in the `target NumPy` array . As in Chapter [2](463356_1_En_2_Chapter.xhtml),
+    to normalize the features, we will use the function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: To conclude our dataset preparation, let’s normalize it and then create training
+    and a dev dataset .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `np.random.seed(42)` is there so that you will always get the same `training`
+    and `dev` dataset (this way, your results will be reproducible). Now, let’s reshape
+    the arrays we need.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, let’s build a complex neural network with 4 layers and 20 neurons for
+    each layer. Define the following function to build each layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that this time, we return the weights tensor `W` and the bias `b`. We
+    will need them when implementing regularization. You have already seen this function
+    at the end of Chapter [3](463356_1_En_3_Chapter.xhtml), so you should understand
+    what it does. We use the He initialization here, because we will use ReLU activation
+    functions. The network can be created with the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In our output layer, we have one neuron with the identity activation function
+    for regression. Additionally, we use the Adam optimizer, as suggested in Chapter
+    [4](463356_1_En_4_Chapter.xhtml). Now let’s run the model with this code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'As you may have noticed, there are a few differences from what we did before.
+    To make things simpler, I avoided writing a function and simply hard-coded all
+    the values in the code, because, in this case, we don’t need to tune the parameters
+    much. I am not using mini-batches here, because we have only a few hundred observations,
+    and I am calculating the MSE (mean squared error) for both training and dev datasets
+    with the following lines:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this way, we can check what is happening on both datasets at the same time.
+    Now if you let the code run and plot the two MSEs , one for the training, which
+    we will indicate by *MSE*[*train*], and one for the dev dataset, indicated by
+    *MSE*[*dev*], we get Figure [5-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig1_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: MSE for the training (continuous line) and the dev dataset (dashed line) for
+    the neural network with 4 layers, each having 20 neurons
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will notice how the training error goes down to zero, while the dev error
+    remains constant at around a value of roughly 20, after dropping rapidly at the
+    beginning. If you remember the introduction to basic error analysis, you should
+    know that this means that we are in a regime of extreme overfitting (when *MSE*[*train*] ≪ *MSE*[*dev*]).
+    The error on the training dataset is practically zero, while the one for the dev
+    dataset is not. The model cannot generalize at all when applied to new data. In
+    Figure [5-2](#Fig2), you can see the predicted value plotted vs. the real value.
+    You will notice how in the plot at the left, for the training data, the prediction
+    is almost perfect, while the plot on the right, for the dev dataset, is not that
+    good. You will remember that a perfect model would give you predicted values exactly
+    equal to the measured ones. So, while plotting one vs. the other, they would all
+    lie on the 45 degree line of the plot, as in Figure [5-2](#Fig2), on the left.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig2_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Predicted value vs. the real value for the target variable (the house price).
+    You will notice how in the left-hand plot, for the training data, the prediction
+    is almost perfect, while on the plot on the right, for the dev dataset, the predictions
+    are more spread.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What can we do in this case to avoid the problem of overfitting? One solution,
+    of course, would be to reduce the complexity of the network, that is, reducing
+    the number of layers and/or the number of neurons in each layer. But, as you can
+    imagine, this strategy is very time-consuming. You must try several network architectures
+    to see how the training error and the dev error behave. In this case, this is
+    still a viable solution, but if you are working on a problem for which the training
+    phase takes several days, this can be quite difficult and extremely time-consuming.
+    Several strategies have been developed to deal with this problem. The most common
+    is called regularization, the focus of this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What Is Regularization?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before going into the different methods, I would like to quickly discuss what
+    the deep-learning community understands by the term *regularization* . The term
+    has deeply (pun intended) evolved over time. For example, in the traditional sense
+    (from the ’90s), the term is reserved only to as a penalty term in the loss function
+    (Christopher M. Bishop, *Neural Networks for Pattern Recognition*, New York: Oxford
+    University Press, 1995). Lately the term has gained a much more broader meaning.
+    For example, Ian Goodfellow et al. (*Deep Learning*, Cambridge, MA, MIT Press,
+    2016) define it as *“*any modification we make to a learning algorithm that is
+    intended to reduce its test error but not its training error.” Jan Kukačka et
+    al. (“Regularization for deep learning: a taxonomy,” arXiv:1710.10686v1, available
+    at [`https://goo.gl/wNkjXz`](https://goo.gl/wNkjXz) ) generalize the term even
+    further and offer the following definition: “Regularization is any supplementary
+    technique that aims at making the model generalize better, i.e., produce better
+    results on the test set*.”* So, be aware when using the term, and always be precise
+    about what you mean.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You may also have heard or read the claim that regularization has been developed
+    to fight overfitting. This is also a way of understanding it. Remember: A model
+    that is overfitting the training dataset is not generalizing well to new data.
+    This definition can also be found online, along with all the others. Although
+    merely definitions, it is important to have a familiarity with them, so that you
+    may better understand what is meant when reading papers or books. This is a very
+    active research area, and to give you an idea, Kukačka et al., in their review
+    paper referenced above, list 58 different regularization methods. Yes, 58; that
+    is not a typo. But it is important to understand that in their general definition,
+    SGD (stochastic gradient descent) also is considered a regularization method,
+    something not everyone agrees on. So be warned, when reading research material,
+    check what is understood by the term *regularization*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this chapter, you will look at the three most common and well-known methods:
+    *ℓ*[1], *ℓ*[2], and dropout, and I will briefly discuss early stopping, although
+    this method does not, technically speaking, fight overfitting. *ℓ*[1] and *ℓ*[2]
+    achieve a so-called weight decay, by adding a so-called regularization term to
+    the cost function, while dropout simply removes, in a random fashion, nodes from
+    the network during the training phase. To understand the three methods properly,
+    we must study them in detail. Let’s start with probably the most instructive one:
+    *ℓ*[2] regularization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: At the end of the chapter, we will explore a few other ideas about how to fight
+    overfitting and get the model to generalize better. Instead of changing or modifying
+    the model or the learning algorithm, we will consider strategies with the idea
+    of modifying the training data, to make learning more effective.
+  prefs: []
+  type: TYPE_NORMAL
+- en: About Network Complexity
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'I would like to spend a few moments discussing briefly a term I’ve used very
+    often: network complexity. You have read here, as you can almost anywhere, that
+    with regularization, you want to reduce network complexity. But what does that
+    really mean? Actually, it is relatively difficult to give a definition of network
+    complexity, so much so that no one does it. You can find several research papers
+    on the problem of model complexity (note that I did not say *network* complexity),
+    with roots in information theory. You will see in this chapter how, for example,
+    the number of weights that is different than zero will change dramatically with
+    the number of epochs, with the optimization algorithm, and so on, therefore making
+    this vaguely intuitive concept of complexity dependent also on how long you train
+    your model. To make a long story short, the term *network complexity* should be
+    used only on an intuitive level, because, theoretically, it is a very complex
+    concept to define. A complete discussion of the subject would be way beyond the
+    scope of this book.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ℓ[*p*] Norm
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before we start studying what *ℓ*[1] and *ℓ*[2] regularization are, I must introduce
+    the *ℓ*[*p*] norm notation. We define the *ℓ*[*p*] norm of a vector ***x*** with
+    *x*[*i*] components as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left\Vert {x}_p\right\Vert =\sqrt[p]{\sum \limits_{\kern1.5em i}{\left|{x}_i\right|}^p}\kern2.125em
+    p\in \mathbb{R} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where the sum is performed over all components of the vector ***x***.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s begin with the most instructive norm: the *ℓ*[2].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ℓ[2] Regularization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One of the most common regularization methods, *ℓ*[2] regularization consists
+    of adding a term to the cost function that has the goal of effectively reducing
+    the capacity of the network to adapt to complex datasets. Let’s first have a look
+    at the mathematics behind the method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theory of ℓ[2] Regularization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When doing plain regression, you will remember from Chapter [2](463356_1_En_2_Chapter.xhtml),
+    our cost function is simply the MSE
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J(w)=\frac{1}{m}\sum \limits_{i=1}^m{\left({y}_i-{\widehat{y}}_i\right)}^2
+    $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *y*[*i*] is our measured target variable, ![$$ {\widehat{y}}_i $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq1.png)
+    is the predicted value, ***w*** is the vector of all the weights of our network,
+    including the bias, and *m* is the number of observations. Now let’s define a
+    new cost function ![$$ \tilde{J}\left(w,b\right). $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq2.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \tilde{J}(w)=J(w)+\frac{\lambda }{2m}{{\left|w\right|}^2}_2 $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This additional term,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\lambda }{2m}{{\left\Vert w\right\Vert}^2}_2 $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: is called a regularization term and is nothing else than the *ℓ*[2]-norm squared
+    of ***w*** multiplied by a constant factor *λ*/2*m*. *λ* is called the regularization
+    parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The new regularization parameter, *λ*, is a new hyperparameter that you must
+    tune to find the optimal value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s try to get an intuitive understanding of what the effect of this term
+    on the GD (gradient descent) algorithm is. Let’s consider the updated equation
+    for the weight *w*[*j*]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}-\gamma \frac{\partial
+    \tilde{J}\left({w}_{\left[n\right]}\right)}{\partial {w}_j}={w}_{j,\left[n\right]}-\gamma
+    \frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j}-\frac{\gamma
+    \lambda}{m}{w}_{j,\left[n\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Since
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial }{\partial {w}_j}{{\left\Vert w\right\Vert}^2}_2=2{w}_j
+    $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: this gives us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\lambda
+    \frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is the equation that we must use for the weights update. The difference
+    with the one we already know from plain GD is that, now, the weight *w*[*j*, [*n*]]
+    is multiplied with a constant ![$$ 1-\frac{\gamma \lambda}{m}&lt;1 $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq3.png),
+    and, therefore, this has the effect of effectively shifting the weight values
+    during the update toward zero, making the network less complex (intuitively),
+    thus fighting overfitting. Let’s try to see what is really happening to the weights,
+    by applying the method to the Boston housing dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: tensorflow Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The implementation in `tensorflow` is quite easy. Remember: We must calculate
+    the additional term ![$$ {\left\Vert w\right\Vert}_2^2 $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq4.png),
+    then add it to the cost function. The model construction remains almost the same.
+    We can do it with the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: For our new regularization parameter *λ*, we create a placeholder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Remember that in Python, `lambda` is a reserved word, so we cannot use it. This
+    is the reason we use `lambd`. Then we calculate our regularization term ![$$ {\left\Vert
+    w\right\Vert}_2^2\. $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq5.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: with the useful TensorFlow function `tf.nn.l2_loss()`, and then we add it to
+    the MSE function `cost_mse`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now our `cost` tensor will contain the MSE plus the regularization term. Then
+    we simply need to train the network and observe what happens. To train the network,
+    we use this function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This time, I printed the MSE coming from the training (*MSE*[*train*]) and
+    dev (*MSE*[*dev*]) datasets , to check what is going on. As mentioned, applying
+    this method makes many weights go to zero, effectively reducing the complexity
+    of the network and, therefore, fighting overfitting. Let’s run the model for *λ* = 0,
+    without regularization, and for *λ* = 10.0\. We can run our model with the following
+    code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: which gives us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: As expected, we are in an extreme overfitting regime (*MSE*[*train*] ≪ *MSE*[*dev*])
+    after 5000 epochs. Now let’s try it with *λ* = 10.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives the result
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we are no more in an overfitting regime, because the two MSE values are
+    of the same order of magnitude. The best way of checking what is going on is to
+    study the weights distribution for each layer. In Figure [5-3](#Fig3), the weights
+    distribution for the first 4 layers are plotted. The light gray histogram is for
+    the weights without regularization, and the darker (and much more concentrated
+    around zero) area is for the weights with regularization. I neglected layer 5,
+    since it is the output layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig3_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weights distribution for each layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can clearly see how the weights, when we apply regularization, are much
+    more concentrated around zero, meaning they are much smaller than without regularization.
+    This makes the weight decay effect of regularization very evident. I would like
+    to briefly take the chance to make another brief digression on network complexity.
+    I said that this method reduces the network complexity. I told you in Chapter
+    [3](463356_1_En_3_Chapter.xhtml) that you can consider the number of learnable
+    parameters an indication of the complexity of a network, but I also warned you
+    that this can be very misleading. Now I would like to show you why. You will remember
+    from Chapter [3](463356_1_En_3_Chapter.xhtml) that the total number of learnable
+    parameters we have in a network like the one we are using here is determined by
+    the formula
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q=\sum \limits_{j=1}^L{n}_l\left({n}_{l-1}+1\right) $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *n*[*l*] is the number of neurons in layer *l*, and *L* is the total number
+    of layers, including the output layer. In our case, we have an input layer with
+    13 features, then 4 layers, each with 20 neurons, and then an output layer with
+    1 neuron. Therefore, *Q* is given by
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Q=20\times \left(13+1\right)+20\times \left(20+1\right)+20\times \left(20+1\right)+20\times
+    \left(20+1\right)+1\times \left(20+1\right)=1561 $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '*Q* is quite a big number. But already, without regularization, it is interesting
+    to note that we have roughly 48% of the weights that after 10,000 epochs are less
+    than 10^(−10), so, effectively, zero. This is the reason I warned you about talking
+    about complexity in terms of numbers of learnable parameters . Additionally, using
+    regularization will change the scenario completely. Complexity is a difficult
+    concept to define: it depends on many things, among others, architecture, optimization
+    algorithm, cost function, and number of epochs trained.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Defining the complexity of a network only in terms of number of weights is not
+    completely correct. The total number of weights gives an idea, but it can be quite
+    misleading, because many may be zero after the training, effectively disappearing
+    from the network, and making it less complex. It is more correct to talk about
+    “Model Complexity,” instead of network complexity, because many more aspects are
+    involved than simply how many neurons or layers the network has.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Incredibly enough, only half of the weights play a role in the predictions in
+    the end. This is the reason I told you in Chapter [3](463356_1_En_3_Chapter.xhtml)
+    that defining the network complexity only with the parameter *Q* is misleading.
+    Given your problem, your loss function, and optimizer, you may well end up with
+    a network that when trained is much simpler than it was at construction phase.
+    So be very careful when using the term *complexity* in the deep learning world.
+    Be aware of the subtleties involved.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To give you an idea of how effective regularization is in reducing the weights,
+    see Table [5-1](#Tab1), in which the percentage of weights less than 1e-3 is compared
+    with and without regularization after 1000 epochs in each layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Percentage of Weights Less Than 1e-3 with and Without Regularization After 1000
+    Epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | % of Weights Less Than 1e-3 for ***λ =*** **0** | % of Weights Less
+    Than 1e-3 for ***λ =*** **3** |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **1** | 0.0 | 20.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **2** | 0.25 | 41.5 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **3** | 0.75 | 60.5 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **4** | 0.25 | 66.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **5** | 0.0 | 35.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: 'But how should we choose *λ*? To get an idea (repeat after me: “In the deep
+    learning world, there is no universal rule.”), it is useful to see what is happening
+    when varying the parameter *λ* to your optimizing metric (in this case, the MSE).
+    In Figure [5-4](#Fig4), you can see the behavior of *MSE*[*train*] (continuous
+    line) and *MSE*[*dev*] (dashed) datasets for our network varying *λ* after 1000
+    epochs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig4_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Behavior of the MSE for the training (continuous line) dataset and for the dev
+    (dashed) dataset for our network varying *λ*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As you can see with small values of *λ* (effectively without regularization),
+    we are in an overfitting regime (*MSE*[*train*] ≪ *MSE*[*dev*]): slowly the *MSE*[*train*]
+    increases, while the *MSE*[*dev*] remains roughly constant. Until *λ* ≈ 7.5, the
+    model overfits the training data, then the two values cross, and the overfitting
+    finishes. After that, they grow together, at which point the model cannot capture
+    the fine data structures anymore. After the crossing of the lines, the model becomes
+    too simple to capture the features of the problem, and, therefore, the errors
+    grow together, and the error on the training dataset gets bigger, because the
+    model doesn’t even fit the training data well. In this specific case, a good value
+    to choose for *λ* would be about 7.5, nearly the value when the two lines cross,
+    because there, you are no longer in an overfitting region, as *MSE*[*train*] ≈ *MSE*[*dev*].
+    Remember: The main goal of having the regularization term is to get a model that
+    generalizes in the best way possible when applied to new data. You can look at
+    it in an even different way: a value of *λ* ≈ 7.5 gives you the minimum of *MSE*[*dev*]
+    outside the overfitting region (for *λ* ≲ 7.5); therefore, it would be a good
+    choice. Note that you may observe for your problems a very different behavior
+    for your optimizing metric, so you will have to decide on a case-by-case basis
+    what the best value for *λ* is that works for you.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A good way to estimate the optimal value of the regularization parameter *λ*
+    is to plot your optimizing metric (in this example, the MSE) for the training
+    and dev datasets and observe how they behave for various values of *λ*. Then choose
+    the value that gives the minimum of your optimizing metric on the dev dataset
+    and, at the same time, gives you a model that no longer overfits your training
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'I would like now to show you the effects of *ℓ*[2] regularization in an even
+    more visual way. Let’s consider a dataset generated with the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Our dataset has two features: *x* and *y*. We generate two groups of points,
+    `xx1,yy1` and `xx2,yy2`, from a normal distribution. To the first group, we assign
+    the label 0 (contained in the array `yy1_`), and to the second, the label 1 (in
+    the array `yy2_`). Now let’s use a network such as that described before (with
+    4 layers, each having 20 neurons) to do some binary classification on this dataset.
+    We can take the same code given before, modifying the output layer and the cost
+    function. You will remember that for binary classification, we need one neuron
+    in the output layer with the sigmoid activation function'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and the following cost function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: All the rest remains the same as was described earlier. Let’s plot the decision
+    boundary^([1](#Fn1)) for this problem. This means that we will run our network
+    on our dataset with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [5-5](#Fig5) , you can see our datasets where the white points are
+    of the first class and the black of the second. The gray area is the zone that
+    the network classifies as being of one class, and the white of the other. You
+    can see that the network is able to capture the complex structure of our data
+    in a flexible way.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig5_HTML.png](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decision boundary without regularization. White points are of the first class,
+    and the black of the second.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s apply regularization to the network, exactly as we did before, and
+    see how the decision boundary is modified. Here, we will use a regularization
+    parameter *λ* = 0.1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can clearly see how in Figure [5-6](#Fig6) the decision boundary is almost
+    linear and not able to capture the complex structure of our data anymore. Exactly
+    what we expected: the regularization term makes the model simpler and, therefore,
+    less able to capture the fine structures.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig6_HTML.png](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decision boundary, as predicted by the network with *ℓ*[2] regularization and
+    with a regularization parameter *λ* = 0.1
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is interesting to compare the decision boundary of our network with the result
+    of logistic regression with just one neuron. I will not put the code here, for
+    space considerations, but if you compare the two decision boundaries in Figure
+    [5-7](#Fig7) (the one coming from the network with one neuron is linear), you
+    can see that they are almost the same. A regularization term of *λ* = 0.1 gives
+    effectively the same results as a network with just one neuron.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig7_HTML.png](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decision boundaries for a complex network with *λ* = 0.1 and for one with just
+    one neuron. The two boundaries almost overlap completely.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ℓ[1] Regularization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now we will look at a regularization technique that is very similar to *ℓ*[2]
+    regularization. It is based on the same principle, adding a term to the cost function.
+    This time, the mathematical form of the added term is different, but the method
+    works very similarly to what I explained in the previous sections. Let’s again
+    first have a look at the mathematics behind the algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theory of ℓ[1] Regularization and tensorflow Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '*ℓ*[1] regularization also works when adding an additional term to the cost
+    function'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \tilde{J}(w)=J(w)+\frac{\lambda }{m}{\left\Vert w\right\Vert}_1 $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The effect it has on the learning is effectively the same as was described
+    with *ℓ*[2] regularization. TensorFlow does not have, as for *ℓ*[2], a function
+    ready to be used. We must code it manually, using the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The rest of the code discussed remains the same. We can again compare the weights
+    distribution between the model without a regularization term (*λ* = 0) and with
+    regularization (*λ* = 3, Figure [5-8](#Fig8)). We have used the Boston dataset
+    for the calculation. We have trained the model with the following call:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig8_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weights distribution comparison between the model without the *ℓ*[1] regularization
+    term (*λ* = 0, light gray) and with *ℓ*[1] regularization (*λ* = 3, dark gray)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: once with *λ* = 0, and once with *λ* = 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, *ℓ*[1] regularization has the same effect as *ℓ*[2]. It reduces
+    the effective complexity of the network, reducing many weights to zero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To give you an idea of how effective regularization is in reducing the weights,
+    see Table [5-2](#Tab2), which compares the percentage of weights less than 1e-3
+    with and without regularization after 1000 epochs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparison of Percentage of Weights Less Than 1e-3 with and Without Regularization
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Layer | % of Weights Less Than 1e-3 for ***λ*** **= 0** | % of Weights Less
+    Than 1e-3 for ***λ*** **= 3** |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **1** | 0.0 | 52.7 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **2** | 0.25 | 53.8 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **3** | 0.75 | 46.3 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **4** | 0.25 | 45.3 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **5** | 0.0 | 60.0 |'
+  prefs: []
+  type: TYPE_TB
+- en: Are Weights Really Going to Zero?
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: It is very instructive to see how weights are going to zero . In Figure [5-9](#Fig9),
+    you can see weight ![$$ {w}_{12,5}^{\left[3\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq6.png)
+    (from layer 3) plotted vs. the number of epochs for our artificial dataset with
+    two features, *ℓ*[2] regularization, *γ* = 10^(−3), *λ* = 0.1, after 1000 epochs.
+    You can see how it quickly decreases to zero. The value after 1000 epochs is 2 · 10^(−21),
+    so, for all purposes, zero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig9_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight ![$$ {w}_{12,5}^{\left[3\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq7.png)
+    plotted vs. the epochs for our artificial dataset with two features, *ℓ*[2] regularization,
+    *γ* = 10^(−3), *λ* = 0.1, trained for 1000 epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: In case you are wondering, the weight goes to zero almost exponentially. A way
+    of understanding why this is the case is the following. Let’s consider the weight
+    update equation for one weight.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\frac{\gamma
+    \partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Let’s now suppose that we find ourselves close to the minimum, in a region where
+    the derivative of the cost function *J* is almost zero, so that we can neglect
+    it. In other words, let’s suppose
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j}\approx
+    0 $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We can rewrite the weight update equation as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{j,\left[n+1\right]}-{w}_{j,\left[n\right]}=-{w}_{j,\left[n\right]}\frac{\gamma
+    \lambda}{m} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now the equation can be read as follows: the rate of variation of the weight
+    with respect to the iteration number is proportional to the weight itself. For
+    those of you with knowledge of differential equations, you may realize that we
+    can draw a parallel to the following equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{dx(t)}{dt}=-\frac{\gamma \lambda}{m}x(t) $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This can be read as the rate of variation of *x*(*t*) with respect to time is
+    proportional to the function itself. For those of you who know how to solve this
+    equation, you may know that a generic solution is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ x(t)=A{e}^{-\frac{\gamma \lambda}{m}\left(t-{t}_0\right)} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'You can now see why the weight decay will have a decay similar to that of an
+    exponential function, by drawing a parallel between the two equations. In Figure
+    [5-10](#Fig10), you can see the weight decay already discussed, with a pure exponential
+    decay. The two curves are not identical, as expected, because, especially at the
+    beginning, the gradient of the cost function is surely not zero. But the similarity
+    is remarkable and gives us an idea of how fast the weights can go to zero (read:
+    really fast).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig10_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight ![$$ {w}_{12,5}^{\left[3\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq8.png)
+    plotted vs. the epochs for our artificial dataset with two features, *ℓ*[2] regularization,
+    *γ* = 10^(−3), *λ* = 0.1, trained for 1000 epochs (continuous line) together with
+    a pure exponential decay (dashed line), provided for illustrative purposes
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that when using regularization, you end up having tensors with a lot of
+    zero elements, called sparse tensors. You can then profit from special routines
+    that are extremely efficient with sparse tensors. This is something to keep in
+    mind when you start moving toward more complex models, but a subject too advanced
+    for this book and that would require too much space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dropout
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The basic idea of dropout is different: during the training phase, you remove
+    nodes from layer *l* randomly with a probability *p*^([*l*]). In each iteration,
+    you remove different nodes, effectively training at each iteration a different
+    network (when using mini-batches, you train a different network for each batch,
+    for example). Usually, the probability (often called `keep_prob` in Python) is
+    set the same for all the network (but, technically speaking, it can be layer-specific).
+    Intuitively, let’s consider the output tensor `Z` of a layer *l*. In Python, we
+    can define a vector such as'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and then simply multiply the layer output `Z` by `d`, as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: This effectively removes all elements that have a probability less than `keep_prob`.
+    Of much importance when doing predictions on a dev dataset is that no dropout
+    be used!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: During training, dropout removes nodes randomly each iteration. But when doing
+    predictions on a dev dataset, the entire network without dropout must be used.
+    In other words, you must set `keep_prob=1`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dropout can be layer-specific. For example, for layers with many neurons, `keep_prob`
+    can be small. For layers with a few neurons, one can set `keep_prob = 1.0`, effectively
+    keeping all neurons in such layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The implementation in TensorFlow is easy. First, you define a placeholder that
+    will contain the value of the `keep_prob` parameter
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and then for each layer, you add a regularization operation in this way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then, when creating the next layer, instead of using `hidden1`, you use `hidden1_drop`.
+    The entire construction code looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now let’s analyze what happens to the cost function when using dropout. Let’s
+    run our model applied to the Boston dataset for two values of the `keep_prob`
+    variable: 1.0 (without dropout) and 0.5\. In Figure [5-11](#Fig11), you can see
+    that when applying dropout, the cost function is very irregular. It oscillates
+    wildly. The two models have been evaluated with the calls'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig11_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Cost function for the training dataset for our model with two values of the
+    `keep_prob` variable: `1.0` (no dropout) and `0.5`. The other parameters are:
+    *γ* = 0.01\. The models have been trained for 5000 epochs. No mini-batch has been
+    used. The oscillating line is the one evaluated with regularization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [5-12](#Fig12), you can see the evolution of the MSE for the training
+    and the dev dataset in the case of dropout (`keep_prob=0.4`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig12_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: MSE for the training and dev datasets with dropout (`keep_prob=0.4`)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [5-13](#Fig13), you can see the same plot but without dropout. The
+    difference is quite striking. Very interesting is the fact that without dropout,
+    *MSE*[*dev*] grows with epochs, while using dropout, it is rather stable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig13_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: MSE for the training and dev datasets without dropout (`keep_prob=1.0`)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [5-13](#Fig13), the *MSE*[*dev*] grows after dropping at the beginning.
+    The model is in clear extreme overfitting regime (*MSE*[*train*] ≪ *MSE*[*dev*]),
+    and it generalizes worse and worse when applied to the new data. In Figure [5-12](#Fig12),
+    you can see how *MSE*[*train*] and *MSE*[*dev*] are of the same order of magnitude,
+    and the *MSE*[*dev*] does not continue to grow. So, we have a model that is a
+    lot better at generalizing than the one whose results are shown in Figure [5-13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When applying dropout, your metric (in this case, the MSE) will oscillate, so
+    don’t be surprised when trying to find the best hyperparameters, if you see your
+    optimizing metric oscillating.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Early Stopping
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: There is another technique that is sometimes used to fight overfitting. Strictly
+    speaking, this method does nothing to avoid overfitting; it simply stops the learning
+    before the overfitting problem becomes too bad. Consider the example in last section.
+    In Figure [5-14](#Fig14), you can see *MSE*[*train*] and *MSE*[*dev*] plotted
+    on the same plot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig14_HTML.jpg](../images/463356_1_En_5_Chapter/463356_1_En_5_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 5-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: MSE for the training and the dev datasets without dropout (`keep_prob=1.0`).
+    Early stopping consists in stopping the learning phase at the iteration when the
+    *MSE*[*dev*] is minimum (indicated with a vertical line in the plot). At right,
+    you can see a zoom of the left plot for the first 1000 epochs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Early stopping simply consists of stopping the training at the point at which
+    the *MSE*[*dev*] has its minimum (see Figure [5-14](#Fig14), the minimum is indicated
+    by a vertical line in the figure). Note that this is not an ideal way to solve
+    the overfitting problem. Your model will still most probably generalize very badly
+    to new data. I usually prefer to use other techniques. Additionally, this is also
+    time-consuming and a manual process that is very error-prone. You can get a good
+    overview of the different application contexts by checking the Wikipedia page
+    for early stopping: [`https://goo.gl/xnKo2s`](https://goo.gl/xnKo2s) .'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additional Methods
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'All the methods I discussed so far consist, in some form or another, in making
+    the model less complex. You keep the data as it is and modify your model. But
+    we can try to do the opposite: leave the model as it is and work on the data.
+    Here are two common strategies that work for fighting overfitting (but not very
+    easily applicable):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Get more data*. This is the simplest way of fighting overfitting. Unfortunately,
+    very often in real life, this is not possible. Keep in mind that this is a complicated
+    matter that I will discuss at length in the next chapter. If you are classifying
+    cat pictures taken with a smartphone, you may think of getting more data from
+    the Web. Although this may seem a perfectly good idea, you may discover that the
+    images have varying quality, that possibly not all the images are really of cats
+    (what about cat toys?). Also, you may find only images of young white cats, and
+    so on. Basically, your additional observations may probably come from a very different
+    distribution than your original data, and that will be a problem, as you will
+    see. So, when getting additional data, consider the potential problems well before
+    proceeding.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Augment your data*. For example, if you are working with images, you can generate
+    additional ones by rotating, stretching, shifting, etc., your images. That is
+    a very common technique that may really be useful.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Resolving the problem of making the model generalize better on new data is one
+    of machine learning’s biggest goals. It is a complicated problem that requires
+    experience and tests. Lots of tests. Much research is going on that tries to solve
+    these kinds of bugs when working on very complex problems. I will discuss additional
+    techniques in the next chapter.
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,660 @@
+- en: 10. Generating handwritten digits with generative adversarial networks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In Chapter [9](494424_1_En_9_Chapter.xhtml), we delved into the generative and
+    creative side of deep learning. There, we used two recurrent neural networks to
+    forecast and generate classical-looking passages of text. But text data, or generally
+    speaking, sequential data, is not the only thing that these neural networks can
+    create. Images are possible too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If there is a recent and radical algorithm that has taken over the machine learning
+    field, it has to be the **generative adversarial networks** (Goodfellow et al.,
+    2014), or GANs. GANs—which *Yann LeCun*, one of the leading computer scientists
+    in the field and corecipient of the Turing Award in 2018,^([1](#Fn1)) called “the
+    most interesting idea in the last ten years in machine learning”—are a network
+    architecture capable of creating incredibly realistic images that are almost indistinguishable
+    from genuine ones. Like RNNs, the applications and use cases of GANs are vast.
+    For instance, GANs do **image-to-image translation** (Isola et al., 2017), the
+    task of translating an image from domain X to Y, for example, converting a picture
+    of a horse to a zebra. They can improve an image’s resolution, a use case known
+    as **super-resolution** (Ledig et al., 2017), and even replace someone’s face
+    for another one in an image or video, a technique called **deepfake** .
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the book’s last exercise, we will build the “hello, world” of GANs, a GAN
+    model that generates handwritten digits using the MNIST dataset as the source.
+    Because of the long training time, we will run the training script using Node.js
+    to get as much performance as possible. Then, we are going to write an app that
+    loads the model and produce generated images. Our model’s network architecture
+    is based on the deep convolutional generative adversarial network (DCGAN) for
+    the MNIST example^([2](#Fn2)) implemented with Keras (Python) Sequential API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A friendly introduction to GANs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The central notion behind GANs is very intuitive. You have two neural networks
+    competing against each other. One of them, the generator, tries to generate images
+    that resemble the training dataset, while the second network tells if the generated
+    image comes from the dataset or if it is generated. The system converges when
+    the generator’s synthetic images are so real that the discriminator can no longer
+    tell them apart or, in simple words, once the generator fools the discriminator.
+    Let’s explain it with a simplified example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The generator never sees an image from the dataset. Never. In our case, it
+    means that it does not know how an MNIST digit looks like. Therefore, the first
+    generated images are just random noise (Figure [10-1](#Fig1)). Regardless of this
+    situation, the generator shows the image to the discriminator (the “judge”). But
+    the discriminator knows how the dataset is, and upon seeing the generator image,
+    it says: “You can’t deceive me. I know how the dataset looks like, and this image
+    looks nothing like it. I’m sure you created this.” So, the generator, as training
+    progresses, starts to assume how the real dataset looks like based on what the
+    discriminator says and, therefore, begins to generate better images. Then, at
+    some point, it shows one to the discriminator, and it says: “Oh, this image is
+    perfect; I’m sure it comes from the dataset. I don’t think this is yours.” But,
+    surprisingly enough, the image actually came from the generator. So, in the end,
+    the generator fooled the discriminator, without ever, ever seeing an actual image
+    from the dataset.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig1_HTML.png](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example of a generated image from an untrained generator
+  prefs: []
+  type: TYPE_NORMAL
+- en: Regarding the networks themselves, the generator is a neural network that produces
+    images that mirror the target dataset. Its input is a vector of *N* random values
+    (called the *latent space vector*) sampled from a random distribution (here known
+    as the *latent space*), and the output is the image it wants to generate. So,
+    its goal is to learn a function that maps the latent space into an image. The
+    discriminator is a neural network that solves a classification problem. In our
+    case, we have a convolutional neural network trained on fake data from the generator
+    and real data from the training dataset. Its output is the likelihood of whether
+    the image is real or fake.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like CNNs, and, for example, MobileNet, there are GAN architectures specialized
+    for specific applications. In our exercise, we will use the **DCGAN** (Radford
+    et al., 2015) architecture, a class of GAN introduced in 2015 that proved to be
+    more stable than the original GAN. This model uses a peculiar convolution technique
+    to learn the features of the target images in an unsupervised manner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training a GAN
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Let’s do this (one last time). The model’s training script consists of five
+    functions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`makeGenerator():` Defines the generator model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`makeDiscriminator():` Defines the discriminator model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`buildCombinedModel():` Builds a combined model made of the generator and discriminator.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`trainDiscriminator():` Trains the discriminator on a single batch of data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`trainCombined():` Trains the combined model on a single batch of data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We will dedicate one section per function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After training the model, the next step is making a web app that uses the trained
+    generator model to generate images and show them on the browser. As a side note,
+    I should mention that the code you will see here ignores several of the ESLint
+    rules we have been using throughout the book. This change aims to improve the
+    code’s readability—apologies for the lack of consistency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preparing the environment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Since we are using Node.js, first, we must define the package’s manifest. So,
+    in the project’s root directory, create a file named *package.json* and paste
+    the following JSON to it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then, execute `npm i` to install the dependencies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Getting the data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As we did in Chapter [4](494424_1_En_4_Chapter.xhtml), we will once again use
+    a script from the official TensorFlow.js examples repository to download the data.^([3](#Fn3))
+    But the script differs from the one we used there. Instead of downloading the
+    whole dataset in one image, this one downloads four files that together complete
+    the dataset (a copy is available on the book’s repository). Since the chapter’s
+    primary goal is training the GAN, we will go through this code without focusing
+    so much on the details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'From the project’s directory, create a new file named *data.js*. Then, copy
+    the following lines to import the modules and define several variables related
+    to the MNIST dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, define the `fetchOnceAndSaveToDiskWithBuffer()` function to save the
+    dataset to disk. If the file already exists, the function does not download it
+    again:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following function is `loadImages()` , responsible for calling `fetchOnceAndSaveToDiskWithBuffer()`
+    and loading the images:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Similar is the function `loadLabels()` that loads the dataset labels from a
+    file:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then comes the class `MnistClass` that handles the data. The class has a constructor
+    that initializes `this.dataset` and the sizes of the dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`MnistClass`’s first method is `loadData()`, a function that uses `loadImages()`
+    and `loadLabels()` to read the data and labels. We will not need the labels; I
+    decided to leave them in case you are interested in applying the script to another
+    use case (this method and the next one go inside the class):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After `loadData()`, add `getData()`. This function converts the dataset into
+    one large tensor and returns it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Last, close the class, and add `module.exports = new MnistDataset();` at the
+    end of the file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Making the generator
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Now let’s make the GAN model, starting with the generator. Repeating what we
+    discussed in the introduction, the generator takes as input a vector of random
+    values sampled from a latent space and produces a tensor that represents the generated
+    handwritten digit. So, throughout the training, the generator learns to project
+    this vector to an image. Before getting to the model, create a new *trainer.js*
+    file and add the following imports and constant variables:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The generator model consists of 11 layers (Figure [10-2](#Fig2)). Layer number
+    one is a dense layer with an input shape of 100 and output shape [12544]. The
+    second one is a **batch normalization** layer. This layer normalizes the values
+    of the activation tensor from the previous layer, meaning that it transforms its
+    values to keep their mean near 0 and the standard deviation near 1\. After normalizing
+    comes a **leaky ReLU** activation layer, whose output is an activation tensor
+    of shape [7, 7, 256]. Next, there is a transposed convolutional layer, which reduces
+    the depth from 256 to 128\. Following it is another batch normalization and leaky
+    ReLU. Now it gets interesting. The next layer, another transposed convolution,
+    is now used to *upsample* the width and height and reduce the width of the tensor.
+    This layer “smartly” upsamples, meaning that it *learns* how to fill up the missing
+    spaces during the upsampling operation. Last, we have another set of batch normalization,
+    leaky ReLU, and transposed convolutional layer that transforms the tensor to [28,
+    28, 1], the size of an MNIST image. The following is the function `makeGenerator()`
+    that defines the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: A leaky ReLU is another rectifier activation function like ReLU that applies
+    element-wise function *f* (*x*) = 1 if *x* > 0 or *f* (*x*) = 0.01*x* to the input
+    tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The newest hyperparameters we see here are the **padding** on the transposed
+    convolution and the **tanh** activation function. In Chapter [3](494424_1_En_3_Chapter.xhtml),
+    we used convolutional layers with the default padding, “valid.” This type of padding
+    ensures that the filter stays within the *valid* dimension of the input (no padding
+    is added), resulting in an output that is smaller than the input, for example,
+    if the stride length is 1, the width of the output is (input) width - 1\. In contrast,
+    “same” padding guarantees that the output size stays the *same*, as long as the
+    stride length is 1\. This is the reason why the first two dimensions remain unchanged
+    after the first transposed convolutional layer. On the other hand, in a transposed
+    convolutional layer—which in some way is an inverse convolutional layer—a stride
+    of length 2 and “same” padding doubles the width and height dimensions, hence
+    the increase from [7, 7, …] to [14, 14, …] and [14, 14, …] to [28, 28, …] after
+    the second and third transposed layers. The activation function tanh, short for
+    the hyperbolic tangent, bounds the values to (-1, 1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Making the discriminator
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Time for the discriminator, the soon-to-be-fooled model. This component of the
+    GAN is the judge, responsible for predicting whether the image created by the
+    generator comes from the real dataset or not—a binary classification problem.
+    We will define this model using a different method. It will be more similar to
+    how we did the transfer learning model, using a `tf.model()` object to set the
+    input and output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig2_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generator's layers
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Our discriminator has eight layers (Figure [10-3](#Fig3)). It starts with a
+    convolutional layer of input shape [28, 28, 1] and output shape [14, 14, 64].
+    After it is a leaky ReLU and a dropout layer. This combination of conv2D-leakyReLU-dropout
+    is repeated once, producing a tensor of shape [7, 7, 128]. The tensor is then
+    flattened to shape [6272] and sent through a dense layer with a sigmoid activation
+    function. This last layer outputs a number between 0 and 1 that is the likelihood
+    of the image being real or fake. The following is the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig3_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The discriminator's inner layers
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function starts by defining the hidden layers using various calls to `model.add()`.
+    These are the layers discussed in the previous paragraph. I call them hidden ones
+    because none of them are the input or the output. Those are created separately.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the last `model.add()` , there is a call to `tf.input()`, a function that
+    “instantiates an input to a model”^([4](#Fn4)) with attribute `shape` set to the
+    image’s size. To add it to the model, we use `model.apply()`. To create the output,
+    we use the same method. First, define the dense output layer and use the `apply()`
+    to append it to the rest. With the input and output layers specified, use `tf.model()`
+    with attribute `inputs` set to `inputLayer` and `outputs` to `outputLayers` to
+    create the model. Then, compile it with the binary cross-entropy loss function
+    and the Adam optimizer with `learningRate` 0.0002 and `beta1` 0.5, as specified
+    in the DCGAN paper. This second argument, known as an exponential decay, *decays*,
+    that is, reduces the learning rate over time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [10-4](#Fig4) presents the summary of the new model, where `sequential_2`
+    are the model’s hidden layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig4_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: The discriminator
+  prefs: []
+  type: TYPE_NORMAL
+- en: Combining the models
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Remember when we said that the algorithm trains both models simultaneously?
+    That sentence was very literal. In this section, we will do something new: combining
+    models. To be more precise, we will combine the generator and discriminator to
+    create a new generator where the “original” generator comes before the discriminator
+    (Figure [10-5](#Fig5)). With the two models working as one, the output of the
+    generator is directly used to update its weights after the discriminator classifies
+    the generated image.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig5_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: The combined model
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this combined version of the model, we will change the *trainable* property
+    of the discriminator component to **false** so that the weights do not update
+    while it is part of this new combined model. Hence, this part of the model does
+    not learn; the discriminator (the one created earlier) learns separately in another
+    function. While training the combined model, we will set the labels of the latent
+    vector to 1 (“real”) so that the discriminator believes the generated images are
+    real. But we know they are not real. So, since the generator creates random noisy
+    images (at first), the error rate early in training will be high, forcing it to
+    get better.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This configuration can be very confusing, and so I want to repeat and clarify
+    some details. First of all, we are still using the “original” discriminator—the
+    one that learns to tell the pictures apart defined in the past section. Its role
+    has not changed. But what about its weights? We just changed it to nontrainable.
+    How is it still learning? Good question. But again, the discriminator **will learn**
+    because we compiled it **before** making its weights nontrainable. With the combined
+    model’s discriminator, first, we changed the trainable property to false and **then**
+    compiled it, so it does not learn. On the combined model, the discriminator’s
+    purpose is to assess the generator performance on the “fake-labeled” generated
+    images and to produce the activation tensors needed to update the generator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s see the function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model is built like the discriminator earlier. It uses a mix of `tf.input()`,
+    `model.apply()`, `tf.model()`, and the same compilation attributes to form it.
+    Note the `discriminator.trainable = false` line before `combined.compile()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training the discriminator
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'With the models prepared, the next step is training them, starting with the
+    discriminator and the function `trainDiscriminator()`. On this occasion, we will
+    train differently. In the past chapters, we used `model.fit()`, a function that
+    trains models “for a fixed number of epochs.”^([5](#Fn5)) But our current situation
+    is very different from the previous exercises. Now, we want to use the output
+    of one model (the generated images) as the input of the discriminator. So, we
+    need to have more manual control over the training. To train both models, we will
+    use `tf.Sequential.trainOnBatch()`, a method that runs one training update on
+    a single batch of data. With this function, we will be able to run one training
+    update, generate images, use them as input for the discriminator, and run another
+    training update. Later, we will design the training loop. But for now, let’s see
+    `trainDiscriminator()`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`trainDiscriminator()` takes four parameters. The first two are the discriminator
+    and generator models, and the others are the training set and the batch number.
+    Inside the function is one large `tf.tidy()`, where most of the functionalities
+    occur. The first statement, `xTrain.slice()`, creates a batch of images from the
+    real dataset. Then, we produce the latent vector (the noise) using `tf.randomNormal()`.
+    The generator uses this vector to create a batch of generated images (`generatedImages`).
+    Next, these images and the `imageBatch` are concatenated to form a tensor where
+    half of the data is real and the other half generated. After that, we build the
+    labels vector, where the vectors corresponding to the actual images are 1 (`tf.ones()`),
+    and the labels of the generated images are 0 (`tf.zeros()`). Outside of `tf.tidy()`,
+    call `model.trainOnBatch()` using as arguments the concatenated data and labels
+    returned by `tf.tidy()` to execute one training batch. In the end, return the
+    loss value.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training the combined model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Now the combined model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function is simpler than `trainDiscriminator()` because there is only one
+    model, and it does not require the real dataset. The only thing needed is creating
+    the latent vector and the labels, which, in this case, are 1s because we want
+    to trick the discriminator. Then, as before, use `combined.trainOnBatch()`, and
+    return the loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Putting it all together
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'After `trainCombined()`, create a new function and name it `init()`. Inside
+    `init()`, call `makeGenerator()` and `makeDiscriminator()` and use their returned
+    values as arguments to `buildCombinedModel()`. Next, use `data.loadData()` and
+    `data.getTrainData()` to read the training set (we are not done yet with the function):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now comes the training loop. All the past models we have trained use either
+    `model.fitDataset()` or `model.fit()` to fit the model. With them, you simply
+    specify the epochs and batch size, and it does the rest for you. Here, because
+    of the multimodel characteristic of GANs, and because we are using `trainOnBatch()`,
+    training with `model.fit()` is not possible. So, we have to define the training
+    loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Repeating some definitions we saw in Chapter [2](494424_1_En_2_Chapter.xhtml),
+    the number of batches attribute describes the number of times the complete dataset
+    passes through the network. Batches, on the other hand, is the number of samples
+    a model sees before updating its weights. In code, this translates to creating
+    one nested loop where the outer loop iterates `NUM_EPOCHS` time and the inner
+    one, `numBatches` times. Then, at each iteration of the inner loop, we call the
+    training functions (add this after `getData()`):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Before the loop, we define `numBatches` , whose value is the length of the training
+    set divided by `BATCH_SIZE`. Then, we loop from 0 to `NUM_EPOCHS`, and in the
+    inner loop, from `batch` to `numBatches`. At each (inner) iteration, call `trainDiscriminator()`
+    and `trainCombined()`, followed by logging to console the loss values every 30
+    batches. Last, after closing the loop, but before closing `init()`, save the generator
+    model using
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then call init().
+  prefs: []
+  type: TYPE_NORMAL
+- en: Testing the app
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Is our model capable of generating images that resemble the MNIST dataset? Let’s
+    find out.
+  prefs: []
+  type: TYPE_NORMAL
+- en: But before that, I would like to say a few words about the procedure. First,
+    it takes time—a lot. With my setup, each epoch took around 12 minutes, so 30 epochs
+    are 6 hours. You do not have to train for that long. Instead, I recommend starting
+    small—manually evaluate the generated images (we will learn how now)—and keep
+    increasing the number of epochs based on how good the model is. Likewise, you
+    do not have to wait for the training to end to try the model. If you wish to test
+    it while it trains, move the `generator.save()` line inside the outer loop to
+    save a version of the model after each epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While training, the program logs to the terminal the loss values of the discriminator
+    and generator. Depending on the initial weights, these values might fluctuate
+    a lot. This erratic behavior is (up to some level) acceptable. Keep in mind that
+    a GAN is a fight between two models, and as one improves, the other worsens. During
+    my tests, both losses were around 0.5 and 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Enough talk; let’s do this. Back in the terminal, execute `npm run train` to
+    start the script. Once the training ends, you can find the model in the *model*
+    directory. To test it and see the generated images, return to the code editor,
+    create a new *index.html* file and add the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: The preceding code is our generator app, an application consisting of one `<canvas>`
+    and a `<button>` that, once clicked, generates an image using a function named
+    `generate()`. Creating the generated picture follows a process like the one we
+    used in the training loop. First, we must make a latent vector and use it as the
+    argument to `model.predict()` to output the generated image. To draw the image
+    on the screen, we have `tf.browser.toPixels()`, a function that takes a tensor
+    and displays it on a `<canvas>`. Because we want to draw a grayscale image, the
+    tensor must be of rank 2 and have its value between 0 and 1\. But our tensor is
+    not like that. Its rank is 4, and the values are in the range [-1, 1] (remember
+    the tanh activation function?). So, we need to use `tf.add()` and `tf.div()` to
+    bound the values into the range [0, 1] and `tf.squeeze()` to remove the first
+    and fourth dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After `generated()`, add an `init()` function that calls `tf.loadLayersModel()`
+    to read the model from the given path. Last, to use the app, start a local web
+    server in the project’s directory and launch it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To illustrate how the generated images evolved, I will show several images produced
+    at different epochs. At epoch 1 (Figure [10-6](#Fig6)), as expected, it is just
+    random noise. After 5 epochs (Figure [10-7](#Fig7)), it is possible to notice
+    some basic shapes like curves and circles. On epoch 10 (Figure [10-8](#Fig8)),
+    you can distinguish some digits like 9, and after 20 (Figure [10-9](#Fig9)) and
+    30 (Figure [10-10](#Fig10)) epochs, the model generates most complex numbers like
+    4, 5, and 6\.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig10_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Images generated after 30 epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig9_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Images generated after 20 epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig8_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Images generated after 10 epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig7_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Images generated after 5 epochs
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_10_Chapter/494424_1_En_10_Fig6_HTML.jpg](../images/494424_1_En_10_Chapter/494424_1_En_10_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 10-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Images generated after 1 epoch
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recap
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As Yann LeCun said, generative adversarial networks are indeed interesting and,
+    if I may say, cool. Their ability to automatically create content has certainly
+    earned them a spot as one of the most unique and revolutionary machine learning
+    applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this chapter, we successfully trained one to generate handwritten MNIST-like
+    digits. But it was not an easy task. As fun as they are, GANs can be very complicated
+    due to their simultaneous training property, the hyperparameters one needs to
+    consider, the design of models’ architecture, and of course how long it takes
+    to train them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can find my generator model in the book’s repository.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is a GAN? How would you explain it to a kid?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: By looking at the models' architecture, could you tell which is the generator
+    and which is the discriminator? What is their principal difference?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Run the training several times using different epochs. At what time did the
+    images start to look like digits?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Use the MNIST classifier from Chapter [4](494424_1_En_4_Chapter.xhtml) to identify
+    the generated digits.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Train a DCGAN using one of the classes of the personalized dataset from Chapter
+    [7](494424_1_En_7_Chapter.xhtml).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Fit the model using the **fashion-MNIST** dataset (Xiao et al., 2017). This
+    dataset serves as a drop-in replacement for the original MNIST dataset. The difference
+    is that instead of digits, it has pieces of clothing. You can find it here: [`https://github.com/zalandoresearch/fashion-mnist`](https://github.com/zalandoresearch/fashion-mnist).'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

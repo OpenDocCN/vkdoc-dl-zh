@@ -1,0 +1,2732 @@
+- en: 7. Tree-Based Deep Learning Approaches
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*Imitation is the most sincere form of flattery.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Oscar Wilde, Irish Poet, among many others
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: In this last chapter of Part 2, we explore deep models that draw upon the success
+    of tree-based models to inform their architectures and training processes. Together
+    with attention-based models, this constitutes the majority of current tabular
+    deep learning research. Tree-based models are well-adapted toward many domains
+    of tabular data because of their sharp and rigidly hierarchical shape-cutting
+    structure, compounded in ensembles. By creating neural network models that simulate
+    these properties, we can hopefully realize these strengths on new scales and levels
+    of efficiency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter is structured in three parts, each sampling methods from different
+    dominant approaches in the field. We will begin by discussing tree-structured
+    neural networks, which explicitly build tree node–like logic into the structural
+    units of the architecture, followed by boosting and stacking neural networks,
+    which imitate successful tree ensembling paradigms. Lastly, we will explore distillation,
+    in which knowledge from a tree is transferred into a neural network. The chapter
+    adopts a dominantly research-based approach, presenting relevant components of
+    curated papers and the implementation(s) when available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tree-Structured Neural Networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Many deep models take *structural* interpretation from trees by imitating the
+    structure of a decision tree using differentiable “neural” equivalents. This section
+    discusses five sampled research papers adopting this approach:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*“**Deep Neural Decision Trees**” by Yongxin Yang et al*.: Training decision
+    trees through deep learning methods by soft binning networks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*“SDTR: Soft Decision Tree Regressor for Tabular Data” by Haoran Luo et al.*:
+    A soft decision tree (SDT) architecture is built from perceptron nodes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*“Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data” by
+    Sergei Popov et al.*: An ensemble of naïve neural decision trees in which each
+    tree level has the same splitting condition.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*“Deep Neural Network Initialization with Decision Trees” by Kelli Humbird
+    et al.*: Cleverly mapping the structure of a decision tree to neural networks,
+    acting as a warm start to training.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*“DNF-Net: A Neural Architecture for Tabular Data” by Ami Abutbul*: Differentiable
+    analogs to AND and OR gates are constructed to represent trees using “soft” logical
+    expressions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Deep Neural Decision Trees
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Tree-based models are highly interpretable due to their use of greedy function
+    approximation.^([1](#Fn1)) Their unique mechanism of splitting data based on a
+    trained threshold allows for state-of-the-art performance on tabular data. Ensemble
+    tree methods such as Random Forests and Gradient Boosting Machines are typically
+    used for tabular data benchmarking as they are competitive, if not better than
+    deep learning methods. Moreover, tree-based models can be easily visualized, thus
+    informative of how and why certain features contribute to certain decisions. Interpretability
+    is critical to many real-world applications in areas such as business, law, and
+    much more. This is not to say that neural networks do not provide any practical
+    advantage over classical machine learning methods. In neural networks, parameters
+    are updated simultaneously. In contrast, tree-based models update their parameters
+    individually through traversing branches and leaves in order; this optimization
+    approach can be suboptimal compared with the simultaneous parameter updates in
+    neural networks. By combining the advantages of both, we would theoretically be
+    able to construct a differentiable tree-based model that is able to excel in tabular
+    data prediction tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Yongxin Yang, Irene Garcia Morillo, and Timothy M. Hospedales propose a mix
+    between tree-based models and neural networks referred to as “deep neural decision
+    trees” (DNDTs).^([2](#Fn2)) Deep neural decision trees optimize their parameters
+    simultaneously using gradient descent. From the technical perspective, DNDT can
+    be implemented in practically any deep learning framework; thus, it’s able to
+    utilize the computational power of accelerators such as GPUs or TPUs. Since the
+    model's parameters can be optimized by gradient descent, the model can also be
+    treated as a building block for a much larger end-to-end modeling scheme.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can formulate Decision Tree training as adjusting the values of various discrete
+    binning functions. More specifically, we treat each split of a decision node as
+    binning the sample into one of the two branches (which, in the context of a binning
+    function, can be seen as bins) stemming from the node. Training can be seen as
+    optimizing the value of the binning threshold to achieve minimal loss. However,
+    in standard Decision Trees, those metaphoric “binning” functions are undifferentiable
+    due to their discrete nature. Yang et al. propose a soft approximation alternative
+    to the non-differentiable binning procedure. Their binning function is continuous,
+    allowing for optimization through gradient-based methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider a non-binary decision tree where a differentiable binning function
+    models every branch node decision. Notably, each binning function contains *n* + 1
+    available bins, where each bin represents a branch in the decision tree. Having
+    *n* + 1 available bins equates to needing *n* “cut-off” points or thresholds.
+    Using notations adopted from the original paper, the cut-off points can be denoted
+    as a list: [*β*[1], *β*[2], *β*[3], *β*[4], …, *β*[*n*] ]. The roles of these
+    values will come into play later as we expand on how the binning functions are
+    optimized.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A single-layer neural network, *f*, parameterizes every binning function. We
+    can construct the network as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {f}_{w,b,\tau }(x)=\textrm{softmax}\left(\left( wx+b\right)/\tau \right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Let’s break the equation down and define each parameter in *f*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The weight of the network, *w*, is non-trainable and set as a constant before
+    initiating training. Its values will always be set to *w* = [1, 2, …, *n* + 1]
+    regardless of outside conditions.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The network's bias, *b*, is also pre-initialized to a set value before training,
+    but its values are adjustable by gradient descent. For every training iteration,
+    the bias is constructed as *b* = [0, −*β*[1], −*β*[1] − *β*[2], −*β*[1] − *β*[2] − *β*[3],
+    …, −*β*[1] − *β*[2] − … − *β*[*n*]] where every unique *β* value is trainable
+    through backpropagation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The softmax activation bounds the output vector between 0 and 1 while keeping
+    the sum across all values to 1\. We can interpret this output as a list of probabilities
+    defining which of the *n* + 1 branches the input belongs to. The temperature factor
+    *τ* controls the output sparsity. As *τ* → 0, the output tends to be a one-hot
+    vector indicating the index of the branch to which the input belongs.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'To demonstrate the effect of the temperature *τ* on the output vector, consider
+    an example where *wx* + *b* is computed to [1 6 9] and the temperature is set
+    to 10:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{softmax}\left(\frac{\left( wx+b\right)}{\tau}\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \textrm{softmax}\left(\left[1\kern0.5em 6\kern0.5em 9\right]/10\right)\approx
+    \left[0.205\kern0.5em 0.338\kern0.5em 0.456\right] $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'By adjusting *τ* to 1, we observe a sparser output:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{softmax}\left(\left[1\kern0.5em 6\kern0.5em 9\right]/1\right)\approx
+    \left[0.000\kern0.5em 0.047\kern0.5em 0.952\right] $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Further lowering the temperature value to 0.1, the output tends to be a complete
+    one-hot encoded vector:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{softmax}\left(\left[1\kern0.5em 6\kern0.5em 9\right]/0.1\right)\approx
+    \left[0.000\kern0.5em 0.000\kern0.5em 0.999\right] $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Generally, decision trees are built from top to bottom in a greedy manner where
+    each decision node is defined individually and optimized before moving on to the
+    next. Not only is this method of optimization suboptimal but it’s also resource
+    intensive when the tree is non-binary. Instead, Yang et al. utilize neural networks’
+    ability to update their parameters simultaneously and train a single binning network
+    for every feature prior to building the tree. We can then build the tree recursively
+    in the following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Treat each binning network as a decision node where the number of branches stemming
+    from the node is determined by the number of bins available or the length of the
+    output vector. Reusing the notations introduced previously, every decision node
+    should have *n* + 1 branches.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Pick any decision node (binning network) as the root node. Results will be the
+    same regardless of which decision node is selected. Add a note about how the result
+    will be the same.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: From here, every tree level will be assigned one single decision node, where
+    it will become the child node of every branch from the previous level. Rephrased,
+    it’s connected to the previous decision node. Essentially, every level will contain
+    *n*^(*l*) of the same decision node where *l* is the tree level.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Assuming that there are *D* features, there will be *n*^(*D*) leaf nodes at
+    the final level of the tree. Unlike standard decision trees where leaf nodes directly
+    represent model predictions, leaf nodes in DNDT are mere indicators of “clusters”
+    that samples belong to based on their feature values. One further processing step
+    is required to obtain the final prediction. Usually, a linear model is employed
+    to classify samples arriving at leaf nodes.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Mathematically, we can exhaustively find the final leaf node that one sample
+    leads to using the Kronecker product. For those unfamiliar, the Kronecker product
+    is usually denoted as ⨂ and is a special form of matrix/vector multiplication.
+    For two matrices *A ϵ ℝ*^(*m* × *n*) and *B ϵ ℝ*^(*p* × *q*), the Kronecker product
+    is defined as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ A\bigotimes B=\left[\begin{array}{ccc}{a}_{1,1}B&amp; \cdots &amp; {a}_{1,n}B\\
+    {}\vdots &amp; \ddots &amp; \vdots \\ {}{a}_{m,1}B&amp; \cdots &amp; {a}_{m,n}B\end{array}\right]
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The resulting matrix will be in the shape of *mp* × *nq*. We denote *D* as
+    the number of features present in the dataset and *f*[*i*] as the i^(th) binning
+    network. The Kronecker product is repeatedly applied to yield an almost one-hot
+    encoded vector (for a low temperature value *τ* ), signifying the index of the
+    leaf node that the input *x* will lead to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {f}_1\left({x}_1\right)\bigotimes {f}_2\left({x}_2\right)\bigotimes {f}_3\left({x}_3\right)\bigotimes
+    \dots \bigotimes {f}_D\left({x}_D\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The resulting “leaf nodes” vector would be in length *n*^(*D*) if every binning
+    network/decision node had *n* available bins/branches. Note that the value of
+    *n* can be different for each binning network. The final linear model will receive
+    the “leaf nodes” vector as input and produce a prediction relevant to the dataset
+    classes (or continuous values in the case of regression).
+  prefs: []
+  type: TYPE_NORMAL
+- en: DNDT cleverly avoids the suboptimal training scheme of tree-based models by
+    training neural networks and optimizing their parameters without depending on
+    each other. DNDT provides the advantage of scalability; however, this only applies
+    to the size of samples, not features. Due to the use of the Kronecker product,
+    computation becomes significantly expensive as the number of features increases.
+    The authors, therefore, propose to use Random Forest–style training where several
+    weak learners are each trained on a subset of features. Figure [7-1](#Fig1) is
+    a representation of DNDT as well as its equivalent decision tree. For explanatory
+    purposes, only two features from the Iris Flower dataset are selected in the diagram.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 2 charts. One is a D N D T, which has input, binning layer, Kron product, and
+    output interconnected from top to bottom. The other is a decision tree where the
+    root is petal length, and the leaf nodes are class 1, class 2, and class 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of DNDT from Yang et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The authors of the paper compared DNDT with a decision tree baseline and a shallow
+    two-layer neural network with 50 neurons in each hidden layer. The number of cut
+    points for each feature in DNDT is all set to 1, meaning that there are only two
+    branches for every node. A total of 14 datasets are retrieved from Kaggle and
+    UCI. For datasets with more than 12 features, Random Forest–style training is
+    adapted for DNDT, with each weak learner randomly learning from ten features with
+    a total of ten weak learners. The following diagram shows the result of the comparison
+    (Table [7-1](#Tab1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 7-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparison of DNDT against various other algorithms. Datasets marked with *
+    indicate the ensemble version of DNDT was used. From Yang et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| ![](../images/525591_1_En_7_Chapter/525591_1_En_7_Figa_HTML.gif)A table of
+    4 columns and 16 rows. The columns are labeled as dataset, D N D T, D T, and N
+    N. The number of wins is given as 5, 7, and 5, while the mean reciprocal rank
+    is 0.65, 0.73, and 0.61 respectively in the last 2 rows. |'
+  prefs: []
+  type: TYPE_TB
+- en: Although Decision Trees still are empirically superior to DNDT across this selection
+    of benchmark datasets, DNDT can still match Decision Trees’ performance in most
+    scenarios. DNDT also provides flexibility as the number of cut points can be changed
+    for each individual feature. It has been shown that increasing the cut points
+    improves model performance significantly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DNDT can be implemented in PyTorch or TensorFlow in around 20 lines of code
+    from the official implementation done by the authors of the paper. Since TensorFlow
+    custom training loops can be quite confusing, we will use the PyTorch implementation.
+    The Iris Flower dataset will be used as an example. We can start by importing
+    PyTorch and loading the dataset (Listing [7-1](#PC1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Following, we can define custom functions for each component of DNDT as shown
+    in Listing [7-2](#PC2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Before training, a few hyperparameters of the model will be defined (Listing
+    [7-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, we can start the training process with PyTorch’s custom training loops
+    (Listing [7-4](#PC4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Three main factors can improve or worsen training results: the number of splits
+    for each feature, the temperature, and the learning rate. These values should
+    be carefully selected based on domain knowledge or through hyperparameter tuning,
+    as subtle changes can influence training results significantly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The core of DNDT shines at being able to simultaneously update parameters through
+    gradient descent while having a tree-based architecture. The scalability of DNDT
+    also provides conveniences that most tree-based models do not possess. Although
+    DNDT may require some hyperparameter tuning to match the performance of current
+    state-of-the-art models, it still stands as an alternative or a mix between deep
+    learning and tree-based models. Finally, DNDT opens the door to building better
+    neural networks that imitate tree-based model logic, as we will see in later sections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Soft Decision Tree Regressors
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Recall that in a standard decision tree, each node represents a binary decision
+    threshold for a particular feature, which is executed against the incoming sample
+    and used to determine which path (left or right) the sample ends up taking. Haoran
+    Luo, Fan Cheng, Heng Yu, and Yuqi Yi propose a soft analog for such a decision
+    tree on regression problems, which can be trained with gradient descent, in the
+    2021 paper “SDTR: Soft Decision Tree Regressor for Tabular Data.”^([3](#Fn3))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider a full binary tree with nodes denoted by their index *i*. In the soft
+    decision tree model, each node does not output a binary left or right decision,
+    but instead a soft probability using a perceptron. We define the probability of
+    choosing the left branch at the *i*th node given the input ![$$ \overrightarrow{x}
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq1.png) as follows,
+    for some learned weight ![$$ \overrightarrow{w_i} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq2.png)
+    and bias *b*[*i*]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {p}_i\left(\overrightarrow{x}\right)=\sigma \left({\beta}_i\left(\overrightarrow{w_i}\
+    \overrightarrow{x}+{b}_i\right)\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that regardless of how deep the node is, the decision is always made with
+    access to the full set of features. The parameter *β*[*i*] is a scaling coefficient
+    used to prevent “too soft decisions” – that is, to push the weighted sum away
+    from zero and toward more extreme ends that produce soft decisions closer to zero
+    and one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Every leaf node is associated with a scalar *R*[*l*]; this is the predicted
+    output for a sample that travels down the tree to that particular leaf node. Let
+    *P*[*l*] represent the probability of choosing a leaf *l*. Then we can calculate
+    *P*[*l*] as follows, where *i* is either 1 or 0 depending on whether a left or
+    right step is taken on the path toward *l*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {P}_l(x)=\prod \limits_{i\in \textrm{Path}(l)}{p}_i{(x)}^i{\left(1-{p}_i(x)\right)}^{1-i}
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Rather than just evaluating the difference between the value associated with
+    the leaf node with the highest probability and the true value, we define the loss
+    as the sum of differences between *every leaf* and the true value, weighted by
+    the leaf probabilities:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L(x)=\sum \limits_{l\in \textrm{LeafNodes}}{P}_l(x){\left({R}_l-y\right)}^2
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: While the structure of the tree is technically fixed – there is a specified
+    depth and a static binary structure – the conditions that fill each of the nodes
+    are learnable by the model through the weights and biases, optimized to minimize
+    the loss (Figure [7-2](#Fig2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A binary tree has a root node labeled p subscript 1 of x equals sigma of W subscript
+    1 x plus b subscript 1\. The children of the root node and 4 leaf nodes from the
+    children are depicted. The connection of each node to its parent is labeled.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Diagram of the relationship between leaf nodes and connections. From Luo et
+    al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The paper describes additional mechanisms to enforce proper learning. Just for
+    the purposes of understanding the key elements of the architecture, however, we
+    will build a very simple, bare-bones version of the model. What is interesting
+    about this particular model design is that the model essentially is a multi-output
+    architecture with one dense layer extending from the input for each node (Listing
+    [7-5](#PC5)). The tree-like architecture is realized in how the different fully
+    connected layers are brought in relation with one another to calculate the loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that we are assuming in this case that the soft decision tree model is
+    being trained on a binary prediction task, such that all layers in the model (both
+    output layers and intermediate probabilistic tree nodes) use the sigmoid activation,
+    for simplicity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We want to associate each of these layers with a particular position in a binary
+    tree structure. There are many clever ways to go about this, but we will stick
+    with the canonical object-oriented approach, which has the benefit of interpretability
+    and ease of navigation. Each `Node` object corresponds to an index in the `outputs`
+    list. Note that it does not matter which nodes correspond to which indices, as
+    long as there is only one node per index and vice versa. We can do this by recursively
+    building linked nodes in a binary tree fashion, with a global `index` variable
+    incremented upon the instantiation of a `Node` (Listing [7-6](#PC6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: In order to calculate the loss, we need to multiply each leaf node by all the
+    node probabilities that lead toward that leaf node. We can recursively create
+    a collection of outputs by navigating our tree structure (Listing [7-7](#PC7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: We need to define a custom loss that evaluates the average loss between the
+    truth and each leaf node value multiplied by the probability series (Listing [7-8](#PC8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Because this loss function aggregates multiple outputs rather than acting independently
+    on a single model output, it is more convenient for us to define a custom model
+    with a specific fit method (Listing [7-9](#PC9)). (With the default compiling
+    and fitting steps, we can only specify losses that act on an output or several
+    losses that each act on a single output in the case of multimodal models. There
+    is no easy way to define a loss that accepts multiple outputs.) We can do this
+    by overriding the default `train_step` method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: After instantiation, the model can be trained (Listing [7-10](#PC10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Again, this model doesn’t do very well by itself, but it illustrates the fundamental
+    idea.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The authors offer a model implemented in PyTorch. Minimal PyTorch is needed
+    to begin using the model. We begin by loading the soft decision tree model from
+    the official repository (Listing [7-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The first step is to define a PyTorch dataset (Listing [7-12](#PC12)). The
+    PyTorch dataset format is almost exactly the same as the TensorFlow custom dataset
+    syntax (recall from Chapter [2](525591_1_En_2_Chapter.xhtml)): we need to define
+    a `__len__` and a `__getitem__` method.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can instantiate the dataset on the Forest Cover dataset, for instance. The
+    `DataLoader` wraps around the `Dataset` and provides additional training-level
+    tooling for feeding the data to the model (Listing [7-13](#PC13)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: The soft decision tree can be instantiated and trained as follows (Listing [7-14](#PC14)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: The syntax used here is similar to that of writing a custom loop in TensorFlow.
+    The primary difference is the requirement to explicitly call steps occurring during
+    the feed-forward and backpropagation stages in the loss and optimizer objects.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NODE
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Consider the game of “laggy” 20 Questions. To guess an object that player A
+    is thinking of, player B asks a series of questions to which player A answers
+    “yes” or “no.” The twist is that player B receives all the answers to their questions
+    only *after they finish asking all the questions*, rather than immediately after
+    each question.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is an example of an *oblivious decision tree* – a tree in which each level
+    has the same splitting criteria, as opposed to using different criteria at different
+    levels. For instance, the following “3 Questions” decision tree is oblivious:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Is it an animal?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: Does it fly?'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: Is it fast?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: eagle'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: woodcock'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: Is it fast?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: cheetah'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: tortoise'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: Does it fly?'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: Is it fast?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: plane'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: paraglider'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: Is it fast?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: racecar'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: rock'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'In contrast, the following decision tree, which represents how one might play
+    a more standard game of 20 Questions, is not oblivious:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Is it an animal?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: Does it live in the water?'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: Is it a predator?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: shark'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: sardine'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: Does it have four legs?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: lion'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: flamingo'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: Is it a vehicle?'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: Does it have four wheels?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'If yes: car'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: bicycle'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: Does it fly?'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If yes*: plane'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*If no*: ketchup'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note that a standard non-oblivious decision tree is more expressive than an
+    oblivious decision tree because it is not beholden to the requirement that each
+    level must operate on the same splitting condition. That means that we can construct
+    downstream splitting conditions that are informed by previous known information;
+    for instance, we ask if the object lives in the water after we know that it is
+    an animal. However, oblivious decision trees have the advantage of being simple
+    in computation and complexity. In fact, oblivious decision trees are not so much
+    trees as they are large binary lookup tables. In an oblivious decision tree, the
+    same tree can be represented with different permutations of splitting conditions
+    on each level because no condition is dependent on another condition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sergei Popov et al. introduced the NODE model in the paper “Neural Oblivious
+    Decision Ensembles for Deep Learning on Tabular Data”^([4](#Fn4)); it is similar
+    to previous neural network mimics of tree-based models but uses an ensemble of
+    naïve oblivious decision trees rather than optimizing a single complex decision
+    tree.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It also directly chooses features to select rather than employing abstract learned
+    linear combinations like soft decision tree regressors. *F*[*i*] represents the
+    feature of the data *χ* selected for splitting at the *i*th tree level, and *b*[*i*]
+    represents the required threshold for the feature *F*[*i*] at the *i*th tree level.
+    Thus, *F*[*i*] − *b*[*i*] will be positive if the feature exceeds the threshold
+    and negative if not.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *α*entmax function is applied to “binarize” this result (i.e., to effectively
+    make the decision). Recall the *α*entmax function from Chapter [6](525591_1_En_6_Chapter.xhtml)
+    is a modified version of the softmax function, which is sparser and encourages
+    more extreme values. Each node therefore possesses a more decisive determination.
+    The soft decision tree regressor struggles with this and requires additional mechanisms
+    such as the pre-activation scaling coefficient to reconcile it (Figure [7-3](#Fig3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram of a single node tree depicts the following labels. Input, tree root,
+    entmax choice, and output with values in between.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: A schematic of a single NODE layer/tree. From Popov et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Otherwise, NODE is optimized very similarly to SDTR: the loss is expressed
+    as a sum of all of the leaf nodes weighted by the path probability to that node.
+    This forms a single NODE layer – a neural oblivious decision tree, which is differentiable
+    and can therefore be trained with backpropagation techniques.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The power of NODE comes from stacking multiple individual NODE layers together
+    into a joint ensemble. The authors propose a DenseNet-style stacking (see Chapter
+    [4](525591_1_En_4_Chapter.xhtml) on DenseNet), in which each layer is connected
+    to every other layer (Figure [7-4](#Fig4)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram of a multilayer model depicts input and layers 1, 2, and 3\. Each
+    layer is formed from the input and the previous layer. All the layers are combined
+    for prediction. The concatenation of a and b to get c is depicted on the bottom
+    left.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: The arrangement of NODE into a multilayer model. From Popov et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The authors find that NODE outperforms CatBoost and XGBoost on several benchmark
+    tabular datasets (Tables [7-2](#Tab2) and [7-3](#Tab3)). When these competitors
+    undergo hyperparameter optimization, NODE performs slightly worse on some datasets
+    but still retains overall dominance across the evaluated datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 7-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of NODE against competitors with tuned hyperparameters. From Popov
+    et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| ![](../images/525591_1_En_7_Chapter/525591_1_En_7_Figc_HTML.gif)A table of
+    6 columns and 7 rows. Row 1 has text that reads tuned hyperparameters. The column
+    labels are Epsilon, year prediction, Higgs, Microsoft, Yahoo, and click. The row
+    labels from row 2 are cat boost, X G boost, F C N N, node, m G B D T, and deep
+    forest. |'
+  prefs: []
+  type: TYPE_TB
+- en: Table 7-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of NODE against CatBoost and XGBoost with default hyperparameters.
+    From Popov et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| -![](../images/525591_1_En_7_Chapter/525591_1_En_7_Figb_HTML.gif)A table
+    of 6 columns and 4 rows. Row 1 has text that reads default hyperparameters. The
+    column labels are Epsilon, year prediction, Higgs, Microsoft, Yahoo, and click.
+    The row labels from row 2 are cat boost, X G boost, and node. |'
+  prefs: []
+  type: TYPE_TB
+- en: 'NODE is one of the most directly tree-like neural network architectures proposed
+    and has found success in many general tabular modeling problems. See the well-written
+    and approachable supplementary code notebook demonstrations in the official repository:
+    [`https://github.com/Qwicen/node`](https://github.com/Qwicen/node).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tree-Based Neural Network Initialization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Neural networks are known for their flexibility, allowing the user to design
+    and create architectures that suit their needs. Without a doubt, there has been
+    a tremendous amount of work put into developing methods and techniques to search
+    and obtain optimal or suboptimal network architectures without human trial and
+    error; these types of algorithms are usually referred to as Neural Architecture
+    Search (NAS). Refer to Chapter [10](525591_1_En_10_Chapter.xhtml) for detailed
+    explanations and implementation regarding NAS. The NAS process is typically time-consuming,
+    and the algorithm does not consider the specific problem type, whether it be image
+    recognition, text analysis, or tabular data in the context of this book. On the
+    other hand, the structure of tree-based models allows them to excel in structured
+    data tasks. Instead of attempting to adapt tree-based models to gradient-based
+    training, we can shift our goal to designing a tree-like architecture for neural
+    networks. K. D. Humbird, J. L. Peterson, and Rand. G. McClarren, in their paper
+    “Deep Neural Network Initialization with Decision Trees,” ^([5](#Fn5)) seek to
+    accomplish precisely that.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unlike neural networks, tree-based models progressively construct their nodes
+    and branches during training; this eliminates the need to manually design model
+    architectures prior to training. Since sophisticated mathematical computations
+    always inform the shape and form of tree-based models, their architectural design
+    is almost always better than human trial and error. One can think of designing
+    a neural network architecture for tabular data as manually designing the placement
+    of each and every branch in a decision tree. Undoubtedly, this shows how difficult
+    it is for human-designed network architectures to outperform tree-based models
+    consistently. K. D. Humbird et al. attempt to “map” the core structure of tree-based
+    models onto deep neural networks. According to the authors, the mapping will create
+    a “boosted start” for the neural network in terms of structure and weight initialization
+    to achieve better training results. The network produced by the mapping algorithm
+    is referred to as “Deep Jointly Informed Neural Network (DJINN).”
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The construction and training process of DJINN can be split into three general
+    steps as outlined in the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Train any tree-based model on the selected dataset. Note that for the purpose
+    of concise explanations, the decision tree will be used as the target tree-based
+    model. However, any kind of tree-based ensemble algorithm would work. The algorithm
+    is repeated *n* times for each of the *n* weak learners in the ensemble, essentially
+    mapping out *n* neural networks.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We recursively traverse the trained decision tree to map its structure onto
+    a neural network. This is done by following specific rules defined by the DJINN
+    mapping algorithm.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The mapped network is trained like any other ANN. The paper suggests Adam as
+    the optimizer and ReLU as hidden layer activations.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'To formalize the algorithm for mapping decision trees to DJINN, we adapt notations
+    used by the authors in the original paper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Denote *l* as the level index for the decision tree and the layer index for
+    the neural network where *l* = 0 represents the first layer of the neural network
+    and the first level of the decision tree.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The value of *l* falls within the interval [0, *D*[*t*]] where *D*[*t*] is the
+    max depth of the decision tree. This indirectly tells us that the mapped neural
+    network will have *D*[*t*] + 1 total layers (including the input and output layers).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Denote *D*[*b*] as the maximum level that branch nodes exist. Rephrased, *D*[*b*]
+    is the lowest level in the decision tree that it will still be possible for nodes
+    to partition the data further. This indirectly tells us about the relationship
+    between *D*[*t*] and *D*[*b*]: *D*[*b*] = *D*[*t*] − 1.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let *N*[*b*](*l*) return the number of branches in the decision tree at level
+    *l*. The number of neurons in any hidden layer of the network can be computed
+    as *n*(*l*) = *n*(*l* − 1) + *N*[*b*](*l*).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let ![$$ {L}_i^{max} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq3.png)
+    be a list containing the furthest level that each feature appeared as a branch
+    node. To clarify, say that “feature 1” was chosen by the tree to partition the
+    data at tree levels 2, 4, and 5\. Then ![$$ {L}_i^{max} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq4.png)
+    for “feature 1” would be 5 since it’s the deepest level that the feature appeared
+    in the tree.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let *W*^(*l*) denote the weight matrix for layer *l*. For every unique feature
+    in the dataset,*i* = 0, 1, 2, …, number of features − 1, we set ![$$ {W}_{i,i}^l
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq5.png) to unity^([6](#Fn6))
+    for every value of ![$$ l&lt;{L}_i^{max} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq6.png).
+    For a better understanding, the following visual in Figure [7-5](#Fig5) demonstrates
+    which neurons are initialized to unity for ![$$ {L}_i^{max}=\left(2,2,1\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq7.png).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram of weight initialization depicts 4 sets of neurons under l equals
+    0, 1, 2, and 3\. Labels on a few of the links read set weight to 1\. Weights on
+    different colored neurons are set to 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight initialization of the network
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, every weight and bias of the mapped network is set to zero other
+    than those pre-initialized unity weights mentioned previously. After applying
+    the DJINN mapping algorithm, the final network architecture will be determined
+    by pruning neurons with their weight still at zero. Removing zero-weight neurons
+    will be discussed in detail after explaining the mapping algorithm since the process
+    will be much more relevant then. The core idea of the mapping algorithm works
+    by traversing through the decision tree and “reinitializing” neurons corresponding
+    to the positions of nodes and branches in the tree. We can interpret neurons with
+    zero weight as “disconnected neurons” since they cannot pass on information without
+    a bias attached to them. On the other hand, neurons “reinitialized” by the mapping
+    algorithm will possess nonzero values and thus can be interpreted as “connected
+    neurons” for their ability to pass on information without a bias attached to them.
+    Note that the algorithm will not “reinitialize” every neuron in the network. Neurons
+    that weren’t “reinitialized” by the mapping algorithm will be selectively pruned
+    according to their bias value. All biases in the network will be randomly initialized
+    from a normal distribution, and neurons with a negative bias value with zero weights
+    will be scrapped. The selective pruning will inject randomness into the network
+    architecture, providing better flexibility and more significant potential than
+    the original pretrained tree-based model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We start at *l* = 1 since at *l* = 0 the network is the input layer where every
+    weight is set to 1 beforehand and the number of neurons is restricted to the number
+    of features. When neurons are reinitialized, their weight is randomly chosen from
+    the distribution (0, *σ*²) where
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\sigma}^2=\frac{3}{\textrm{sum}\ \textrm{of}\ \textrm{previous}+\textrm{current}\
+    \textrm{layer}\ \textrm{neuron}\ \textrm{count}} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'As we traverse through the decision tree recursively, for each node in every
+    level *l ϵ* [1, *D*[*t*]], we denote the current node as *c*. There are two possibilities
+    for what *c* could be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Node *c* is a branch node, meaning that the node further splits into branches
+    or the current level of the decision tree < *D*[*t*]. In this case, we initialize
+    a new neuron, turning it from being disconnected to connected at layer *l*. Then,
+    we record the feature used in the branch node to split the data further and find
+    the input neuron associated with that feature. We can temporarily denote the input
+    neuron as *n* sub *f* *e* *a*. *t*. By using neurons that we initialized earlier
+    to unity, from *n*[*feat*], we string the input neuron all the way to *c*. Finally,
+    we connect *c* to its equivalent “parent node,” or the neuron that we initialized
+    for the parent node of *c*.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Node *c* is a leaf node. In the case of a regression task, we simply connect
+    the output neuron to its equivalent “parent node,” or the neuron we initialized
+    for the parent node of *c* given the context of decision trees. In the case of
+    classification, we connect the output neuron outputting the same class as the
+    leaf *c* to its equivalent “parent node” neuron.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We can visualize this process from the original paper's example depicted in
+    Figure [7-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: By examining the trained decision tree on the left, we see that ![$$ {L}_i^{max}=\left(2,1,2\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq8.png) for *x*[1],
+    *x*[2], *x*[3]. Neurons with a blue cross marked on them are initialized to unity
+    according to the ![$$ {L}_i^{max} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq9.png)
+    for each feature (Figure [7-6](#Fig6)). Note that neurons can be initialized to
+    unity but never be connected when mapping the tree to the network; thus, some
+    neurons are marked with the blue cross but shaded in gray.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a decision tree and a neural network. The decision tree of
+    4 levels has the nodes from the root at I equals 0 to the leaf nodes at I equals
+    3\. The mapped neural network on the right has the neurons connected in different
+    colored lines and a few neurons have a colored cross marked in them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization of mapping decision trees to a neural network, constructing DJINN.
+    From K. D. Humbird et al. with slight modifications
+  prefs: []
+  type: TYPE_NORMAL
+- en: We iterate through every tree level, mapping every node from that level to its
+    respective neuron in the network, going from left to right. At *l* = 1 of the
+    decision tree, the first node that we iterate to is a leaf node of class A, denoting
+    it as *c*. The parent node for *c* is the input node of the decision tree, where
+    the feature *x*[1] is selected to split the data. To connect the input neuron
+    all the way to the output neuron of class A (corresponding to *c*), we utilize
+    neurons that we initialized to unity. The red path labeled “1” represents this
+    connection, mapping the leaf *c* to the network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We are moving to the right in the tree to the node splitting on *x*[2]. We instantiate
+    a new neuron in the respective layer of the network (at layer *l* = 1). We first
+    connect the new neuron to its parent node, or the neuron mapped from the tree's
+    input node. We then connect the input neuron corresponding to the feature used
+    in the current node, the *x*[1] input neuron. Both connections are shown in the
+    yellow path labeled as "2".
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moving down to *l* = 2 in the decision tree, the first neuron to map is a node
+    that splits on the feature *x*[1]. Again, we first instantiate a new neuron in
+    the respective network layer (*l* = 2). We then connect the new neuron to the
+    neuron in the previous layer, which was mapped by the parent node of the current
+    node. To clarify, that was the neuron we initialized and connected for the node
+    splitting on *x*[2]. Finally, using neurons that we initialized to unity at the
+    start, we can string the input neuron of *x*[1] all the way to the new neuron
+    we just initialized. Both connections are drawn by the yellow path between layers
+    1 and 2 labeled “2”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For the last branch node, the tree chose to split on the feature *x*[3]. The
+    exact process is repeated on this node for mapping the network: connect the neuron
+    created by the current node’s parent branch to the current one and connect the
+    current neuron to the *x*[3] input neuron by using neurons with unity weight.
+    Both connections are shown in the blue path labeled “4”.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, moving to the last level of the tree, there are a total of four leaves,
+    with two pointing to class A, while the other two pointing to class B. For the
+    leaf node on the left, connect the class A output neuron to the neuron we created
+    for its parent node. This is shown in the yellow path labeled “2”. Moving to the
+    right, for the leaf node with the same parent branch, we simply connect the output
+    neuron for class B to the same neuron in the previous layer, represented by the
+    green path labeled “3”. The final two leaf nodes are both child nodes of a branch
+    node splitting on *x*[3]; we connect the respective output neurons to the neuron
+    mapped by that branch node. The two connections are drawn by the blue “4” path
+    and the purple “5” path, respectively. The complete pseudocode for the mapping
+    algorithm is shown in Figure [7-7](#Fig7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm has the steps for mapping a D J I N N tree to a neural network.
+    The code has 4 steps that recurse through the paths of the decision tree to create
+    neurons and output a neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pseudocode for decision tree mapping to neural networks. From K. D. Humbird
+    et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As mentioned earlier, those disconnected neurons will be randomly chosen to
+    be included in the final architecture decided by their bias initialization. Biases
+    of all neurons will be randomly selected from a Gaussian distribution. DJINN essentially
+    utilizes the optimal structure created by the trained decision tree while allowing
+    a small amount of freedom to account for inaccuracies. This cleverly avoids the
+    time-consuming process of NAS while creating a dynamic method of designing/producing
+    ANN architecture specialized for tabular data. Furthermore, the interpretability
+    of decision trees also partially carries over to the DJINN. One can observe a
+    highly interpretable network structure through the example of decision trees trained
+    for logic operations shown in Figure [7-8](#Fig8). Note that gray neurons are
+    initialized with the architecture but randomly chosen to be included in the final
+    network by their bias value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of logic operations, decision trees, and neural networks. On
+    the left are the 3 logic operations of if x, O R, and X O R. 3 decision trees
+    of the logic operations are in the center. 3 neural networks mapped from the decision
+    trees are on the right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decision trees trained for logic operations are then mapped to neural networks,
+    providing high structural interpretability. From K. D. Humbird et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The authors performed a series of tests and comparisons for DJINN. Here’s a
+    summary of their findings:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using ensemble tree-based models as the pretrained tree-based model consistently
+    outperformed single-tree models. Bagging approaches such as Random Forest can
+    map to multiple weak neural networks. The final prediction is simply the average
+    of all mapped networks. Figure [7-9](#Fig9) are results for DJINN trained on four
+    different tabular datasets (Boston Housing, Diabetes Progression, California Housing,
+    and Inertial Confinement Nuclear Fusion Implosion Simulations) with varying tree
+    counts for the ensemble. An increased number of trees in the ensemble is empirically
+    better than less. The following graph shows the Mean Squared Error as a function
+    of the number of trees in the ensemble (Figure [7-9](#Fig9)).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig9_HTML.jpg)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: A line graph of normalized M S E versus the number of trees. It plots Boston,
+    C A, diabetes, and yield that follow a decreasing trend with a few fluctuations.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Figure 7-9
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Performance of DJINN with four different tabular datasets compared against the
+    number of trees used in the ensemble. From K. D. Humbird et al.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'The tree-based structure of DJINN can be seen as a warm start to model training.
+    Two distinct characteristics distinguish DJINN as a warm start technique from
+    others: its sparsity in nonzero weights and their placements. These advantages
+    are shown in their comparison with other weight initialization methods, including
+    densely connected Xavier initialized weights,^([7](#Fn7)) randomly initializing
+    the same number of nonzero weights per layer with random placement, and finally
+    a standard two–hidden layer ANN. Again, the MSE metric is plotted against the
+    number of epochs trained (Figure [7-10](#Fig10)).'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 4 graphs of training cost versus training epoch. The plots of D J I N N, dense,
+    sparse, and 2 H L, in the graphs labeled Boston, C A, diabetes, and yield follow
+    a decreasing trend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance comparison of different weight initialization methods. From K. D.
+    Humbird et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementation for DJINN can be found on GitHub at [`https://github.com/LLNL/DJINN`](https://github.com/LLNL/DJINN)
+    for TensorFlow. To install, we can clone the repository to our current directory
+    and download packages mentioned in `requirement.`txt (Listing [7-15](#PC15)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: To illustrate the simple pipeline that the package provides for selecting various
+    hyperparameters and training, the Breast Cancer dataset will be used as the data
+    for the model (Listing [7-16](#PC16)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we will create a `DJINN_Classifier` object and specify hyperparameters
+    for the tree. Based on those hyperparameters, the library will search for the
+    optimal training parameters for the mapped network (Listing [7-17](#PC17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once the training parameters are obtained, we simply call the `train` method
+    on the model and fill in the optimal hyperparameters (Listing [7-18](#PC18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: The prediction can be generated by calling the model's prediction method (Listing
+    [7-19](#PC19)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: DJINN can be viewed as an optimal network architecture for tabular data tasks
+    and a brand-new modeling technique for optimizing deep learning performance on
+    structured datasets. Its cleverness in manipulating and utilizing tree-based model
+    architecture also adds another layer of structural interoperability; in other
+    words, we know why the network architecture is structured as it is.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Net-DNF
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In classical binary logic, *disjunctive normal form* (DNF) is a logical expression
+    in which two or more conjunctions of literals are joined by a disjunction in the
+    main scope. To provide the relevant vocabulary to understand DNF
+  prefs: []
+  type: TYPE_NORMAL
+- en: A *variable* holds one of two truth values (True or False) and is represented
+    generally by a capital letter, such as *A*, *B*, or *C* (and so on).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Negation* is equivalent to the logical *not* operator and is represented in
+    logic by ¬. For instance, ¬*A* means “not *A*” or “the negation of *A*.” If *A*
+    is True, then ¬*A* evaluates to False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'A *literal* is either a variable or the negation of a variable. For instance,
+    the following are literals: *A*, ¬ *B*, ¬ *C*, *F*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Conjunction* is equivalent to the logical *and* operator and is represented
+    in logic by ⋀. For instance, *A* ⋀ *B* means ^"*A* and *B*”; if *A* is True and
+    *B* is False, then *A* ⋀ *B* evaluates to False. Alternatively, *A* ⋀  ¬ *B* evaluates
+    to True. A conjunction is not a literal.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Disjunction* is equivalent to the logical *or* operator and is represented
+    in logic by ⋁. For instance, *A* ⋁ *B* means ^"*A* or *B*”; if *A* is True and
+    B is False, *A* ⋁ *B* evaluates to True. Alternatively, ¬*A* ⋁ *B* evaluates to
+    False. A disjunction is not a literal.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Conjunction or disjunction is considered to be in *wide scope* if it is not
+    “wrapped” in any other operators. For instance, conjunction is in wide scope in
+    the expression (*A* ⋁  ¬ *B*) ⋀ *C* because the conjunction ⋀ is the “outermost”
+    operator; nothing is wrapping around it. On the other hand, conjunction is not
+    in wide scope in the expression (*A* ⋀  ¬ *B*) ⋁ *C* because it is wrapped by
+    the disjunction ⋁. In this case, disjunction is in wide scope.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Putting this all together, disjunctive normal form features disjunctions that
+    are all at wide scope; each argument of the disjunction (i.e., the expressions
+    being disjoined together) must be either a literal or a conjunction of literals.^([8](#Fn8))
+    The following are examples of expressions in DNF:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: (¬*A* ⋀  ¬ *B* ⋀ *C*) ⋁ *D*
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*A* ⋁ (¬*B* ⋀  ¬ *C* ⋀ *D*)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*A* ⋁ (¬*B* ⋀  ¬ *C* ⋀ *D*) ⋁ *E*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*A* ⋁ (¬*B* ⋀  ¬ *C* ⋀ *D*) ⋁ *E* ⋁ (*A* ⋀  ¬ *F*)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*A* ⋁ *B*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The following are examples of expressions which are *not* in DNF:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*A* ⋀ *B*; conjunction rather than disjunction is in wide scope.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*A* ⋁ (*A* ⋀ (¬*B* ⋁ *C*)); a disjunction is not in wide scope.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ¬(*A* ⋁ *B*); negation rather than disjunction is in wide scope.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Why is DNF relevant at all? Decision Trees can be represented as DNF formulas
+    over feature split conditions. For instance, consider the following decision tree
+    logic expressed in nested form^([9](#Fn9)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If temperature larger than 80 degrees
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Pack sunscreen.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If temperature not larger than 80 degrees
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If going to shaded region
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Do not pack sunscreen.
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If not going to shaded region
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Pack sunscreen.
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Let *A* be a Boolean variable representing the truth value of the statement
+    “the temperature is larger than 80 degrees.” Let *B* represent the truth value
+    of the statement “you are going to a shaded region.” We can express the decision
+    tree intuitively in disjunctive normal form as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ A\vee \neg B $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The truth value represents whether we should pack sunscreen (True) or not (False).
+    Say that the temperature is not larger than 80 degrees (*A* = False) and we are
+    not going to a shaded region (*B* = False). Then, *A* ∨  ¬ *B* = False ∨  ¬ False = True.
+    As our tree dictates, we will pack sunscreen.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Ami Abutbul, Gal Elidan, Liran Katzir, and Ran El-Yaniv of the Technion – Israel
+    Institute of Technology and Google propose building a deep learning network out
+    of disjunctive-normal-form “building blocks” to model tabular data in the 2020
+    ICLR paper “DNF-Net: A Neural Architecture for Tabular Data.”^([10](#Fn10)) The
+    authors propose that using DNF units theoretically capable of expressing decision
+    tree logic could help develop neural emulations of successful decision tree models
+    in tabular data problems:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: …the “universality” of forest methods in handling a wide variety of tabular
+    data suggests that it might be beneficial to emulate, using neural networks, the
+    important elements that are part of the tree ensemble representation and algorithms.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: In order to integrate a custom unit design into a neural network architecture,
+    however, it must be differentiable. The traditional disjunction and conjunction
+    operators are not differentiable. Abutbul et al. propose the *disjunctive normal
+    neural form* (DNNF) block, which uses “soft” and therefore differentiable generalization
+    of these logic gates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DNNF is implemented with a two–hidden layer neural network and replicates the
+    constitution of a formula in disjunctive normal form. The first layer derives
+    “literals,” which are passed into a series of soft conjunctions. These soft conjunctions
+    are then passed into a disjunction gate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The soft disjunction and conjunction gates are defined as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{or}\left(\overrightarrow{x}\right)=\tanh \left(\sum \limits_{i=1}^d{\overrightarrow{x}}_i+\left(d-1.5\right)\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \textrm{and}\left(\overrightarrow{x}\right)=\tanh \left(\sum \limits_{i=1}^d{\overrightarrow{x}}_i-\left(d-1.5\right)\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Let’s consider the input ![$$ \overrightarrow{x}:= \left\langle -1,1,-1\right\rangle
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq10.png). This
+    is representative of the inputs False, True, and False. If we are to apply disjunction
+    (or) to the input, we are computing a representation of False ∨ True ∨ False.
+    We can calculate the disjunction and conjunction of this input as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{or}\left(\left\langle -1,1,-1\right\rangle \right)=\tanh \left(\left(-1+1-1\right)+\left(3-1.5\right)\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\tanh \left(-1+1.5\right)=\tanh (0.5)\approx 0.46 $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \textrm{and}\left(\left\langle -1,1,-1\right\rangle \right)=\tanh \left(\left(-1+1-1\right)-\left(3-1.5\right)\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ =\tanh \left(-1-1.5\right)=\tanh \left(-2.5\right)\approx -0.99 $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Indeed, False ∨ True ∨ False = True (0.46 being closer to “True” +1 than “False”
+    −1) and False ∧ True ∧ False = False (−0.99 being closer to “False” −1 than “True”
+    +1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note, however, that these soft neural gates also do a little bit of quantification
+    as to just “how true” the disjunction or conjunction is. False ∨ True ∨ False
+    can be thought of as “weakly true” because only one of the arguments makes the
+    disjunction true. On the other hand, or(⟨1, 1, 1⟩) obtains a much higher result
+    of 0.9998, since True ∨ True ∨ True is “strongly” true.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The authors use a modified version of conjunction to select certain literals
+    rather than being forced to accept all of them. Recall that in DNF, literals are
+    joined with conjunction; we want to give the network a mechanism to select only
+    a subset of literals to conjoin. Otherwise, given some hypothetical set of literals
+    *A*, *B*, *C*, …, the only possible DNF expression uses the following pattern
+    (with the argument of disjunction repeated an arbitrary number of times):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left(A\wedge B\wedge C\wedge \dots \right)\vee \left(A\wedge B\wedge
+    C\wedge \dots \right)\vee \dots $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'This is not very informative. But say we “mask” out variables depending on
+    the argument of conjunction to form a more expressive formula:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left(A\wedge B\wedge D\right)\vee \left(B\wedge D\wedge F\right)\vee
+    \left(A\wedge F\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'As a technical detail, the authors restrict it such that each literal can only
+    belong in *one* conjunction, for example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \left(A\wedge C\right)\vee \left(D\wedge E\right)\vee \left(B\wedge F\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In order to enable such masking, we use a *projected conjunction gate*, which
+    accepts some mask vector ![$$ \overrightarrow{u}\in {\left\{0,1\right\}}^d $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq11.png)
+    to select for variables in the input ![$$ \overrightarrow{x} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq12.png):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\textrm{and}}_{\overrightarrow{u}}\left(\overrightarrow{x}\right)=\tanh
+    \left({\overrightarrow{u}}^T\overrightarrow{x}-{\left|\overrightarrow{u}\right|}_1+1.5\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that this is a generalization of the originally introduced formula for
+    soft conjunction. We sum only the selected variables, subtract the number of selected
+    variables (given to us by the L1 norm of the mask vector, ![$$ {\left|\overrightarrow{u}\right|}_1
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq13.png), because
+    ![$$ \overrightarrow{u} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq14.png)
+    is binary), and add a bias of 1.5.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can formally define the disjunctive normal neural form block as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left(\overrightarrow{x}\right)=\tanh \left({\overrightarrow{x}}^TW+\overrightarrow{b}\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \textrm{DNNF}\left(\overrightarrow{x}\right)=\textrm{or}\left({\textrm{and}}_{\overrightarrow{c^1}}\right(L\left(\overrightarrow{x}\right),{\textrm{and}}_{\overrightarrow{c^2}}\Big(L\left(\overrightarrow{x}\right),\dots,
+    {\textrm{and}}_{\overrightarrow{c^k}}\left(L\left(\overrightarrow{x}\right)\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that *c*^(*i*) denotes a *d*-length mask vector, which determines which
+    variables are selected for conjunction in the *i*th argument of the wide-scope
+    disjunction. These are learnable, but the technical implementation of how this
+    is done is omitted from the chapter and can be found in the paper. The authors
+    employ gradient tricks to overcome gradient problems caused by learning binary
+    masks in a continuous optimization regime.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ L\left(\overrightarrow{x}\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq15.png)
+    helps generate “literals,” which are processed in subsequent layers *without any
+    learned parameters* through a soft disjunctive normal form expression. This generation
+    process can be thought of as a neural equivalent of creating splitting conditions
+    in a tree context.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A *DNF-Net* is formed by stacking together *n* DNNF blocks, the outputs of
+    which are linearly transformed and summed with a standard dense layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{DNFNet}\left(\overrightarrow{x}\right)=\sigma \left(\sum \limits_{i=1}^n\Big({w}_i{\textrm{DNNF}}_i\left(\overrightarrow{x}\right)+{b}_i\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: DNF-Net performs competitively against XGBoost and consistently better than
+    a standard fully connected network on a variety of tabular datasets (Table [7-4](#Tab4)).
+    While DNF-Net is not a hands-down superior competitor to XGBoost, its differentiable
+    emulation of tree-like logical structures in soft, neural form is promising and
+    may become the basis of improved research.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 7-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance of DNF-Net on several datasets, compared with XGBoost and a fully
+    connected neural network. From Abutbul et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| ![](../images/525591_1_En_7_Chapter/525591_1_En_7_Figd_HTML.gif)A table of
+    5 columns and 6 rows. The column labels are dataset, test metric, D N F net, X
+    G boost, and F C N. The row labels are Otto group, gesture phase, gas concentrations,
+    eye movements, Santander transaction, and house with their values given. |'
+  prefs: []
+  type: TYPE_TB
+- en: 'We will implement a very simple and incomplete modified version of Net-DNF
+    to concretely illustrate the previously discussed theory. The authors of the paper
+    add additional mechanisms to improve performance and functionality; the repository
+    can be viewed here: [`https://github.com/amramabutbul/DisjunctiveNormalFormNet`](https://github.com/amramabutbul/DisjunctiveNormalFormNet).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We’ll start by defining the following configurations for the network (Listing
+    [7-20](#PC20)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*The number of literals generated by* ![$$ L\left(\overrightarrow{x}\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq16.png): This
+    constitutes the “vocabulary” available to each of the DNNF blocks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*The number of arguments to the disjunction*: This is the number of conjunction
+    expressions we generate and pass into the disjunction in each DNNF block.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Average number of conjunction literals*: This is the mean number of literals
+    selected from the total array of available literals for conjunction.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The number of DNNF blocks
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s begin by defining the neural disjunction gate. We set the number of disjunction
+    arguments (this is the length of the vector input to disjunction) as a constant
+    and use it in the neural disjunction calculation (Listing [7-21](#PC21)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: We pass both the input ![$$ \overrightarrow{x} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq17.png)
+    and the mask vector ![$$ \overrightarrow{u} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq18.png)
+    into the neural gate and use the given calculation (Listing [7-22](#PC22)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To simplify things, we’ll select literals for conjunction in the following
+    manner: in the creation of each DNNF block, we select a random proportion of literals
+    (with the specified average proportion), which is fixed – it becomes an intrinsic
+    part of the layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can do this by defining a “stimulus” tensor, which has shape (number of disjunction
+    arguments, number of literals) and is filled with samples randomly drawn from
+    a uniform distribution [0, 1). All elements of the tensor are set to 1 if less
+    than average number of conjunction literals/number of literals and 0 otherwise.
+    This creates a random fixed mask to select literals for conjunction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Then, for each disjunction argument, we perform conjunction on the selected
+    literals by passing the full literal set (`literals`) and the corresponding mask
+    vector (`masks[i]`). The outputs are concatenated together to produce a single
+    vector output, which is passed into a neural disjunction output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The DNNF function (Listing [7-23](#PC23)) accepts an input and connects it to
+    an output layer, which is returned.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: The DNF-Net can be built in the following fashion (Listing [7-24](#PC24)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model can then be instantiated, compiled, and fitted on a dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Boosting and Stacking Neural Networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Other models imitate the success of tree ensembles using boosting and stacking
+    by applying boosting techniques to the neural network domain. This section discusses
+    two sampled research papers adopting this approach:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*“GrowNet” by Sarkan Badirli et al.*: Training an ensemble of multiple weak
+    NN learners by Gradient Boosting methods.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*“XBNet” by Tushar Sarkar*: Training an ensemble of networks through the XGBoost
+    algorithm.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note that Chapter [11](525591_1_En_11_Chapter.xhtml) discusses multi-model arrangement
+    techniques, which are a broad category of modeling methods for GrowNet and XBNet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: GrowNet
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: GrowNet (Gradient Boosting neural networks) perfectly fits under “boosting and
+    stacking neural networks” – it mimics a Gradient Boosting Machine where each weak
+    learner is a shallow ANN – proposed by S. Badirli, X. Liu, Z. Xing, A. Bhowmik,
+    and S.S. Keerthi in 2020\. GrowNet utilizes the powerful structural advantage
+    of Gradient Boosting frameworks while letting neural networks discover complex
+    relationships where GBMs cannot fathom.^([11](#Fn11))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Intuitively, the proposed method of training neural networks seems like it would
+    perform better than standard ANNs. Simple ensemble techniques such as weighted
+    average and majority voting were proposed as early as the 1990s. Ensemble models
+    almost always outperform single models as they can combine the learning results
+    from different perspectives. Recall from Chapter [1](525591_1_En_1_Chapter.xhtml)
+    that Gradient Boosting is considered an ensemble technique, falling under the
+    boosting category. Badirli et al. adapted the structure of GBMs and their learning
+    method; they applied those key characteristics to neural networks. Currently,
+    GBMs dominate the field of tabular data AI along with other tree-based models.
+    Designing neural networks that consistently perform well on structured data still
+    presents an immense challenge. However, typical weak learners of Gradient Boosting
+    Machines are unable to discover complex, nonlinear relationships that might define
+    the correlation between features and targets. GrowNet replaces the usual tree-based
+    weak learners of Gradient Boosting Machines with shallow ANNs in hopes that it
+    can utilize the unique boosting concept while having the learning power of neural
+    networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Following the notation used by the authors, assume a dataset *D* with *n* samples
+    in a *d*-dimensional feature space: ![$$ D={\left({x}_i,{y}_i\right)}_{i=1}^n
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq19.png). GrowNet
+    uses *K* additive functions, or weak learners, to predict the output:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{y}}_i=\sum \limits_{k=0}^K{\alpha}_k{f}_k\left({x}_i\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In the language of GBMs, *α*[*k*] represents the boosting rate, which controls
+    how much each weak learner contributes to the final prediction. Recall from Chapter
+    [1](525591_1_En_1_Chapter.xhtml) that the goal of weak learners is to progressively
+    correct the mistake of the previous learner by predicting pseudo residuals. In
+    GrowNet, instead of tree-based models as weak learners, shallow neural networks,
+    *f*[*k*], are tasked with predicting pseudo residuals. We definethe loss function
+    as ![$$ L=\sum \limits_{i=0}^nl\left({y}_i,{\hat{y}}_i\ \right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq20.png).
+    The value of ![$$ {\hat{y}}_i $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq21.png)
+    is computed additively at each stage during boosting since each learner is sought
+    greedily, and its predictions are calculated using the output from the previous
+    stage. At stage *t*, the loss can be computed as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}^{(t)}=\sum \limits_{i=0}^nl\left({y}_i,{\hat{y}}_i^{\left(t-1\right)}+{\alpha}_k{f}_k\left({x}_i\right)\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equab.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Second-order optimization techniques are adopted as they can lead to faster
+    convergence and are superior to first-order optimization approaches in the current
+    context. Neural networks in GrowNet are trained with Newton-Raphson steps. Additionally,
+    the second-order Taylor expansion of the loss function is used to ease computational
+    complexity. Following the expansion, the loss function can be simplified as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}^{(t)}=\sum \limits_{i=0}^n{h}_i{\left(\tilde{y}_i-{\alpha}_k{f}_k\left({x}_i\right)\right)}^2
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equac.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where ![$$ \tilde{y}_i=-{g}_i/{h}_i $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq22.png)
+    with *g*[*i*] and *h*[*i*] being the first- and second-order gradients, respectively,
+    of the loss function at *x*[*i*] with respect to ![$$ {\hat{y}}_i^{\left(t-1\right)}
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq23.png). Refer
+    to the original paper for a detailed mathematical explanation. The general architecture
+    of GrowNet can be seen in Figure [7-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram of Grow Net architecture depicts a sequence of models from 1 to K.
+    Each model contains input, hidden feature, and penultimate feature, that gives
+    W subscript in, W subscript hidden, and W subscript out respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Architecture representation of GrowNet. From Badirli et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One of the significant disadvantages that tree-based models have compared with
+    neural networks is their inability to update their parameters simultaneously (for
+    more details, refer back to the “Deep Neural Decision Trees” section). Instead,
+    they can only optimize parameters one at a time, finding the optimal value for
+    one parameter before moving on to the next. Even though the GrowNet algorithm
+    relies on several small neural networks as its foundation, these “weak learners”
+    aren’t able to further update their parameters past their training stage. To address
+    this issue, the paper's authors implemented a corrective step executed after every
+    stage. During the corrective step, all weak learners’ parameters are updated with
+    respect to the entire GrowNet. Additionally, the boosting rate at each stage is
+    dynamically adjusted through backpropagation during the corrective step. Details
+    of the corrective step are shown in Figure [7-12](#Fig12).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm of the Grow Net corrective step. It includes the following steps
+    in a loop. Calculate grow net output, calculate loss, update model f subscript
+    m parameters, and update step size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Algorithmic details of the GrowNet corrective step. From Badirli et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Consider a regression example where the Mean Squared Error (MSE), denoted as
+    *l*, is adopted as the loss function. The general training procedure for GrowNet
+    can be outlined in the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Instantiate a shallow neural network. This will be the first stage of training
+    out of the total *K* stages in GrowNet. The network is trained on the complete
+    dataset {*x*,  *y*} where *x* represents the features and *y* represents the targets.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'From the second training stage up until the last training stage, *K*, the model
+    will be trained on ![$$ \left\{\overset{\sim }{x},\overset{\sim }{\ y}\right\}
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq24.png). Let’s
+    break each variable down individually. The features, ![$$ \overset{\sim }{x} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq25.png),
+    combine both the original dataset features and the penultimate features obtained
+    from the previous weak learner *K* − 1\. Here, penultimate features are obtained
+    from the raw output from the final hidden layer (which is not the output layer).
+    The dimension of ![$$ \overset{\sim }{x} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq26.png)
+    will always be the number of dataset features plus the number of neurons in the
+    final hidden layer of the weak learner. This will remain constant regardless of
+    the training stage since every weak learner has the same network architecture.
+    Recall from the preceding modified loss function, ![$$ \overset{\sim }{\ y} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq27.png)
+    is computed as the negative quotient of the first- and second-order gradients
+    of the loss function w.r.t. ![$$ {\hat{y}}^{\left(t-1\right)}:-g/h $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq28.png).
+    We can calculate the respective gradients for the MSE loss function as such:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '![$$ g=2\left({\hat{y}}^{\left(t-1\right)}-y\right),\kern1em h=2 $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equad.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: Simplifying, we obtain![$$ \overset{\sim }{\ y} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq29.png)
+    as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \overset{\sim }{\ y}=-\frac{g}{h}=y-{\hat{y}}^{\left(t-1\right)} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equae.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We discover that this is the exact calculation for pseudo residuals in GBMs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The corrective step is implemented. We treat GrowNet as one giant neural network
+    and compute its output by ![$$ \sum \limits_{k=0}^K{\alpha}_k{f}_k(x) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq30.png)
+    and its loss by ![$$ L=\sum \limits_{i=0}^nl\left({y}_i,{\hat{y}}_i\ \right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq31.png).
+    Next, for every instantiated weak learner *f*, its parameters are updated through
+    backpropagation and the boosting rate *α*[*k*] at each stage. This corrective
+    step is repeated for a set number of epochs.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Steps 2 and 3 are repeated *K* times for every stage of training.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The complete technical algorithm of GrowNet, along with the corrective step,
+    is depicted in the authors’ pseudocode (Figure [7-13](#Fig13)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig13_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm of full grow net training has input, output, and steps. The steps
+    include part 1, individual model training, and part 2, corrective step within
+    the for loops.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Full algorithm of GrowNet. From Badirli et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: GrowNet can be adapted to classification, regression, and learning to rank.
+    Experiment results showed GrowNet’s empirical advantage over XGBoost and another
+    similarly structured model, AdaNet. Each weak learner adopted has two standard
+    dense layers with the number of neurons equal to half of the input feature dimension.
+    Boosting rate was initially set to 1 and then later adjusted by the model automatically.
+    For classification, the model is trained on the Higgs Boson dataset, while the
+    Computed Tomography (retrieve the location of CT slices on an axial axis) and
+    Year Prediction MSD (a subset of a million-song dataset) datasets are used for
+    regression. Experiment results are shown in Tables [7-5](#Tab5) and [7-6](#Tab6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 7-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment results from regression. From Badirli et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| -![](../images/525591_1_En_7_Chapter/525591_1_En_7_Figf_HTML.jpg)A table
+    of 2 columns and 3 rows. The column labels are music year p r e d dot and slice
+    local z dot. The row labels are X G boost, A d a net, and grow net with their
+    values given. |'
+  prefs: []
+  type: TYPE_TB
+- en: Table 7-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment results from classification. From Badirli et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| -![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fige_HTML.jpg)A table
+    of 2 columns and 4 rows has the data as follows. X G Boost, 0.8304\. Grow net
+    all data, 0.8510\. Grow net data sampling equals 10 percent, 0.8439\. Grow net
+    data sampling equals 1 percent, 0.8180. |'
+  prefs: []
+  type: TYPE_TB
+- en: Empirical results do indeed demonstrate that GrowNet outperforms XGBoost and
+    its competitor, AdaNet, which uses a similar fashion of building neural networks.
+    An implementation of GrowNet can be found at the following GitHub gist written
+    by Yam Peleg, [`https://gist.github.com/ypeleg/576c9c6470e7013ae4b4b7d16736947f,`](https://gist.github.com/ypeleg/576c9c6470e7013ae4b4b7d16736947f)
+    which we can download by cloning the gist`.`
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following lines of code in Listing [7-25](#PC25) will download and import
+    the gist.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can simply create an architecture using Keras and wrap it with the `GradientBoost`
+    object. Calling `fit` will train the network as a GrowNet model. The California
+    Housing dataset will be used in the following example (Listing [7-26](#PC26)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, we can call the train and predict methods as usual (Listing [7-27](#PC27)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Like most tree-based ensemble models, heavy hyperparameter tuning is needed
+    to squeeze every bit of performance out of GrowNet. GrowNet provides many improvements
+    to both neural networks and tree-based methods; it’s a result of the mixture between
+    the two. Its performance can edge or even outperform models previously known to
+    excel in structured data tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: XBNet
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: XBNet, proposed by Tushar Sarkar in 2021, combines the power of XGBoost and
+    neural networks through a simple yet effective approach without much modification
+    to either model.^([12](#Fn12)) Recall XGBoost from Chapter [1](525591_1_En_1_Chapter.xhtml),
+    short for Extreme Gradient Boosting. XGBoost is a highly optimized Gradient Boosting
+    algorithm that combines efficiency, speed, regularization, and performance into
+    one model. XGBoost not only uses a custom-defined splitting criterion but also
+    prunes every tree after its creation to introduce regularization as well as to
+    increase training speed. Most tree-based models and GBMs, including XGBoost, can
+    easily compute feature importance values for the dataset. One numerical value
+    is produced for each feature, which informs relatively how beneficial the feature
+    is to model prediction compared with other features. Most deep learning models
+    lack the ability to interpret how each individual feature contributes to model
+    predictions. Consequently, feature importance is a commonly used tool to better
+    understand the relationship between certain features and labels and is used as
+    a measure for feature selection to improve model performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'XBNet, like most other networks discussed in this chapter, attempts to combine
+    the advantages of deep learning approaches and tree-based models. Like GrowNet,
+    XBNet uses neural networks as its base model and modifies its training procedure
+    to include characteristics from Gradient Boosting Machines. Specifically, those
+    modifications can be summarized into two main ideas: (a) smart weight initialization
+    based on GBM feature importance values and (b) modified backpropagation to allow
+    weight updates through GBM feature importance values. Without much modification
+    to the structure of the network and the process of parameter updates, we can keep
+    the advantages that neural networks provide while injecting insights that XGBoost
+    has on the data (Figure [7-14](#Fig14)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram depicts dense layers 1, 2, and 3 connected by arrows. Inputs are given
+    at layer 1, and layer 3 gives loss computation. Each layer is connected to the
+    feature importance of the corresponding layer which gets the outputs. An arrow
+    from loss computation is labeled back propagation with boosted gradient descent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: XBNet’s architecture. From Tushar Sarkar
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additionally to incorporating feature importance, Tushar Sarkar also proposed
+    tweaking the loss function to include a L2 regularization parameter to prevent
+    overfitting. XBNet may be more prone to overfitting than standard ANNs since it
+    includes added information from GBM feature importance values. It may be more
+    severe than training a regular network due to the added information from XGBoost.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In certain prediction tasks, neural networks may be initialized with pretrained
+    or precomputed weight to be better fitted for the problem situation, essentially
+    giving the network a “boosted start” (and, yes, this is similar to DJINN in some
+    aspects!). The idea of using pretrained weight to increase performance in domain-specific
+    tasks is usually applied to unstructured datasets such as image, audio, or text
+    data. Having pretrained weights for tabular data is rarely seen as the diversity
+    of tabular datasets is vast. It’s a rather daunting task to find a tabular dataset
+    that can be used to pretrain a specific network architecture and is able to generalize
+    to other datasets without difficulty.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tushar Sarkar’s proposed smart weight initialization approach involves using
+    GBMs, specifically, the XGBoost model. An XGBoost model is trained on the entire
+    dataset prior to the initialization of XBNet. Succeeding the network initialization,
+    we set every input neuron’s weight to its corresponding feature importance value
+    calculated by XGBoost.^([13](#Fn13)) To an extent, we assigned each input neuron
+    a weight representing how much each input neuron, or each feature in the dataset,
+    could potentially contribute to the network training/prediction. It’s probable
+    that these preassigned values are suboptimal to the network since these are insights
+    obtained from XGBoost: a model that utilizes completely different training schemes
+    in comparison with neural networks. Nevertheless, the “boosted start” XGBoost
+    can provide to XBNet surpasses what random weight initialization can achieve.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As per usual, to explain and demonstrate the XBNet algorithm in detail, we
+    can outline the XBNet training procedure in the following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initialize an XGBoost model and fit it on the entire dataset. We can then obtain
+    feature importance values for the dataset. The vector that stores feature importance
+    values for the dataset should have a length equal to the number of input neurons
+    to XBNet.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Initialize XBNet. The architecture of XBNet should look like any other standard
+    ANNs: the number of neurons, hidden layers, and activation functions are all choices
+    of the user. The weights of input neurons are set to feature importance values
+    obtained from step 1\. Each input neuron should correspond to a feature in the
+    dataset; the feature importance value for that feature will be the input neuron’s
+    initial weight value.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'We will perform a modified version of the feed-forward operation in neural
+    networks by training a separate XGBoost model from each layer’s feed-forward outputs.
+    Let *w*^((*l*)) and *b*^((*l*)) be the weight and bias for layer *l*, respectively.
+    Denote *z*^((*l*)) as the raw output from layer *l* without applying the layer’s
+    activation function *g*^((*l*))(*x*). Lastly, we will let *A*^((*l*)) represent
+    the final layer output after applying the activation function. The following equations
+    can conduct the feed-forward operation for layer *l*:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '![$$ {z}^{(l)}={w}^{(l)}{A}^{\left(l-1\right)}+{b}^{(l)} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equaf.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: '![$$ {A}^{(l)}={g}^{(l)}\left({z}^{(l)}\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equag.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'We will instantiate a new XGBoost model for layer *l* and denote it as xgb^((*l*));
+    this is not the same model used in step 1\. The model will be trained on the raw
+    output from layer *l* against the ground-truth values for the current batch *y*^((*i*)),
+    and its feature importance values (here, we treat every neuron output in *A*^((*l*))as
+    a feature) will be stored in *f*^((*l*)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {f}^{(l)}={xgb}^{(l)}.\textrm{train}\left({A}^{(l)},{y}^{(i)}\ \right).\textrm{importance}
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equah.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This step in the training procedure is repeated for every layer in the network.
+    The XGBoost model instantiated for each layer will have the same hyperparameters.
+    From a technical perspective, this allows us only to store one XGBoost model in
+    memory and reset its training history every layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will implement a modified backpropagation algorithm using *f*^((*l*)). First,
+    the loss is computed with the L2 regularization (for more information, refer to
+    Chapter [1](525591_1_En_1_Chapter.xhtml)) where ![$$ \mathcal{L} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq32.png)
+    denotes the loss function and *λ* is the regularization strength hyperparameter:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '![$$ \textrm{loss}=\frac{1}{m}\sum \mathcal{L}\left({\hat{y}}^{(i)},{y}^{(i)}\right)+\frac{\lambda
+    }{2m}\sum {\left(\left\Vert {w}^{(l)}\right\Vert\ \right)}^2 $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equai.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: 'Next, we can update weights and biases using the standard gradient descent
+    update rule (or any other update rule depending on the optimizer used):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}^{(l)}:= {w}^{(l)}-\alpha \nabla {\textrm{w}}^{(l)} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equaj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {b}^{(l)}:= {b}^{(l)}-\alpha \nabla {b}^{(l)} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equak.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'By utilizing the same intuition that we deduced for initializing the input
+    layer weights, we can incorporate *f*^((*l*)) into the update rule:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}^{(l)}:= {w}^{(l)}+{f}^{(l)} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equal.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: With added feature importance values, we essentially change how significant
+    each weight in layer *l* contributes to the network by using measures from XGBoost.
+    However, we cannot simply add *f*^((*l*)) to the weight matrix since we cannot
+    ensure that they will be in the same order every epoch. The scale of feature importance
+    values will remain the same by virtue of its definition in the context of XGBoost,
+    which has no relation to the neural network. Due to gradient-based updates, the
+    network weights will not remain in the same order as *f* ^((*l*)); thus, we multiply
+    *f*^((*l*)) by a scalar before using it to update *w* ^((*l*)). We can replace
+    the previously shown update rule *w*^((*l*)) ≔ *w*^((*l*)) + *f*^((*l*)) with
+    ![$$ {w}^{(l)}:= {w}^{(l)}+{f}^{(l)}{10}^{\log \left(\min \left({w}^{(l)}\right)\right)}
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq33.png). The
+    min value across the entire weight matrix *w*^((*l*)) is used as a scaling factor
+    to ensure that every value of *f*^((*l*)) would be in the same order as *w*^((*l*)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Again, this step is repeated for all layers of the network (as backpropagation
+    should).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Inference in XBNet is done like any other ANN by a forward pass.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For reference, in Figure [7-15](#Fig15) is the pseudocode for XBNet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm of the steps for training X B net using boosted gradient descent.
+    The output is minimized cost function. The steps include forward propagation,
+    cost computation, and backward propagation within a for loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complete algorithm/pseudocode for XBNet’s boosted gradient descent from Tushar
+    Sarkar
+  prefs: []
+  type: TYPE_NORMAL
+- en: The author mentioned that having every layer to be “boosted” by XGBoost is not
+    always helpful. In most cases, having a few hidden layers that are not boosted
+    by XGBoost can achieve optimal performance. Furthermore, to reduce training costs,
+    the `n_estimator` parameter of all trained XGBoost models is typically fixed to
+    100\. Another rule of thumb for designing the architecture of XBNet is to have
+    fewer layers and neurons compared with vanilla ANNs and boost layers toward the
+    front portion of the network instead of the back.
+  prefs: []
+  type: TYPE_NORMAL
+- en: XBNet was benchmarked against some well-known tabular datasets; although specific
+    hyperparameters weren’t mentioned, in most cases, XBNet can edge the performance
+    of XGBoost (Table [7-7](#Tab7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 7-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Results on benchmarked datasets in comparison with XGBoost from Tushar Sarkar
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| -![](../images/525591_1_En_7_Chapter/525591_1_En_7_Figg_HTML.gif)A table
+    of 3 columns and 7 rows. The column labels are dataset, X B net, and X G boost.
+    The row labels are Iris, breast cancer, wine, diabetes, titanic, German credit,
+    and digit completion. |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Although the official implementation for XBNet is written in PyTorch, one does
+    not need any knowledge of PyTorch to utilize the implementation. The code can
+    be found in the following GitHub repository: [`https://github.com/tusharsarkar3/XBNet`](https://github.com/tusharsarkar3/XBNet).
+    The library is currently not in PyPI; to install it, we need to directly download
+    the relevant code from the Web using the following `pip` command: `pip install
+    --upgrade git+`[`https://github.com/tusharsarkar3/XBNet.git`](https://github.com/tusharsarkar3/XBNet.git)`.`
+    It’s worthwhile to mention that it’s impossible to adjust the hyperparameters
+    of boosted trees within the official XBNet implementation. For those curious,
+    every XGBoost model in XBNet is set to have 100 estimators, while every other
+    parameter remains to be the default parameter set by the XGBoost library.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once installed, we can import a few things to help us train and instantiate
+    the model and predict (Listing [7-28](#PC28)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since the library is still based in PyTorch, we also need to install PyTorch
+    and import Torch as shown in Listing [7-29](#PC29).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: The library contains separate models for classification and regression. Both
+    model classes work the same way, the only difference being the prediction task
+    type. We will use the Iris Flower dataset to train an XBNet model (Listing [7-30](#PC30))
+    for demonstration purposes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first two parameters passed in during instantiation are the `X` and `y`
+    data. Next, we can specify the number of layers and the number of boosted layers.
+    As mentioned previously, the library does not provide much flexibility in the
+    boosted tree itself. The instantiation does use a command prompt window that asks
+    for the number of neurons in each layer and the activation function of the output
+    layer. Again, there is a lack of flexibility in the customization of the network,
+    but it provides easy usage without having to learn the syntax of PyTorch (Listing
+    [7-31](#PC31)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To train the model, we need to define our loss function and optimizer using
+    PyTorch syntax. All the options for predefined losses in PyTorch can be found
+    under `torch.nn` or through their official documentation: [`https://pytorch.org/docs/stable/nn.xhtml#loss-functions`](https://pytorch.org/docs/stable/nn.xhtml%2523loss-functions).
+    Optimizers are found under torch.optim or on PyTorch’s optimizer documentation
+    for a full list: [`https://pytorch.org/docs/stable/optim.xhtml`](https://pytorch.org/docs/stable/optim.xhtml).
+    In the following code, the cross-entropy loss is used along with the Adam optimizer
+    with the suggested learning rate of 0.01 from the original paper (Listing [7-32](#PC32)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To begin training, we use the function from `XBNet.run` called `run_XBNet`.
+    This function takes in ten parameters in the following order: features (`X_train`),
+    validation features (`X_test`), targets (`y_train`), validation targets (`y_test`),
+    the model object, the criterion or the loss function, the optimizer, the batch
+    size (defaults to 16), the number of epochs, and whether to save the model after
+    training. The `run_XBNet` returns the model object itself, the training accuracy
+    and loss, as well as the validation accuracy and loss in that order. In Listing
+    [7-33](#PC33) is an example of running an XBNet model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `XBNetRegressor` can be used the exact same way. For inference, we call
+    the predict function that we imported previously from `training_utils` and pass
+    it in our model along with the features we want predictions from (Listing [7-34](#PC34)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: Overall, XBNet is relatively simple in structure and has a minimal modification
+    to standard ANNs. Still, its implication and the goals that it attempts to achieve
+    provide itself a huge advantage over many other methods. By combining the training
+    and understanding power of ANNs and XGBoost, networks trained on tabular data
+    can obtain insights from both models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distillation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Model, or knowledge, distillation describes the process of transferring the
+    learning from one model to another. Usually, distillation is used for downscaling
+    large models to suit the situation better. The following paper proposes a distillation-like
+    approach to train deep learning–backed models for tabular data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DeepGBM
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In recent years, as the popularity of machine learning has increased, the need
+    for diverse model structures that situate each type of scenario increased as well.
+    Algorithms introduced beforehand in this chapter only considered the tabular data
+    category as a whole, ignoring potentially different types of structured data present
+    within. Sparse categorical data, or categorical data with mostly zeros, has proven
+    to be challenging for traditional GBMs and deep learning methods. For most Gradient
+    Boosting approaches (except CatBoost), inputting sparse categorical data that
+    was one-hot encoded yields minimal Information Gain during node splits, thus potentially
+    missing crucial knowledge that these features might contribute to predicting the
+    target.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DeepGBM, proposed by Guolin Ke, Zhenhui Xu, Jia Zhang, Jiang Bian, and Tie-Yan
+    Liu from the Microsoft Research team, can handle a mixture of sparse categorical
+    data and non-sparse data while combining the power of Gradient Boosting and deep
+    learning through distillation.^([14](#Fn14)) Although not the focus of this book,
+    DeepGBM has the ability to perform online learning by updating model parameters
+    in real time. A great deal of tabular data learning is involved in business forecasting,
+    predicting trends, and diagnosing in the medical industry, all of which can potentially
+    involve online learning. GBM’s greedily based learning approach makes it impossible
+    to update its parameters during real-time forecasting continuously. Although it
+    may be an excellent suit for tabular data in general, GBM still lacks usability
+    in real-world applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'DeepGBM has two main components, CatNN and GBDT2NN, which deal with sparse
+    categorical and dense numerical data. CatNN is a neural network–based model that
+    learns sparse data effectively by embeddings. Trained embeddings can convert high-dimensional
+    sparse vectors into densely packed numerical data, scaling down the difficulty
+    for the model. Along with embeddings, the authors proposed to use FMs, or Factorization
+    Machines. FMs are commonly seen in recommendation systems to determine *n*-way
+    feature interactions. FMs can handle high-dimensional sparse data, reducing the
+    computational cost from a polynomial scale to a linear one. Using notations defined
+    in the paper, we can obtain the *i*^(*th*) feature’s embedding as such:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {E}_{V_i}\left({x}_i\right)=\textrm{embedding}\_\textrm{lookup}\left({V}_i,{x}_i\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equam.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where *x*[*i*] is the value of the *i*^(*th*) feature, while *V*[*i*] stores
+    all embeddings of *x*[*i*]. Similar to most embeddings used throughout neural
+    networks, it can be learned by backpropagation to produce an accurate depiction
+    of the sparse feature. Once we obtain dense numerical representation of our sparse
+    features, the FM component can then learn the linear (order 1) and pairwise (order
+    2) feature interactions as such:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}_{FM}(x)={w}_0+\left\langle w,x\right\rangle +\sum \limits_{i=1}^d\sum
+    \limits_{j=i+1}^d\left\langle {E}_{V_i}\left({x}_i\right),{E}_{V_j}\left({x}_j\right)\right\rangle
+    {x}_i{x}_j $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equan.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where 〈***∙***, ***∙***〉 denotes the dot product. The global bias *w*[0] and
+    weight *w* can be optimized using common methods such as SGD or the Adam optimizer.
+    FMs are able to learn lower-order feature interactions efficiently, but for higher-order
+    feature relations, a multilayer NN is adapted and can be described by the following
+    equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}_{Deep}(x)=\mathcal{N}\left({\left[{E}_{V_1}{\left({x}_1\right)}^T,{E}_{V_2}{\left({x}_2\right)}^T,\dots,
+    {E}_{V_d}{\left({x}_2\right)}^T\right]}^T;\theta \right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equao.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where ![$$ \mathcal{N}\left(x;\theta \right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq34.png)
+    is a multilayer NN with parameters *θ* and input *x*. We can denote the number
+    of features as *d* and the number of samples as *n*. Notice that each extracted
+    embedding of dimension 1 × *n* is transposed to a column vector of size *n* × 1,
+    stacked together horizontally to produce a matrix of size *n* × *d*, and then
+    transposed again to a matrix of size *d* × *n*. Through the series of transpose
+    operations, embedding dimensions were corrected so that the network input would
+    be of the appropriate size. Figure [7-16](#Fig16) visualizes the *y*[*Deep*](*x*)
+    component of CatNN (the tedious process of transposing matrices is omitted for
+    clarity).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of y deep x component of cat N N. Raw, sparse categorical data
+    from x subscript 1 to x subscript n outputs dense, embedded data from E subscript
+    v 1 of x 1 to E subscript v n of x n, that forms a multilayer neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *y*[*Deep*](*x*) component of CatNN
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The outputs of both components are combined to produce the final prediction
+    of CatNN:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}_{Cat}(x)={y}_{FM}(x)+{y}_{Deep}(x) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equap.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The second part of DeepGBM, GBDT2NN, utilizes distillation to transfer knowledge
+    between tree-based models and neural networks. Typical distillation between models
+    refers to transferring knowledge or learned relations from one model to another.
+    Distillation is commonly used for scaling down model size while preserving near-exact
+    performance compared to the larger model. Tree-based models and neural networks
+    are inherently different models. Thus, standard distillation techniques cannot
+    apply here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decision trees can be interpreted as clustering functions since they partition
+    the data into different clusters where the number of clusters is equal to the
+    tree's leaf nodes. An arbitrary clustering function can be defined for any decision
+    tree where the function produces an index for the cluster (leaf node) that the
+    input belongs to. Since neural networks can theoretically approximate any function
+    (refer to the Universal Approximation Theorem in Chapter [3](525591_1_En_3_Chapter.xhtml)),
+    we can, in turn, let NNs approximate the structural function of a tree-based model.
+    Moreover, tree-based models naturally perform feature selection during training
+    as not all features may be used for splitting; the model will scrap those with
+    less Information Gain. Thus, our distilled network will only use features that
+    the tree-based model selects.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'From here, we can define some notations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Denote ![$$ {\mathbbm{I}}^t $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq35.png)
+    as the indices used by the tree-based model *t*. We can then deduce the input
+    features for the network: ![$$ x\left[{\mathbbm{I}}^t\right] $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq36.png)
+    where *x* is the input data containing the entire set of features.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Denote the structural function of a trained tree-like model as *C*^(*t*)(*x*)
+    in which the output returns the leaf index to which the input belongs. Note that
+    the output can also be interpreted as the cluster index that the input fits in.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Denote the network that approximates *C*^(*t*)(*x*) as ![$$ \mathcal{N}\left(x;\theta
+    \right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq37.png).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Denote the output from *C*^(*t*)(*x*), or the one-hot encoded leaf/cluster indices,
+    as *L*^(*t*, *i*).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Denote the loss function for the network as ![$$ {\mathcal{L}}^{\prime } $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq38.png).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The overall distillation process from the tree-based model to the network can
+    be written as such:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{\theta }{\min}\frac{1}{n}\sum \limits_{i=1}^n{\mathcal{L}}^{\prime}\left(\mathcal{N}\left({x}^i\left[{\mathbbm{I}}^t\right];\theta
+    \right),{L}^{t,i}\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equaq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'From the one-hot encoded output indicating the leaf index that the input will
+    end up on, we can map the output to the corresponding leaf value (i.e., in classification,
+    the corresponding class of that leaf) from the actual tree-based model. Mathematically,
+    we can represent this as *L*^(*t*) × *q*^(*t*) where *q*^(*t*) is a vector containing
+    all the leaf node values from the trained tree model. Rephrased, the *i*^(*th*)
+    value of *q*^(*t*) is the value of the *i*^(*th*) leaf node in the trained tree
+    model *t*. Finally, the output of the distilled network can be represented by
+    the following product:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}^t(x)=\mathcal{N}\left({x}^i\left[{\mathbbm{I}}^t\right];\theta \right)\times
+    {q}^t $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equar.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Shown in Figure [7-17](#Fig17) is a representation of the distillation process
+    described previously. Note that up until now, only a single tree has been distilled
+    into the network; thus, it cannot be called GBDT2NN yet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a tree and neural network. The tree forms the neural network
+    through structure distillation. The leaf index and leaf output are labeled in
+    the tree and the neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of distilling a single tree into a network. From G. Ke et al.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The number of trees in GBDT can often be up to the hundreds. To map such a
+    number of decision trees to neural networks will not only be difficult due to
+    the sheer number of NNs trained but also because of the size of *L*^(*t*) . The
+    authors propose two solutions for reducing computational and time complexity when
+    mapping GBDT to NNs: leaf embedding distillation for reducing the size of *L*^(*t*)
+    and tree grouping, reducing the number of NNs trained.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Embedding mechanisms are used again to reduce the dimension of the one-hot encoded
+    leaf index while still retaining the information contained within. By utilizing
+    the bijection relationship between the leaf indices and the actual leaf values,
+    the learned embedding can be mapped to the desired output that corresponds with
+    the original leaf index. More specifically, the conversion from one-hot encoded
+    leaf indices *L*^(*t*) to dense embedding representation *H*^(*t*) by a one-layer
+    fully connected network can be written as ![$$ {H}^{t,i}=\mathcal{H}\left({L}^{t,i};{\omega}^t\
+    \right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq39.png)
+    where *ω*^(*t*) is the network parameter. Subsequently, the mapping from the embedding
+    to actual leaf values can be denoted as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{w,{w}_0,{\omega}^t\ }{\min}\frac{1}{n}\sum \limits_{i=1}^n{\mathcal{L}}^{\prime
+    \prime}\left({w}^T\mathcal{H}\left({L}^{t,i};{\omega}^t\right)+{w}_0,{p}^{t,i}\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equas.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where ![$$ {\mathcal{L}}^{\prime \prime } $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq40.png)
+    is the same loss function used in the tree model and *p*^(*t*, *i*) is the actual
+    leaf node value for input *x*^(*i*). The weight term *w*^(*T*) and the bias term
+    *w*[0] are trained to map the embedding *H*^(*t*, *i*) to *p*^(*t*, *i*). Since
+    we reduced the dimensionality of the sparse one-hot encoded representation *L*^(*t*) ,
+    during the distillation learning process, it can be replaced with *H*^(*t*):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{\theta }{\min}\frac{1}{n}\sum \limits_{i=1}^n{\mathcal{L}}^{\prime}\left(\mathcal{N}\left({x}^i\left[{\mathbbm{I}}^t\right];\theta
+    \right),{H}^{t,i}\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equat.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The output for distillation from a single decision tree to a neural network
+    can be described by the following equation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ y(x)={w}^T\times \mathcal{N}\left({x}^i\left[{\mathbbm{I}}^t\right];\theta
+    \right)+{w}_0 $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equau.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The following visual shown in Figure [7-18](#Fig18) strings all the components
+    discussed for embedding distillation from a single decision tree to a neural network.
+    The index superscript *i* is omitted from the diagram since it only shows the
+    distillation process for one sample.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_7_Chapter/525591_1_En_7_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of a single decision tree and distilled neural network. In the
+    distillation process, the network only uses features used by the decision tree.
+    H subscript t and p superscript t are given under the decision tree and the distilled
+    N N.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 7-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distillation from a single tree by embeddings into a neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To reduce the number of neural networks, the authors propose to randomly group
+    multiple trees and distill their learning into one neural network. The learning
+    process for converting leaf indices to embeddings can also be extended to process
+    multiple trees’ outputs at once. The concatenation operation is imposed between
+    every one-hot encoded vector produced by the group of trees. Trees from the GBDT
+    model are randomly sectioned into *k* groups with every group having *s* = ⌈*m*/*k*⌉ trees
+    where *m* denotes the total number of trees present in the GBDT. We denote the
+    entire group of *s* total trees as ![$$ \mathbbm{T} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq41.png).
+    Intuitively, we can modify the equation for learning the embeddings from one-hot
+    encoded vectors to learn from multi-hot encoded vectors produced from *s* trees:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{w,{w}_0,{\omega}^{\mathbbm{T}}\ }{\min}\frac{1}{n}\sum \limits_{i=1}^n{\mathcal{L}}^{\prime
+    \prime}\left({w}^T\mathcal{H}\left(|{\left.\kern0em \right|}_{t\in \mathbbm{T}}\left({L}^{t,i}\right);{\omega}^{\mathbbm{T}}\right)+{w}_0,\sum
+    \limits_{t\in \mathbbm{T}}{p}^{t,i}\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equav.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where ‖(∙) denotes the concatenate operation. The embedding generated from
+    ![$$ \mathcal{H}\left(|{\left.\kern0em \right|}_{t\in \mathbbm{T}}\left({L}^{t,i}\right);{\omega}^{\mathbbm{T}}\right)
+    $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq42.png), ![$$
+    {G}^{\mathbbm{T},i} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq43.png),
+    can replace *H*^(*t*, *i*) in the distillation equation for mapping multiple trees
+    to one single network:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{\theta^{\mathbbm{T}}}{\min}\frac{1}{n}\sum \limits_{i=1}^n{\mathcal{L}}^{\prime}\left(\mathcal{N}\left({x}^i\left[{\mathbbm{I}}^{\mathbbm{T}}\right];\theta
+    \right),{G}^{\mathbbm{T},i}\right) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equaw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where ![$$ {\mathbbm{I}}^{\mathbbm{T}} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq44.png)
+    represents every unique feature used by the group of trees ![$$ \mathbbm{T} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq45.png).
+    Finally, the prediction for *i*^(*th*) tree group ![$$ {\mathbbm{T}}_i $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq46.png)
+    is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}_{{\mathbbm{T}}_i}(x)={w}^T\times \mathcal{N}\left({x}^i\left[{\mathbbm{I}}^t\right];\theta
+    \right)+{w}_0 $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equax.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Then the final output of GBDT2NN becomes
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {y}_{GBDT2 NN}(x)=\sum \limits_{j=1}^k{y}_{{\mathbbm{T}}_j}(x) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equay.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'CatNN and GBDT2NN can be combined for end-to-end learning where the output
+    of each component is assigned a trainable weight to adjust how much each model
+    contributes to the final prediction. The following equation denotes the final
+    output of DeepGBM:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{y}(x)={\sigma}^{\prime}\left({w}_1\times {y}_{GBDT2 NN}\Big(x\right)+{w}_2\times
+    {y}_{CatNN}(x) $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equaz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *σ*^′ can be taken as the last-layer activation of a neural network (sigmoid
+    for binary classification, linear for regression, etc.). The loss function used
+    for the end-to-end training of DeepGBM is a mixture of the loss for the current
+    task (classification or regression) and the embedding loss for tree groups with
+    two hyperparameters *α* and *β* specifying how much each loss contributes to the
+    final loss value. The combined loss of DeepGBM can be computed as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathcal{L}=\alpha {\mathcal{L}}^{\prime \prime}\left(\hat{y}(x),y\right)+\beta
+    \sum \limits_{j=1}^k{\mathcal{L}}^{{\mathbbm{T}}_j} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_Equba.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where ![$$ {\mathcal{L}}^{\prime \prime } $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq47.png)
+    is the loss for the current task and ![$$ {\mathcal{L}}^{{\mathbbm{T}}_j} $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq48.png)
+    denotes the embedding loss for the tree group ![$$ {\mathbbm{T}}_j $$](../images/525591_1_En_7_Chapter/525591_1_En_7_Chapter_TeX_IEq49.png).
+    Although DeepGBM is also designed for effective online learning, since this is
+    outside the scope of the current section, only comparison results from offline
+    training will be presented. A total of six models – GBDT, Logistic Regression,
+    FM with a linear model, Wide and Deep, DeepFM, and PNN – are compared against
+    three variations of DeepGBM – DeepGBM where GBDT2NN is replaced by a standard
+    GBDT (D1 in the table), DeepGBM without CatNN (D2 in the table), and finally the
+    full version of DeepGBM (Table [7-8](#Tab8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 7-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training results of DeepGBM compared with other models
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| -![](../images/525591_1_En_7_Chapter/525591_1_En_7_Figh_HTML.gif)A table
+    of 3 columns and 9 rows. The column labels are model, binary classification, and
+    regression. Column 2 is subdivided into 6 columns. The row labels are L R, F M,
+    wide and deep, deep F M, P N N, G B D T, deep G B M of D 1, deep G B M of D 2,
+    and deep G B M. |'
+  prefs: []
+  type: TYPE_TB
+- en: One explanation for the dominating performance of DeepGBM other than its unique
+    training method and structure can be reasoned from its multi-model nature. DeepGBM
+    can be considered an ensemble algorithm with the combined power of CatNN and GBDT2NN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To use DeepGBM, one can clone the official repository from GitHub: [`https://github.com/motefly/DeepGBM`](https://github.com/motefly/DeepGBM).
+    In order to train DeepGBM, three main folders must be present within the project
+    with the data folder containing the dataset, the preprocess folder containing
+    helper functions for feature encoding and manipulation, and the model folder containing
+    code for the actual DeepGBM model. The last two folders are already included in
+    the repository, while the data folder requires the user to create themselves.
+    Before running the model, all data must go through preprocessing by encoders defined
+    in the preprocess folder and then converted into `.npy` format. Inside the `main.py`
+    file, data will be loaded by `dh.load_data` with the pointer to the desired dataset
+    specified through `argparse`. Finally, training can be instantiated by `train_DEEPGBM`
+    where arguments are passed in through `argpase`’s `parse_args()`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For more detailed training instruction, refer to the repository as the training
+    process may be different depending on the dataset and the entire operation spans
+    across multiple files.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, we discussed several tree-based deep learning models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tree-structured deep learning approaches attempt to incorporate deep learning
+    components to tree-based models. The following approaches either propose some
+    form of differentiable trees or tree-like neural networks.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Deep neural decision trees take on the task of training tree-based models through
+    backpropagation by utilizing soft binning functions and brute-forcing the final
+    leaf nodes by the Kronecker product. The model works well with datasets of smaller
+    dimensions but gets significantly more expensive as the number of features present
+    in the dataset increases.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Soft decision tree regressors imitate a decision tree with “soft” probabilistic
+    decision nodes learned by fully connected layers attached to the input. The model
+    is trained to optimize the loss between the true value and each leaf node output
+    multiplied by the probability series leading to said node.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Neural oblivious decision ensemble models use ensembles of neural oblivious
+    trees, in which the condition at each level is the same.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Tree-based neural network initialization maps decision tree structure to a neural
+    network while initializing its weights based on the mapping.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Decision trees can be represented as logical statements in disjunctive normal
+    form (DNF), with node conditions as variables. DNF-Net imitates a DNF expression
+    using soft OR and AND gate analogs.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Boosting and stacking networks utilize the unique yet effective structure of
+    a Gradient Boosting Machine and attempt to apply it to ANNs.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: GrowNet constructs and trains an ensemble of neural networks in Gradient Boosting
+    style.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: XBNet mimics the training techniques of XGBoost and adapts it to neural networks.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Distillation approaches transfer knowledge from one model to another. In the
+    current context with DeepGBM as the only approach under this category, distillation
+    refers to distilling from a Gradient Boosting Machine to neural networks.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: DeepGBM involves several components, which can process sparse categorical features
+    along with dense numerical features. It has the ability to perform online learning
+    while incorporating elements from GBDT by distillation.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This marks the last chapter in Part 2\. We have developed an expansive knowledge
+    of deep learning in this part. In the final part, we will explore different methods
+    to supercharge deep learning modeling. In the next chapter, we will discuss how
+    autoencoder architectures can be utilized to pretrain, speed up, “sparsify,” and
+    denoise neural networks.
+  prefs: []
+  type: TYPE_NORMAL

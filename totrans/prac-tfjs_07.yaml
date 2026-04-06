@@ -1,0 +1,561 @@
+- en: 7. Object detection with a model trained in Google Cloud AutoML
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Deep learning applications for computer vision do not end at image classification,
+    a task we applied in Chapter [4](494424_1_En_4_Chapter.xhtml). Back then, our
+    goal was to create an app that identifies a digit drawn by the user. For instance,
+    the digit in Figure [7-1](#Fig1) is a 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig1_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: A number 3
+  prefs: []
+  type: TYPE_NORMAL
+- en: It’s 3, right? Nice. But where is it located? It is right there in the upper-right
+    corner of the picture. Well, that is easy for you to say. But does the computer
+    know that? No, it does not. With the model we have, we can infer that this is
+    an image of a digit 3\. But can it learn precisely where the object is located?
+    Thanks to **object detection**, yes, it can learn that.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Object detection is the machine learning task of identifying an object and so
+    its location within an image or video. For example, a digit detection model would
+    locate the number 3 around the region displayed in Figure [7-2](#Fig2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig2_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The digit’s location
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this chapter, we will create an object detection model, but not for detecting
+    digits. No. Instead, you will detect whatever you want! That’s right. For this
+    exercise, I want you to build your dataset using images of two objects—any object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unlike the past models you created, you will not train this one in TensorFlow.js.
+    On this occasion, you will take the training to the clouds, specifically to **Google
+    Cloud**, and use their **AutoML Vision Object Detection** service to prepare the
+    dataset and fit the model. Afterward, back on solid ground (your computer), you
+    will build a web application that uses the model to detect the objects in real-time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why are we training on an external platform? Good question. The first reason
+    is TensorFlow.js compatibility with the TensorFlow ecosystem. Earlier in the book,
+    we mentioned that being a part of the TensorFlow environment allows TF.js to reuse
+    models trained there, for example, the toxicity detector. So, to experience firsthand
+    this concept of compatibility, the ideal would be to go through the process of
+    training in a TF-related framework such as AutoML and deploy the model in TF.js.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another reason is that often, in the industry, we encounter situations where
+    we simply cannot train a model on a particular platform. In these cases, the alternative
+    usually is training at one location and deploying in another one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reason number three is sharing (is caring). The pre-trained models we have been
+    using are the result of the hard work of an entity that is as passionate about
+    machine learning as we are. So, as a token of appreciation to them, and the rest
+    of the community, let’s create a model we could also share with others.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Last, it is always fun learning new frameworks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is AutoML Vision Object Detection
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: AutoML Vision Object Detection is Google Cloud’s solution for training and deploying
+    custom object detection models. It offers a graphical interface that allows the
+    user to easily provide its own training data and then train, evaluate, and use
+    models with only a few clicks (no code required), making it ideal for a whole
+    range of people. Along with training, the platform provides a tool to label and
+    annotate the images, the (not-so-fun) task of drawing bounding boxes around the
+    target object. Once trained, Vision Object Detection supports exporting an optimized
+    version of the model for “edge” devices, such as mobile devices and TensorFlow.js.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The service is not free. However, Google offers 40 free node hours that are
+    enough for creating a prototype model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: About the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A service such as AutoML hides the technicalities and complexities of the system
+    behind a graphical user interface that streamlines many of its processes; click,
+    click, and voila! You got your model (isn’t that great?). However, it also means
+    missing out on those small but interesting details, such as the specifications
+    of the model. At the time of writing, the platform documentation does not precisely
+    describe the model or its architecture. It only mentions that it is a “low-latency,
+    high accuracy model(s) optimized for edge devices” (Google, n.d.), a description
+    that matches the MobileNet family of models. Regardless of the type, know that
+    is a small and fast quantized model tailored for platforms like TensorFlow.js
+    and TensorFlow Lite, a framework for mobile device inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In TensorFlow, model quantization is a technique that reduces the model size
+    to make it faster at the cost of accuracy. For more information, visit [`www.tensorflow.org/lite/performance/post_training_quantization`](http://www.tensorflow.org/lite/performance/post_training_quantization).
+  prefs: []
+  type: TYPE_NORMAL
+- en: About the data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To train the object detection model, you will need to create an image dataset
+    containing two objects of your choice. Whatever you want. It can be a flower,
+    a pencil, or, as in my case, a Pikachu plushie and a water bottle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: But before you grab your camera and start shooting, here are some tips to consider.
+    First, AutoML recommends at least ten instances of the object; I would suggest
+    at least 50 per label for such a toy project. “But hey author, isn’t 50 still
+    a low number?” Yes, you are right. Deep learning models are data-hungry. But,
+    AutoML leverages transfer learning, so you will not have to train a model from
+    scratch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Regarding the pictures, try to capture the objects from multiple angles (imagine
+    you are a photographer in a photo shoot). Consider shooting the item from different
+    distances. Omit parts of the object in some images—several of my Pikachu images
+    show only its tail. If possible, try various lighting conditions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We will split this exercise into two principal parts: training the model and
+    building the app. In this first part, you will prepare the dataset, train, and
+    export the model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setting up your Google Cloud account
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To use AutoML Vision Object Detection, you need a Google Cloud account. To avoid
+    sidetracking, we will not discuss here the “how-to” (you can find plenty of documentation
+    online). With the account created, go to [`https://console.cloud.google.com/`](https://console.cloud.google.com/),
+    and search for “cloud vision api” (Figure [7-3](#Fig3)) and select the only result.
+    Then click the “ENABLE” button (Figure [7-4](#Fig4)) to authorize the account
+    to use the service. Once enabled, search for “datasets vision” to visit the dataset
+    management screen.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig4_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Enable the API
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig3_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Search for “cloud vision api”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preparing the dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This page is about the datasets. Here you can create new datasets or update
+    existing ones. To add one, click the “NEW DATASET” button at the top of the page.
+    This action creates a small window titled “Create new dataset,” where you have
+    to specify the name of the dataset and the model objective. Select “Object detection”
+    and click “CREATE DATASET” (Figure [7-5](#Fig5)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig5_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: On the next screen, select the “Upload images from your computer” option, followed
+    by clicking the “SELECT FILES” button to choose the images. Then pick a Cloud
+    Storage bucket to upload the files. If you do not have a bucket, you can create
+    a new one on the same screen. Now, press “CONTINUE” to upload the images, followed
+    by clicking the “IMAGES” tag. You will probably need to wait a bit until the system
+    processes and stores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Labeling and annotating the images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When the images are processed, the next step is labeling and annotating them.
+    In the “IMAGES” tag, click “ADD NEW LABEL” and define the label of your images,
+    for example, “pikachu” (Figure [7-6](#Fig6)). Then, click the first photo and
+    draw a bounding box around the object. Repeat the same for the rest of the dataset
+    (have fun!).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig6_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Labeling an image
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Are you done with the labeling? Congrats! That was probably the hardest part
+    of the exercise. Now let’s proceed with the training. To start, go to the “TRAIN”
+    tab, and click the “TRAIN NEW MODEL” button. In the new window, you need to define
+    several attributes regarding the model. The first is the name. Then is the deployment
+    target—choose “Edge.” In point number two, select “Best trade-off” (Figure [7-7](#Fig7))
+    to have both a fast and good model or whichever suits your needs. Last, set the
+    node hour budget. The recommended value should be enough. Now click “START TRAINING”
+    to start. With around 100 images, the training can take approximately two hours.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig7_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Select the model type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Evaluate
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Welcome back. Let’s see how the training went. Back in the management screen,
+    go to the “EVALUATE” tab. During training, AutoML automatically separates part
+    of the dataset for evaluating the model. Here, you will find the results. The
+    evaluation metrics are the precision and recall at a particular confidence level
+    and **Intersect over Union** or IoU threshold level.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The IoU is a score that measures the area of overlap between the object’s predicted
+    position and the ground truth, divided by the area of the union. Figure [7-8](#Fig8)
+    presents an example of a good IoU and a bad one. The left example is a good IoU
+    because the predicted bounding box (dotted line) almost overlaps the ground truth
+    box completely, while the right one is bad because the detection is nowhere near
+    the actual position.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig8_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples of IoU
+  prefs: []
+  type: TYPE_NORMAL
+- en: Clicking the label name shows the true positives (cases when the model correctly
+    predicted the bounding box), false negatives (when the model did not predict an
+    accurate bounding box), and false positives (when the model predicted an incorrect
+    bounding box) cases and the predicted and ground truth boundaries (Figure [7-9](#Fig9)).
+    How did the training go? Are you satisfied with the results? If not, you could
+    try adding more images to the training set and selecting the high-accuracy model
+    variant. Otherwise, proceed by clicking the “TEST & USE” tab.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig9_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: The “evaluate” tab
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exporting the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Now comes the last step, and that is exporting the model. From this screen,
+    you can export different optimized versions of the model capable of running on
+    platforms, like TensorFlow.js and TFLite. Click the “TensorFlow.js” option. In
+    the pop-up window, select a GCS bucket and click “EXPORT” to save the model in
+    that location. To download the files to your computer, you can use the command
+    shown on the screen or click “OPEN IN GCS” to access the bucket and get them from
+    there. If you opt for the first option, create the local destination folder before
+    running the command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Regardless of the method you choose, you should at least have three files:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A dict.txt (the labels)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: A model.json (the model’s specifications)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Several *.bin files (the model’s weights)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: With that, we finish the training phase. Did you enjoy the journey? Hope so!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building the app
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Close the cloud console and return to our local environment. In this section,
+    you will write an app that imports the model and performs real-time object detection
+    on the webcam feed. The app has a canvas that shows the video and the prediction
+    bounding boxes and three sliders to control the prediction rate. As usual, create
+    a new directory and the *index.html*, *index.js*, and *style.css* files, and copy
+    the model’s directory here. The directory structure should be as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Loading packages and preparing the UI
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'At the top of *index.html*, use two script tags to import TensorFlow.js, *AutoML
+    Edge API*^([1](#Fn1)) (tfjs-automl), and the CSS file. This AutoML library is
+    a collection of tools to load and execute edge models produced in Google Cloud’s
+    AutoML:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After `<head>`, create the app’s `<body>` and, in it, the `<video>`, `<canvas>`,
+    and three “sliders” (`<input>` of type range). The first of these ranges, `score-range`,
+    takes a value between 0 and 1 that controls the prediction’s minimum confidence
+    threshold. Range `iou-range` adjusts the model’s Intersection over Union threshold
+    to ignore predicted boxes with IoU lower than the score. `topk-range` handles
+    how many objects a prediction returns by selecting the `topk` bounding boxes with
+    the highest confidence scores. Then, call *index.js* using a `<script>` tag:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Last, copy the following CSS code—to align the elements—in *style.css*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Importing the model and setting up the camera
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Close *index.html* and head over to *index.js*. Similar to the PoseNet app,
+    this exercise’s implementation involves setting up a canvas to display the webcam
+    feed and the model’s predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Start by declaring the canvas context (`ctx`) variable and the size:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then, use the following two functions, `setupCamera()` and `loadVideo()` (they
+    are the same we used in the PoseNet app):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now for the `init()` function. In the first line, use the `loadObjectDetection()`
+    function from *tfjs-automl* to load the model using as an argument the path to
+    *model.json*. Next, call `loadVideo()`. Use both returned values as arguments
+    to the `detect()` function, which we will define next:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Detecting the objects
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The next function we will set up is `detect()` , the one that performs the
+    predictions and adds the webcam video to the canvas:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Start the function by getting the canvas and its context and setting the width
+    and height to `SIZE`. Inside the function, create another one and name it `getBoundingBoxes()`.
+    Here, call the model’s `detect()` method using as arguments the video stream and
+    an options object to configure the detection parameters `score`, `iou`, and `topk`.
+    Note that we declared the options’ default values above the function; if you prefer,
+    you could move them to the top of the file next to the other variables.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The method `model.detect()` returns a list of predictions object (Figure [7-10](#Fig10)),
+    where each of these has three attributes: `box`, `label`, and `score`. `box` is
+    the bounding box or the position of the identified object. It has four values:
+    `left`, `top`, `width`, and `height`, where `left` and `top` are the locations
+    of the box top-left corner in the x-axis and y-axis, and `width` and `height`
+    are the box dimensions. Following `box` is `label`, or the class of the object,
+    and the prediction score.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_7_Chapter/494424_1_En_7_Fig10_HTML.jpg](../images/494424_1_En_7_Chapter/494424_1_En_7_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: A prediction object
+  prefs: []
+  type: TYPE_NORMAL
+- en: After predicting, the next step involves using `ctx` to draw the webcam feed.
+    To overlay the bounding boxes, we must iterate over the predictions array and
+    call `drawBoundingBoxes()` (we will see it in the next section) on each prediction.
+    Last, call `requestAnimationFrame()` and `getBoundingBoxes()` from detect.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Drawing the bounding boxes
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: With the camera and predictions ready, the only missing part is visualizing
+    them on screen. The next function we will see is `drawBoundingBoxes()`, responsible
+    for overlaying the predicted bounding boxes on top of the object. Besides the
+    boxes, the overlay includes the object’s label and confidence score.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Testing the app
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'We are almost there. The only thing we are missing is creating a function that
+    handles the slider’s input updates:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`updateSliders()` has two parameters. The first one, (the metric) name, corresponds
+    to the prediction’s attribute we wish to update, for example, `topk`. The second
+    parameter, `updateAttribute`, is the callback function executed whenever the user
+    changes the slider’s value. The function’s role is updating the value of the given
+    variable. Also, we will use `updateAttribute` to set the slider’s initial values
+    too.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After defining the function, return to `init` and use `updateSliders()` three
+    times, one for each of the options values (`score`, `iou`, and `topk`). Then,
+    call `init()`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now to try the app. Back at the terminal, use *http-server* to start the local
+    server, followed by launching the application. Then, after a few seconds (while
+    the app reads the model and sets the webcam), pick up your objects, and show them
+    to the camera. If everything went as planned, you should see the detections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In terms of accuracy, the model we just trained is not the best nor as good
+    as the others we have seen or trained in the past chapters. As we discussed earlier,
+    being an edge model means trading much of its prediction power for gains in speed,
+    a feature that is well received in this application. Another reason is the lack
+    of data. If you followed the instructions, your training set has around 100 images,
+    which for such a model is very low. But luckily for us, we can always add examples
+    to the dataset and create new versions of the model. So, if you enjoyed annotating
+    the images, you will love the second exercise of this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As a quick remedy to handle the false positives (my model labeled me as “pikachu,”
+    which I do not mind at all) and false negatives, try experimenting with the object’s
+    position, for example, the angle. Another alternative is tweaking the prediction’s
+    attributes to control their flexibility. A lower threshold score produces more
+    predictions at the cost of introducing more errors, while a high one gives fewer
+    mistakes but also fewer detections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Recap
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, we went on a trip to the (Google) cloud to train a model using
+    AutoML Vision Object Detection, a service for developing and deploying machine
+    learning models. Up there, after going through the amusing procedure of annotating
+    and labeling a dataset, we trained an object detection model within a few clicks.
+    Then, we built an object detection web application that uses the trained model
+    and the webcam to detect in real-time the objects presented during training. While
+    doing so, we experienced firsthand the compatibility that TensorFlow.js has with
+    other platforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can find my model in the book’s GitHub repository.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is object detection?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Add more training examples (try around 500 images per label).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Train the high-performance or the faster model (depending on which you used)
+    and compare their speed and predictions.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Extend the web app with a module that detects objects from images.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Build a Chrome extension that uses the app to detect objects from online images.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'For the adventurous, export the TFLite version of the model and deploy it in
+    an Android device using this tutorial: [`https://cloud.google.com/vision/automl/docs/tflite-android-tutorial`](https://cloud.google.com/vision/automl/docs/tflite-android-tutorial).'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Share the model on GitHub, and with me! I'd love to see what you built.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

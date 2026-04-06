@@ -1,0 +1,2083 @@
+- en: 6. Metric Analysis
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 'Let’s consider the problem we analyzed in Chapter [3](463356_1_En_3_Chapter.xhtml)
+    for which we performed classification on the Zalando dataset. While doing all
+    our work, we made a strong assumption without explicitly saying it: we assumed
+    that all the observations were correctly labeled. We cannot say that with certainty.
+    To perform the labelling, some manual intervention was needed, and, therefore,
+    a certain number of images were surely wrongly classified, as humans are not perfect.
+    This is an important revelation. Consider the following scenario: in Chapter [3](463356_1_En_3_Chapter.xhtml),
+    we achieved roughly 90% accuracy with our model. One could try to get better and
+    better accuracy, but when is it sensible to stop trying? If your labels are wrong
+    in 10% of cases, your model, as sophisticated as it may be, will never be able
+    to generalize to new data with very high accuracy, because it will have learned
+    wrong classes for many images. We spent quite some time checking and preparing
+    the training data, normalizing it, for example, but we never spent any time checking
+    the labels themselves. We also assumed that all classes have similar characteristics.
+    (I will discuss later in this chapter what this exactly means, for the moment,
+    an intuitive understanding of the concept will suffice.) What if the quality of
+    the images for specific classes is worse than for others? What if the number of
+    pixels whose gray value differs from zero is dramatically different for different
+    classes? We also did not check if some images are completely blank. What happens
+    in that case? As you can imagine, we cannot check all images manually, attempting
+    to detect such issues. Suppose we have millions of images, a manual analysis is
+    surely not possible.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We need a new weapon in our arsenal to be able to spot such cases and to be
+    able to tell how a model is doing. This new weapon is the focus of this chapter,
+    and it is what I call “metric analysis.” Very often, people in the field refer
+    to this array of methods as “error analysis.” I find that this name is very confusing,
+    especially for beginners. *Error* may refer to too many things: Python code bugs,
+    errors in the methods, in algorithms, errors in the choice of optimizers, and
+    so on. You will see in this chapter how to obtain fundamental information on how
+    your model is doing and how good your data is. We will do this by evaluating your
+    optimizing metric on a set of different datasets that you can derive from your
+    data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You have already seen a basic example previously. You will remember that we
+    discussed, with regard to regression, how in the case of *MSE*[*train*] ≪ *MSE*[*dev*],
+    we are in a regime of overfitting. Our metric is the MSE (mean squared error),
+    and evaluating it on two datasets, training and dev, and comparing the two values,
+    can inform you whether the model is overfitting. I will expand on this methodology
+    in this chapter, to allow you to extract much more information from your data
+    and model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Human-Level Performance and Bayes Error
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In most of the datasets that we use for supervised learning, someone must have
+    labeled the observations. Take, for example, a dataset in which we have images
+    that are classified. If we ask people to classify all images (imagine this being
+    possible, regardless of the number of images), the accuracy obtained will never
+    be 100%. Some images may be too blurry to be classified correctly, and people
+    make mistakes. If, for example, 5% of the images are not classifiable correctly,
+    owing, for example, to how blurry they are, we must expect that the maximum accuracy
+    people can reach will always be less than 95%.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s consider a classification problem. First, let’s define what we mean by
+    the word *error*. In this chapter, the word *error* will be used to indicate the
+    following quantity, represented by *ϵ*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \epsilon \equiv 1- Accuracy $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: For example, if, with a model, we achieve an accuracy of 95%, we will have *ϵ* = 1 − 0.95 = 0.05
+    or, expressed as a percent, *ϵ* = 5%.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A useful concept to understand is human-level performance, which can be defined
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Human-level performance (* *definition 1)* : The lowest value for the error
+    *ϵ* that can be achieved by a person performing the classification task. We will
+    indicate it with *ϵ*[*hlp*].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s devise a concrete example. Suppose we have a set of 100 images. Now let’s
+    suppose we ask three people to classify the 100 images. Imagine that they obtain
+    95%, 93%, and 94% accuracy. In this case, human-level performance accuracy will
+    be *ϵ*[*hlp*] = 5%. Note that someone else may be much better at this task, and,
+    therefore, it is always important to consider that the value of *ϵ*[*hlp*] we
+    get is always an estimate and should only serve as a guideline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now let’s complicate things a bit. Suppose we are working on a problem in which
+    doctors classify MRI scans in two classes: with signs of cancer and without. Now
+    let’s suppose we calculate *ϵ*[*hlp*] from the results of untrained students obtaining
+    15%, from doctors with a few years of experience obtaining 8%, from experienced
+    doctors obtaining 2%, and from experienced *groups* of doctors obtaining 0.5%.
+    What then is *ϵ*[*hlp*]? You should always choose the lowest value you can get,
+    for reasons I will discuss later.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can now expand the definition of *ϵ*[*hlp*] with a second definition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Human level performance (* *definition 2)* : The lowest value for the error
+    *ϵ* that can be achieved by people or *groups* of people performing the classification
+    task'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You don’t have to decide which definition is right. Just use the one that gives
+    you the lowest value of *ϵ*[*hlp*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now I’ll talk a bit about why we must choose the lowest value we can get for
+    *ϵ*[*hlp*]. Suppose that of the 100 images, 9 are too blurry to be correctly classified.
+    This means that the lowest error any classifier will be able to reach is 9%. The
+    *lowest error that can be reached by any classifier* is called the Bayes error
+    . We will indicate this with *ϵ*[*Bayes*]. In this example, *ϵ*[*Bayes*] = 9%.
+    Usually, *ϵ*[*hlp*] is very close to *ϵ*[*Bayes*], at least in tasks at which
+    humans excel, such as image recognition. It is commonly said that human-level
+    performance error is a proxy for the Bayes error. Normally it is impossible or
+    very hard to know *ϵ*[*Bayes*], and, therefore, practitioners use *ϵ*[*hlp*] assuming
+    the two are close, because the latter is easier (relatively) to estimate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keep in mind that it makes sense to compare the two values and assume that *ϵ*[*hlp*]
+    is a proxy for *ϵ*[*Bayes*] only if persons (or groups of persons) perform classification
+    in the same way as the classifier. For example, it is OK if both use the same
+    images to do classification. But, in our cancer example, if the doctors use additional
+    scans and analysis to diagnose cancer, the comparison is no longer fair, because
+    human-level performance will not be a proxy for a Bayes error anymore. Doctors,
+    having more data at their disposal, clearly will be more accurate than the model
+    that has as input only the images at its disposal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '*ϵ*[*hlp*] and *ϵ*[*Bayes*] are close to each other only in cases in which
+    the classification is done in the same way by humans and from the model. So, always
+    check if that is the case, before assuming that human-level performance is a proxy
+    for the Bayes error.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Something else that you will notice when working on models is that with relatively
+    little effort, you can achieve a quite low rate of error and often (almost) reach
+    *ϵ*[*hlp*]. After passing human-level performance (and, in several cases, that
+    is possible), progress tends to be very, very slow, as is illustrated in Figure
+    [6-1](#Fig1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig1_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Typical values of accuracy that can be achieved vs. amount of time invested
+    . At the beginning, it is very easy to achieve quite a good accuracy with machine
+    learning often reaching ϵ[hlp]. This is intuitively indicated by the line in the
+    plot. After that point, the progress tends to be very slow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As long as the error of your algorithm is bigger than *ϵ*[*hlp*], you can use
+    the following techniques to get better results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get better labels from humans or groups, for example, from groups of doctors,
+    as in the case of medical data in our example.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Get more labeled data from humans or groups.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Do a good metric analysis to determine the best strategy for getting better
+    results. You will learn how to do this in this chapter.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'As soon as your algorithm exceeds human-level performance, you cannot rely
+    on those techniques anymore. So, it is important to get an idea of those numbers,
+    to decide what to do to obtain better results. Taking our example of MRI scans,
+    we could get better labels by relying on sources that are not related to humans,
+    for example, checking diagnoses a few years after the date of the MRI, when it
+    is usually clear whether a patient has developed cancer. Or, for example, in the
+    case of image classification, you may decide yourself to take a few thousands
+    of images of specific classes. This is not usually possible, but I wanted to make
+    the concept clear: you can get labels by means other than by asking humans to
+    perform the same kind of task that your algorithm is performing.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Human-level performance is a good proxy for Bayes error for tasks at which humans
+    excel, such as image recognition. For tasks that humans are very bad at, performance
+    can be very far from the Bayes error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Short Story About Human-Level Performance
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: I want to tell you a story about the work that Andrej Karpathy has done while
+    trying to estimate human-level performance in a specific case. You can read the
+    entire story on his blog post (a long post, but one that I suggest you read) at
+    [`https://goo.gl/iqCbC0`](https://goo.gl/iqCbC0) . Let me summarize what he did,
+    since it is extremely instructive concerning what human-level performance really
+    is. Karpathy was involved in the ILSVRC (ImageNet Large Scale Visual Recognition
+    Challenge) in 2014 ( [`https://goo.gl/PCHWMJ`](https://goo.gl/PCHWMJ) ). The task
+    was made up of 1.2 million images (training set) classified in 1000 categories,
+    including such objects as animals, abstract objects such as a spiral, scenes,
+    and many more. Results were evaluated on a dev dataset. GoogleLeNet (a model developed
+    by Google) reached an astounding 6.7% error. Karpathy wondered how humans would
+    compare.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The question is a lot more complicated than it may seem at first sight. Because
+    the images were all classified by humans, shouldn’t *ϵ*[*hlp*] = 0%? Well, actually,
+    no. In fact, the images were first obtained with a web search, then they were
+    filtered and labeled by asking people *binary* questions, for example, Is this
+    a hook or not? The images were collected, as Karpathy mentions in his blog post,
+    in a binary way. People were not asked to assign to each image a class, choosing
+    from the 1000 available, as the algorithms were doing. You may think that this
+    is a technicality, but the difference in how the labeling occurs makes the correct
+    evaluation of a *ϵ*[*hlp*] quite a complicated matter. So, Karpathy set to work
+    and developed a web interface that consisted of an image on the left, and the
+    1000 classes with examples on the right. You can see an example of the interface
+    in Figure [6-2](#Fig2). You can try the interface (and I suggest you do so) at
+    [`https://goo.gl/Rh8S6g`](https://goo.gl/Rh8S6g) , to understand how complicated
+    such a task is. People trying the interface kept missing classes and making mistakes.
+    The best error that was reached was about 15%. So, Karpathy did what every scientist
+    at some point in his/her career must do: he bored himself to death and did a careful
+    annotation himself, sometimes requiring 20 minutes for a single image. As he states
+    in his blog post, he did it only `#forscience`. He was able to reach a stunning
+    *ϵ*[*hlp*] = 5.1%, 1.7% better than the best algorithm at the time. He listed
+    sources of errors to which GoogLeNet is more susceptible than humans, such as
+    problems with multiple objects in an image, and sources of errors to which humans
+    are more susceptible than GoogLeNet, such as problems with classes with a huge
+    granularity (dogs are classified in 120 different subclasses, for example).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig2_HTML.png](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Web interface developed by Karpathy. Not everyone would find it amusing to look
+    at 120 breeds of dogs, to try to classify the dog on the left (which, by the way,
+    is a Tibetan mastiff).
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you have a few hours to spare, I suggest you try. You will gain a whole new
+    appreciation of the difficulties of evaluating human-level performance. Defining
+    and evaluating human-level performance is a very tricky task. It is important
+    to understand that *ϵ*[*hlp*] is dependent on how humans approach the classification
+    task, which is dependent on the time invested, the patience of the persons performing
+    the task, and on many factors that are difficult to quantify. The main reason
+    for it being so important, apart from the philosophical aspect of knowing when
+    a machine becomes better than humans, is that it is often taken as a proxy for
+    the Bayes error, which gives a lower limit of our possibilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Human-Level Performance on MNIST
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before moving on to the next subject, I would like to give you another example
+    of human-level performance on a dataset we have analyzed together: the MNIST dataset.
+    Human-level performance has been widely analyzed, and it has been found that *ϵ*[*hlp*] = 0.2%.
+    (You can read a good review on the subject by Dan Cireşan: “Multi-column Deep
+    Neural Networks for Image Classification,” Technical Report No. IDSIA-04-12, Dalle
+    Molle Institute for Artificial Intelligence, [`https://goo.gl/pEHZVB`](https://goo.gl/pEHZVB)
+    .) Now you may wonder why a human cannot achieve 100% accuracy classifying simple
+    digits, but see Figure [6-3](#Fig3), and attempt to identify which digits are
+    in the images. I surely cannot. You may, therefore, better understand why *ϵ*[*hlp*] = 0%
+    is not possible, and why a person cannot achieve 100% accuracy. Other reasons
+    may be related to which culture people come from. In some countries, the digit
+    representing seven is written in a very similar way to that for ones, for example,
+    and in some cases, mistakes can be made. In other countries, the digit seven has
+    a small dash along the vertical bar, making it easier to distinguish from a one.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig3_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: A set of digits from the MNIST dataset that are almost impossible to recognize.
+    Such examples are one of the reasons why ϵ[hlp] cannot be zero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bias
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now let’s start with a metric analysis: a set of procedures that will give
+    you information on how your model is doing and how good or bad your data is, by
+    evaluating your optimizing metric on different datasets.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Metric analysis consists of a set of procedures that will give you information
+    on how your model is doing and how good or bad your data is, by looking at your
+    evaluating your optimizing metric on different datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To start, we must first define a third error: the one evaluated on the training
+    dataset, indicated with *ϵ*[*train*].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first question we want to answer is if our model is not as flexible or complex
+    as needed to reach human-level performance. Or, in other words, we want to know
+    if our model has a high bias, with respect to human-level performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To answer the previous question, we can do the following: calculate the error
+    from our model from our training dataset *ϵ*[*train*] and then calculate |*ϵ*[*train*] − *ϵ*[*hlp*]|.
+    If the number is not small (bigger than a few percent), we are in the presence
+    of bias (sometimes called avoidable bias), that is, our model is too simple to
+    capture the real subtleties of our data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s define the following quantity
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \Delta {\epsilon}_{Bias}=\left|{\epsilon}_{train}-{\epsilon}_{hlp}\right|
+    $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The bigger Δ*ϵ*[*Bias*] is, the more bias our model has. In this case, you
+    want to do better on the training set, because you know you can do better on your
+    training data. (We will look at the problem of overfitting in a moment.) The following
+    techniques work to reduce bias:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bigger networks (more layers or neurons)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: More complex architectures (convolutional neural networks, for example)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Training your model longer (for more epochs)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Using better optimizers (such as Adam)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Doing a better hyperparameter search (covered in Chapter [7](463356_1_En_7_Chapter.xhtml))
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'There is something else you need to understand. Knowing *ϵ*[*hlp*] and reducing
+    the bias to reach it are two very different things. Suppose you know the *ϵ*[*hlp*]
+    for your problem. This does not mean that you have to reach it. It may well be
+    that you are using the wrong architecture, but you may not have the skills required
+    to develop a more sophisticated network. It may even be that the effort required
+    to achieve the desired error level would be prohibitive (in terms of hardware
+    or infrastructure). Always keep in mind what your problem requirements are. Always
+    try to understand what is good enough. For an application that recognizes cancer,
+    you may want to invest as much as possible to achieve the highest accuracy possible:
+    you don’t want to send someone home only to discover the presence of cancer months
+    later. On the other hand, if you build a system to recognize cats from web images,
+    you may find a higher error than *ϵ*[*hlp*] completely acceptable.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Metric Analysis Diagram
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this chapter, we look at different problems that you will encounter when
+    developing your models and how to spot them. We have looked at the first one:
+    bias, sometimes also called avoidable bias. We have seen how this can be spotted
+    by calculating Δ*ϵ*[*Bias*]. At the end of this chapter, you will have a few of
+    those quantities that you can calculate to spot problems. To make understanding
+    them easier, I use what I like to call the metric analysis diagram (MAD). It is
+    simply a bar diagram, in which each bar represents a problem. Let’s start to build
+    one with (for the moment) the only quantity we have discussed: bias. You can see
+    it in Figure [6-4](#Fig4). At the moment, it is a pretty dumb diagram, but you
+    will see how useful it is to keep things under control when you have several problems
+    at the same time.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig4_HTML.png](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Metric analysis diagram (MAD) with only one of the quantities we will encounter
+    in this chapter: Δϵ[Bias]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training Set Overfitting
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Another problem we have discussed at length in the previous chapters is overfitting
+    of training data. You will remember in Chapter [5](463356_1_En_5_Chapter.xhtml),
+    while executing regression, we saw an extreme case of overfitting, in which *MSE*[*train*] ≪ *MSE*[*dev*].
+    The same applies in classification problems. Let’s indicate with *ϵ*[*train*]
+    the error our model has on our training dataset and with *ϵ*[*dev*] the one on
+    the dev dataset. We can then say we are overfitting the training set if *ϵ*[*train*] ≪ *ϵ*[*dev*].
+    Let’s define a new quantity
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \Delta {\epsilon}_{overfitting\ train}=\left|{\epsilon}_{train}-{\epsilon}_{dev}\right|
+    $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: With this quantity, we can say that we are overfitting the training dataset
+    if *Δϵ*[*overfitting train*] is bigger than a few percent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s summarize what we have defined and discussed so far. We have three errors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*ϵ*[*train*]: The error of our classifier on the training dataset'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*ϵ*[*hlp*]: Human-level performance (as discussed in the previous sections)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*ϵ*[*dev*]: The error of our classifier on the dev dataset'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: With those three quantities , we have defined
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Δ*ϵ*[*Bias*] = |*ϵ*[*train*] − *ϵ*[*hlp*]|: Measuring how much “bias” we have
+    between the training dataset and human-level performance'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Δϵ*[*overfitting train*] = |*ϵ*[*train*] − *ϵ*[*dev*]|: Measuring the amount
+    of overfitting of the training dataset'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In addition, up to now, we have used two datasets
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Training dataset*: The dataset that we use to train our model (you should
+    know it by now)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Dev dataset*: A second dataset that we use to check the overfitting on the
+    training dataset'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Now let’s suppose our model has bias and is slightly overfitting the training
+    dataset, meaning we have Δ*ϵ*[*Bias*] = 6% and *Δϵ*[*overfitting train*] = 4%.
+    Our MAD now becomes what is depicted in Figure [6-5](#Fig5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig5_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'MAD diagram for our two problems: bias and overfitting of training dataset'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see in Figure [6-5](#Fig5), you can have a quick overview of the
+    relative gravity of the problems we have, and you may decide which one you want
+    to address first.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Usually when you are overfitting the training dataset, it is commonly known
+    as a variance problem. When this happens, you can try the following techniques
+    to minimize this problem:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get more data for your training set
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use regularization (review Chapter [5](463356_1_En_5_Chapter.xhtml) for a complete
+    discussion of the subject)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Try data augmentation (for example, if you are working with images, you can
+    try rotating them, shifting them, etc.)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Try “simpler” network architectures
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: As usual, there are no fixed rules, and you must test which techniques work
+    best on your problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Test Set
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: I would like to quickly mention another problem you may encounter. We will look
+    at it in detail in Chapter [7](463356_1_En_7_Chapter.xhtml), because it is related
+    to hyperparameter search. Recall how you choose the best model in a machine-learning
+    project (this is not specific to deep learning, by the way)? Let’s suppose we
+    are working on a classification problem. First, we decide which optimizing metric
+    we want, let’s suppose we decide to use accuracy. Then we build an initial system,
+    feed it with training data, and see how it is doing on the dev dataset, to check
+    if we are overfitting our training data. You will remember that in previous chapters,
+    we have talked often about hyperparameters—parameters that are not influenced
+    by the learning process. Examples of hyperparameters are the learning rate, regularization
+    parameter, etc. We have seen many of them in the previous chapters. Let’s say
+    you are working with a specific neural network architecture. You need to search
+    the best values for the hyperparameters, to see how good your model can get. To
+    do this, you train several models with different values of the hyperparameters
+    and check their performance on the dev dataset. What can happen is that your models
+    work well on the dev dataset but don’t generalize at all, because you select the
+    best values using only the dev dataset. You incur the risk of overfitting the
+    dev dataset by choosing specific values for your hyperparameters. To check if
+    this is the case, you create a third dataset, called the test dataset, cutting
+    a portion of the observations from your starting dataset, which you use to check
+    the performance of your models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We must define a new quantity
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \Delta {\epsilon}_{overfitting\kern0.5em dev}=\left|{\epsilon}_{dev}-{\epsilon}_{test}\right|
+    $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *ϵ*[*test*] is the error evaluated on the test set. We can add it to our
+    MAD diagram (Figure [6-6](#Fig6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig6_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The MAD diagram for the three problems we may encounter: bias, overfitting
+    of training data, overfitting of dev data'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that if you are not doing any hyperparameter search, you will not need
+    a test dataset. It is only useful when you are doing extensive searches; otherwise,
+    in most cases, it is useless and takes away observations that you may use for
+    training. What we discussed so far assumes that your dev and test set observations
+    have the same characteristics. For example, if you are working on an image recognition
+    problem and you decide to use images from a smartphone with high resolution for
+    training and the dev dataset, and images from the Web in low resolution for your
+    test dataset, you may see a big |*ϵ*[*dev*] − *ϵ*[*test*]|, but that will probably
+    be owing to the differences in the images and not to an overfitting problem. I
+    will discuss later in the chapter what can happen when different sets come from
+    different distributions (another way of saying that the observations have different
+    characteristics), what exactly this means, and what you can do about it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to Split Your Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now I would like to discuss briefly how to split your data in both a general
+    and deep-learning context.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'But what exactly does “split” mean? Well, as discussed in the previous section,
+    you will require a set of observations to make the model learn, which you call
+    your training set. You also will need a set of observations that will constitute
+    your dev set, and a final set called the test set. Typically, you would see splits
+    such as 60% of observations for the training set, 20% of observations for the
+    dev set, and 20% of observations for the test set. Usually, these kinds of splits
+    are indicated in the following form: 60/20/20, where the first number (60) refers
+    to the percentage of the entire dataset that makes up the training set, the second
+    (20) to the percentage of the entire dataset that makes up the dev set, and the
+    last (20) to the percentage that makes up the test set. In books, blogs, or articles,
+    you may encounter sentences such as “We will split our dataset 80/10/10.” You
+    now have an explanation of what this means.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Usually, in the deep-learning field, you will deal with big datasets. For example,
+    if we have *m* = 10⁶, we could use a split such as 98/1/1\. Keep in mind that
+    1% of 10⁶ is 10⁴—a big number! Remember that the dev/test set must be big enough
+    to give high confidence to the performance of the model, but not unnecessarily
+    big. Additionally, you will want to save as many observations as possible for
+    your training set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When deciding on how to split your dataset, if you have a big number of observations
+    (for example, 10⁶ or even more), you can split your dataset 98/1/1 or 90/5/5\.
+    So, as soon as your dev and test dataset reach a reasonable size (depending on
+    your problem), you can stop. When deciding how to split your dataset, keep in
+    mind how big your dev/test sets must be.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now remember that, as you may know, size is not everything. Your dev and test
+    datasets should be representative of your training dataset and problem. Let’s
+    create an example. Let’s consider the ImageNet challenge described earlier. There,
+    you want to classify images in 1000 different classes. To know how your model
+    is performing in your dev and test datasets, you will require enough images for
+    each class in each set. If you decide to take only 1000 observations for the dev
+    or test dataset, you are not going to get any reasonable result, because, in case
+    all classes are represented in the dev set, you will only have one observation
+    for each class. You should decide to build your dev and test dataset choosing,
+    for example, 100 images for each class at least, building two datasets (dev and
+    test), each containing 10⁵ observations in total (remember we have 1000 classes).
+    In this case, it would not be sensible to go below this number. This is not only
+    relevant in a deep-learning context but in machine learning in general. You should
+    always try to build a dev/test dataset reflecting the same distribution of observations
+    you have in your training set. To understand what I mean, take the MNIST dataset,
+    for example. Let’s load the dataset (as we have done before) with the following
+    code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: then we can check how often (in %) each digit appears in the dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us the result
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Not every digit appears the same number of times in the dataset. When building
+    our dev and test datasets, we should check that our distributions reflect this
+    one; otherwise, when applying our model to the dev or test dataset, we could get
+    a result that does not make much sense, because the model has learned from a different
+    class distribution. You may remember that in Chapter [5](463356_1_En_5_Chapter.xhtml),
+    we created a dev dataset with a code like this one:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In this case, for the sake of clarity, I just split the labels, to see how
+    the algorithm is working. In real life, you also would have to split the features,
+    of course. Because our original distribution is almost uniform, you should expect
+    a result that is very similar to the original one. Let’s check it with the following
+    code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us the result
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can compare these results with those from the entire dataset. You will notice
+    that they are very close—not the same (compare, for example, digit 2), but close
+    enough. In this case, I would simply proceed without worries. But let’s create
+    a slightly different example. Suppose that instead of choosing randomly the observations
+    to create your training and dev datasets, you decide to take the first 80% of
+    the observations and assign it to the training set and the last 20% and assign
+    it to the dev set, because you assume that your observations are randomly distributed
+    in your original `NumPy` arrays. Let’s try and see what happens. First, let’s
+    build our train and dev datasets, using the first 56,000 (0.8*70000) observations
+    for the training set and the rest for the dev set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can again check how many digits we have with the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us the result
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Do you notice anything different? The biggest difference is that now, class
+    9 is only appearing in 2.8% of the cases. Before, it was appearing in 9.9% of
+    the cases. Apparently, our hypothesis that the classes are distributed according
+    to a random uniform distribution was not right. This can be quite dangerous when
+    checking how the model is doing or because your model may end up learning from
+    a so-called *unbalanced class distribution* .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Usually, an unbalanced class distribution in a dataset refers to a classification
+    problem in which one or more classes appear a different number of times than others.
+    Generally, this becomes a problem in the learning process when the difference
+    is significant. A few percent difference is often not an issue.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you have a dataset with three classes, for example, where you have 1000 observations
+    in each class, then the dataset has a perfectly balanced class distribution, but
+    if you have in class 1 only 100 observations, in class 2 10,000 observations,
+    and in class 3 5000, then we talk about an unbalanced class distribution. You
+    should not think that this is a rare occurrence. Suppose you have to build a model
+    that recognizes fraudulent credit card transactions. It is safe to assume that
+    those transactions are a very small percent of the entire amount of transactions
+    that you will have at your disposal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When splitting your dataset, you must pay great attention not only to the number
+    of observations you have in each dataset but also to which observations go in
+    each dataset. Note that this problem is not specific to deep learning but is important
+    generally in machine learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To go into details on how to deal with unbalanced datasets would be beyond the
+    scope of this book, but it is important to understand what kind of consequences
+    they may have. In the next section, I will show you what can happen if you feed
+    an unbalanced dataset to a neural network, so that you gain a concrete understanding
+    of the possibility. At the end of the section, I will offer a few hints on what
+    to do in such a case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Unbalanced Class Distribution: What Can Happen'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Because we are talking about how to split our dataset to perform metric analysis,
+    it is important to grasp the concept of unbalanced class distribution and how
+    to deal with it. In deep learning, you will find yourself very often splitting
+    datasets, and you should be aware of the problems you may encounter if you do
+    this in the wrong way. Let me give you a concrete example of how bad things can
+    go if you do it wrongly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will use the MNIST dataset, and we will do basic logistic regression (as
+    we did in Chapter [2](463356_1_En_2_Chapter.xhtml)) with a single neuron. Let’s
+    look very quickly again at how to load and prepare the data. We will do it in
+    a similar way as in Chapter [2](463356_1_En_2_Chapter.xhtml), apart from some
+    modifications that I will point out to you. First, we load the data
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Here comes the important part. We create a new label in this way: we assign
+    to all observations for the digit zero the label 0, and to all other digits (1,
+    2, 3 ,4, 5, 6, 7, 8, and 9) the label 1, with the code'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now the array `y_` will contain the new labels. Note that now the dataset is
+    heavily unbalanced. Label 0 appears roughly in 10% of the cases, while label 1
+    appears in 90% of the cases. Let’s split the data randomly in a train and a dev
+    dataset .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: We then normalize the training data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: We then transpose and prepare the tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then we assign proper names to the variables.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then we build our network with one single neuron, exactly as we did in Chapter
+    [2](463356_1_En_2_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you don’t understand the code, review Chapter [2](463356_1_En_2_Chapter.xhtml)
+    for more details. I expect that you now understand this simple model well, as
+    we have seen it several times. Next, we define the function to run the model (you
+    have seen it several times in the previous chapters).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s run the model with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and check the accuracy with the following code (explained at length in Chapter
+    [2](463356_1_En_2_Chapter.xhtml), if you don’t remember):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: We get an incredible 91.2% accuracy. Not bad, right? But are we sure that the
+    result is that good? Now let’s check the confusion matrix^([1](#Fn1)) for our
+    labels with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When you run the code, you get the following result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Slightly more nicely formatted and with some explanatory information, the matrix
+    looks like Table [6-1](#Tab1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Confusion Matrix for the model described in the text
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|   | Predicted Class 0 | Predicated Class 1 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Real class 0** | 659 | 4888 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **Real class 1** | 6 | 50503 |'
+  prefs: []
+  type: TYPE_TB
+- en: How should we read the table? In the column “Predicted Class 0,” you will see
+    the number of observations that our model predicts as being of class 0 for each
+    real class. 659 is the number of observations our model predicts as being of class
+    0 that are really in class 0\. 6 is the number of observations that our model
+    predicts in class 0 that are really in class 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It should be easy to see now that our model predicts effectively almost all
+    observations to be in class 1 (a total of 4888 + 50,503 = 55,391). The number
+    of correct classified observations is 659 (for class 0) and 50,503 (for class
+    1), for a total of 51,162 observations. Because we have a total of 56,056 observations
+    in our training set, we get an accuracy of 51162/56056 = 0.912, as our TensorFlow
+    code above told us. This is not because our model is good; it is simply because
+    it has classified effectively all observations in class 1\. In this case, we don’t
+    need a neural network to achieve this accuracy. What happens is that our model
+    sees observations belonging to class 0 so rarely that it almost doesn’t influence
+    the learning, which is dominated by the observations in class 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What at the beginning seemed a nice result turns out to be a really bad one.
+    This is an example of how bad things can go, if you don’t pay attention to the
+    distributions of your classes. This, of course, applies not only when splitting
+    your dataset, but in general, when you approach a classification problem, regardless
+    of the classifier you want to train (it does not apply only to neural networks).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When splitting your dataset in complex problems, you must pay special attention
+    not only to the number of observations you have in your datasets but also to what
+    observations you choose and to the distribution of the classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To conclude this section, let me give you a few hints on how to deal with unbalanced
+    datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Change your metric* : In the preceding example, you may want to use something
+    else instead of accuracy, because it can be misleading. You could try using the
+    confusion matrix, for example, or other metrics, such as precision, recall, or
+    F1\. Another important way of checking how your model is doing, and one that I
+    strongly suggest you learn, is the ROC curve, which will help you tremendously.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Work with an* *undersampled dataset* . If, for example, you have 1000 observations
+    in class 1 and 100 in class 2, you may create a new dataset with 100 random observations
+    in class 1 and the 100 you have in class 2\. The problem with this method, however,
+    is that you usually will have a lot less data to feed to your model to train it.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Work with an* *oversampled dataset* . You may try to do the opposite. You
+    may take the 100 observations in class 2 mentioned above and simply replicate
+    them 10 times, to end up with 1000 observations in class 2 (sometimes called sampling
+    with replacement).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Try to get more data in the class with less* *observations* : This is not
+    always possible. In the case of fraudulent credit card transactions, you cannot
+    go around and generate new data, unless you want to go to jail…'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Precision, Recall, and F1 Metrics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Let’s look at some other metrics that are very useful when dealing with unbalanced
+    datasets. Consider the following example. Suppose we are doing some tests to determine
+    if a subject has a certain disease or not. Imagine that we have 250 test results.
+    Consider the following confusion matrix (you should know what that is from our
+    previous discussion):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{ccc}&amp; Prediction: NO&amp; Prediction:
+    YES\\ {} True\ value: NO&amp; 75&amp; 15\\ {} True\ value: YES&amp; 10&amp; 150\end{array}}
+    $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'We will indicate with *N* the total number of test results, in this case *N* = 250\.
+    We will use the following terminology:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*True positives (tp)*: Tests that predicted yes, and the subjects really have
+    the disease'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*True negatives (tn)*: Tests that predicted no, and the subjects do not have
+    the disease'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*False positives (fp)*: Tests that predicted yes, and the subjects do not have
+    the disease'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*False negatives (fn)*: Tests that predicted no, but the subjects do have the
+    disease'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This translates visually to the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{ccc}&amp; Prediction: NO&amp; Prediction:
+    YES\\ {} True\ value: NO&amp; TRUE\ NEGATIVES&amp; FALSE\ POSITIVES\\ {} True\
+    value: YES&amp; FALSE\ NEGATIVES&amp; TRUE\ POSITIVES\end{array}} $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Let’s also indicate with *ty* the number of patients who really have a disease,
+    in this example, *ty* = 10 + 150 = 160, and with *tno*, the number of patients
+    who don’t have a disease, in this example, *tno* = 75 + 15 = 90\. In the examples
+    we would have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ tp=150 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ tn=75 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ fp=15 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ fn=10 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'We can express several metrics as functions of the previously discussed terms.
+    For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Accuracy**: (*tp* + *tn*)/*N*, how often our test is right'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Misclassification rate**: (*fp* + *fn*)/*N*, how often our test is wrong.
+    Note that this is equal to 1 − *accuracy*.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Sensitivity/Recall**: *tp*/*ty*, how often the test really predicts yes when
+    the subjects have the disease'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Specificity**: *tn*/*tno*, when the subjects have no disease, how often our
+    test predicts no'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Precision**: *tp*/(*tp* + *fp*), the portion of tests predicting correctly
+    the subject having the disease with respect to all positive results obtained'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: All those quantities can be used as metrics, depending on your problem. Let’s
+    create an example. Suppose your test should predict if a person has cancer or
+    not. In this case, what you want is the highest sensitivity possible, because
+    it is important to detect the disease. But at the same time, you also want the
+    specificity to be high, because there is nothing worse than sending someone home
+    without treatment when it is needed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look a bit closer at precision and recall. Having a high precision means
+    that when you say someone is sick, you are right. But you don’t know how many
+    people really have the sickness, since the quantity is defined only by the result
+    of your test. Precision is a measure of how your test is doing. Having a high
+    recall means that you can identify all the sick people in your sample. Let me
+    give you another example, to make the point even clearer. Suppose we have 1000
+    people. Only 10 are sick and 990 are healthy. Let’s suppose we want to identify
+    healthy people (this is important), and we build a test that returns yes if someone
+    is healthy and **always** predicts that people are healthy. The confusion matrix
+    would look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{ccc}&amp; Prediction: NO\kern0.5em (Sick)&amp;
+    Prediction: YES\kern0.5em (Healthy)\\ {} True: NO\kern0.5em (Sick)&amp; 0&amp;
+    10\\ {} True: YES\kern0.5em (Healthy)&amp; 0&amp; 990\end{array}} $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We would have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ tp=990 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ tn=0 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ fp=10 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ fn=0 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: That means that
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accuracy would be 99%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The misclassification rate would be 10/1000 or, in other words, 1%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Recall would be 990/990 or 100%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Specificity would be 0%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Precision would be 99%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This looks good, right? If want to find healthy people, this test would be
+    great. The only problem is that it is a lot more important to identify sick people!
+    Let’s recalculate the preceding quantities, but this time, considering that a
+    positive result is when someone is sick. In this case, the confusion matrix would
+    like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{ccc}&amp; Prediction: NO\kern0.5em (Healthy)&amp;
+    Prediction: YES\kern0.5em (Sick)\\ {} True: NO\kern0.5em (Healthy)&amp; 990&amp;
+    0\\ {} True: YES\kern0.5em (Sick)&amp; 10&amp; 0\end{array}} $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: because this time, a yes result means that someone is sick and not, as before,
+    that someone is healthy. Let’s calculate the quantities above again.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ tp=0 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ tn=990 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ fp=0 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ fn=10 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Therefore,
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accuracy would still be 99%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The misclassification rate would still be 10/1000 or, in other words, 1%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Recall would now be 0/10 or 0%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Specificity would be 990/990 or 100%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Precision would be (0 + 0)/1000 or 0%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note how the accuracy remains the same. If you look only at that, you would
+    not be able to understand how your model is doing. We have simply changed what
+    we want to predict and use only accuracy. We cannot say anything about the performance
+    of our model. But look at how recall and precision changed. See the matrix below
+    for a comparison.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{ccc}&amp; Predicting\ healthy\ people&amp;
+    Predicting\ sick\ people\\ {} Recall&amp; 100\%&amp; 0\%\\ {} Precision&amp; 99\%&amp;
+    0\%\end{array}} $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now we have something that changes that can give us enough information, depending
+    on the question we pose. Note that changing what we want to predict will change
+    how the confusion matrix will look. We can immediately say, looking at the preceding
+    matrix, that our model that predicts that everyone is healthy works very well
+    when predicting healthy people (not very useful) but fails miserably when trying
+    to predict sick people.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is another metric that is important to know, and that is the F1 score.
+    It is defined as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ F1=\frac{2}{\frac{1}{Precision}+\frac{1}{Recall}}=2\frac{Precision\cdotp
+    Recall}{Precision+ Recall} $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'An intuitive understanding is difficult to get, but it is basically the harmonic
+    average of precision and recall. The example we created was a bit extreme and,
+    having 0% for recall or precision , would not allow us to calculate *F*1\. Let’s
+    suppose that our model is bad at predicting sick people, but not that bad. Let’s
+    suppose we have the following confusion matrix:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{ccc}&amp; Prediction: NO\kern0.5em (Healthy)&amp;
+    Prediction: YES\kern0.5em (Sick)\\ {} True: NO\kern0.5em (Healthy)&amp; 985&amp;
+    5\\ {} True: YES\kern0.5em (Sick)&amp; 9&amp; 1\end{array}} $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In this case, we would have (I leave the calculation to you)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ 54.5\% $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (Precision:)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ 10\% $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (Recall:)
+  prefs: []
+  type: TYPE_NORMAL
+- en: We would have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ F1=2\cdotp \frac{0.545\ast 0.1}{0.545+0.1}=2\frac{0.0545}{0.645}=\mathrm{0.16.9}\to
+    16.9\% $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This quantity will give you information keeping precision (the portion of tests
+    predicting correctly the subject having the disease with respect to all positive
+    results obtained) and recall (how often the test really predicts yes when the
+    subjects have the disease) in consideration. For some problems, you want to maximize
+    precision, and for others, you want to maximize recall. If that is the case, simply
+    choose the right metric. The *F*1 score will be the same for two cases in which
+    you have *Precision* = 32% and *Recall* = 45% and one with *Precision* = 45% and
+    *Recall* = 32%. Be aware of this fact. Use *F*1 score, if you want to find a balance
+    between *Precision* and *Recall*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The *F*1 score is used when you want to maximize the harmonic average of *Precision* and
+    *Recall*, or, in other words, when you don’t want to maximize either *Precision*
+    or *Recall* alone, but you want to find the best balance between the two.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If we calculate *F*1 when predicting healthy people, as we did at first, we
+    would have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ F1=2\frac{1.0\kern0.6em \cdot \kern0.6em 0.99}{1.0+0.99}=2\frac{0.99}{1.99}=0.995\to
+    99.5\% $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This tells us that the model is quite good at predicting healthy people.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *F*1 score is usually useful, because, normally, as a metric, you want one
+    single number, and in this way, you don’t have to decide between precision or
+    recall, as both are useful. Remember that the values of the metrics discussed
+    will always be dependent on the question you are asking (what is yes and no for
+    you). Be aware that an interpretation is *always* dependent on the question you
+    want to answer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Remember that when calculating your metric, whatever it may be, changing your
+    question will change the results. You must be very clear at the beginning of what
+    you want to predict and then choose the right metric. In the case of highly unbalanced
+    datasets, it is always a good idea to use not accuracy but other metrics as recall,
+    precision, or, even better, *F*1, it being an average of precision and recall.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Datasets with Different Distributions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now I would like to discuss another terminology issue, which will lead you
+    to understand a common problem in the deep-learning world. Very often, you will
+    hear sentences such as “The sets come from different distributions.” This sentence
+    is not always easy to understand. Take, for example, two datasets formed by images
+    taken with a professional DSLR, and a second one made up of images taken with
+    a dodgy smartphone. In the deep-learning world, we would characterize those two
+    sets as coming from different distributions. But what is the real meaning of the
+    sentence? The two datasets differ for various reasons: resolution of images, blurriness
+    resulting from different quality lenses, amount of colors, quality of the focus,
+    and possibly more. All these differences are what is usually meant by *distributions*.
+    Let’s look at another example. We could consider two datasets: one made of images
+    of white cats and one made of images of black cats. Also, in this case, we are
+    talking about different distributions. This becomes a problem when you train a
+    model on one set and want to apply it to the other. For example, if you train
+    a model on a set of images of white cats, you probably are not going to do very
+    well on the dataset of black cats, because your model has never seen black cats
+    during training.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'When talking about datasets coming from different distributions, it is usually
+    meant that the observations have different characteristics in the two datasets:
+    black and white cats, high and low-resolution images, speech recorded in Italian
+    and German, and so on.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because data is so precious, people often try to create different datasets (train,
+    dev, etc.) from different sources. For example, you may decide to train your model
+    on a set made of images taken from the Web and check how good it is with a set
+    made of images you’ve taken with your smartphone. It may seem like a good idea
+    to be able to use as much data as possible, but this may give you many headaches.
+    Let’s see what happens in a real case, so that you may get a feeling of the consequences
+    of doing something similar.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s consider the subset of the MNIST dataset that we have used in Chapter
+    [2](463356_1_En_2_Chapter.xhtml), made of the two digits: 1 and 2\. We will build
+    a dev dataset coming from a different distribution, shifting a subset of the images
+    10 pixels to the right. We will train our model on the images as they are in the
+    original dataset and apply the model to images shifted 10 pixels to the right
+    and see what happens. Let’s first load the data (you can check for more details
+    Chapter [2](463356_1_En_2_Chapter.xhtml)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will do the data preparation exactly as in Chapter [2](463356_1_En_2_Chapter.xhtml).
+    First, let’s select only digit 1 and 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have 14,867 observations in our dataset. Now let’s create a train and a dev
+    dataset with our random selection (as we have done before), as in this case, we
+    have roughly the same number of ones and twos.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then we normalize the features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: And then we transform the matrices to have them with the right dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, we shift the labels to have 0 and 1 (if you don’t remember why, you
+    can quickly review Chapter [2](463356_1_En_2_Chapter.xhtml)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s give the arrays reasonable names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can check the sizes of the arrays with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We have 11,893 observations in our training set and 2974 in the dev set. Now
+    let’s duplicate the dev dataset and shift each image to the right by 10 pixels.
+    We can do it quickly with the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: To make the shift easy, I first reshaped the images in a 28 × 28 matrix, then
+    simply shifted the columns with `tmp_shifted[:,10:28] = tmp[:,0:18]`, and then
+    I simply reshaped the images in a one-dimensional array of 784 elements. The labels
+    remain the same. In Figure [6-7](#Fig7), you can see a random image from the dev
+    dataset on the left and its shifted version on the right.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig7_HTML.png](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: One random image from the dataset (left) and its shifted version (right)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s build a network with a single neuron and see what happens. We build
+    the model as we have in Chapter [2](463356_1_En_2_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: To train the model, we will use the same function you have already seen
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: and we will train the model with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us the output
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, let’s calculate the accuracy of the three datasets: Xtrain, Xdev, and
+    Xtraindev, with the code'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'simply using the `right feed_dict` for the three datasets. We get the following
+    results after 100 epochs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the training dataset, we get 96.8%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For the dev dataset, we get 96.7%.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For the train-dev (you will see later why it is called like this), the one with
+    the shifted images, we get 46.7%. A very bad result.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: What has happened is that the model has learned from a dataset where all images
+    are centered in the box and, therefore, could not generalize well to images shifted
+    and no longer centered.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When training a model on a dataset, usually you will get good results for observations
+    that are like the ones in the training set. But how can you find out if you have
+    such a problem? There is a relatively easy way of doing that: expanding our MAD
+    diagram . Let’s see how to do it.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Suppose you have a training dataset and a dev dataset in which the observations
+    have different characteristics (come from different distributions). What you do
+    is create a small subset from the training set, called the train-dev dataset,
+    ending up with three datasets: a training and a train-dev from the same distribution
+    (the observations have the same characteristics) and a dev set, for which the
+    observations are somehow different, as I have discussed previously. What you do
+    now is train your model on your training set and then evaluate your error *ϵ*
+    on the three datasets: *ϵ*[*train*], *ϵ*[*dev*], and *ϵ*[*train* − *dev*]. If
+    your train and dev sets come from the same distributions, so does the train-dev
+    set. In this case, you should expect *ϵ*[*dev*] ≈ *ϵ*[*train* − *dev*]. If we
+    define'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \Delta {\epsilon}_{train- dev}={\epsilon}_{train- dev} $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: we should expect *Δϵ*[*train* − *dev*] ≈ 0\. If the train (and train-dev) and
+    the dev set come from different distributions (the observations have different
+    characteristics), we should expect Δ*ϵ*[*trian* − *dev*] to be big. If we consider
+    the MNIST example we have created before, we have, in fact, Δ*ϵ*[*train* − *dev*] = 0.437,
+    or 43.7%, which is a huge difference. Let’s recap what you should do to determine
+    if your training and your dev (or test) dataset have observations with different
+    characteristics (come from different observations).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Split your training set in two—one that you will use for training and one we
+    will call the train set—and a smaller one that you will call train-dev set.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Train your model on the train set.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Evaluate your error *ϵ* on the three sets: train, dev, and train-dev.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Calculate the quantity Δ*ϵ*[*train* − *dev*]. If it is big, this will provide
+    strong evidence that the original training and dev sets come from different distributions.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'In Figure [6-8](#Fig8), you can see an example of the MAD diagram with the
+    added problem just discussed. Don’t look at the numbers; they are there only for
+    illustrative purposes (read: I just put them there).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig8_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example of the MAD diagram with the data mismatch problem added. Don’t look
+    at the numbers; they are there strictly for illustrative purposes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The MAD diagram in Figure [6-8](#Fig8) can tell us the following things. (I
+    highlight in the bulleted list only a few items. For a more complete list, review
+    the previous sections.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The bias (between training and human-level performance) is quite small, so we
+    are not that far from the best we can achieve (let’s assume here that human-level
+    performance is a proxy for the Bayes error). Here, you could try bigger networks,
+    better optimizers, and so on.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We are overfitting the datasets, so we could try regularization or get more
+    data.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We have a strong problem with data mismatch (sets coming from different distributions)
+    between train and dev. At the end of this section, I suggest what you could do
+    to solve this problem.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We are also slightly overfitting the dev dataset, during our hyperparameter
+    search.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note that you don’t need to create the bar plot, as I have done here. Technically,
+    you require only the four numbers, to draw the same conclusions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Once you have your MAD diagram (or simply the numbers), interpreting it will
+    give you hints on what you should try to get better results, for example, higher
+    accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can try the following techniques to address data mismatch between sets:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can conduct manual error analysis, to understand the difference between
+    the sets, and then decide what to do (in the last section of the chapter, I will
+    give you an example). This is time-consuming and usually quite difficult, because
+    once you know what the difference is, it may be very difficult to find a solution.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You could try to make the training set more like your dev/test sets. For example,
+    if you are working with images and the test/dev sets have a lower resolution,
+    you may decide to lower the resolution of the images in the training set.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'As usual, there are no fixed rules. Just be aware of the problem and think
+    about the following: your model will learn the characteristics from your training
+    data, so when applied to completely different data, it (usually) won’t do well.
+    Always get training data that reflect the data you want your model to work on,
+    not vice versa.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: K-Fold Cross-Validation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now I would like to finish this chapter with another technique that is very
+    powerful and should be known by any machine-learning practitioner (not only in
+    the deep-learning world): k-fold cross-validation. The technique is a way of finding
+    a solution to the following two problems:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: What to do when your dataset is too small to split it in a train and dev/test
+    set
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: How to get information on the variance of your metric
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let’s describe the idea with pseudo-code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Partition your complete dataset in k equally big subsets: *f*[1], *f*[2], …,
+    *f*[*k*]. The subsets are also called folds. Normally the subsets are not overlapping,
+    that means that each observation appears in one and only one fold.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'For `i` going from 1 to *k*:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Train your model on all the folds except *f*[*i*]
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Evaluate your metric on the fold *f*[*i*]. The fold *f*[*i*] will be the dev
+    set in iteration *i*
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Evaluate the average and variance of your metric on the *k* results
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: A typical value for *k* is 10, but that depends on the size of your dataset
+    and the characteristic of your problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Remember that the discussion we did on how to split a dataset applies here also.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When you are creating your folds, you must take care that they reflect the structure
+    of your original dataset. For example, if your original dataset has 10 classes,
+    you must make sure that each of your folds has all the 10 classes, with the same
+    proportions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although this may seem a very attractive technique to deal generally with datasets
+    with less than optimal size, it may be quite complex to implement. But, as you
+    will see shortly, checking your metric on the different folds will give you important
+    information on possible overfitting of your training dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s try it on a real dataset and see how to implement it. Note that you can
+    implement k-fold cross-validation easily in with the sklearn library, but I will
+    develop it from scratch, to show you what is happening in the background. Everyone
+    (well, almost) can copy code from the Web to implement k-fold cross-validation
+    in sklearn, but not many can explain how it works or understand it, therefore
+    being able to choose the right sklearn method or parameters. As a dataset, we
+    will use the same we used in Chapter [2](463356_1_En_2_Chapter.xhtml): the reduced
+    MNIST dataset containing only digits 1 and 2\. We will perform a simple logistic
+    regression with one neuron, to make the code easy to understand and to let us
+    concentrate on the cross-validation part and not on other implementation details
+    that are not relevant here. The goal of this section is to let you understand
+    how k-fold cross-validation works and why it is useful, not on how to implement
+    it with the smallest number of lines of code possible.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s import the necessary libraries, as usual.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then let’s import the MNIST dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: Remember that the dataset has 70,000 observations and is made of grayscale images,
+    each 28 × 28 pixels in size. You can again check Chapter [2](463356_1_En_2_Chapter.xhtml)
+    for a detailed discussion. Then let’s select only digits 1 and 2 and rescale the
+    labels, to make sure that digit 1 has label 0 and digit 2 has label 1\. You will
+    remember from Chapter [2](463356_1_En_2_Chapter.xhtml) that the cost function
+    we will use for logistic regression expects the two labels to be 0 and 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can check the number of observations with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have 14,867 observations (images). Now we perform a small trick. To keep
+    the code simple, we want each fold to have the same number of observations. Technically
+    speaking, this is not required, and you will often end up with the last fold having
+    a number of observations that is smaller than the others. In this case, if we
+    want 10 folds, we cannot have in each fold the same number of observations, because
+    14,867 is not a multiple of 10\. To make things easier, let’s simply remove the
+    last seven images from the dataset. (From an aesthetic point of view, this is
+    horrible, but it will make our code much easier to understand and write.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s create 10 arrays, each containing a list of indexes that we will use
+    to select images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: In each fold, we will have, as expected, 1486 images. Now let’s create the arrays
+    containing the images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'if you think this code is convoluted, you are right. There are faster ways
+    of doing it with the sklearn library, but it is very instructive to see how to
+    do it manually, step by step. I am convinced that the preceding code, in which
+    each step is isolated, makes understanding it easier. We first create empty lists:
+    `Xinputfold` and `yinputfold` . Each element of the list will be a fold, that
+    is, an array of images or labels. So, if we want to get all images in fold 2,
+    we will simply use `Xinputfold[1]`. (Remember: In Python, indexes start from zero.).
+    Those listed, converted with the last two lines in numpy arrays, will have three
+    dimensions, as you can easily see with the statements'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In `Xinputfold`, the first dimension indicates the fold number, the second
+    the observation, and the third the gray values of the pixels. In `yinputfold`,
+    the first dimension indicates the fold number and the second the label. For example,
+    to get an image with index 1234 from fold 0, you would have to use the following
+    code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Remember: You should check that you still have a balanced dataset in each fold
+    or, in other words, that you have as many ones as twos. Let’s check for fold 0
+    (you can do the same check for the others).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: That, for our purposes, is balanced enough. Now we need to normalize the features
+    (as we did in Chapter [2](463356_1_En_2_Chapter.xhtml)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: You could normalize the data in one shot, but I would like to make it evident
+    that we are dealing with folds, to make it clear for the reader. Now let’s reshape
+    the arrays as we need them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code is written in the easiest way possible, for instructive purposes, not
+    in the most optimized way. Now we can check the dimensions of the final arrays
+    with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exactly what we need. Now we are ready to build our network. We will use a one-neuron
+    network for logistic regression, with the sigmoid activation function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here, we have used the Adam optimizer, but the gradient descent would work as
+    well. This is a very easy case. We will use our well-known function to train the
+    model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: At this point, we will have to iterate through the folds. Remember our pseudo
+    code at the beginning? Select one fold as the dev set and train the model on all
+    other folds concatenated. Proceed in this way for all the folds. The code could
+    look like that following. (It is a bit long, so take a few minutes to understand
+    it.) In the code, I have added comments indicating which step we are talking about,
+    since you will find following a corresponding numbered list of explanatory steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The code follows these steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Do a loop over all the folds (in this case, from 1 to 10), iterating with the
+    variable `i` from 0 to 9.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For each `i`, use the fold `i` as the dev set, and concatenate all other folds
+    and use the result as train set.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For each `i`, train the model.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'For each `i`, evaluate the accuracy on the two datasets (train and dev) and
+    save the values in the two lists: `train_acc` and `dev_acc`.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'If you run this code, you will get an output that will look like the following,
+    for each fold (you will get 10 times the following output, once for each fold):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: You will notice that you will get for each fold slightly different accuracy
+    values. It is very instructive to study how the accuracy values are distributed.
+    Because we have 10 folds, we have 10 values to study. In Figure [6-9](#Fig9),
+    you can see the distribution of the values for the train set (left) and for the
+    dev set (right).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig9_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of the accuracy values for the train set (left) and for the dev
+    set (right). Note that the two plots use the same scale on both axes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The image is quite instructive. You can see that the accuracy values for the
+    training set are quite concentrated around the average, while the ones evaluated
+    on the dev set are much more spread. This shows how the model on new data behaves
+    less well than on the data it has trained on. The standard deviation for the training
+    data is 5.4 · 10^(−4) and for the dev set 2.4 · 10^(−3), 4.5 times larger than
+    the value on the train set. In this way, you also get an estimate of the variance
+    of your metric when applied on new data, and on how it generalizes. If you are
+    interested in learning how to do this quickly with sklearn, you can check the
+    official documentation for the `KFold` method here: [`https://goo.gl/Gq1Ce4`](https://goo.gl/Gq1Ce4)
+    . When you are dealing with datasets with many classes (remember the discussion
+    on how to split your sets?), you must pay attention and do what is called stratified
+    sampling.^([2](#Fn2)) sklearn provides a method to do that too: `stratifiedKFold`,
+    which can be accessed here: [`https://goo.gl/ZBKrdt`](https://goo.gl/ZBKrdt) .'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can now easily find averages and standard deviations. For the training set,
+    we have an average accuracy of 98.7% and a standard deviation of 0.054%, while
+    for the dev set, we have an average of 98.6% with a standard deviation of 0.24%.
+    So, now you can even give an estimate of the variance of your metric. Pretty cool!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Manual Metric Analysis: An Example'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'I mentioned earlier that sometimes it is useful to do a manual analysis of
+    your data, to check if the results (or the errors) you are getting are plausible.
+    I would like to give you a basic example here, to give you a concrete idea of
+    what is involved and how complicated it can be. Let’s consider the following:
+    our very simple model (remember, we are using only one neuron) can get 98% of
+    accuracy. Is the problem of recognizing digits that easy? Let’s try to see if
+    that is the case. First, note that our training set does not even have the two-dimensional
+    information of the images. If you remember, each image is converted in a one-dimensional
+    array of values: the gray values of each pixel, starting on the top left and going
+    row by row from top to bottom. Are the ones and the twos so easy to recognize?
+    Let’s check how the real input for our model might look. Let’s start analyzing
+    the digit 1\. Let’s take an example from fold 0\. In Figure [6-10](#Fig10), you
+    can see the image on the left and a bar plot of the gray values of 784 pixels,
+    as they are seen from our model. Remember that as observations, we have a one-dimensional
+    array of the 784 gray values of the pixels of the image.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig10_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example from fold 0 for the digit 1\. The image on the left is a bar plot of
+    the gray values of the 784 pixels , as they are seen in our model on the right.
+    Remember that as inputs, we have a one-dimensional array of the 784 gray values
+    of the pixels of the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Remember that we reshape our 28 × 28 pixels image in a one-dimensional array
+    , so when reshaping the digit 1 in Figure [6-10](#Fig10), we will find black points
+    roughly each 28 pixels, because the 1 is almost a vertical column of black points.
+    In Figure [6-11](#Fig11), you can see other ones, and you will notice how, when
+    reshaped as one dimensional, they all look the same: several bars roughly equally
+    spaced. Now that you know what to look for, you can easily say that all the images
+    in Figure [6-11](#Fig11) are all of digit 1.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig11_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Four examples of the digit 1 reshaped as one-dimensional arrays . All look
+    the same: a number of bars roughly equally spaced.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s look at the digit 2\. In Figure [6-12](#Fig12), you can see an example,
+    similar to what we had in Figure [6-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig12_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example from fold 0 for the digit 2\. The image on the left is a bar plot of
+    the gray values of the 784 pixels, as they are seen in our model. Remember that
+    as observations, we have a one-dimensional array of the 784 gray values of the
+    pixels of the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now things look different. We have two regions in which the bars are much denser,
+    seen in the plot on the right in Figure [6-12](#Fig12). This is the case between
+    pixels 100 and 200 and especially after pixel 500\. Why? Well, the two areas correspond
+    to the two horizontal parts of the image. In Figure [6-13](#Fig13), I have highlighted
+    how different parts look when reshaped as one-dimensional arrays.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig13_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: How different parts of the images look when reshaped as one-dimensional arrays
+    . Horizontal parts are labeled (A) and (B), and the more vertical part is labeled
+    (C).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Horizontal parts (A) and (B) are clearly different from part (C) when reshaped
+    as a one-dimensional array . The vertical part (C) looks like the digit 1, with
+    many equally spaced bars, as you can see in the lower right bar plot labeled (C),
+    while the more horizontal parts appear as many bars clustered in groups, as can
+    be seen in the upper right and lower left bar plots labeled (A) and (B). So, when
+    reshaped, if you find those clusters of bars, you are looking at a 2\. If you
+    see only equally spaced small groups of bars, as in the plot (C) in Figure [6-13](#Fig13),
+    you are looking at a 1\. You don’t even have to see the two-dimensional image,
+    if you know what to look for. Note that this pattern is very constant. In Figure
+    [6-14](#Fig14), you can see four examples of the digit 2, and you can clearly
+    see the wider clusters of bars.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig14_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Four examples of the digit 2, reshaped as one-dimensional arrays . The wider
+    clusters of bars can be seen clearly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can imagine, this is an easy pattern to spot for an algorithm, and so
+    it is to be expected that our model works well. Even a human can spot the images,
+    even when reshaped, without any effort. Such a detailed analysis would not be
+    necessary in a real-life project, but it is instructive to see what you can learn
+    from your data. Understanding the characteristics of your data may help you in
+    designing your model or understanding why it is not working. Advanced architectures,
+    such as convolutional networks, will be able to learn those two-dimensional features
+    exactly in a very efficient way.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s also check how the network learned to recognize digits. You will remember
+    that the output of our neuron is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \widehat{y}=\sigma (z)=\sigma \left({w}_1{x}_1+{w}_2{x}_2+\dots +{w}_{n_x}{x}_{n_x}+b\right)
+    $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *σ* is the sigmoid function, *x*[*i*] for *i* = 1, …, 784 are the gray
+    values of the pixel of the image, *w*[*i*] for *i* = 1, …, 784 are the weights,
+    and *b* is the bias. Remember that when ![$$ \widehat{y}&gt;0.5 $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_IEq1.png),
+    we classify the image in class 1 (so, digit 2), and if ![$$ \widehat{y}&lt;0.5
+    $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_IEq2.png), we classify
+    the image in class 0 (so, digit 1). Now from the discussion of the sigmoid function
+    in Chapter [2](463356_1_En_2_Chapter.xhtml), you will remember that *σ*(*z*) ≥ 0.5
+    when *z* ≥ 0 and *σ*(*z*) < 0.5 for *z* < 0\. This means that our network should
+    learn the weights in such a way that for all the ones, we have *z* < 0, and for
+    all the twos, *z* ≥ 0\. Let’s see if that is really the case. In Figure [6-15](#Fig15),
+    you can see a plot for a digit 1, from which you can find the weights *w*[*i*]
+    (solid line) of our trained network after 600 epochs (and after reaching an accuracy
+    of 98%) and the gray value of the pixel *x*[*i*] rescaled to have a maximum of
+    0.5 (dashed line). Note how each time *x*[*i*] is big, *w*[*i*] is negative. And
+    when *w*[*i*] > 0, the *x*[*i*] are almost zero. Clearly, the result ![$$ {w}_1{x}_1+{w}_2{x}_2+\dots
+    +{w}_{n_x}{x}_{n_x}+b $$](../images/463356_1_En_6_Chapter/463356_1_En_6_Chapter_TeX_IEq3.png)
+    will be negative, and, therefore, *σ*(*z*) < 0.5, and the network will identify
+    the image as a 1\. In the image, I zoomed in to make this behavior more evident.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig15_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot for a digit 1, from which you can find the weights w[i] (solid line) of
+    our trained network after 600 epochs (and after reaching an accuracy of 98%) and
+    the gray value of the pixel x[i] rescaled to have a maximum of 0.5 (dashed line)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [6-16](#Fig16) , you can see the same plot for a digit 2\. You will
+    remember from the previous discussion that for a 2, we can see many bars clustered
+    together in groups up to pixel 250 (roughly). Let’s check how the weights in that
+    region are. Now you will see that where the pixel gray values are big, the weights
+    are positive, giving, then, a positive value of *z* and, therefore, *σ*(*z*) ≥ 0.5,
+    and so the image would be classified as a 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig16_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot for a digit 2, from which you can find the weights w[i] (solid line) of
+    our trained network after 600 epochs (and after reaching an accuracy of 98%) and
+    the gray value of the pixel x[i] rescaled to have a maximum of 0.5 (dashed line)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As an additional check, I plotted *w*[*i*] · *x*[*i*] for all values of *i*
+    for a digit 1, shown in Figure [6-17](#Fig17). You can see how almost all points
+    lie below zero. Note also that *b* =  − 0.16, in this case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_6_Chapter/463356_1_En_6_Fig17_HTML.jpg](../images/463356_1_En_6_Chapter/463356_1_En_6_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: w[i] · x[i] for i = 1, …, 784 for a digit 1\. You can see how almost all values
+    lie below zero. The thick line at zero is made of all the points i, such that
+    w[i] · x[i] = 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, in very easy cases, it is possible to understand how a network
+    learns and, therefore, it is much easier to debug strange behaviors. But don’t
+    expect this to be possible when dealing with much more complex cases. The analysis
+    we have done would not be so easy, for example, if you tried to do the same with
+    digits 3 and 8, instead of 1 and 2.
+  prefs: []
+  type: TYPE_NORMAL

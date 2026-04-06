@@ -1,0 +1,309 @@
+- en: 6. Identifying toxic text from a Google Chrome Extension
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '**Online toxicity** is an unfortunate, challenging, and unwanted reality of
+    the Internet. Take a stroll down any online comment section, Twitter thread, or
+    multiplayer game, and you will find a piece of obscene and offensive text that
+    will make you say “wow.” In those circumstances, there is not much we can do,
+    except for clicking the “report” button and hoping that someone or some magic
+    entity identifies and removes the comment. This chapter addresses this issue.
+    Here, we will build a tool capable of detecting and **classifying toxic content**.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Our next exercise involves using TensorFlow.js’ pre-trained toxicity classifier
+    to detect the type of toxicity, for example, insult or obscenity, present in a
+    piece of text, making this the first chapter that features text data. The product
+    you will develop is a **Google Chrome Extension** to identify toxic content from
+    a selected text. Figure [6-1](#Fig1) is a screenshot of the widget. There, under
+    the “selected text” header, is the obviously toxic text “you are a disgusting
+    person,” and below, a table containing the seven different categories of toxicity
+    and a label pointing out whether the line falls into that class. In this case,
+    the selected text is classified as an “insult” and “toxic.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_6_Chapter/494424_1_En_6_Fig1_HTML.jpg](../images/494424_1_En_6_Chapter/494424_1_En_6_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: A screenshot of the extension
+  prefs: []
+  type: TYPE_NORMAL
+- en: Understanding the toxicity detector
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The toxicity detector model, let’s call it **ToxDet** , is a pre-trained model
+    for detecting six subtypes of toxicity content among a piece of (English) text
+    or a series of them. Its six kinds of toxicity—*identity attack*, *insult*, *obscene*,
+    *severe toxicity*, *sexually explicit*, *threat*, plus an *overall toxicity* label—cover
+    a significant range or “levels” of vulgarity you would find in an online setting.
+    For example, consider the class “identity attack,” which describes “a negative,
+    discriminatory or hateful comment about a person or group of people” (Conversation
+    AI, 2018), or the “threatening” label which identifies text intended to cause
+    harm against an entity or group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ToxDet is trained on top of another model, known as the **Universal Sentence
+    Encoder** (Cer et al., 2018), or USE, a network that encodes or transforms text
+    into a 512-dimensional embedding. Put differently, USE converts text to an array
+    of 512 floats. To illustrate this, see the following example featuring the TensorFlow.js
+    implementation of USE:^([1](#Fn1))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: This example encodes the phrase “we like tensorflow.js” (of course we do) into
+    a tensor of shape [1,512] with values [[-0.0569201, -0.0590669, -0.0376535, ...,
+    -0.0493428, 0.0461595, -0.0551419],].
+  prefs: []
+  type: TYPE_NORMAL
+- en: So, how do we go from a model like USE to a toxicity detector? With **transfer
+    learning** . Transfer learning (a technique we will explore in Chapter [8](494424_1_En_8_Chapter.xhtml))
+    is the machine learning task of reusing a model originally trained for one problem
+    as a starting point of a second model. Here, the knowledge of USE serves as the
+    base of the toxicity detector. After transferring the knowledge, the resulting
+    new model is further trained with the intended dataset so it can serve its purpose,
+    which is predicting different toxicity categories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: About the data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: ToxDet training dataset (Borkan et al., 2019) is a comments corpus from the
+    defunct commenting plugin, *Civil Comments*. This tool featured a comment submission
+    method where, in order to publish a comment, each user first has to review and
+    rate other comments so that others could also rate theirs. The dataset has around
+    2 million of these rated comments. Its target variable, “target,” is a value from
+    0 to 1 that rates the overall toxicity of the text. Besides having one label,
+    each comment is also ranked in terms of the six subtypes presented earlier. For
+    example, the comment “haha you guys are a bunch of losers” has a target value
+    or toxicity of 0.89, “severe_toxicity” 0.02, “identity_attack” 0.02, and “insult”
+    0.87.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because of the generic nature of the data, ToxDet is more suitable for applications
+    of the general domain. Therefore, it might not perform satisfactorily in highly
+    specific use cases or situations when the input data varies significantly from
+    the training set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building the extension
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: By this point, the solutions we have developed involve a web app (or game) where
+    the user interfaces with the model from the browser’s window. But a browser is
+    more than just a window. It is also an environment capable of executing small
+    built-in applications that customize the browsing experience and extend its functionalities.
+    One example is the Chrome Extensions, and now you will make one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The extension is about identifying the subtypes of toxicity present in a selected
+    text using the toxicity model. Using it is very simple. First, the user has to
+    select any text from a web page. With the text selected, it has to click the app’s
+    icon to open a small pop-up displaying a table with the predictions (as seen in
+    Figure [6-1](#Fig1)). Regarding the implementation, since we will not do any sort
+    of visualization, data processing, training, or even building of a complete UI,
+    the work reduces to loading the model, predicting, and displaying the results.
+    Here we go!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating the HTML and app’s manifest
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'We will start this tutorial a bit differently than the others. Instead of creating
+    an *index.html* file , create one named *manifest.json* , a file used to configure
+    the extension. Also, do not worry about the web server; you will not need it.
+    Inside the manifest, set some necessary information such as the name of the extension,
+    version, description, and other more specific attributes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `permissions` attribute defines the intent of the app. For instance, this
+    extension requires the `activeTab` permission, one that grants access to the active
+    tab when the user uses the plugin. Another attribute we need is `browser_action`,
+    used to put icons in the extension’s toolbar. Inside it, add a field `default_popup`
+    and set its value to `src/popup.html` to open this file after clicking the icon.
+    Two other attributes we use are `manifest_version` to specify the format of the
+    manifest file and `content_security_policy` to allow the app to access [`https://cdn.jsdelivr.net`](https://cdn.jsdelivr.net)*,*
+    the CDN from where we have been getting TensorFlow.js. This rule enforces security
+    by ensuring that no other sites can be accessed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The second file you will need is *popup.html* , the extension interface. In
+    the project’s root directory, make an *src/* directory, and within it, create
+    the *popup.html* file. Next, go to the file. There, open a `<head>` tag and import
+    both TensorFlow.js and the toxicity model, and describe the style of the table.
+    Then, in the body, add several headers, a paragraph with `id` attribute `input`
+    to display the selected text, and a table with `id predictions-table`. After closing
+    the `<body>` tag, import the extension’s main script file, named *popup.js*. And
+    since we are mentioning it, please create the file inside *src/*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The extension script
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'It will surprise you how small *popup.js* is:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first line sets the prediction threshold, followed by an async function
+    called `init()` . Inside it, we will load the model using `toxicity.load()` with
+    the parameter `threshold`. Afterward comes `chrome.tabs.executeScript()`, a function
+    from the Chrome Extensions API used to insert and run JavaScript code from the
+    specified tab. Since we are not specifying the tab (in the function’s first optional
+    argument), it defaults to the current tab. A second parameter is an object whose
+    attribute `code` is the code you wish to run, which here is `window.getSelection().toString()`
+    to get the selected text. Last, the third parameter is a callback called after
+    the given code is executed; in the callback, we will predict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The callback function uses as an argument what the `window.getSelection().toString()`
+    returns—in this case, the selected text, here called `selection`. In the function’s
+    body, get the text from selection’s first index, and display it on the app’s *input*
+    paragraph. Following it, get the table. Now comes the exciting part, and that
+    is predicting using `model.classify()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ToxDet’s prediction output is a list of seven objects, where each one represents
+    the toxicity categories. Each of these objects has an attribute `label` (the toxicity
+    subtype) and `results`, an array whose values are an object containing the list
+    of `probabilities` and a boolean `match`. These probabilities are the likelihood
+    of the text not containing and containing the indicated toxicity target. If the
+    probability of the subtype not appearing is greater than `threshold`, `match`
+    is `false`. Contrarily, if the probability of being present is above `threshold`,
+    `match` is `true`. Otherwise, if none of the scores pass `threshold`, match is
+    `null`. In Figure [6-2](#Fig2), you can see an example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_6_Chapter/494424_1_En_6_Fig2_HTML.jpg](../images/494424_1_En_6_Chapter/494424_1_En_6_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example of a prediction
+  prefs: []
+  type: TYPE_NORMAL
+- en: To display the values on the table, iterate over the predictions while appending
+    the label and outcome (if neither probability exceeds the threshold, write a dash).
+    And that’s the function! Before moving on, do not forget to call `init()` from
+    the bottom of the script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deploying and testing the app
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: So, how do we deploy this? Easier than it sounds! In Google Chrome, type *chrome://extensions*
+    in the address bar to access the *Extensions Management* page.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'On the right side of the screen, use the toggle to enable the “Developer mode.”
+    Once activated, click the “LOAD UNPACKED” button (Figure [6-3](#Fig3)) and select
+    the extension directory to load the application. Make sure the project’s directory
+    follows the following structure:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/494424_1_En_6_Chapter/494424_1_En_6_Fig3_HTML.jpg](../images/494424_1_En_6_Chapter/494424_1_En_6_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 6-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to activate the “Developer mode”
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: After successfully loading the project, you will find the application “T” icon
+    in the extension’s toolbar (next to the address bar). If you click it now, the
+    pop-up will show up, but nothing will happen because you have not selected any
+    text. So, select a random line (an obscene one would be appropriate), click the
+    icon, and be amazed by the magic of the model; note that it takes a few seconds
+    to download the model. Table [6-1](#Tab1) presents some examples of offensive
+    text and their toxicity subtypes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 6-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples of toxic text and their labels
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Text | Identity Attack | Insult | Obscene | Severe Toxicity | Sexual Explicit
+    | Threat |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “great game. I enjoyed it” | false | false | false | false | false | false
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “your opinion is trash” | false | true | false | false | false | false |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “what a moron you f… ” | false | true | true | false | false | false |'
+  prefs: []
+  type: TYPE_TB
+- en: Recap
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Besides being a window to the Internet, a web browser is a platform capable
+    of executing small applications that enrich and extend our online journeys. One
+    example is the Google Chrome Extensions, and in this chapter, we have built one.
+    The extension in question uses TensorFlow.js’ pre-trained toxicity classifier
+    to identify whether a piece of text has toxic content. With this example, we had
+    the opportunity of applying TensorFlow.js in an environment other than a web application,
+    something that we will keep exploring in Chapter [8](494424_1_En_8_Chapter.xhtml),
+    where we will serve a model using Node.js.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Needless to say, let’s make the Internet a clean place! Now you have the right
+    tools to get started.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create a web application where the user inputs the text. To make it even more
+    interesting, classify more than one line during the same call using a list of
+    strings, for example, `model.classify(['lol u silly', 'this is a bad comment'])`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: After learning about Node.js in Chapter [8](494424_1_En_8_Chapter.xhtml), create
+    a web service that exposes the model. Add an endpoint “predict” that takes as
+    input a string and returns the predictions.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Try the Universal Sentence Encoder presented earlier in the chapter. You could
+    start with a simple application that embeds a given text.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Use the USE’s embeddings to create a dataset of two arbitrary classes of your
+    choice, for example, “sentences about pizza” and “sentences about trees.” Then,
+    build a classifier to classify these embeddings.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL

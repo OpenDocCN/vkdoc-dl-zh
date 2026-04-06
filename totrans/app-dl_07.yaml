@@ -1,0 +1,1858 @@
+- en: 7. Hyperparameter Tuning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 'In this chapter, you will look at the problem of finding the best hyperparameters
+    to get the best results from your models. First, I will describe what a black-box
+    optimization problem is, and how that class of problems relate to hyperparameter
+    tuning. You will see the three best-known methods to tackle these kind of problems:
+    grid search, random search, and Bayesian optimization. I will show you, with examples,
+    which one works under which conditions, and I will give you a few tricks that
+    are very helpful for improving optimization and sampling on a logarithmic scale.
+    At the end of the chapter, I will show you how you can use those techniques to
+    tune a deep model, using the Zalando dataset.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Black-Box Optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The problem of hyperparameter tuning is just a subclass of a much more general
+    type of problem: black-box optimization. A black-box function *f* (*x*)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(x):{\mathbb{R}}^n\to \mathbb{R} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'is a function whose analytic form is unknown. A black-box function can be evaluated
+    to obtain its value for all values of *x* that are defined, but no other information
+    (such as its gradient) can be obtained. Generally, by the term *global optimization*
+    *of a black-box function* (sometimes called a black-box problem), we mean that
+    we are trying to find the maximum or minimum of *f* (*x*), sometimes under certain
+    constraints. Here are some examples of this kind of problem:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finding the hyperparameter for a given machine-learning model that maximizes
+    the chosen optimizing metric
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Finding the maximum or minimum of a function that can only be evaluated numerically
+    or with code that we cannot look at. In some industry contexts, there can be legacy
+    code that is very complicated, and there are some functions that must be maximized,
+    based on its outcome.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Finding the best place to drill for oil. In this case, your function would be
+    how much oil you can find and *x* your location.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Finding the best combination of parameters for situations that are too complex
+    to model, for example, when launching a rocket in space, how to optimize the amount
+    of fuel, diameter of each stage of the rocket, precise trajectory, etc.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This is a very fascinating class of problems, which has produced smart solutions.
+    You will see three of them: grid search, random search, and Bayesian optimization.
+    If you are curious about the subject, you can check out the black-box optimization
+    competition at [`https://goo.gl/LY7huY`](https://goo.gl/LY7huY) . The rules of
+    the competition mirror real-life problems. A problem is set up for which you must
+    optimize a function (find the maximum or minimum) through a black-box interface
+    . You can get the value of the function for all values of *x*, but you cannot
+    get any other information, as its gradients, for example.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why does finding the best hyperparameters for neural networks constitute a black-box
+    problem? Because we cannot calculate information, such as the gradients of our
+    network output, with respect to the hyperparameters, especially when using complex
+    optimizers or custom functions, we require other approaches, to be able to find
+    the best hyperparameters that maximize the chosen optimizing metric. Note that
+    if we could have the gradients, we could use an algorithm as the gradient descent
+    to find the maximum or minimum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Our black-box function *f* will be our neural network model (including things
+    such as the optimizer, cost function form, etc.) that gives as output our optimizing
+    metric, given the hyperparameters as input, and *x* will be the array containing
+    the hyperparameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The problem may seem quite trivial. Why not try all the possibilities? Well,
+    this may be possible in the examples you have looked at in previous chapters,
+    but if you are working on a problem and training your model takes a week, this
+    may present a challenge. Because, typically, you will have several hyperparameters,
+    trying all possibilities will not be feasible. Let’s consider an example to understand
+    this better. Suppose we are training a model of a neural network with several
+    layers. We may decide to consider the following hyperparameters, to see which
+    combination works better:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Learning rate*: Suppose we want to try the values *n* · 10^(−4) for *n* = 1,
+    …, 10². (100 values)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Regularization parameter*: 0, 0.1, 0.2, 0.3, 0.4, and 0.5 (6 values)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Choice of optimizer*: GD, RMSProp, or Adam (3 values)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Number of hidden layers*: 1, 2, 3, 5, and 10 (5 values)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Number of neurons in the hidden layers*: 100, 200, and 300 (3 values)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Consider that you will need to train your network
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ 100\times 6\times 3\times 5\times 3=27000 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: times, if you want to test all possible combinations. If your training takes
+    5 minutes, you will require 13.4 weeks of computing time. If the training takes
+    hours or days, you will not have any chance. If the training takes one day, for
+    example, you will require 73.9 years to try all possibilities. Most of the hyperparameter
+    choices will come from experience. For example, you can always use Adam safely,
+    because it is the better optimizer available (in almost all cases). But you will
+    not be able to avoid trying to tune other parameters, such as the number of hidden
+    layers or learning rate. You can reduce the number of combinations you need with
+    experience (as with the optimizer), or with some smart algorithm, as you will
+    see later in this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Notes on Black-Box Functions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Black-box functions are usually classified into two main classes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Cheap functions*: Functions that can be evaluated thousands of times'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Costly functions*: Functions that can only be evaluated a few times, usually
+    less than 100 times'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If the black-box function is cheap, the choice of the optimization method is
+    not critical. For example, we can evaluate the gradient with respect to the *x*
+    numerically, or simply search the maximum evaluating the functions on a high number
+    of points. If the function is costly, we need much smarter approaches. One of
+    these is Bayesian optimization, which I will discuss later in this chapter, to
+    give you an idea of how these methods work and how complex they are.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Especially in the deep-learning world, neural networks are almost always costly
+    functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For costly functions, we must find methods that solve our problem with the smallest
+    number of evaluations possible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Problem of Hyperparameter Tuning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before looking at how we can find the best hyperparameters, I would like to
+    quickly go back to neural networks and discuss what can we tune in deep models.
+    Typically, when talking about hyperparameters, beginners think only of numerical
+    parameters, such as the learning rate or regularization parameter, for example.
+    Remember that the following also can be varied, to see if you can get better results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Number of epochs* : Sometimes, simply training your network longer will give
+    you better results.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Choice of optimizer* : You can try choosing a different optimizer. If you
+    are using plain gradient descent, you may try Adam and see if you get better results.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Varying the* *regularization method* : As discussed previously, there are
+    several ways of applying regularization. Varying the method may well be worth
+    trying.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Choice of* *activation function* : Although the activation function always
+    used in the previous chapters for neurons in hidden layers was ReLU, others may
+    work a lot better. Trying sigmoid or Swish, for example, may help you get better
+    results.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Number of layers and number of neurons* *in each layer: try different configurations*:
+    Try layers with different numbers of neurons, for example.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Learning rate decay methods* : Try (if you are not using optimizers that do
+    this already) different learning rate decay methods.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Mini-batch size* : Vary the size of mini-batches. When you have little data,
+    you can use batch gradient descent. When you have a lot of data, mini-batches
+    are more efficient.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Weight initialization methods*'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Let’s classify the parameters we can tune in our models in the following three
+    categories:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters that are continuous real numbers or, in other words, that can assume
+    any value. Example: learning rate, regularization parameter'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters that are discrete but can theoretically assume an infinite number
+    of values. Example: number of hidden layers, number of neurons in each layer,
+    or number of epochs'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters that are discrete and can only assume a finite number of possibilities.
+    Example: optimizer, activation function, learning rate decay method.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For category 3, there is not much to do except try all possibilities. Typically,
+    these parameters will completely change the model itself, and, therefore, it is
+    impossible to model their effects, making a test the only possibility. This is
+    also the category for which experience may help the most. It is widely known that
+    the Adam optimizer is almost always the best choice, for example, so you may concentrate
+    your efforts somewhere else at the beginning. For categories 1 and 2, this is
+    a bit more difficult, and we will have to come up with some smart ideas to find
+    the best values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample Black-Box Problem
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'To try our hands at solving a black-box problem, let’s create a “fake” black-box
+    problem. The problem is the following: find the maximum of the function *f*(*x*)
+    given by the formula'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{l}g(x)=\cos \frac{x}{4}-\sin \frac{x}{4}-\frac{5}{2}\cos
+    \frac{x}{2}+\frac{1}{2}\sin \frac{x}{2}\\ {}h(x)=-\cos \frac{x}{3}-\sin \frac{x}{3}-\frac{5}{2}\cos
+    \frac{2}{3}x+\frac{1}{2}\sin \frac{2}{3}x\\ {}f(x)=10+g(x)+\frac{1}{2}h(x)\end{array}}
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: pretending not to know the formula itself. The formula will allow us to check
+    our results, but we will pretend they are unknown. You may wonder why we use such
+    a complicated formula. I wanted to have something with a few maxima and minima,
+    to give you an idea of how the methods work on a non-trivial example. *f*(*x*)
+    can be implemented in Python with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [7-1](#Fig1), you can see how *f*(*x*) looks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot of the function f(x), as described in the text
+  prefs: []
+  type: TYPE_NORMAL
+- en: The maximum is at an approximate value *x* = 69.18 and has a value of 15.027\.
+    Our challenge is to find this maximum in the most efficient way possible, without
+    knowing anything about *f*(*x*), except its value at any point we want. When we
+    say “efficient,” we mean, of course, with the smallest number of evaluations possible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Grid Search
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The first method we look at, grid search, is also the least “intelligent.” Grid
+    search entails simply trying the function at regular intervals and seeing for
+    which *x* the function *f*(*x*) assumes the highest value. In this example, we
+    want to find the maximum of the function *f*(*x*) between two *x* values *x*[*min*]
+    and *x*[*max*]. What we will do is simply take *n* points equally spaced between
+    *x*[*min*] and *x*[*max*] and evaluate the function at these points. We will define
+    a vector of points
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ x=\left({x}_{min},{x}_{min}+\frac{\varDelta x}{n},\dots, {x}_{min}+\left(n-1\right)\frac{\varDelta
+    x}{n}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where we defined Δ*x* = *x*[*max*] − *x*[*min*]. Then we evaluate the function
+    *f*(*x*) at those points, obtaining a vector ***f*** of values
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f=\left(f\left({x}_{min}\right),f\left(\ {x}_{min}+\frac{\varDelta x}{n}\right),\dots,
+    f\left({x}_{min}+\left(n-1\right)\frac{\varDelta x}{n}\right)\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The estimate of the maximum ![$$ \left(\tilde{x},\tilde{f}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq1.png)
+    will then be
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \tilde{f}=\underset{0\le i\le n-1}{\max }{f}_i $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and, assuming the maximum is found at ![$$ i=\tilde{i} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq2.png),
+    we will also have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \tilde{x}={x}_{\mathrm{min}}+\frac{\tilde{i}\varDelta x}{n} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now, as you may imagine, the more points you use, the more accurate your maximum
+    estimation will be. The problem is that, if the evaluation of *f*(*x*) is costly,
+    you will not be able to take as many points as you might like. You will need to
+    find a balance between number of points and accuracy. Let’s explore an example
+    with the function *f*(*x*) that I described earlier. Let’s consider *x*[*max*] = 80
+    and *x*[*min*] = 0, and let’s take *n* = 40 points. We will have ![$$ \frac{\varDelta
+    x}{n}=2 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq3.png).
+    We can create the vector ***x*** easily in Python with the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The array `gridsearch` will look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [7-2](#Fig2), you can see the function *f*(*x*) as a continuous line;
+    the crosses mark the points we sample in the grid search; and the black square
+    marks the precise maximum of the function. The right plot shows a zoom around
+    the maximum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Function f(x) on the range [0, 80]. The crosses mark the point we sample in
+    the grid search, and the black square marks the maximum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see how the points we sample in Figure [7-2](#Fig2) get close to the
+    maximum but don’t get it exactly. Of course, sampling more points would get us
+    closer to the maximum but would cost us more evaluations of *f*(*x*). We can find
+    the maximum ![$$ \left(\tilde{x},\tilde{f}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq4.png)
+    easily with the trivial code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is close to the actual maximum (69.18, 15.027) but not quite right. Let’s
+    try the previous example, varying the number of points we sample, and then see
+    what results we get. We will vary the number of points sampled *n* from 4 to 160\.
+    For each case, we will find the maximum and its location, as described earlier.
+    We can do it with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the lists `xlistg` and `flistg`, we will find the position of the maximum
+    found and the value of the maximum for the various values of *n*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [7-3](#Fig3), we plot the distributions of the results. The black
+    vertical line is the correct value of the maximum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of the results for ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq5.png)
+    obtained by varying the number of points n sampled in the grid search. The black
+    vertical line indicates the real maximum of f(x).
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, the results vary quite a lot and can be very far from the correct
+    value, as far as 10\. This tells us that using the wrong number of points can
+    yield very wrong results. As you can imagine , the best results are the ones with
+    the smallest step Δ*x*, because it is more probable to get closer to the maximum.
+    In Figure [7-4](#Fig4), you can see how the value of the found maximum varies
+    with the step Δ*x*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Behavior of the found value of the maximum vs. the x step Δx
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the zoom in the right plot in Figure [7-4](#Fig4), it is evident how smaller
+    values of Δ*x* get you better values of ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq6.png).
+    Note that a step of 1.0 means sampling 80 values of *f*(*x*). If, for example,
+    the evaluation takes 1 day, you will have to wait 80 days to get all the measurements
+    you require.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Grid search is a method that is efficient only when the black-box function is
+    cheap. To get good results, a big number of sampling points is usually needed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To make sure you are really getting the maximum, you should decrease the step
+    Δ*x*, or increase the number of sampling points, until the maximum value you find
+    does not change appreciably anymore. In the preceding example, as you see from
+    the right plot in Figure [7-4](#Fig4), we are sure we are close to the maximum
+    when our step Δ*x* gets smaller than roughly 2.0, or, in other words, when the
+    number of sampled points is greater or roughly equal to 40\. Remember: 40 may
+    seem quite a small number at first sight, but if *f*(*x*) evaluates the metric
+    of your deep-learning model, and the training takes 2 hours, for example, you
+    are looking at 3.3 days of computer time. Normally, in the deep-learning world,
+    2 hours is not much for training a model, so make a quick calculation before starting
+    a long grid search. Additionally, keep in mind that when doing hyperparameter
+    tuning, you are moving in a multidimensional space (you are not optimizing only
+    one parameter, but many), so the number of evaluations needed gets big very fast.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s create a quick example. Suppose you decide you can afford 50 evaluations
+    of your black-box function. If you decide you want to try the following hyperparameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optimizer (RMSProp, Adam, or plain GD) (3 values)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Number of epochs (1000, 5000, or 10,000) (3 values)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: you are already looking at nine evaluations. How many values of the learning
+    rate can you then afford to try? Only five! And with five values, it is not probable
+    to get close to the optimal value. This example has the goal of helping you to
+    understand how grid search is viable only for cheap black-box functions. Remember
+    that often time is not the only problem. For example, if you are using the Google
+    cloud platform to train your network, you are paying for the hardware you use
+    by the second. Maybe you have lots of time at your disposal, but costs may exceed
+    your budget very quickly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Random Search
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A strategy that is as “dumb” as grid search but works amazingly a lot better
+    is random search. Instead of sampling *x* points regularly in the range (*x*[*min*],
+    *x*[*max*]), you sample the points randomly. We can do it with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The array `randomsearch` will look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Depending on the seed you used, the actual numbers you get may be different.
+    As we have done for grid search, you can see in Figure [7-5](#Fig5) the plot of
+    *f*(*x*), where the crosses mark the sampled points, and the black square the
+    maximum . On the right plot, you see a zoom around the maximum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Function f(x) on the range [0, 80]. The crosses mark the point we sampled with
+    random search, and the black square marks the maximum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The risk with this method is that if you are very unlucky, your random chosen
+    points are nowhere close to the real maximum. But that probability is quite low.
+    Note that if you take a constant probability distribution for your random points,
+    you have the same probability of getting the points everywhere. It is interesting
+    to see how this method performs. Let’s consider 200 different random sets of 40
+    points, obtained by varying the random seed used in the code. The distributions
+    of the maximum found ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq7.png)
+    is plotted in Figure [7-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of the results for ![$$ \tilde{\mathrm{f}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq8.png)
+    obtained by 200 different random sets of 40 points sampled in the random search.
+    The black vertical line indicates the real maximum of f(x).
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, regardless of the random sets used, you get, in the most cases,
+    very close to the real maximum. In Figure [7-7](#Fig7), you can see the distributions
+    of the maximum found with random search varying the number of points sampled,
+    from 10 to 80.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of the results for ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq9.png)
+    obtained by varying the number of points n sampled in the random search, from
+    10 to 80\. The black vertical line indicates the real maximum of f(x).
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you compare it with grid search, you can see that random search is consistently
+    better at getting results closer to the real maximum. In Figure [7-8](#Fig8),
+    you can see a comparison between the distribution you get for your maximum ![$$
+    \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq10.png)
+    when using a different number of sampling points *n* with random and grid searches.
+    In both cases, the plots were generated with 38 different sets, so that the total
+    count is the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparison of the distribution of ![$$ \tilde{\mathrm{f}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq11.png)
+    between grid (right) and random (left) searches , while varying the number of
+    sampling points n. Both plots count sums to 38, the number of different numbers
+    of sampling points used. The correct value of the maximum is marked by the vertical
+    black line in both plots.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is easy to see how on average random search is better than grid search. The
+    values you get are consistently closer to the right maximum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Random search is consistently better than grid search, and you should use it
+    whenever possible. The difference between random search and grid search becomes
+    even more marked when dealing with a multidimensional space for your variable
+    *x*. Hyperparameter tuning is practically always a multidimensional optimization
+    problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you are interested in a very good paper on how random search scales for high
+    dimensional problems, read James Bergstra and Yoshua Bengio, *Random Search for
+    Hyper-Parameter Optimization,* available at [`https://goo.gl/efc8Qv`](https://goo.gl/efc8Qv)
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Coarse-to-Fine Optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: There is still an optimization trick that helps with grid or random search.
+    It is called coarse-to-fine optimization. Suppose we want to find the maximum
+    of *f*(*x*) between *x*[*min*] and *x*[*max*]. I will explain the concept behind
+    random search, but it works the same way for grid search. The following steps
+    give you the algorithm you require to follow for this optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Do a random search in the region *R*[1] = (*x*[*min*], *x*[*max*]). Let’s indicate
+    the maximum found with (*x*[1], *f*[1]).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Consider now a smaller region around *x*[1], *R*[2] = (*x*[1] − *δx*[1], *x*[1] + *δx*[1]),
+    for some *δx*[1], which I will discuss later, and again do a random search in
+    this region. The hypothesis is, of course, that the real maximum lies in this
+    region. We will indicate the maximum you find here with (*x*[2], *f*[2]).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Repeat step 2 around *x*[2], in the region we will indicate with *R*[3], with
+    a *δx*[2] smaller than *δx*[1], and indicate the maximum you find in this step
+    with (*x*[3], *f*[3]).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Now repeat step 2 around *x*[3], in the region we will indicate with *R*[4],
+    with a *δx*[3] smaller than *δx*[2].
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Continue in the same way as often as you require, until the maximum (*x*[*i*],
+    *f*[*i*]) in the region *R*[*i* + 1] no longer changes.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Usually, just one or two iterations are used, but, theoretically, you could
+    go on for a large number of iterations. The problem with this method is that you
+    cannot be really sure that your real maximum lies in your regions *R*[*i*]. But
+    this optimization has a big advantage, if it does. Let’s consider the case in
+    which we do a standard random search. If we want to have on average a distance
+    between the sampled points of 1% of *x*[*max*] − *x*[*min*], we would need about
+    100 points, if we decided to perform only one random search, and, consequently,
+    we had to perform 100 evaluations. Now let’s consider the algorithm I just described.
+    We could start with just 10 points in region *R*[1] = (*x*[*min*],  *x*[*max*]).
+    Here, we will indicate the maximum we find with (*x*[1], *f*[1]). Then let’s take
+    ![$$ 2\delta x=\frac{x_{max}-{x}_{min}}{10} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq12.png)
+    and take again 10 points in region *R*[2] = (*x*[1] − *δx*, *x*[1] + *δx*). In
+    the interval (*x*[1] − *δx*, *x*[1] + *δx*), we will have on average a distance
+    between the points of 1% of *x*[*max*] − *x*[*min*], but we just sampled our functions
+    only 20 times, instead of 100, so by a factor 5 fewer! For example, let’s just
+    sample the function we used previously between *x*[*min*] = 0 and *x*[*max*] = 80
+    with 10 points, with the code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This gives us the maximum location and value of *x*[1] = 69.65 and *f*[1] = 14.89,
+    not bad, but not yet as precise as the real ones: 69.18 and 15.027\. Now let’s
+    again sample 10 points around the maximum we have found in the regions *R*[2] = (*x*[1] − 4,
+    *x*[1] + 4).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This gives us the result 69.189 and 15.027\. Quite a precise result, with only
+    20 evaluations of the function. If we do a plain random search with *500* (25
+    times more than what we just did) sampling points, we get *x*[1] = 69.08 and *f*[1] = 15.022\.
+    This result shows how this trick can be really helpful. But remember the risk:
+    If your maximum is not in your regions *R*[*i*], you will never be able to find
+    it, since you are still dealing with random numbers. So, it is always a good idea
+    to choose the regions (*x*[*i*] − *δx*[*i*], *x*[*i*] + *δx*[*i*]), which are
+    relatively big, to make sure that they contain your maximum. How big depends,
+    as almost everything in the deep-learning world, on your dataset and problem,
+    and these may be impossible to know in advance. Unfortunately, testing is required.
+    In Figure [7-9](#Fig9), you can see the sampled points on the function *f*(*x*).
+    In the plot on the left, you see the first 10 points, and on the right, the region
+    *R*[2] with the additional 10 points. The small rectangle on the left plot marks
+    the *x* region *R*[2].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Function f(x). The crosses mark the sampled points: on the left, the 10 points
+    sampled in the regions R[1] (entire range), on the right, the 10 points sampled
+    in R[2]. The black square marks the real maximum. The plot on the right is a zoom
+    of the region R[2].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now the choice of how many points you should sample at the beginning is crucial.
+    We had luck here. Let’s consider a different seed when choosing our initial 10
+    random points and then see what can happen (see Figure [7-10](#Fig10)). Choosing
+    the wrong initial points leads to disaster!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Function f(x). The crosses mark the sampled points: on the left, the 10 points
+    sampled in the regions R[1] (entire range), on the right, the 10 points sampled
+    in R[2]. The black square marks the real maximum. The algorithm finds a maximum
+    very well around 16, simply not the absolute maximum. The small rectangle on the
+    left marks the region R[2]. The plot on the right is a zoom of the region R[2].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note, in Figure [7-10](#Fig10), how the algorithm finds the maximum at around
+    16, because in the initial sampled points, the maximum value is about *x* = 16,
+    as you can see on the plot at the left in Figure [7-10](#Fig10). No points are
+    close to the real maximum, about *x* = 69\. The algorithm finds a maximum very
+    well, simply not the absolute maximum. That is the danger you face when using
+    this trick. Things can even be worse than that. Consider Figure [7-11](#Fig11),
+    in which only one single point is sampled at the beginning. You can see on the
+    plot at the left in Figure [7-11](#Fig11) how the algorithm completely misses
+    any maximum. It simply gives as a result the highest values of the points marked
+    by crosses on the points on the right plot: (58.4, 9.78).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Function f(x). The crosses mark the sampled points: on the left, the 1 point
+    is sampled in the regions R[1] (entire range), on the right, the 10 points are
+    sampled in R[2]. The black square marks the real maximum. The algorithm does not
+    find any maximum, because none is present in the region R[2]. The plot on the
+    right is the zoom of the region R[2].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you decide to use this method, keep in mind that you will still require a
+    good number of points at the beginning, to get close to the maximum, before refining
+    your search. After you are relatively sure to have points around your maximum,
+    you can use this technique to refine your search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bayesian Optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, we will look at a specific and efficient technique for finding
+    the minimum (or maximum) of a black-box function. This is a rather clever algorithm
+    that basically consists of choosing the sampling points from which to evaluate
+    the function in a much more intelligent way than simply choosing them randomly
+    or on a grid. To understand how this works, you must first look at a few new mathematical
+    concepts, because the method is not trivial and requires some understanding of
+    more advanced concepts. Let’s start with the Nadaraya-Watson regression.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Nadaraya-Watson Regression
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This method was developed in 1964 by Èlizbar Akakevič (E. A.) Nadaraya in “On
+    Estimating Regression,” published in the Russian journal *Theory of Probability
+    and Its Applications*. The basic idea is quite simple. Given an unknown function
+    *y*(*x*), and given *N* points *x*[*i*] = 1, …, *N*, we indicate with *y*[*i*] = *f*(*x*[*i*]),
+    with *i* = 1, …, *N*, the value of the function calculated at the different *x*[*i*].
+    The idea of the Nadaraya-Watson regression is that we can evaluate the unknown
+    function at an unknown point *x* using the formula
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ y(x)=\sum \limits_{i=1}^N{w}_i(x){y}_i $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *w*[*i*](*x*) are weights that are calculated according to the formula
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_i(x)=\frac{K\left(x,{x}_i\right)}{\sum_{j=1}^NK\left(x,{x}_j\right)}
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *K*(*x*, *x*[*i*]) is called a kernel. Note that given how the weights
+    are defined we have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \sum \limits_{i=1}^N{w}_i(x)=1 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In the literature, you can find several kernels, but the one we are interested
+    in is the Gaussian one, often called the *radial basis function* (RBF)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ K\left(x,{x}_i\right)={\sigma}^2{e}^{-\frac{1}{2{l}^2}{\left\Vert x-{x}_i\right\Vert}^2}
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The parameter *l* makes the Gaussian shape wider or narrower. The *σ* is typically
+    the variance of your data, but, in this case, it plays no role, because the weights
+    are normalized to one. This is at the basis of Bayesian optimization, as you will
+    see later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gaussian Process
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Before talking about Gaussian processes, first I must define what a random process
+    is. A *random process* refers to any point *x* ∈ *ℝ*^(*d*) to which we assign
+    a random variable *f*(*x*) ∈ *ℝ*. A random process is Gaussian, if for any finite
+    number of points, their joint distribution is normal. This means that ∀*n* ∈ *ℕ*,
+    and for ∀*x*[1], …*x*[*n*] ∈ *ℝ*^(*d*), the vector is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f\equiv \left(\begin{array}{c}f\left({x}_1\right)\\ {}\vdots \\ {}f\left({x}_n\right)\end{array}\right)\sim
+    \mathcal{N} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where with the notation we intend that the vector components follow a normal
+    distribution, indicated with ![$$ \mathcal{N} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq13.png).
+    Remember that a random variable with a Gaussian distribution is said to be normally
+    distributed. From this comes the name Gaussian process. The probability distribution
+    of the normal distribution is given by the function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ g\left(x\ |\ \mu, {\sigma}^2\right)=\frac{1}{\sqrt{2\pi {\sigma}^2}}{e}^{\frac{{\left(x-\mu
+    \right)}^2}{2{\sigma}^2}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'where *μ* is the mean or expectation of the distribution, and *σ* is the standard
+    deviation. I will use the following notation from here on:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ Mean\ value\ of\ f:\kern0.75em m $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and the covariance of the random values will be indicated here by *K*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathit{\operatorname{cov}}\left[f\left({x}_1\right),f\left({x}_2\right)\right]=K\left({x}_1,{x}_2\right)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The choice of the letter *K* has a reason. We will assume in what follows that
+    the covariance will have a Gaussian shape , and we will use for *K* the RBF function
+    defined previously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stationary Process
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: For simplicity, we will consider here only stationary processes. A random process
+    is stationary if its joint probability distribution does not change with time.
+    That means also that mean and variance will not change when shifted in time. We
+    will also consider a process whose distribution depends only on the relative position
+    of the points. This leads to the conditions
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{l}K\left({x}_1,{x}_2\right)=\tilde{K}\left({x}_1-{x}_2\right)\\
+    {} Var\left[f(x)\right]=\tilde{K}(0)\end{array}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Note that to apply the method we are describing, first you must convert your
+    data to be stationary, if that is not already the case, eliminating seasonality
+    or trends in time, for example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prediction with Gaussian Processes
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Now we have reached the interesting part: given the vector ***f***, how can
+    we estimate *f*(*x*) at an arbitrary point *x*? Because we are dealing with random
+    processes, what we will estimate is the probability that the unknown function
+    assumes a given value *f*(*x*). Mathematically, we will predict the following
+    quantity:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ p\left(f(x)\ |\ f\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Or, in other words, the probability of getting the value *f*(*x*), given the
+    vector ***f***, composed by all the points *f*(*x*[1]), …, *f*(*x*[*n*]).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assuming that *f*(*x*) is a stationary Gaussian process with *m* = 0, the prediction
+    can be shown to be given by
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ p\left(f(x)\ |\ f\right)=\frac{p\left(f(x),f\left({x}_1\right),\dots,
+    f\left({x}_n\right)\right)}{p\left(f\left({x}_1\right),\dots, f\left({x}_n\right)\right)}=\frac{\mathcal{N}\left(f(x),f\left({x}_1\right),\dots,
+    f\left({x}_n\right)\ |\ 0,\kern0.375em \tilde{C}\right)}{\mathcal{N}\left(f\left({x}_1\right),\dots,
+    f\left({x}_n\right)\ |\ 0,\kern0.375em C\right)} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where, with ![$$ \mathcal{N}\left(f(x),f\left({x}_1\right),\dots, f\left({x}_n\right)\
+    |\ 0,\kern0.375em \tilde{C}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq14.png),
+    we have indicated the normal distribution calculated on the points with average
+    0 and covariance matrix ![$$ \tilde{C} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq15.png)
+    of dimensions *n* + 1 × *n* + 1, because we have *n* + 1 points in the numerator.
+    The derivation is somewhat involved and is based on several theorems, such as
+    Bayes’ theorem. For more information, you can refer to the (advanced) explanation
+    by Chuong B. Do in “Gaussian Processes” (2007), available at [`https://goo.gl/cEPYwX`](https://goo.gl/cEPYwX)
+    , in which everything is explained in elaborate detail. To understand what Bayesian
+    optimization is, we can simply use the formula without derivation. *C* will have
+    dimensions *n* × *n*, because we have only *n* points in the denominator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ C=\left(\begin{array}{ccc}K(0)&amp; K\left({x}_1-{x}_2\right)&amp; \dots
+    \\ {}K\left({x}_2-{x}_1\right)&amp; \ddots &amp; \vdots \\ {}\vdots &amp; \dots
+    &amp; K(0)\end{array}\right) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: and
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \tilde{C}=\left(\begin{array}{cc}K(0)&amp; {k}^T\\ {}k&amp; C\end{array}\right)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where we have defined
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ k=\left(\begin{array}{c}K\left(x-{x}_1\right)\\ {}\vdots \\ {}K\left(x-{x}_n\right)\end{array}\right)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: It can be shown^([1](#Fn1)) that the ratio of two normal distributions is again
+    a normal distribution, so that we can write
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ p\left(f(x)\ |\ f\right)=\mathcal{N}\left(f(x)\ |\ \mu, {\sigma}^2\right)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equv.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\displaystyle \begin{array}{l}\mu ={k}^T{C}^{-1}f\\ {}{\sigma}^2=K(0)-{k}^T{C}^{-1}k\end{array}}
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The derivation of the exact form for *μ* and *σ* is quite long and would be
+    beyond the scope of the book. Basically, we know now that, on average, our unknown
+    function will assume the value *μ* in *x*, with a variance *σ*. Let’s now see
+    how this method really works in practice in Python. Let’s first define our kernel
+    *K*(*x*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s simulate our unknown function with an easy one
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ f(x)={x}^2-{x}^3+3+10x+0.07{x}^4 $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: which can be implemented as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s consider the function in the range (0, 12). In Figure [7-12](#Fig12),
+    you can see how the function looks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot of our unknown test function, as described in the text
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s build first our ***f*** vector with five points, as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'where we have used the seed 42 for the random numbers: `np.random.seed(42)`.
+    In Figure [7-13](#Fig13), you can see the random points marked with crosses on
+    the plot.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plot of the unknown function. The crosses mark the random point chosen in the
+    text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can apply the method described earlier with the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now please take some time to understand it. In the list `ybayes`, we will find
+    the values of *μ*(*x*) evaluated on the values contained in the array `xsampling`.
+    Here are some hints that will help you to understand the code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We do a loop over a range of *x* points, where we want to evaluate our function,
+    with the code `for x in xsampling:`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'We build our ***k*** and ***f*** vectors with the code for each element of
+    the vectors: `k = K(x-randompoints, 2 , sigm_)` and `f1 = f(randompoints)`. For
+    the kernel, we have chosen a value for the parameter `l`, as defined in the function
+    of `2`. We have subtracted, in the vector ***f***, the average to obtain *m*(*x*) = 0,
+    to be able to apply the formulas as derived.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We build the matrices *C* and ![$$ \tilde{C} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq16.png).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We calculate *μ* with `mu = np.dot(np.dot(np.transpose(k), np.linalg.inv(C)),
+    f_)` and the standard deviation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At the end, we reapply all the transformation that we have done to make our
+    process stationary in the opposite order, simply adding the average of *f*(*x*)
+    again to the evaluated surrogate function `ybayes = np.asarray(ybayes_)+np.average(f1)`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In Figure [7-14](#Fig14), you can see how this method works. The dashed line
+    is the predicted function obtained by plotting *μ*(*x*), as calculated in the
+    code, when we have five points at our disposal (*n* = 5). The gray area is the
+    region between the estimated function and +/- *σ*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Predicted function (dashed line), calculated by evaluating μ(x). The gray area
+    is the region between the estimated function and +/- σ.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Given the few points we have, it is not a bad result. Now keep in mind that
+    you still need a few points, to be able to get a reasonable approximation. In
+    Figure [7-15](#Fig15), you can see the result, if we have only two points at our
+    disposal. The result is not as good. The gray area is the region around the estimated
+    function and +/- *σ*. You can see how, as far as we are from the points we have,
+    the higher the uncertainty, or the variance, of the predicted function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Predicted function (dashed line), when we have only two points at our disposal.
+    The gray area is the region between the estimated function +/- σ.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s stop for a second and think about why we do all this. The idea is to find
+    a so-called surrogate function ![$$ \tilde{f} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq17.png)
+    that approximates our function *f* and has the property
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \max \tilde{f}\approx \max f $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equy.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'This surrogate function must have another very important property: it must
+    be cheap to evaluate. In this way, we can find easily the maximum of ![$$ \tilde{f}
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq18.png), and,
+    using the previous property, we will have the maximum of *f*, which, by hypothesis,
+    is costly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: But as you have seen, it may be very difficult to know if we have enough points
+    to find the right value of the maximum . After all, by definition, we don’t have
+    any idea how our black-box function looks. So, how to solve this problem?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The main idea behind the method can be described by the following algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We start with a small number of sample points randomly chosen (how small it
+    should be will depend on your problem).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We use this set of points to get a surrogate function, as described.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We add an additional point to our set, with a specific method that I will discuss
+    later, and reevaluate the surrogate function.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If the maximum we find with the surrogate function continues to change, we will
+    continue adding points, as in step 3, until the maximum does not change anymore,
+    or we run out of time or budget and cannot perform any further evaluation.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If the method I hinted at in step 3 is smart enough, we will be able to find
+    our maximum relatively quickly and accurately.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Acquisition Function
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'But how to choose the additional points I mentioned in step 3 in the previous
+    section? The idea is to use a so-called acquisition function. The algorithm works
+    in this way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We choose a function (and we will see a few possibilities in a moment) called
+    an acquisition function.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Then we choose, as additional point *x*, the one at which the acquisition function
+    has a maximum.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: There are several acquisition functions we can use. I will describe here only
+    one that we will use to see how this method works, but there are several that
+    you may want to check out, such as entropy search, probability of improvement,
+    expected improvement, and upper confidence bound.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Upper Confidence Bound (UCB)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In the literature, you find two variations of this acquisition function. We
+    can write the function as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {a}_{UCB}(x)=\mathbb{E}\tilde{f}(x)+\eta \sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equz.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where we have indicated with ![$$ \mathbb{E}\tilde{f}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq19.png)
+    the “expected” value of the surrogate function on the *x*-range we have in our
+    problem. The expected value is nothing other than the average of the function
+    over the given *x* range. *σ*(*x*) is the variance of the surrogate function that
+    we calculate with our method at point *x*. The new point we select is the one
+    in which *a*[*UCB*](*x*) is maximum. *η* > 0 is a trade-off parameter. This acquisition
+    function basically selects the points where the variance is biggest. Review Figure
+    [7-15](#Fig15). The method selects the points at which the variance is greater,
+    so, points as far as possible from the points we have already. In this way, the
+    approximation tends to get better and better.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Another variation of the UCB acquisition function is the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\tilde{a}}_{UCB}(x)=\tilde{f}\left(\mathrm{x}\right)+\eta \sigma (x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equaa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This time, the acquisition function will make a trade-off between choosing points
+    around the surrogate function maximum and points where its variance is biggest.
+    This second method works best to find quickly good approximation of the maximum
+    of *f*, while the first tends to give good approximation of *f* over the entire
+    *x* range. In the next section, we will see how these methods works.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s start with the complex trigonometric function, as described at the beginning
+    of the chapter, and consider the *x* range [0, 40]. Our goal is to find its maximum
+    and approximate the function. To facilitate our coding, let’s define two functions:
+    one to evaluate the surrogate function and one to evaluate the new point. To evaluate
+    the surrogate function, we can use the following function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: This function has the same code I have already discussed in our example in the
+    previous sections, but it is packed in a function that returns the surrogate function,
+    contained in the array `ybayes`, and the *σ*², contained in the array `sigmabayes`.
+    Additionally, we require a function that evaluates the new points, using the acquisition
+    function *a*[*UCB*](*x*). We can get it easily with the function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: To make things simpler, I decided to define the array that contains all the
+    *x* values we want at the beginning outside the functions. Let’s start with just
+    six randomly selected points. To check how our method is doing, let’s start with
+    some definitions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the array `randompoints1`, we will have our first six selected random points.
+    We can easily get the surrogate function of our function with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [7-16](#Fig16), you can see the result. The dotted line is the acquisition
+    function *a*[*UCB*](*x*), normalized to fit in the plot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig16_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points (marked by crosses), the surrogate function (dashed line), and the acquisition
+    function a[UCB](x) (dotted line), shifted to fit in the plot. The gray area is
+    the region contained between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq20.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq21.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The surrogate function is not yet very good, because we don’t have enough points,
+    and the big variance (the gray area) makes this evident. The only region that
+    is well approximated is the region *x* ≳ 35\. You can see how the acquisition
+    function is big when the surrogate function is not approximating the black-box
+    function well and small when it does, as, for example, for *x* ≳ 35\. So, intuitively
+    choosing as a new point the one where *a*[*UCB*](*x*) is maximum is equivalent
+    to choosing the points where the function is less well approximated, or, in more
+    mathematical terms, where the variance is bigger. By comparison, in Figure [7-17](#Fig17),
+    you can see the same plot as in Figure [7-16](#Fig16), but with the acquisition
+    function ![$$ {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq22.png)
+    and with *η* = 3.0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points (marked by crosses), the surrogate function (dashed line), and the acquisition
+    function ![$$ {\tilde{a}}_{UCB}\ (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq23.png)
+    (dotted line), shifted to fit in the plot. The gray area is the region contained
+    between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq24.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq25.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, ![$$ {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq26.png)
+    tends to have a maximum around the maximum of the surrogate function. Keep in
+    mind that if *η* is big, the maximum of the acquisition function will shift toward
+    regions with high variance. But this acquisition function tends to find “a” maximum
+    slightly faster. I said “a,” because it depends on where the maximum of the surrogate
+    function is, and not where the maximum of the black-box function is.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s see now what happens while using *a*[*UCB*](*x*) with *η* = 1.0\. For
+    the first additional point, we must simply run the following three lines of code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: For the sake of simplicity, I named each array for each step differently, instead
+    of creating a list. But, typically, you should make these iterations automatic.
+    In Figure [7-18](#Fig18), you can see the result with the additional point, marked
+    with a black circle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points (marked with crosses), and with the new selected point around x ≈ 27 (marked
+    by a circle), the surrogate function (dashed line), and the acquisition function
+    a[UCB](x) (dotted line), shifted to fit in the plot. The gray area is the region
+    contained between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq27.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq28.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The new point is around *x* ≈ 27\. Let’s continue to add points. In Figure [7-19](#Fig19),
+    you can see the results after adding five points.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points with the six selected new points (marked by crosses), the surrogate function
+    (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}\ (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq29.png)
+    (dotted line), shifted to fit in the plot. The gray area is the region contained
+    between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq30.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq31.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note the dashed line. Now our surrogate function approximates the black-box
+    function quite well, especially around the real maximum. Using this surrogate
+    function, we can find a very good approximation of our original function with
+    just 11 evaluations in total! Keep in mind that we don’t have any additional information
+    about *f*, except the 11 evaluations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s see what happens with the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq32.png), and
+    let’s check how fast we can find the maximum. In this case, we’ll use *η* = 3.0,
+    to get a better balance between the maximum of the surrogate function and its
+    variance. In Figure [7-20](#Fig20), you can see the result after just adding one
+    single additional point, marked by a black circle. We have already a quite good
+    approximation of the real maximum!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points with the additional selected points (marked by crosses), the surrogate
+    function (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq33.png)(dotted
+    line), shifted to fit in the plot. The gray area is the region contained between
+    the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq34.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq35.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s add an additional point. You can see in Figure [7-21](#Fig21) that
+    the additional point is now still close to the maximum but shifted in the direction
+    of the area with a high variance around 30.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points with the additional selected points (marked by crosses), the surrogate
+    function (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq36.png) (dotted
+    line), shifted to fit in the plot. The gray area is the region contained between
+    the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq37.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq38.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: If we choose to make *η* smaller, the point would be closer to the maximum,
+    and if we choose to make it bigger, the point would be closer to the point with
+    the highest variance, between 25 and roughly 32\. Now let’s add an additional
+    point and see what happens. In Figure [7-22](#Fig22), you can see how the method
+    now chooses a point close to another region with high variance, between 10 and
+    roughly 22, again, marked by a black circle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points (marked by crosses), and the additional selected point (marked by a black
+    circle), the surrogate function (dashed line), and the acquisition function ![$$
+    {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq39.png)
+    (dotted line), shifted to fit in the plot. The gray area is the region contained
+    between the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq40.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq41.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: And, finally, the method refines the maximum area around 15, as you can see
+    in Figure [7-23](#Fig23), adding a point around 14, marked by the black circle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-23
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the black-box function f(x) (solid line), the randomly selected
+    points with the additional selected points (marked by crosses), the surrogate
+    function (dashed line), and the acquisition function ![$$ {\tilde{a}}_{UCB}(x)
+    $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq42.png) (dotted
+    line), shifted to fit in the plot. The gray area is the region contained between
+    the lines ![$$ \tilde{f}\ (x)+\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq43.png)
+    and ![$$ \tilde{f}\ (x)-\sigma (x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq44.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The previous discussion and comparison of the behavior of the two types of acquisition
+    functions should have made clear how, depending on what strategy you want to apply
+    to approximate your black-box function, you should choose the right acquisition
+    function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Different types of acquisition functions will give different strategies in approximating
+    the black-box function. For example, *a*[*UCB*](*x*) will add points in regions
+    with the highest variance, while ![$$ {\tilde{a}}_{UCB}(x) $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq45.png)
+    will add points finding a balance, regulated by *η*, between the maximum of the
+    surrogate function and areas with high variance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An analysis of all the different types of acquisition functions would exceed
+    the scope of this book. A good deal of research and reading of published papers
+    is required to gain sufficient experience and understand how different acquisition
+    functions work and behave.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you want to use Bayesian optimization with your TensorFlow model, you don’t
+    have to develop the method completely from scratch. You can try the library GPflowOpt
+    that is described in a paper by Nicolas Knudde et al., “GPflowOpt: A Bayesian
+    Optimization Library using TensorFlow,” available at [`https://goo.gl/um4LSy`](https://goo.gl/um4LSy)
+    or [`arXiv.org`](http://arxiv.org) .'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sampling on a Logarithmic Scale
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: There is a last small subtlety that I would like to discuss. Sometimes, you
+    will find yourself in a situation in which you want to try a big range of possible
+    values for a parameter, but you know from experience that the best value of it
+    is probably in a specific range. Suppose you want to find the best value for the
+    learning rate for your model, and you decide to test values from 10^(−4) to 1,
+    but you know, or at least suspect, that your best value probably lies between
+    10^(−3) and 10^(−4). Now let’s suppose you are working with grid search, and you
+    sample 1000 points. You may think you have enough points, but you will get
+  prefs: []
+  type: TYPE_NORMAL
+- en: 0 points between 10^(−4) and 10^(−3)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 8 points between 10^(−3) and 10^(−2)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 89 points between 10^(−1) and 10^(−2)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 899 points between 1 and 10^(−1)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You get a lot more points in the less interesting ranges, and zero where you
+    want them. In Figure [7-24](#Fig24), you can see the distribution of the points.
+    Note that on the *x* axis, I am using a logarithmic scale. You can clearly see
+    how you get much more points for bigger values of the learning rate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of 1000 points selected with grid search on a logarithmic x scale
+  prefs: []
+  type: TYPE_NORMAL
+- en: You probably want to sample in a much finer way for smaller values of the learning
+    rate than for bigger ones. What you should do is sample your points on a logarithmic
+    scale. Let me explain. The basic idea is that you want to sample the same number
+    of points between 10^(−4) and 10^(−3), 10^(−3) and 10^(−2), 10^(−1) and 10^(−2),
+    and 10^(−1) and 1\. To do this, you can use the following Python code. First,
+    select a random number between 0 and subtract the absolute value of the highest
+    number of the power of 10 you have, in this case -4.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then your array with the selected points can be created with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: In Figure [7-25](#Fig25), you can see now how the distributions of the points
+    contained in the array `points2` is completely flat, as we wanted.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution of 1000 points selected with grid search on a logarithmic x scale
+    , with the modified selection method
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You get 250 points in each region, as you can easily check with this code for
+    the range 10^(−3) and 10^(−4) (for the other ranges simply change the numbers
+    in the code):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now you can see how you have the same number of points between the different
+    powers of 10\. With this simple trick, you can ensure that you also get enough
+    points in the region of your chosen range, where, otherwise, you would get almost
+    no points. Remember that in this example, with 1000 points, with the standard
+    method, we get zero points between 10^(−3) and 10^(−4). This range is the most
+    interesting for the learning rate, so you want to have enough points in this range
+    to optimize your model. Note that the same applies to random search. It works
+    in the exact same way.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hyperparameter Tuning with the Zalando Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To give you a concrete example of how hyperparameter tuning works, let’s apply
+    what we have learned in a simple case. Let’s start with the data, as usual. We’ll
+    use the Zalando dataset from Chapter [3](463356_1_En_3_Chapter.xhtml). For a complete
+    discussion, please refer to that chapter. Let’s quickly load and prepare the data
+    and then discuss tuning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, as usual, load the necessary libraries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: You will require the necessary CSV files in the folder in which your Jupyter
+    notebook is. To get them, refer again to Chapter [3](463356_1_En_3_Chapter.xhtml).
+    Once you have the files in the same folder as your notebook, you can simply load
+    the data with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Remember: We have 60,000 observations in the train dataset and 10,000 in the
+    dev dataset. For example, printing the shape of the `data_train` array with'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: will give you (60000, 785). Remember that one of the columns in the `data_train`
+    array contains the labels, and 784 are the gray values of the image pixels (that
+    have a size of 28 × 28 pixels). We must separate the labels from the features
+    (the gray values of the pixels), then we need to reshape the arrays.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checking the dimensions with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: will give us
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: as desired. (For a detailed discussion on data preparation for this dataset,
+    refer to Chapter [3](463356_1_En_3_Chapter.xhtml).) We must, of course, do the
+    same for the dev dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s normalize the features and transform everything in a `numpy` array
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We have prepared the data as required. Now let’s move on to the model. Let’s
+    start with something easy. As the metric, we’ll use accuracy for this example,
+    because the dataset is balanced. Let’s consider a network with just one layer
+    and see what number of neurons gives us the best accuracy. Our hyperparameter
+    in this example will be the number of neurons in the hidden layer. Basically,
+    we will have to build a new network for each value of the hyperparameter (the
+    number of neurons in the hidden layer) and train it. We will require two functions:
+    one to build the network and one to train it. To build the model, we can define
+    the following function :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You should understand this function, since we have used the code several times
+    in the book already. This function has an input parameter: `number_neurons` ,
+    that will contain, as the name indicates, the number of neurons in the hidden
+    layer. But there is a small difference: the functions return the tensors we must
+    refer to during the training, for example, when we want to evaluate the `cost`
+    tensor during training. If we don’t return them to the caller, they will be visible
+    only inside this function, and we will not be able to train this model. The function
+    to train the model will look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: You have already seen a function very similar to this one several times. The
+    main parts should be clear. You will find a few things that are new. First, we
+    build the model in the function itself with
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and, additionally, we evaluate the accuracy on the train dataset and on the
+    dev dataset and return the values to the caller. In this way, we can run a loop
+    for several values of the number of neurons in the hidden layer and get the accuracies.
+    Note, this time, that the function has an additional input parameter: `number_neurons`.
+    We must pass this number to the function that builds the model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s suppose we choose the following parameters: minibatch size = 50, we train
+    for 100 epochs, the learning rate =0.00 , and we build our model with 15 neurons
+    in the hidden layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We then run the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: For the train dataset, we get 0.75755 accuracy and for the dev dataset 0.754
+    accuracy. Can we do better? Well, we can surely do a grid search to start with.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: Keep in mind that this will take quite some time. Three thousand neurons is
+    quite a high number, so be warned, in case you want to attempt this. We get the
+    results, as found in Table [7-1](#Tab1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 7-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview of the Accuaracy on the Train and Test Datasets for a Different Number
+    of Neurons
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Number of Neurons | Accuracy on the Train Dataset | Accuracy on the Test
+    Dataset |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 1 | 0.201383 | 0.2042 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 5 | 0.639417 | 0.6377 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 10 | 0.639183 | 0.6348 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 15 | 0.687183 | 0.6815 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 25 | 0.690917 | 0.6917 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 30 | 0.6965 | 0.6887 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 50 | 0.73665 | 0.7369 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 150 | 0.78545 | 0.7848 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 300 | 0.806267 | 0.8067 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 1000 | 0.828117 | 0.8316 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 3000 | 0.8468 | 0.8416 |'
+  prefs: []
+  type: TYPE_TB
+- en: Not surprisingly, more neurons deliver better accuracy , with no signs of overfitting
+    of the train dataset, because the accuracy on the dev dataset is almost equal
+    to that of the train dataset. In Figure [7-26](#Fig26), you can see a plot of
+    the accuracy on the test dataset vs. the number of neurons in the hidden layer.
+    Note that the x axis uses a logarithmic scale, to make the changes more evident.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-26
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accuracy on the test dataset vs. the number of neurons in the hidden layer
+  prefs: []
+  type: TYPE_NORMAL
+- en: If your goal was to reach 80% accuracy, you could well stop here. But there
+    are a few things to consider. First, we may be able to do better, and, second,
+    training the network with 3000 neurons takes quite some time—on my laptop, roughly
+    35 minutes. We should see if we can get the same result in a fraction of the time.
+    We want a model that trains as fast as we can. Let’s try a slightly different
+    approach. Because we want to be faster, let’s consider a model with four layers.
+    Actually, we could also tune the number of layers, but let’s stick to four for
+    this example and tune the other parameters. We will try to find the optimal value
+    for learning rate, mini-batch size, number of neurons in each layer, and number
+    of epochs. We will use random search. For each parameter, we will select randomly
+    10 values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Number of neurons*: Between 35 and 60'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Learning rate*: We will use the search on the logarithmic scale between 10^(−1)
+    and 10^(−3).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Mini-batch size*: Between 20 and 80'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Number of epochs*: Between 40 and 100'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'We can create arrays with the possible values with this code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that we will not try all possible combinations, but we will consider only
+    ten possible combinations: the first value of each array, the second value of
+    each array, and so on. I want to show you how efficient random search can be with
+    just ten evaluations! We can test our model with the following loop:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you run this code, you will get a few combinations that end up in `nan`,
+    and, therefore, it gets you an accuracy of 0.1 (basically random, because we have
+    ten classes) and a few good combinations. You will find that the combinations
+    with 41 epochs, 41 neurons in each layer, a learning rate of 0.0286, and a mini-batch
+    size of 61 gives you an accuracy on the dev dataset of 0.86\. Not bad, considering
+    that this run took 2.5 minutes, so 14 times faster than the model with 1 layer
+    and 3000 neurons and 6% better. Our naive initial test gave us an accuracy of
+    0.75, so with hyperparameter tuning, we got 11% better than our initial guess.
+    Eleven percent increased accuracy in deep learning is an incredible result. Even
+    1% or 2% better is considered a great result, normally. What we did should give
+    you an idea of how powerful hyperparameter tuning can be, if done properly. Keep
+    in mind that you should spend quite some time doing it, thinking especially about
+    *how* to do it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Always think about *how* you want to do your hyperparameter tuning, and use
+    your experience, or ask for help from someone with experience. It is useless to
+    invest time and resources to try combinations of parameters that you know will
+    not work. For example, it is better to spend time testing learning rates that
+    are very small than to test learning rates around one. Remember that every training
+    round of your network will cost time, even if the results are not useful!
+  prefs: []
+  type: TYPE_NORMAL
+- en: The point of this last section is not to get the best model possible but to
+    give you an idea of how the tuning process may work. You could continue, trying
+    different optimizers (for example Adam), considering wider ranges for the parameters,
+    more parameter combinations, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Quick Note on the Radial Basis Function
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before completing this chapter, I would like to discuss a minor point about
+    the radial basis function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ K\left(x,\kern0.375em {x}_i\right)={\sigma}^2{e}^{-\frac{1}{2{l}^2}{\left\Vert
+    x-{x}_i\right\Vert}^2} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equab.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: It is important that you understand what the role of the parameter *l* is. In
+    the examples, I have chosen *l* = 2, but I have not discussed why. The reason
+    is the following. Choosing *l* too small will make the acquisition function develop
+    very narrow peaks around the points we already have, as you can see in the left
+    plot in Figure [7-27](#Fig27). Big values for *l* will have a smoothing effect
+    on the acquisition function, as you can see in the center and right plots in Figure
+    [7-27](#Fig27).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig27_HTML.jpg](../images/463356_1_En_7_Chapter/463356_1_En_7_Fig27_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 7-27
+  prefs: []
+  type: TYPE_NORMAL
+- en: Effect of changing the parameter l in the radial basis function
+  prefs: []
+  type: TYPE_NORMAL
+- en: Usually, it is good practice to avoid values for *l* that are too small or too
+    big, to be able to have a variance that varies in a smooth way between known points,
+    as in Figure [7-27](#Fig27), for *l* = 1\. Having a very small *l* will make the
+    variance between points almost constant and, therefore, make the algorithm almost
+    always choose the middle point between points, as you can see from the acquisition
+    function. Choosing a big *l* will make the variance small and, therefore, with
+    some acquisition functions, difficult to use. As you can see for *l* = 5 in Figure
+    [7-27](#Fig27), the acquisition function is almost constant. Typical values that
+    are used are around 1 or 2.
+  prefs: []
+  type: TYPE_NORMAL

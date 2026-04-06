@@ -1,0 +1,2224 @@
+- en: 4. Multi-trial Neural Architecture Search
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: And now we come to the most exciting part of this book. As we noted at the end
+    of the last chapter, HPO methods are pretty limited for automating the search
+    for the optimal deep learning models, but **Neural Architecture Search** (**NAS**)
+    dispels these limits. This chapter focuses on NAS, one of the most promising areas
+    of automated deep learning. Automatic Neural Architecture Search is increasingly
+    important in finding appropriate deep learning models. Recent researches have
+    proven the NAS effectiveness and found some models that could beat manually tuned
+    ones. NAS is a fairly young discipline in machine learning. It took shape as a
+    separate discipline in 2018\. Since then, it has made a significant breakthrough
+    in automating neural network architecture construction that solves a specific
+    problem. The most manual design of neural networks can be replaced by automated
+    architecture search soon, so this area is very up and coming for all data scientists.
+    NAS produced many top computer vision architectures. Architectures like NASNet,
+    EfficientNet, and MobileNet are the result of automated Neural Architecture Search.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two types of NAS: ***Multi-trial*** and ***One-shot***. In Multi-trial
+    NAS, a model evaluator evaluates each sampled model’s performance, and an Exploration
+    Strategy samples models from defined Model Space, while One-shot NAS tries to
+    find optimal neural architecture training and exploring one Supernet derived from
+    the Model Space. This chapter is dedicated to Multi-trial NAS.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This chapter is divided into two parts: ***Neural Architecture Search Using
+    Retiarii (PyTorch)*** and ***Classic Neural Architecture Search (TensorFlow)***.
+    ***Retiarii*** is a deep learning framework that supports the exploratory training
+    on a neural network Model Space developed by NNI experts. Retiarii is an advantageous
+    approach that allows structuring and planning the NAS. Unfortunately, the NNI
+    `2.7` version (which is used in this book) only implements the Retiarii approach
+    for the PyTorch framework. And it would be unfair not to pay attention to the
+    TensorFlow framework in this chapter, so the classic methods of NAS using NNI
+    are considered in the *Classic Neural Architecture Search (TensorFlow)* part.
+    In any case, NNI supports TensorFlow for One-shot NAS, which we will explore in
+    the next chapter. Therefore, TensorFlow users will be able to take full advantage
+    of NAS approaches.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Architecture As Data Flow Graph
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We will begin this chapter by defining how the NAS perceives the neural network
+    architecture. Neural architecture is considered as a Data Flow Graph (DFG). DFG
+    is a collection of nodes and connections between them. DFG displays the data transfer
+    from one node to another. Each node has its own type and parameters. Figure [4-1](#Fig1)
+    demonstrates an example of DFG.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Data Flow Graph
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In Figure [4-1](#Fig1), we see the DFG, which contains different types of nodes
+    with parameters. The architecture of each neural network can be represented as
+    a Data Flow Graph. Indeed, in Figure [4-1](#Fig1), we can replace the rectangle
+    node with a convolution layer with parameters: `padding`, `stride`, `filter_size`,
+    etc. Neural Architecture Search Explorers have no idea about the nature of each
+    of the DFG nodes. The main task is to construct a DFG from various deep learning
+    layers, which forms the architecture of a neural network and solves a specific
+    problem in the best way.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Architecture Search Using Retiarii (PyTorch)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Retiarii is the framework developed by NNI experts, and it is the first framework
+    that supports deep learning exploratory training. Exploratory training implies
+    that different deep neural networks (DNNs) training results are shared. This approach
+    compares training of different models, performs optimization, and stops unpromising
+    models with poor intermediate results. Also, Retiarii provides a new interface
+    to specify a deep learning Model Space for exploration and an interface to describe
+    the Exploration Strategy that decides the order to instantiate and train models
+    in, prioritize model training, and stop the training of certain models. Retiarii
+    identifies the correlations between the instantiated models and develops a set
+    of cross-model optimizations to improve the overall exploratory training process.
+    You can read more information about the Retiarii framework in the following article:
+    [`www.usenix.org/system/files/osdi20-zhang_quanlu.pdf`](http://www.usenix.org/system/files/osdi20-zhang_quanlu.pdf).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NNI version `2.7` has a PyTorch-only implementation of the Retiarii framework.
+    In the next NNI releases, the TensorFlow implementation should be added. Please
+    refer to the official documentation to check the actual state: [`https://nni.readthedocs.io/en/v2.7/nas/overview.html`](https://nni.readthedocs.io/en/v2.7/nas/overview.html).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction to NAS Using Retiarii
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The best way to dive into NAS using Retiarii is to examine a simple example
+    of finding the optimal DFG for a particular task. We will not go deep into the
+    design of neural networks but will focus on a simple arithmetic problem. Suppose
+    we have some chain of operators *F*, which performs the following actions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can enrich the chain *F* with the following statements:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Model Space of this problem can be depicted as shown in Figure [4-2](#Fig2).
+    We need to find a DFG that maximizes output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Data Flow Graph Model Space
+  prefs: []
+  type: TYPE_NORMAL
+- en: Of course, this is a trivial task, but it is well suited as an introductory
+    example of using the Retiarii framework in NNI. Let’s move on to solving this
+    problem. Listing [4-1](#PC3) defines the Model Space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We import common modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Retiarii uses import `nni.retiarii.nn.pytorch as nn` for PyTorch. It is very
+    important to use layers from this package implementing NAS for PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: First, we need to define the Model Space for Exploration. Model Space in the
+    NAS context can be considered as search space in the HPO context. Model Space
+    is represented by a class that contains all possible architectures to try. Each
+    such class must be annotated with `@model_wrapper`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Different variants of the neural network architecture are determined by special
+    methods called *Mutators*. Mutators define the rules for different variations
+    or mutations of the model. The `LayerChoice` mutator defines different layer choices.
+    In the following, `LayerChoice` selects one of three layers: `Tanh`, `Sigmoid`,
+    and `ReLU`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Another type of mutation is `ValueChoice`. This mutator selects one of the
+    values ​​from the list:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define the `LayerChoice` mutator again:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Finally, we chain all operators together, as shown in Figure [4-2](#Fig2):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After, we define the `evaluate` method, which returns the model result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Evaluating the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: This code is used for model architecture visualization. We will get back to
+    this technique later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Returning the result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once we have defined the Model Space and its instance Evaluation, we can move
+    on to launching the experiment with the code shown in Listing [4-2](#PC14).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing necessary modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'There are seven main steps to launch the Retiarii Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We set the Model Space:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'We define the Evaluator, which evaluates model instance:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we chose a Search Strategy that explores the Model Space:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We initialize the Retiarii Experiment with defined Model Space, Evaluator,
+    and Search Strategy:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting Experiment configuration:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching Experiment:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Returning best results. We can analyze the Experiment’s results in WebUI before
+    exit:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: After the experiment is completed, we can analyze the Trial jobs panel examining
+    the best results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trial jobs panel
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As shown in Figure [4-3](#Fig3), the best model returns 16\. And it has the
+    following set of parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: The preceding parameters are not self-describing, so we can use the visualization
+    function to render DFG render as shown in Figure [4-4](#Fig4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization panel
+  prefs: []
+  type: TYPE_NORMAL
+- en: NNI uses Netron to visualize trial models. Netron is a tiny viewer for neural
+    networks, deep learning, and machine learning models. Clicking the `Netron` button,
+    you’ll see the screen as shown in Figure [4-5](#Fig5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Netron model visualization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now we can declare that we have found a solution to the problem of finding a
+    model that maximizes the value of the chain of operators *F*. The Data Flow Graph
+    of this model is shown in Figure [4-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Best Data Flow Graph in Model Space
+  prefs: []
+  type: TYPE_NORMAL
+- en: The purpose of this example was to demonstrate that the primary goal of a NAS
+    approach is to find a DFG that maximizes (or minimizes) a black-box function.
+    In the same way HPO methods are searching for parameters that maximize (or minimize)
+    the black-box function. After introducing basic NAS techniques, we can dive into
+    more details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Retiarii Framework
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Retiarii framework is designed to separate the main logical entities of Neural
+    Architecture Search. This makes the NAS procedure clear and elegant. Using the
+    Retiarii framework, the researcher can only focus on particular aspects of the
+    investigation. The main components of the Retiarii framework are
+  prefs: []
+  type: TYPE_NORMAL
+- en: Base Model
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Mutator
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Model Space
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Evaluator
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Exploration Strategy
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Base Model* is the primary skeleton of a neural network. Base Model is actually
+    a simple deep learning model that solves some problem. Often the Base Model does
+    not show good performance. But it has some primary neural architecture and training
+    algorithm.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Mutator* is a possible change that a Base Model can be subjected to. Mutator
+    defines the transformation of the Base Model architecture into another one. Usually,
+    many mutators are applied to Base Model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Model Space* is the set of all possible Base Model mutations. Each mutator
+    generates several variants of neural network architectures. Applying all mutators
+    to the Base Model defines the Model Space.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Evaluator* measures the performance of a sample from the Model Space. This
+    is a typical algorithm for training and testing a neural network.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Exploration Strategy* defines the Model Space exploration algorithm. The main
+    objective of the Exploration Strategy is to find the best model in the least number
+    of trials.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: All these concepts are pretty familiar to us after studying Hyperparameter Optimization.
+    Table [4-1](#Tab1) contains the main logical entities from NAS and HPO. As you
+    can see, they mean almost the same thing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: NAS and HPO logical entities
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| NAS | HPO |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Base Model + Mutator | Search space type |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Model Space | Search space |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Evaluator | Trial |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Exploration Strategy | Tuner |'
+  prefs: []
+  type: TYPE_TB
+- en: Figure [4-7](#Fig7) illustrates the relationship of various components in the
+    Retiarii framework.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Retiarii framework
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s go ahead and look at each of these components in detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Base Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The Base Model is a starting point from which all possible architecture modifications
+    will be made. For example, the Base Model for NAS of the MNIST problem can be
+    presented as it is shown in Listing [4-3](#PC23).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing PyTorch modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You must use the `nni.retiarii.nn.pytorch as nn` module to declare layers in
+    a deep learning model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Base Model must be annotated with `nni.retiarii.model_wrapper():`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we have the classic LeNet model design for the digit recognition problem:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Frequent mistakes in Base Model design are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Missing `@model_wrapper` annotation on Base Model
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Using `import torch.nn as nn` instead of `nni.retiarii.nn.pytorch as nn` declaring
+    layers
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Mutators
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Base Model is a single model. To create Model Space, we have to add Mutators
+    to the Base Model. Each mutator provides a way to change the Base Model. All possible
+    mutations applied to the Base Model form the Model Space. NNI provides the following
+    mutation operations: `LayerChoice`, `ValueChoice`, `InputChoice`, and `Repeat`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: LayerChoice
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '`LayerChoice` mutator forms the candidate layers for a layer placeholder. One
+    of these layers is tried in the exploration process. `LayerChoice` mutator is
+    applied to the Base Model the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`LayerChoice` adds layer variations to the Base Model as shown in Figure [4-8](#Fig8).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: LayerChoice Mutator
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`LayerChoice` is the most straightforward way to mutate the Base Model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ValueChoice
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '`ValueChoice` forms the list of single values to be tried as layer hyperparameters.
+    `ValueChoice` can be used as layer hyperparameters only. It cannot be used as
+    an arbitrary hyperparameter like `batch_size` or `learning_rate` in the evaluation
+    process. `ValueChoice` mutator is applied to the Base Model the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ValueChoice` can be considered as a layer hyperparameter in the HPO context.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: InputChoice
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '`InputChoice` tries different connections. It takes several tensors and chooses
+    `n_chosen` tensors from them. `InputChoice` mutator is applied to the Base Model
+    the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`InputChoice` is designed to find the best data flow branches in neural network
+    architecture. Figure [4-9](#Fig9) illustrates this concept.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: InputChoice Mutator
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If `InputChoice` picks more than one candidate tensors (i.e., `n_chosen` >
+    1), then the reduction strategy is applied: `sum`, `mean`, `concat`. This is a
+    very useful technique that allows to extract and merge several connections at
+    the same time. `InputChoice` for multiple candidates with reduction can be applied
+    the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: The preceding code generates the search space shown in Figure [4-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig10_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: InputChoice Mutator for multiple candidates
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`InputChoice` Mutator for multiple candidates can choose the same tensor several
+    times. It happens when other connections do not bring any helpful information
+    to neural network performance.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Also, `InputChoice` allows adding skip connection technique to neural architecture.
+    Skip connection is one of the core techniques in modern neural network design.
+    It was first introduced in 2015 in “Deep Residual Learning for Image Recognition”
+    ([`https://arxiv.org/pdf/1512.03385.pdf`](https://arxiv.org/pdf/1512.03385.pdf)).
+    Skip connection can be implemented using the following pattern:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the first case, the model will use the skip connection technique, but not
+    in the second one. Figure [4-11](#Fig11) demonstrates skip connection mutation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig11_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: InputChoice. Skip connection mutation
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s examine the application of the `InputChoice` mutator using an arithmetic
+    DFG as an example. Say we have *x* = 1 and three operator pipelines which consist
+    of multiplication operators:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You need to select two pipelines whose sum is maximum. You can select the same
+    pipeline twice. This is a fairly simple task. It is intuitively clear that the
+    sum of the last pipeline will give the maximum value. Let’s run the third pipeline:
+    1 → 1 × 2 → 2 × 3 → 6 × 4 → 24; thus, the maximum value we can obtain is `48`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now let’s obtain the same result using NNI and `InputChoice` Mutator using Listing
+    [4-4](#PC33).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing common modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Importing `nni` modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ProdBlock` acts as a multiplier operator. It simply multiplies the tensor
+    by some value:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define the Model Space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: We declare multiplier operators
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and `InputChoice` mutator that will select the best pair of pipelines:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`forward` action executes three different pipelines, and `InputChoice` mutator
+    tries only two of them:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'First pipeline: `x` → `(x × 2)`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Second pipeline: 2: `x` → `(x × 2)` → `(x × 3)`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Third pipeline: `x` → `(x × 2)` → `(x × 3)` → `(x × 4)`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Here is the evaluation function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now we can run the experiment using this script:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You can analyze the results on the WebUI detail page: [`http://127.0.0.1:8080/detail`](http://127.0.0.1:8080/detail).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: InputChoice Experiment results
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In Figure [4-12](#Fig12), we see 3² = 9 trials. The best trial shows 48 and
+    has the following parameters: `{ "model_1_0": 2, "model_1_1": 2 }`, which means
+    that the best result is achieved with the last pipelines.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Such simple examples help to understand better how mutators act before proceeding
+    to a real NAS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Repeat
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '`Repeat` mutator repeats some action a certain number of times. In the NAS
+    context, the `Repeat` mutator tries to determine how often to iterate the same
+    neural network block. For example, the ResNet neural network architecture implies
+    a stack of Residual Blocks. But the optimal number of Residual Blocks may depend
+    on the specific task. Figure [4-13](#Fig13) shows part of the ResNet architecture.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig13_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: ResNet architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Repeat` mutator accepts a function that generates a block by its sequence
+    number. Here is the pattern how `Repeat` mutator can be applied:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We define a custom model block:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Set a builder function that generates a block concerning its ordinal number
+    in the stack:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `Repeat` mutator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Evaluating `Repeat` mutator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: Therefore, it would be handy to have a tool that iteratively constructs block
+    stacks of various lengths. And that’s what the `Repeat` Mutator does. Let’s examine
+    the implementation of the `Repeat` mutator for a synthetic arithmetic task, as
+    we did for the `InputChoice` mutator. Say we have a sequence of blocks that add
+    values ​​to a tensor. And we need to find the optimal length of this sequence.
+    Listing [4-5](#PC51) describes the Model Space for this problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`AddBlock` acts as an addition operator. It simply adds some value to the input
+    tensor.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Builder function that creates `AddBlock` by its ordinal number:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we define the Model Space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`Repeat` mutator generates block sequences of different lengths (from 1 to
+    5):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can examine the experiment by running
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In fact, the primitive mutators `LayerChoice`, `ValueChoice`, `InputChoice`,
+    and `Repeat` allow you to construct a space of any complexity. These mutators
+    can be compared to programming language directives:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*set*: `LayerChoice, ValueChoice`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*if*: `InputChoice`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*loop*: `Repeat`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Later in this chapter, we will examine a Model Space construction for a real
+    NAS task using these mutators.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Labeling
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: All the mutator APIs have an optional argument `label`. Mutators with the same
+    `label` will share the same value. A typical example is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: which is the same as
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: Example
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Listing [4-6](#PC58) demonstrates a trivial example of the Model Space applied
+    to the image classification network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Applying `LayerChoice` mutator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Applying `ValueChoice` mutator as `Dropout` layer hyperparameter value:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Applying `ValueChoice` mutator as `Linear` hyperparameter value:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: Evaluators
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Retiarii Evaluator is a function that accepts a model class, initiates a model,
+    trains it, tests it, and returns a result to Experiment. Evaluator can be implemented
+    using the following pattern:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: Retiarii Evaluator is pretty close to the Trial approach we used in HPO in previous
+    chapters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exploration Strategies
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'NNI provides the following exploration strategies for Multi-shot NAS: *Random
+    Strategy*, *Grid Search*, *Regularized Evolution*, *TPE Strategy*, and *RL Strategy*.
+    We are already familiar with some of them because they implement the same approach
+    as corresponding HPO Tuners. But anyway, let’s briefly study each of them.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Random Strategy
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Random Strategy (`nni.retiarii.strategy.Random`) randomly samples new models
+    from the Model Space. It is a simple but still effective technique to Explore
+    Model Space. Random Search is a good first-time Exploration Strategy, and it can
+    give you good clues when you have no idea about the dataset you are dealing with
+    and suitable architecture designs. Usually, Random Search is used first, and after
+    the Model Space is refined, a more intelligent Exploration Strategy is applied.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Grid Search
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Grid Search Strategy (`nni.retiarii.strategy.GridSearch`) samples new models
+    from Model Space using a Grid Search algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Regularized Evolution
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Regularized Evolution Strategy (`nni.retiarii.strategy.RegularizedEvolution`)
+    implements Genetic Algorithm Search with mutation operator using Tournament Selection
+    method. Regularized Evolution Strategy is close to Evolution Tuner we studied
+    in Chapter [3](526245_1_En_3_Chapter.xhtml). Pseudo-code that describes Regularized
+    Evolution Algorithm is provided in the following.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Regularized Evolution Strategy has three global hyperparameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`POPULATION_SIZE`: The size of a population that will try to participate in
+    evolution search'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`CANDIDATES_N`: Number of candidates Tournament Selection method will pick
+    from the population'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`GENERATION_N`: Total number of cycles'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The population is initialized with random individuals (i.e., random neural
+    architecture):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Algorithm picks `CANDIDATES_N` random individuals from population:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'From these candidates, the best one is selected (i.e., the individual that
+    has the best metric):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Random mutation is performed on the best candidate (i.e., algorithm runs several
+    Mutators in the original model):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Mutant individual is being evaluated:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Mutant replaces the worst individual in the population:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [4-14](#Fig14) demonstrates the algorithm of Regularized Evolution Strategy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig14_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Regularized Evolution Strategy
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The implementation of Regularized Evolution Strategy has the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`optimize_mode:`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `string`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `maximize`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Values**: ’`maximize`’ | ’`minimize`’'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sets the evolution direction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`population_size:`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `100`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of individuals in the population.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`cycles:`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `20000`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of generations of the algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`sample_size:`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `25`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of individuals that should participate in each Tournament Selection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`mutation_prob:`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `float`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `0.05`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Probability that mutation occurs in each mutator in the Model Space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For more details, please refer to the original paper describing Regularized
+    Evolution approach: [`https://arxiv.org/abs/1802.01548`](https://arxiv.org/abs/1802.01548).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: TPE Strategy
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: TPE Strategy (`nni.retiarii.strategy.TPEStrategy`) is a Sequential Model-Based
+    Optimization approach based on Tree-structured Parzen Estimator. It acts the same
+    way as TPE Tuner we studied in Chapter [3](526245_1_En_3_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For more details, please refer to the original paper describing the TPE approach:
+    [`https://papers.nips.cc/paper/2011/file/86e8f7ab32cfd12577bc2619bc635690-Paper.pdf`](https://papers.nips.cc/paper/2011/file/86e8f7ab32cfd12577bc2619bc635690-Paper.pdf).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL Strategy
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: RL Strategy (`nni.retiarii.strategy.PolicyBasedRL`) implements the Reinforcement
+    Learning approach based on policy-gradient method (Proximal Policy Optimization
+    or PPO). RL Strategy implements a special Recurrent Neural Network called Controller.
+    Controller generates various model architectures from Model Space. The Controller
+    acts as a stochastic policy; hence, it returns the mutation probability for each
+    of the Mutators in the Model Space. After each trial, the Controller updates the
+    weights of its RNN according to the Proximal Optimization Policy method. This
+    approach allows exploring the Model Space by constructing a probability distribution
+    for each of the mutators.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [4-15](#Fig15) demonstrates RL Strategy in action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reinforcement Learning (Proximal Policy Optimization) Strategy
+  prefs: []
+  type: TYPE_NORMAL
+- en: RL Strategy requires `tianshou` package to be installed. Tianshou is a Reinforcement
+    Learning platform based on pure PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The implementation of RL Strategy has the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`max_collect`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `100`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: How many epochs Exploration Strategy performs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Trial_per_collect`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Type**: `int`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Default**: `20`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: How many trials (trajectories) each time collector collects. After each completed
+    trajectory, the trainer will sample the batch from the replay buffer and do the
+    Controller update.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For more details, please refer to the original paper describing the Neural
+    Architecture Search with Reinforcement Learning: [`https://arxiv.org/pdf/1611.01578.pdf`](https://arxiv.org/pdf/1611.01578.pdf).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'And the last thing left is the Experiment. Retiarii Experiment is launched
+    in stand-alone (embedded) mode and contains seven steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Declare Model Space
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Declare Model Evaluator
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Declare Exploration Strategy
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Initialize Retiarii Experiment
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Configure Retiarii Experiment
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Launch Experiment
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returning results
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The following pattern can be used to create Retiarii Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can use the WebUI after running the experiment the same way we did earlier
+    launching HPO experiments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CIFAR-10 LeNet NAS
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s study the application of Multi-trial NAS to the CIFAR-10 problem. CIFAR-10
+    is a common dataset for image classification problem. It contains 60,000 color
+    images (32×32 pixels) from 10 different classes: *airplane*, *automobile*, *bird*,
+    *cat*, *deer*, *dog*, *frog*, *horse*, *ship*, and *truck*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Please run the following command to download the CIFAR-10 dataset to your machine:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [4-16](#Fig16) demonstrates several samples from CIFAR10 dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig16_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-16
+  prefs: []
+  type: TYPE_NORMAL
+- en: CIFAR-10 samples
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s try to find an appropriate deep learning model based on the LeNet approach
+    solving the CIFAR-10 classification problem. As we already know, the LeNet image
+    recognition architecture can be divided into two components: *Feature Extraction
+    Component* and *Decision Maker Component*. The *Feature Extraction Component*
+    consists of a sequence of Feature Extraction blocks with convolution layer. *Decision
+    Maker Component* consists of Fully Connected Components with linear layer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The design of the Feature Extraction block can be as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Conv` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Conv` → `Pool` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [4-17](#Fig17) demonstrates possible architecture options for the Feature
+    Extraction block or Feature Extraction block space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig17_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-17
+  prefs: []
+  type: TYPE_NORMAL
+- en: Feature Extraction block space
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the same way, we can determine the possible designs for the Fully Connected
+    block:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Linear` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Linear` → `Dropout` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Figure [4-18](#Fig18) illustrates Fully Connected block space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig18_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-18
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fully Connected block space
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Actually, `Linear` → `Dropout(p=1)` → `Activation` equals `Linear` → `Activation`,
+    and it is possible to design the same block space from Figure [4-18](#Fig18) without
+    using two connections. We could achieve the same block space using simple Layer
+    Hyperparameter Optimization: `Linear` → `Dropout(p=[.3, .5, .8, 1])` → `Activation`.
+    But we use two connections on purpose here because we want to demonstrate how
+    the Multi-trial NAS chooses the best connection.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The neural architecture we are looking for consists of Feature Extraction and
+    Fully Connected block sequences. Each of these blocks may have the architecture
+    shown in Figures [4-17](#Fig17) and [4-18](#Fig18), respectively. The LeNet NAS
+    algorithm must find the optimal Feature Extraction and Fully Connected block sequence
+    lengths, as well as their architectures. The Model Space for LeNet NAS can be
+    drawn as depicted in Figure [4-19](#Fig19).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig19_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-19
+  prefs: []
+  type: TYPE_NORMAL
+- en: LeNet NAS Model Space
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will start implementing the CIFAR-10 LeNet NAS by defining a Feature Extraction
+    block in Listing [4-7](#PC73).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`FeatureExtractionBlock` takes the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`dim:` Input–output channels'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`kernel_size:` Kernel of convolution layer'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`activation:` Activation function'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`block_num`: Ordinal number of the block in Feature Extraction sequence'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing core convolution layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Declaring pool and activation layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Switch choice for two different branches:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Conv` → `Pool` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Conv` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following method is used in `Repeat` Mutator. It returns an appropriate
+    `FeatureExtractionBlock` by its ordinal number in the Feature Extraction sequence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: Fully Connected block implementation is similar to Feature Extraction Block
+    and is provided in Listing [4-8](#PC80).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`FullyConnectedBlock` takes the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`dim:` Input–output features for linear layer'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dropout_rate:` Layer hyperparameter for dropout layer'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`activation:` Activation function'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`block_num`: Ordinal number of the block in Fully Connected sequence'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing linear layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Declaring dropout and activation layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Switch choice for two different branches:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Linear` → `Dropout` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Linear` → `Activation`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following method is used in `Repeat` Mutator. It returns an appropriate
+    `FullyConnectedBlock` by its ordinal number in the Fully Connected sequence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: And now we are ready to build LeNet Model Space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Do not forget to add `@model_wrapper` to the Model Space class:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'First, we define the space for the Feature Extraction sequence. All Feature
+    Extraction blocks will share the same activation function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`Repeat` mutator will create two or three Feature Extraction blocks in a row:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Second, we define a Fully Connected sequence:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'All Fully Connected blocks will share the same activation function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Layer hyperparameters for Fully Connected blocks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`Repeat` mutator will create from one to three Fully Connected blocks in a
+    row:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE93]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Final pair of classification layers (`linear_final` layer initialized lazily):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE94]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Executing `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE95]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Model evaluator is a classical neural network train–test algorithm. You can
+    examine its code here: ch4/retiarii/cifar_10_lenet/eval.py.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fine! Since LeNet Model Space is ready, we can start the research with the code
+    in Listing [4-10](#PC97).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE96]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Declaring Model Space:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE97]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining Model Evaluator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE98]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will use RL Search Strategy for this experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE99]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Initializing Retiarii Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE100]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Experiment configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE101]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Launching Experiment:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE102]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Returning results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE103]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The experiment can be run as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE104]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Duration ~ 20 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The best model shows **0.84** accuracy on test dataset. It is not a bad result,
+    but it seems there is still room for improvement. The best model has the following
+    parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE105]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The preceding parameters can be interpreted the following way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`"fe_repeat": 2` – means that `Repeat` mutator generates the Feature Extraction
+    sequence of two blocks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE106]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`"fe_kernel_size_0": 3` – means that `3` is chosen in `ValueChoice` mutator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE107]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`"fe_switch_0": 0` – means that the first connection is used in `InputChoice`
+    mutator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE108]'
+  prefs: []
+  type: TYPE_PRE
+- en: Also, it is convenient to visualize the architecture using Netron in Trial details
+    panel. Figure [4-20](#Fig20) demonstrates the architecture of the best model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig20_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-20
+  prefs: []
+  type: TYPE_NORMAL
+- en: LeNet NAS Best Model Architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: The research we made in this section can be a good starting point for your own
+    NAS solutions. It contains basic techniques used in Multi-trial NAS. Here, we
+    used the LeNet model as the Base Model, but you can choose any model and any mutators
+    that fit the concrete problem better. But we haven’t achieved a great result in
+    the LeNet NAS. In the next section, we’ll try another NAS with a more sophisticated
+    approach.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CIFAR-10 ResNet NAS
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s try to find another approach to the architecture search that solves the
+    CIFAR-10 problem. In 2015, the article “Deep Residual Learning for Image Recognition”
+    ([`https://arxiv.org/pdf/1512.03385.pdf`](https://arxiv.org/pdf/1512.03385.pdf))
+    was published. This article had a huge impact on deep learning in general. It
+    introduced the concept of a residual term, which could degrade the blocks of the
+    neural network, which overwhelmed its performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The basic building block of the ResNet model is the Bottleneck block. Original
+    Bottleneck block skips connections inside. But we will add this as an optional
+    feature. NAS algorithm will define if it is appropriate to use the skip connection
+    technique for the Bottleneck block. So there are two variants of Bottleneck block
+    in ResNet NAS *with* and *without* skip connection technique. The architecture
+    of the Bottleneck block space can be demonstrated as shown in Figure [4-21](#Fig21).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig21_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-21
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bottleneck block space
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another component of ResNet is the Residual Cell. Residual Cell consists of
+    a sequence of Bottleneck blocks. The optimal length of the Bottleneck sequence
+    in Residual Cell depends on the concrete dataset. Figure [4-22](#Fig22) shows
+    the Residual Cell space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig22_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-22
+  prefs: []
+  type: TYPE_NORMAL
+- en: Residual Cell space
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'And finally, we can construct the ResNet model. ResNet has the following architecture:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initial convolution layer
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Residual Cell sequence
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Several Fully Connected layers
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The optimal length of a Residual Cell sequence depends on the dataset. And we
+    will try to find it in ResNet NAS. Figure [4-23](#Fig23) presents the complete
+    Model Space for ResNet NAS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig23_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-23
+  prefs: []
+  type: TYPE_NORMAL
+- en: ResNet NAS space
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [4-11](#PC110) defines the Bottleneck block for ResNet Model Space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE109]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bottleneck expansion ratio:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE110]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The number of output channels that are produced by Bottleneck block:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE111]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bottleneck takes the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`cell_num`: The ordinal number of Residual Cell this block belongs to'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`in_channels`: Input channels to the first convolution layer'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`out_channels`: Output channels to all convolutional layers in the block'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`i_downsample`: Identity downsample block'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE112]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining three convolution layers with batch normalization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE113]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Skip connection acts the same for all blocks in Residual Cell because all `InputChoice`
+    mutators share the same label in the Residual Cell:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE114]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Identity downsampling block:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE115]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining forward method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE116]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Skipping connection if `self.skip_connection` returns `not None`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE117]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since we have defined the Bottleneck block, we can move to the ResNet Model
+    Space definition in Listing [4-12](#PC119).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Some unimportant code segments are omitted. Complete code is provided in the
+    corresponding file: *ch4/retiarii/cifar_10_resnet/res_net_model_space.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Importing modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE118]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Don’t forget to annotate Model Space with `@model_wrapper`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE119]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Global model constants:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE120]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Choosing `ReLU` as a global activation function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE121]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Entry point convolution layer with batch normalization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE122]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'MaxPool layer with the following hyperparameter list `[2, 3]`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE123]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Constructing Residual Cell sequence with `Repeat` mutator (from two to five
+    cells):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE124]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Constructing Fully Connected sequence with two linear layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE125]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE126]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following method is used to construct Residual Cells for the `Repeat` mutator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE127]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Defining Residual Cell parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE128]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Number of Bottleneck blocks in the Residual Cell:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE129]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Placeholder for Bottleneck blocks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE130]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Constructing downsample identity block if needed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE131]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Generating sequence of Bottleneck blocks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE132]'
+  prefs: []
+  type: TYPE_PRE
+- en: Phew. It was not easy to follow the definition of ResNet Model Space if you
+    are not familiar with ResNet yet. Anyway, don’t forget that NAS treats the neural
+    network as Data Flow Graph, and it tries to find the optimal combination of nodes
+    and connections in the Model Space we constructed in Figure [4-23](#Fig23). Even
+    if some deep learning concepts are not familiar to you yet, try to treat the NAS
+    as the search for the optimal subgraph in supergraph space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'ResNet model evaluator is a classical neural network train–test algorithm.
+    You can examine its code here: ch4/retiarii/cifar_10_resnet/eval.py. ResNet NAS
+    Experiment script does not differ too much from LeNet NAS, and I don’t provide
+    its code in the book. Please refer to the script file: ch4/retiarii/cifar_10_resnet/run_cifar10_resnet_experiment.py.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The experiment can be run as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE133]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Duration ~ 60 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The best model shows **0.957** accuracy on test dataset. That is not perfect,
+    but a much better result than LeNet NAS produced (**0.84**). The best neural network
+    architecture has the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE134]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'These parameters mean that the best model has the sequence of five Residual
+    Cells: the first cell is not using the skipping connection technique, and the
+    others use it. This is a predictable result because usually skipping connection
+    technique raises neural network performance.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this section, we have achieved a great result! CIFAR-10 is a highly complex
+    computer vision problem, and even large, sophisticated neural networks cannot
+    reach high accuracy with this dataset. Table [4-2](#Tab2) compares the architecture
+    we have constructed in this section with other common architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 4-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rating of the best architectures for CIFAR-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Rank | Architecture | Accuracy |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 79 | AutoDropout | 96.8 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 96 | Wide ResNet | 96.11 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| **-** | **Multi-trial NAS ResNet Result** | **95.7** |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 104 | SimpleNetv1 | 95.51 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 108 | MomentumNet | 95.18 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 116 | VGG-19 with GradInit | 94.71 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 128 | Tree+Max-Avg pooling | 94 |'
+  prefs: []
+  type: TYPE_TB
+- en: For more detailed information concerning architecture performance on the CIFAR-10
+    problem, please refer to [`https://paperswithcode.com/sota/image-classification-on-cifar-10`](https://paperswithcode.com/sota/image-classification-on-cifar-10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classic Neural Architecture Search (TensorFlow)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Classic NAS implements the Multi-trial NAS approach. Evaluator takes a model
+    from Model Space and evaluates it separately. Last valid documentation regarding
+    Classic NAS with NNI can be found here: [`https://nni.readthedocs.io/en/v2.2/nas.html`](https://nni.readthedocs.io/en/v2.2/nas.html).
+    NNI currently supports Classic NAS but is deprecating it in favor of the Retiarii
+    framework. The procedure of Classic NAS algorithms is similar to hyperparameter
+    tuning. Users use `nnictl` to start experiments, and each model runs as a trial.
+    The difference is that the search space file is automatically generated from the
+    Model Space by running `nnictl ss_gen.`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The main logical entities of Classic NAS are *Base Model*, *Mutator*, *Search
+    Space*, *Trial*, and *Search Strategy*. Let’s study each of them by applying NAS
+    algorithm to the classical MNIST problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Base Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Every Neural Architecture Search starts with defining a Base Model. The Base
+    Model is a neural network that acts as a starting point for new architectures.
+    The Base Model can be very simple or very complex. The researcher chooses the
+    model that is most suitable as a baseline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s examine the classic LeNet model for the MNIST problem in Listing [4-13](#PC136).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE135]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Base Model layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE136]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Feed forward:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE137]'
+  prefs: []
+  type: TYPE_PRE
+- en: The model described in Listing [4-13](#PC136) will serve as a piece of clay
+    for new architectures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mutators
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Mutator transforms the Base Model into a new one. A set of mutators allow defining
+    a search space for the NAS. Classic NNI NAS provides two mutators: `LayerChoice`
+    and `InputChoice`. `LayerChoice` mutator forms the candidate layers for a layer
+    placeholder. One of the candidates is tried in the exploration process. `InputChoice`
+    tries different connections. It takes several tensors and chooses `n_chosen` tensors
+    from them.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can learn more about `LayerChoice` and `InputChoice` mutators in the subsection
+    “Mutators” under the section “Neural Architecture Search Using Retiarii (PyTorch).”
+    We can apply `LayerChoice` and `InputChoice` mutators to the Base Model in the
+    following way.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE138]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We try three different convolution layers for the `conv1` placeholder:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE139]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We try two different pooling layers for the `pool` placeholder:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE140]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We try three different convolution layers for the `conv2` placeholder:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE141]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We add skip connection technique:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE142]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We add two candidates for fc1 placeholder:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE143]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [4-24](#Fig24) demonstrates the set of all possible architectures described
+    by Listing [4-14](#PC139).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig24_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-24
+  prefs: []
+  type: TYPE_NORMAL
+- en: Set of all possible architectures
+  prefs: []
+  type: TYPE_NORMAL
+- en: We see that each mutator adds variance to the Base Model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Trial
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'NAS Trial means the same as the Trial in the HPO context. It initializes the
+    model, trains it, tests it, and returns model accuracy. There is only one new
+    feature: you must use the `get_and_apply_next_architecture` method from `nn.algorithms.nas.tensorflow.classic_nas`
+    package to initialize the model. Listing [4-15](#PC145) provides the NAS Trial.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(Full code is provided in the corresponding file: *ch4/classic/trial.py*.)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE144]'
+  prefs: []
+  type: TYPE_PRE
+- en: Search Space
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'After the Trial script is defined, you should generate the search space JSON
+    file manually using the following command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE145]'
+  prefs: []
+  type: TYPE_PRE
+- en: The preceding command generates the file shown in Listing [4-16](#PC147).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE146]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see, NNI Classic NAS implementation is pretty close to HPO implementation.
+    The search space file is a list of all possible neural architecture choices.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Search Strategy
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Classic NAS supports the following Search Strategies:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Random Search`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`PPO Tuner:` Reinforcement Learning Tuner based on Proximal Policy Optimization
+    algorithm'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For more information about these tuners, you can refer to the subsection “Exploration
+    Strategies” under the section “Neural Architecture Search Using Retiarii (PyTorch).”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Experiment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The last thing left to do is to define the experiment configuration. Experiment
+    configuration is defined in Listing [4-17](#PC148).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE147]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And now, we can start the experiment with the following command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE148]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Duration ~ 2 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Experiment returns the best accuracy **0.9923** on test dataset, with the following
+    parameter set:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE149]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The preceding parameters can be interpreted as the following neural architecture:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE150]'
+  prefs: []
+  type: TYPE_PRE
+- en: The best neural architecture is shown in Figure [4-25](#Fig25).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig25_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 4-25
+  prefs: []
+  type: TYPE_NORMAL
+- en: Best neural architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classic NAS does not differ too much from the HPO approach. Indeed, we could
+    build the same experiment with layer and design hyperparameter search. We made
+    a close trick in Chapter [2](526245_1_En_2_Chapter.xhtml), in the section “From
+    LeNet to AlexNet.” Neural Architecture Search has made great strides lately, and
+    Classic NAS cannot support new research ideas. In any case, you can still use
+    Classic NAS and get meaningful results by searching for new solutions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Multi-trial Neural Architecture Search using Retiarii and classic approaches
+    offers clear and elegant solutions for searching robust neural architectures.
+    Many meaningful results could be achieved using Multi-trial NAS. But this approach
+    has one very serious drawback. It takes too much time. Indeed, complex models
+    and massive datasets need too much time to train, and the Model Space can contain
+    millions of model samples. Even the most advanced Exploration Strategy can take
+    too much time to converge to some suboptimal neural architecture. But the time
+    problem has a solution called One-shot NAS, and we will explore this method in
+    the next chapter.
+  prefs: []
+  type: TYPE_NORMAL

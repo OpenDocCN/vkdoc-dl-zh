@@ -1,0 +1,1119 @@
+- en: 9. Data Generation
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*It is the real, and not the map, whose vestiges persist here and there in
+    the deserts that are no longer those of the Empire, but ours: The desert of the
+    real itself.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Jean Baudrillard, Philosopher
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Data generation can be defined as creating synthetic data samples based on a
+    selected, existing dataset that resembles the original dataset. To an extent,
+    the term “resemble” is vague since there’s no universal metric to define one sample's
+    similarity to another without being indifferent. Evaluation of synthetic image
+    data can be purely judged by human eyes, while tabular data requires calculating
+    the bivariate relationship between each feature and comparing it with the original
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now comes the question: Why do we need artificially created data samples when
+    there are data collected from the real world that may be more representative of
+    the situation? The most straightforward answer is that we don’t have enough data.
+    There can be a vast number of reasons this is so, such as a lack of resources
+    available for further data collection or the data collection process being too
+    time-consuming, to name a few.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Machine learning models, especially those associated with deep learning, absolutely
+    require a large number of data points to achieve decent performance, thus the
+    need for synthetic data to add to potentially small datasets. Additionally, many
+    classification datasets are imbalanced – their labels are heavily skewed to one
+    or more classes, leaving few samples for the remaining classes. Many of these
+    cases occur in medical diagnosis datasets, with significantly fewer positive cases
+    than negative ones. By utilizing conditional data generation, we can insert positive
+    cases into the dataset until it’s balanced, where the model would be able to classify
+    both classes with equal confidence and accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another issue with datasets collected from the real world is sensitive information.
+    Some information in certain datasets is private to others and protected by law.
+    To train on these datasets, we can generate new samples by synthesizing these
+    sensitive fields, effectively protecting the victim of the subject. The following
+    sections will introduce you to various data generation algorithms, including Variational
+    Autoencoders and Generative Adversarial Neural Networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variational Autoencoders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Variational Autoencoders (VAEs) are one of the most exciting applications of
+    autoencoders. VAEs allow us to generate new data, which has been used to create
+    realistic images resembling those in the dataset it was trained on. An advantage
+    of VAEs compared with other data generation techniques (i.e., primarily GANs or
+    Generative Adversarial Networks) is that of fine control: we can somewhat control
+    what we want to see in the generated output. VAEs can be used, for instance, to
+    draw a realistic mustache on an image of someone without a mustache. In the context
+    of tabular data, VAEs allow us to generate synthetic data to increase the size
+    and/or representation of minority samples within tabular datasets. This dataset
+    can then be used to train classical machine learning or deep learning models with
+    better validation or real-world deployment performance.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theory
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To understand the Variational Autoencoder, we need to begin with reunderstanding
+    the logic of the autoencoder itself and the relationship between the encoder and
+    the decoder. The encoder encodes inputs into a latent space, whereas the decoder
+    learns to decode the sample from the encoded latent space vector. However, the
+    decoder cannot simply memorize the association between every latent space vector
+    and the corresponding input (not in a well-designed autoencoder, anyway). The
+    encoder must work to structure the latent space in a way that allows for the decoder
+    to generalize the task of reconstruction. For instance, two very similar images
+    of the digit “3” should have latent space vectors very close to each other, since
+    they are structurally quite similar – the decoder should be able to apply very
+    similar faculties when decoding those inputs. In order for autoencoders to succeed,
+    the latent space must be structured such that similar items are closer and dissimilar
+    items are farther. We have been exploiting this property of autoencoder latent
+    spaces in many of the previous applications and demonstrations; we saw that vanilla
+    autoencoders could perform implicit clustering/separation, that the learned latent
+    space was useful for pretraining, and that the latent space could be simultaneously
+    structured for autoencoding and task training in multitask learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In all these applications and demonstrations, the decoder is only allowed to
+    decode vectors given to it by the encoder. However, the specific operations of
+    the encoder and decoder and the individual input encoding pairs are not quite
+    as relevant as the concept of the latent space. These “mappings” help to define
+    the latent space, but ultimately it is the *space*, rather than the specific *points*
+    in the space, that matters. In concrete terms, we should be able to obtain a realistic
+    output by decoding any vector in the latent space, not just the ones that correspond
+    to items in the dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assume we have an autoencoder that has already been trained on the MNIST dataset
+    (with standard halving/doubling architectural logic). The decoder has learned,
+    to an extent, the *space* around the latent space vector, rather than just the
+    latent vector itself. Holding that an autoencoder has been trained on MNIST, let
+    us demonstrate what happens when we progressively “step away” from a latent encoding
+    directly corresponding to a known sample item. We see that the decoding remains
+    constant for the first few steps and then quickly deforms into something else
+    entirely (Listing [9-1](#PC1), Figure [9-1](#Fig1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of 25 grids arranged in 5 columns and 5 rows. They present decoded
+    sample digits, by V A E s.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sample digits decoded by “walking away” from a “real” latent space vector, arranged
+    in a grid for convenient viewing
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: We might characterize such a space as “discrete” – notice that for a very large
+    distance everything is constant, but at a critical threshold the decoding suddenly
+    changes and remains constant, too, thereafter. It is not continuous; the change
+    in the shape of the decoded digit is not proportional to how far away we step
+    from the original point in the latent space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Alternatively, we can try to decode a linear interpolation between two relatively
+    significantly different samples – averaging the latent space vectors to obtain
+    a vector representing a point that is “in between” the latent space vectors of
+    those two samples. Using our hypothesis, which suggests that autoencoders learn
+    the space rather than merely the set of points, the output should be valid and
+    ideally some sort of “in-between” mesh between the two real samples. Let’s sample
+    a few (Listing [9-2](#PC2), Figure [9-2](#Fig2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: An illustration of 15 grids arranged in 3 columns and 5 rows. It displays the
+    decoded results of the sample digits of linear interpolation among latent vectors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Displaying the decoded results (center column) of linear interpolation between
+    latent vectors of the two images shown on the left and right columns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The decoded linear interpolations are not valid digits nor meaningful “in-between”
+    meshes of the two digits from which they were derived.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What’s going on here? Is our hypothesis/logic incorrect?
+  prefs: []
+  type: TYPE_NORMAL
+- en: The answer is partially correct and partially incorrect. Vanilla autoencoders
+    have no need to learn *most* of the relevant latent space; they only need to learn
+    *some* of the latent space around similar examples. Instead, autoencoders make
+    use of discrete separation of items in the latent space to help “bin” samples
+    in discrete fashion (as we observed previously), which the decoder can coordinate
+    and decode. We want a way to impose continuity upon the latent space such that
+    the decoder is forced to learn most, if not all, of the relevant latent space.^([1](#Fn1))
+    This way, we can more or less choose any point/vector in the relevant latent space
+    and reasonably decode it into a realistic-looking digit. The latent space must
+    be structured to be continuously and realistically interpolatable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variational Autoencoders accomplish this by forcing the encoder to predict a
+    latent space *distribution* in lieu of each latent space dimension. The encoder
+    predicts a mean and a standard deviation to define a normal distribution rather
+    than a single scalar value (for each dimension). The decoder then decodes a latent
+    space vector randomly sampled from this set of distributions and attempts to reconstruct
+    the original input as faithfully as possible. By representing the latent space
+    probabilistically rather than explicitly, the Variational Autoencoder is forced
+    to learn feasible intermediate representations throughout the entire relevant
+    latent space and cannot construct discrete binning schemes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will formalize the Variational Autoencoder: the encoder produces two outputs,
+    ***μ*** and ***σ***; both are *n*-dimensional vectors representing the means and
+    standard deviations of *n* normal distributions, where *n* is the dimensionality
+    of the latent space. We would like to sample a latent vector ***z*** from this
+    *n*-dimensional normal distribution, where the *i*th element of ***z*** is sampled
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{z}}^{(i)}\sim \mathcal{N}\left({\boldsymbol{\mu}}^{(i)},{\boldsymbol{\sigma}}^{(i)}\right)
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The latent vector ***z*** is then decoded by the decoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, this formulation is not differentiable. We cannot differentiate sampling
+    from a normal distribution defined by a learned mean and standard deviation. Thus,
+    we use a *reparameterization trick*, articulated in the original variational autoencoding
+    paper “Auto-Encoding Variational Bayes” by Diederik Kingma and Max Welling approximately
+    as follows^([2](#Fn2)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{z}}^{(i)}={\boldsymbol{\mu}}^{(i)}+{\boldsymbol{\sigma}}^{(i)}\odot
+    {\boldsymbol{\upepsilon}}^{(i)},\kern1.5em \boldsymbol{\upepsilon} \sim \mathcal{N}\left(0,c\right)
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Here, ⊙ refers to element-wise multiplication, and *c* is an arbitrary constant.
+    This formulation provably has the same character as directly sampling from a normal
+    distribution, but it re-expresses the sampling with respect to the means and standard
+    deviations such that all parameters are written as additions and multiplications
+    of each other and constants, which makes it a completely differentiable scheme.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Thus, the objective of the Variational Autoencoder can be expressed as follows,
+    where ***y*** represents the ground truth, ***z*** represents the vector sampled
+    from the output of the encoder, ***x*** represents the input to the encoder (and
+    the network, technically speaking), *E* represents the encoder, *D* represents
+    the decoder, and ![$$ L\left(y,\hat{y}\right) $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_IEq1.png)
+    represents some loss/error function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{E,D}{\min }-{\mathbbm{E}}_{\boldsymbol{z}\sim \mathcal{N}\left(E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\mu}},E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\sigma}}\right)}L\left(\boldsymbol{x},D\left(\boldsymbol{z}\right)\right)
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Here, we want to find the parameters of the functions *E* and *D*, which minimize
+    the average difference between the input ***x*** and the decoding of a random
+    latent space vector, which is sampled from ![$$ \mathcal{N}\left(E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\mu}},E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\sigma}}\right)
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_IEq2.png), a normal
+    distribution defined in the latent space with the mean and standard deviation
+    provided by the encoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, given that autoencoders tend to learn discrete representations of
+    the latent space, we have a problem: it is advantageous for the network to learn
+    small standard deviations ***σ*** → 0 and to maximize thedistance between the
+    mean vectors, or ![$$ \sum \limits_{i=1}^n\sum \limits_{j=i+1}^n\left|\left|{\boldsymbol{\mu}}^{(i)}-{\boldsymbol{\mu}}^{(j)}\right|\right|
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_IEq3.png), such
+    that it is essentially identical to a standardautoencoder, which outputs only
+    scalars (a distribution with zero standard deviation is a single point) in a discrete
+    space.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As such, we can formulate the following penalty term:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \boldsymbol{\sigma} -\log \left(\boldsymbol{\sigma} \right)+{\boldsymbol{\mu}}^{\textbf{2}}
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Firstly, we want to minimize the means; thus, we add L2-style regularization
+    in which the network is penalized if the means are too large. Secondly, we want
+    to maximize the standard deviations, but we also want them to be broadly uniform
+    to ensure continuous homogeneity across distributions in the latent space; thus,
+    the − log (***σ***) term severely punishes standard deviations that are too small,
+    but the +***σ*** term also tends standard deviations toward smaller values if
+    they are too large. The minimum of *x* − log *x* is about 0.797 and occurs approximately
+    at *x* = 0.434\. Some variations of the penalty will square the standard deviations
+    (which is unnecessary but may improve convergence in some cases) and subtract
+    a constant for aesthetic purposes (such that this penalty term can theoretically
+    be zero):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{\sigma}}^2-\log \left(\boldsymbol{\sigma} \right)+{\boldsymbol{\mu}}^2-1
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'The formal optimization problem, then, can be expressed in one form as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{E,D}{\min }-{\mathbbm{E}}_{\boldsymbol{z}\sim \mathcal{N}\left(E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\mu}},E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\sigma}}\
+    \right)}L\left(\boldsymbol{x},D\left(\boldsymbol{z}\right)\right)+\mathbbm{E}\left(E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\sigma}}-\log
+    E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\sigma}}+E{\left(\boldsymbol{x}\right)}_{\boldsymbol{\mu}}^2\right)
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Implementation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s begin by demonstrating a canonical introduction of the Variational Autoencoder
+    – interpolating between digits from the MNIST dataset. We’ll begin by creating
+    the encoder architecture (Listing [9-3](#PC3)). Rather than only having one latent
+    space output, we’ll have two outputs – one defining the mean of the latent space
+    and the other the standard deviation. Note that we technically learn the logarithm
+    of the standard deviation (which will be exponentiated later) such that the network
+    can more easily grapple with larger scales of standard deviations. (The larger
+    the standard deviations predicted, the more strictly and widely continuity is
+    imposed upon the space.) This allows us to have an open linear activation rather
+    than a zero-bounded one too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the output dimensionalities of the `means` and `log_stds` layers are
+    the same because they must correspond with each other.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, we will define a sampling layer that takes in the derived means and log-standard
+    deviations (Listing [9-4](#PC4)). In order to maintain the ability to propagate
+    information through the means and standard deviations, we sample a small normally
+    distributed noise vector centered at zero, multiply it by the “standard deviation,”
+    and add it to the mean (using the reparameterization trick rather than simply
+    sampling from a normal distribution with the specified mean and standard deviation).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can complete the encoder (Listing [9-5](#PC5)). The encoder technically outputs
+    only the sampled latent space vector `x`, but in order to compute the penalty
+    term, we will also output `means` and `log_stds` (which we will use to calculate
+    the loss but will not pass to the decoder).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The decoder model is fairly standard; it simply takes in the sampled latent
+    space vector and decodes it back into the original output (Listing [9-6](#PC6)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: To construct the complete model, we pass the input through the encoder and the
+    encoded latent space vector through the decoder (Listing [9-7](#PC7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, we can compute the loss as a relationship between the outputs of the models;
+    since this custom loss is dependent on layers that are not strictly the output
+    of the primary model (i.e., the means and log-standard deviations), we add the
+    loss separately from compilation (Listing [9-8](#PC8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: After training, the Variational Autoencoder should have learned the *entire*
+    relevant latent space (by relevant, we mean the entire space enclosed by a theoretical
+    boundary surface). We can visualize an example traversal of this latent space.
+    We will begin with a `base` latent space vector that represents the encoder-learned
+    representation for a sample that does exist in the dataset. Then, we’ll “cut”
+    a planar cross-section to visualize a “slice” of the learned latent space. There
+    are many ways to do so, but in this case, we simply create a linear addition (or
+    subtraction) to the base vector dependent on a grid of row and column values (Listing
+    [9-9](#PC9)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The result, shown in Figure [9-3](#Fig3), demonstrates such a cross-section
+    of the learned latent space. Note how image representations spatially situated
+    closer together in the latent space cross-section are also more similar in digit
+    morphology. We can select any two identifiable digits, like the 7 in the top-left
+    corner and the 1 in the top-right corner, draw a line between the two, and trace
+    an “interpolation” from one digit to the other. Functionally, all these digits,
+    except for the base case in the top-left corner, are synthetically generated,
+    yet they look – for the most part – realistic. Forcing the autoencoder to learn
+    the entire latent space, then interpolating within the latent space, allows us
+    to generate realistic synthetic data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 100 images of grids with digits arranged in 10 columns and 10 rows. They display
+    the decoded samples of a cross-section of the latent space through V A E s.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: A visualization of a cross-section of the latent space learned by a Variational
+    Autoencoder trained on MNIST
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variational Autoencoders can just as easily be applied to generate synthetic
+    tabular data. Let’s adapt our VAE code to fit the Higgs Boson dataset (Listing
+    [9-10](#PC10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: There are many ways to generate data from the trained Variational Autoencoder.
+    One way is to select several latent space “bases” by obtaining the learned encodings
+    and randomly moving “around” those samples (Listing [9-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s visualize some representations of the dataset structure of the original
+    dataset compared to the generated dataset. We can get a decent perspective of
+    a dataset’s structure using pairplots. Listing [9-12](#PC12) demonstrates the
+    code used to generate Figures [9-4](#Fig4) and [9-5](#Fig5), sample pairplots
+    for the generated and real datasets, respectively. Note that many of the bivariate
+    relationships are distributed quite similarly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 25 graphs of jet l p t, jet leta, jet l phi, jet l b dot tag, jet 2 p t versus
+    lepton p T, lepton e t a, lepton phi, missing energy magnitude, and missing energy
+    phi, arranged in 5 columns and 5 rows. They present the bivariate interaction
+    features from a Higgs Boson dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: True bivariate relationships/interactions between two sets of five features
+    pulled from the Higgs Boson dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 25 graphs of jet l p t, jet leta, jet l phi, jet l b dot tag, jet 2 p t versus
+    lepton p T, lepton e t a, lepton phi, missing energy magnitude, and missing energy
+    phi, arranged in 5 columns and 5 rows. They present the bivariate interaction
+    features created by V A E s.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bivariate relationships/interactions between two sets of five features generated
+    by a Variational Autoencoder trained on the Higgs Boson dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figures [9-6](#Fig6) and [9-7](#Fig7) demonstrate pairplots of the generated
+    and real data from the Mice Protein Expression dataset. Here, too, the distribution
+    and shape of bivariate relationships within the generated dataset is quite similar
+    to that of the real dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 25 graphs arranged in 5 columns and 5 rows. They present the true bivariate
+    interaction features from a mice protein expression dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: True bivariate relationships/interactions between two sets of five features
+    pulled from the Mice Protein Expression dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 25 graphs arranged in 5 columns and 5 rows. They present the bivariate interaction
+    features from a mice protein expression dataset, through V A E s.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bivariate relationships/interactions between two sets of five features generated
+    by a Variational Autoencoder trained on the Mice Protein Expression dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variational Autoencoders offer sophisticated data generation capabilities, which
+    can help build more successful machine learning models (neural networks or classical
+    models) on otherwise weak or lacking data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generative Adversarial Networks
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The painting *Edmond de Belamy* looks like a standard seventeenth- and eighteenth-century
+    painting. A hunched man, suit painted in broad strokes of black ink blending into
+    a dark background, looks blankly at the viewer with shaded eyes. But in the bottom
+    right, in lieu of the artistic signature, is in elegant script
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{G}{\min}\underset{D}{\max }{\textrm{E}}_x\left[\log \Big(D(x)\right]+{\textrm{E}}_y\left[\log
+    \right(1-D\left(G(y)\right)\Big] $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is a simplified expression representing the objective of the Generative
+    Adversarial Network (GAN) model, which constitutes the other major deep generative
+    model family besides Variational Autoencoders. Notably, GANs have been the underlying
+    technology behind impressively realistic art and image generation, but they have
+    also been applied in a less common but no less promising capacity to generate
+    other forms of data, including tabular data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theory
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let us begin by formalizing the equation articulated in *Edmond de Belamy*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let *z* represent a random noise vector.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let *x* represent a data sample drawn from the data.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let *G* be a neural network that accepts *y* and transforms it into an output
+    that mimics a sample drawn from the data.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let *D* be a neural network that outputs the probability that the given sample
+    is drawn from the data (as opposed to being generated by G).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let E[*x*]*f*(*x*) represent the average value of a function *f* that depends
+    on some variable *x*.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The expression represents the discriminator’s average log-loss^([3](#Fn3))
+    and consists of two terms: E[*x*][log(*D*(*x*)] and E[*z*][ log (1 − *D*(*G*(*z*))].
+    The discriminator can be thought of as having two jobs: classifying samples drawn
+    from the data (i.e., *x*) as being drawn from the data and classifying synthetic
+    samples created by the generator from a random noise vector (i.e., *G*(*z*)) as
+    not being drawn from the data. These two objectives are respectively represented
+    by the expression.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first term represents the average logarithm of the discriminator’s prediction
+    on samples drawn from the data. If the discriminator is working perfectly, then
+    this value will be maximized because *D*(*x*) is predicting 1, log(*D*(*x*)) = 0,
+    and E[*x*][log(*D*(*x*))] = 0\. The other term represents the average logarithm
+    of the discriminator’s inverted prediction on generated samples. If the discriminator
+    is working perfectly, this value will also be maximized because *D*(*x*) is predicting
+    0, 1 − *D*(*G*(*z*)) = 1, log(1 − *D*(*G*(*z*)) = 0, and E[*z*][log(1 − *D*(*G*(*z*))] = 0\.
+    Thus, the sum of these two terms is maximized to the value zero when the discriminator
+    performs perfectly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The objective of the discriminator is to maximize this expression, whereas
+    the objective of the generator is to minimize it. Putting the parts together,
+    we obtain the following system in which the generator and discriminator play against
+    each other:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{G}{\min}\underset{D}{\max }{\textrm{E}}_x\left[\log \Big(D(x)\right]+{\textrm{E}}_z\left[\log
+    \right(1-D\left(G(z)\right)\Big] $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure [9-8](#Fig8) presents a visual representation of the previous equation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of a Generative Adversarial Network system. Dataset and generator,
+    parallelly pass-through the discriminator, to reach D, in the parentheses x, and
+    D open parenthesis, G, open parenthesis, z, 2 close parentheses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Schematic of the Generative Adversarial Network system
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The more complete articulation presented by Ian Goodfellow et al. in the original
+    paper^([4](#Fn4)) is as follows, with ***z*** a random vector drawn from the distribution
+    *p*[***z***](***z***) and ***x*** a data sample drawn from the distribution *p*[data](***x***):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{G}{\min}\underset{D}{\max }{\textrm{E}}_{\boldsymbol{x}\sim
+    {p}_{\textrm{data}}\left(\boldsymbol{x}\right)}\left[\log \Big(D\left(\boldsymbol{x}\right)\right]+{\textrm{E}}_{\boldsymbol{z}\sim
+    {p}_{\boldsymbol{z}}\left(\boldsymbol{z}\right)}\left[\log \right(1-D\left(G\left(\boldsymbol{z}\right)\right)\Big]
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'To update the discriminator, we use the gradient of its loss with respect to
+    the discriminator parameters *θ*[*d*]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\theta_d}E\left[\log D\left(\boldsymbol{x}\right)+\log \left(1-D\left(G\left(\boldsymbol{z}\right)\right)\right)\
+    \right] $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The gradients are used for *ascending* because the discriminator aims to maximize
+    rather than to minimize its performance. Recall from earlier that this expression
+    is maximized when the discriminator performs perfectly. The only difference with
+    gradient descent is to move in the direction of greatest increase rather than
+    the direction opposite to it (i.e., of greatest decrease).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After updating the discriminator, we update the generator in descending fashion
+    using the gradient of the second term with respect to the generator parameters
+    *θ*[*g*]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\theta_g}E\left[\log \left(1-D\left(G\left(\boldsymbol{z}\right)\right)\right)\right]
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We do not need to bother with the first term because the generator is not involved
+    in it; it has no contribution to the gradient calculation. Note that the generator
+    is explicitly updated to “fool” the discriminator by minimizing the discriminator’s
+    performance classifying generated items as generated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: By updating the discriminator followed by the generator repeatedly, the two
+    models play an adversarial game.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The formal training algorithm articulated in the original paper is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For *k* steps, do
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Sample a minibatch of *m* noise samples {***z***^((1)), ***z***^((2)), …, ***z***^((*m*))}
+    from the noise prior *p*[*g*](***z***).
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Sample a minibatch of *m* training samples {***x***^((1)), ***x***^((2)), …,
+    ***x***^((*m*))} from the true data distribution *p*[data](***x***).
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Update the discriminator by stochastic gradient ascent (or another optimization
+    method using the same loss):'
+  prefs:
+  - PREF_IND
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\theta_d}\frac{1}{m}\sum \limits_{i=1}^m\left[\log D\left({\boldsymbol{x}}^{(i)}\right)+\log
+    \left(1-D\left(G\left({\boldsymbol{z}}^{(i)}\right)\right)\right)\right] $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equl.png)'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_IMG
+- en: Sample a new minibatch of *m* noise samples {***z***^((1)), ***z***^((2)), …,
+    ***z***^((*m*))} from the noise prior *p*[*g*](***z***).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Update the generator by stochastic gradient descent (or another optimization
+    method using the same loss):'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_{\theta_g}\frac{1}{m}\sum \limits_{i=1}^m\left[\log \left(1-D\left(G\left({\boldsymbol{z}}^{(i)}\right)\right)\right)\right]
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equm.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: Repeat until the specified number of training iterations is completed.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Note the following features of the optimization procedure:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: By changing *k*, you control the ratio of the number of “moves” the discriminator
+    has relative to the generator. The authors of the original GAN paper use *k* = 1
+    to maximize computational efficiency.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: From the perspective of the computational graph, we are technically optimizing
+    the same collection of operations – just different parts of it at any one time.
+    Observe how the respective expressions for gradient ascent and descent in the
+    discriminator and generator update formulas involve the same nested *D*(*G*(…))
+    expression, but only one part of it is updated, whereas the other is held static.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: When we update the generator, we select a new random minibatch of noise samples
+    rather than using the same set of samples the discriminator was updated on.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'GANs are, however, notoriously difficult to train. The system is often unstable
+    and fails to converge. Tim Salimans and other researchers from OpenAI suggest
+    several actionable training modifications for improving convergence and performance
+    of GAN systems in the paper “Improved Techniques for Training GANs,”^([5](#Fn5))
+    some of which are summarized in the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Feature matching*: It can be difficult for the generator to produce samples
+    given the explicit objective to maximize the discriminator’s prediction on generated
+    samples. Instead, the generator can be trained to match the activations of an
+    intermediate layer of the discriminator. If the generator produces an output that,
+    on aggregate, yields discriminator activations for some feature, which are very
+    different from the activations derived for real items, then the generator will
+    likely not succeed in fooling the discriminator. Feature matching is a technique
+    to directly optimize the generator using the “internal thinking processes” of
+    the discriminator.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Historical averaging*: Each player is penalized by the magnitude of its weight
+    updates relative to a historical time period of length *t*: ![$$ \left\Vert \theta
+    \left[0\right]-\frac{1}{t}\sum \limits_{i=1}^t\theta \left[i\right]\right\Vert
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_IEq4.png), where
+    *θ* is an array of the model parameters and *θ*[0] represents the most recent,
+    current set of parameters. This provides a constant force, which pushes players
+    toward convergence: any large updates will be penalized by this quantity, which
+    therefore can constrain erratic nonconverging behavior.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*One-sided label smoothing*: Label smoothing, in which discrete binary labels
+    are replaced with probabilistic approximations (e.g., replacing 0 with 0.1, 1
+    with 0.9). We can replace positive discriminator labels (i.e., real data samples
+    that have a label of 1) with a smooth approximation (e.g., 0.9 or even 0.8) such
+    that the generator can more easily achieve equivalence with “real” samples in
+    the “eye” of the discriminator even if it cannot produce a high discriminator
+    output. For instance, let *x* be a real data sample and *D*(*x*) = 1\. Let *z*
+    be a random vector; say *D*(*G*(*z*)) = 0.9\. In this case the discriminator was
+    fooled but not completely. If we apply one-sided label smoothing, however, the
+    discriminator will learn *D*(*x*) = 0.9\. Therefore, *G*(*z*) and *x* are comparable
+    in that the discriminator yields the same determination for both. This can make
+    generation an easier task.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Many subsequent methods have been proposed to expand GAN capabilities. The conditional
+    GAN, introduced by Medhi Mirza and Simon Osindero shortly after the original GAN
+    paper in the 2014 paper entitled “Conditional Generative Adversarial Nets,”^([6](#Fn6))
+    allows for the generation of outputs conditioned on some property. For instance,
+    rather than just generating arbitrary digits, a conditional generative model can
+    generate a particular type of digit (0, 1, 2, etc.).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is accomplished with a simple modification to the original GAN system
+    optimization objective: the discriminator accepts both the original input (either
+    a sample from the dataset or synthesized from the generator) and conditional information
+    ***y***. The output of the generator is generated from both the random vector
+    ***z*** and the conditional information ***y***:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \underset{G}{\min}\underset{D}{\max }{\textrm{E}}_{\boldsymbol{x}\sim
+    {p}_{\textrm{data}}\left(\boldsymbol{x}\right)}\left[\log \Big(D\left(\boldsymbol{x}|\boldsymbol{y}\right)\right]+{\textrm{E}}_{\boldsymbol{z}\sim
+    {p}_{\boldsymbol{z}}\left(\boldsymbol{z}\right)}\left[\log \Big(1-D\left(G\left(\boldsymbol{z}|\boldsymbol{y}\right)\right)\right]
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'To be concrete, consider applying a conditional GAN to generate images of digits.
+    We begin by selecting *n* images of digits ***x*** and their corresponding class
+    ***y*** (e.g., the first image has class 2, the second has class 9, …, the *n*th
+    has class 0). Next, we randomly sample noise vectors ***z*** and pass both ***z***
+    and ***y*** into the generator. Now, we have generated samples: *G*(***z***| ***y***).
+    The discriminator predicts on both the original and generated samples with access
+    to the corresponding classes. Even if the generator generates realistic images,
+    the discriminator can theoretically detect if a sample is generated if the given
+    input, say, is an image of the digit 8 but the associated class (i.e., of ***y***)
+    is 2\. Thus, the generator must generate realistic images conditional on the given
+    attributes (Figure [9-9](#Fig9)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of a conditional Generative Adversarial Network system. From
+    the dataset x reaches the discriminator, y reaches the generator, and the discriminator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Schematic of the conditional Generative Adversarial Network system
+  prefs: []
+  type: TYPE_NORMAL
+- en: While GANs have found incredible success in image generation, particularly in
+    text-conditioned generation, tabular data generation remains a difficult problem.
+    The cross-column heterogeneity of tabular data – that is, the variation across
+    columns in properties like value range, sparsity, distribution, discreteness/continuity,
+    value imbalance, and so on – makes it difficult to easily transfer scales and
+    rules across the span of the dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lei Xu, Maria Skoularidou, Alfredo Cuesta-Infante, and Kalyan Veeramachaneni
+    proposed the very successful Conditional Tabular GAN (CTGAN) to address the deep
+    adversarial generation of tabular data in the 2019 paper “Modeling Tabular Data
+    Using Conditional GAN.”^([7](#Fn7))
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Conditional Tabular GAN model is quite complex and has many moving parts.
+    Here, we summarize important elements of the architecture and training process.
+    View the original paper for details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each row is represented by concatenating continuous and discrete columns. Discrete
+    columns are one-hot encoded, and continuous features with complex multimodal distributions
+    (in this context, multimodal refers to distributions with multiple “humps,” or
+    modes, as opposed to a singular mass – like in a normal distribution) are normalized
+    using a randomly sampled mode. Let the row be denoted as ![$$ \hat{\boldsymbol{r}}
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_IEq5.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to ensure that the GAN system has roughly equal exposure to different
+    values in discrete columns – even highly imbalanced or sparse ones – the authors
+    propose a conditional vector, which, in rough terms, represents which types of
+    values in which discrete columns must be reproduced by the generator. Let ***m***
+    represent this conditional vector. Then, we have the generator output as *G*(***z***|
+    ***m***), given a randomly sampled vector ***z*** and the conditional vector ***m***.
+    This is a similar training paradigm to masked language modeling pretraining discussed
+    in Chapter [6](525591_1_En_6_Chapter.xhtml), on attention and transformers. In
+    masked language modeling, the model is presented with part of the words in a sentence
+    and must fill in the masked tokens. The generator in the CTGAN is presented with
+    “part of the sentence” (i.e., the selected values in the selected columns) and
+    must “fill in” the rest of the row (i.e., which continuous column and non-selected
+    discrete column values make sense given the provided conditional vector). Given
+    an equal conditional vector generation procedure, the generator and discriminator
+    are exposed to a much wider range of the feature space and acclimate to more complex
+    data forms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The generator model consists of two hidden layers using ReLU activations, batch
+    normalization, and residual connections. There are two relevant outputs – the
+    continuous features *c* and the discrete features *d*. It can be approximately
+    formally articulated as follows, where ⊕ represents vector concatenation and Gumbel
+    represents the softmax Gumbel function^([8](#Fn8)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {h}_0=\boldsymbol{z}\oplus \boldsymbol{m} $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {h}_1={h}_0\oplus \textrm{ReLU}\left( BN\left( FC\left({h}_0\right)\right)\right)
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {h}_2={h}_0\oplus \textrm{ReLU}\left( BN\left( FC\left({h}_0\right)\right)\right)
+    $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ c=\tanh \left( FC\left({h}_2\right)\right) $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ d=\textrm{Gumbel}\left( FC\left({h}_2\right)\right) $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ G:\boldsymbol{z},\boldsymbol{m}\mapsto c,d $$](../images/525591_1_En_9_Chapter/525591_1_En_9_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The CTGAN model performs well on tabular data generation across a wide range
+    of tabular datasets, including heterogenous tabular data, which has challenged
+    previous tabular generation attempts. It has shown promise on addressing imbalanced
+    datasets and providing data augmentation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next subsections, we will demonstrate the implementation of a sample
+    GAN model from scratch and using the CTGAN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Simple GAN in TensorFlow
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To demonstrate the flow of modeling and training a simple GAN, the MNIST dataset
+    will be adopted as our target generated images. The dataset is available through
+    `tensorflow``.keras.datasets` as shown in Listing [9-13](#PC13). To ensure our
+    generation produces a variety of images, the number “1” is removed from the dataset
+    to avoid mode collapse as it’s probable that the generator can fool the discriminator
+    by simply producing slanted images of a line.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we’re going to build the discriminator. Recall from earlier that regardless
+    of the generation task, the discriminator will always be a classifier that distinguishes
+    between real and generated images. To make things simple, the discriminator model
+    architecture shown in the following will be a five-layer fully connected network
+    (Listing [9-14](#PC14)). You can further improve the discriminator’s performance
+    by using convolutional layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: The generator model will receive an arbitrary number of points in latent space
+    as random Gaussian noise. It’s responsible for creating fake images based on the
+    gradients flowing back from the discriminator to produce images that the discriminator
+    cannot correctly classify as fake. The dimension of the latent space is irrelevant
+    to model performance – in the following example, 128 was chosen as the input dimension.
+    The model’s architecture is defined in an expanding manner, increasing the number
+    of neurons from 128 to 1024\. The final layer will be a reshape to the correct
+    image size of `(28, 28)`. Note that the final layer activation will be sigmoid
+    since we normalized the image pixel values to be between 1 and 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Add comments (Listing [9-15](#PC15)) wherever you want.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: The entire GAN model consists of the generator and the discriminator in that
+    order (Listing [9-16](#PC16)). To initiate training, the trainable attribute of
+    the discriminator is set to false. We freeze the discriminator’s weights prior
+    to training the entire GAN model since the gradients flowing back from the discriminator
+    at each generated sample must remain unchanged (in terms of learning) across the
+    entire iteration. The classification aspect of the discriminator is trained as
+    a standalone model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: As per usual for image-related tasks, TensorFlow datasets will be used to batch
+    samples into a generator-like format (Listing [9-17](#PC17)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training is accomplished mainly through two nested loops, one looping through
+    the desired number of epochs while, for each epoch, every batch of the dataset
+    is looped through. For each batch of data, the generator produces one batch of
+    fake images along with one batch of real images. Their labels are assigned through
+    tf.constant and then concatenated with the images to create the training dataset
+    for the discriminator. To clarify, one batch of fake images with 0s as their label
+    is joined with one batch of real images labeled 1 and fed into the discriminator
+    using the train_on_batch method (essentially training two batches worth of data).
+    The generator is trained subsequently with the discriminator’s weights frozen
+    and calling train_on_batch on the entire GAN (Listing [9-18](#PC18)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: After several dozen epochs with a batch size of 256, the GAN can generate somewhat
+    convincing handwritten digits (Figure [9-10](#Fig10)). You can further improve
+    the performance by modifying the discriminator or the generator to include more
+    layers or different activation functions or switching to a convolutional-based
+    design. Due to the instability of GAN, one minor change to the model can influence
+    results significantly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 20 images of grids with digits arranged in 5 columns and 4 rows. They display
+    the results from a G A N training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preliminary GAN training results
+  prefs: []
+  type: TYPE_NORMAL
+- en: CTGAN
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The official implementation of CTGAN comes in a convenient, easy-to-use package.
+    To install from pip, type the following command: `pip install sdv`. For consistency
+    and comparison purposes, the Higgs Boson dataset will be reused here for CTGAN
+    to produced artificial samples. The following shows a bare-bones example of training
+    and then sampling fake data from CTGAN (Listing [9-19](#PC19)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: With absolutely no hyperparameter tuning, the performance of CTGAN is beyond
+    impressive compared with VAE discussed previously. As shown in Figures [9-11](#Fig11)
+    and [9-12](#Fig12), the pairplots generated by both the synthetic data and the
+    actual dataset for the bivariate relationships between features are almost indistinguishable.
+    Although feature correlations are not the only method or the best method perse
+    to measure performance of generative models, the results that we can produce after
+    merely five lines of code are quite astounding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig12_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 25 graphs arranged in 5 columns and 5 rows. They present the comparison of the
+    pair plots of actual data, derived by C T G A N.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pairplot of the actual dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_9_Chapter/525591_1_En_9_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 25 graphs arranged in 5 columns and 5 rows. They present the comparison of pair
+    plots of synthetic data, derived by C T G A N.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 9-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Side-by-side comparison of synthetic data generated by CTGAN (top) and 800 randomly
+    sampled data points from the original source (bottom)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The “C” in CTGAN (conditional) really comes into play with the flexibility that
+    the model has. We can specify a “`primary_key`” to generate unique data for that
+    specific feature along with the “`anonymize_field`” option to produce purely artificial
+    samples that aren’t included in the training data (Listing [9-20](#PC20)). For
+    the `anonymize_field` option, there are predefined potential data categories that
+    could be anonymized. Depending on what gets passed in, CTGAN will retrieve data
+    from a set of pre-generated data points.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Sampling of synthetic data can be conditional as well. There are two general
+    approaches to setting constraints during generation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: By initializing a `Condition` object with a dictionary specifying the column/columns
+    that will be constrained. The dictionary’s keys will represent the constrained
+    columns, while its value will be the only value that the model will produce. Note
+    that for continuous features, only values within the range of training data can
+    be produced.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'By directly calling `sample_remaining_columns` on the CTGAN model. It’s exactly
+    what it sounds like: a Pandas `DataFrame` is passed in containing columns already
+    set; then the model will generate the remaining columns.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: In Listing [9-21](#PC21) is a demonstration of both approaches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Finally, the low-level parameters of the GAN, such as the number of epochs,
+    batch sizes, latent space dimension, learning rates, and decays, can be adjusted.
+    More details can be found at CTGAN’s official documentation: [`https://sdv.dev/SDV/user_guides/single_table/ctgan.xhtml`](https://sdv.dev/SDV/user_guides/single_table/ctgan.xhtml).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, we discussed various data generation algorithms, from a simpler
+    and quicker approach through VAEs to more complex, sophisticated GANs. The application
+    of tabular data generation methods is wider than what most people might assume.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variational Autoencoders predict probability distributions rather than explicit
+    scalars for each dimension of the latent space, which allows them to learn the
+    entire latent space in a continuous, rather than discrete, fashion. Correspondingly,
+    vectors in the latent space can be interpolated between and decoded into realistic
+    outputs. These can be used for data generation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Generative Adversarial Network systems consist of a discriminator model and
+    a generator model; the generator model accepts a random vector and synthesizes
+    artificial samples, and the discriminator determines whether the inputted sample
+    is real (drawn from the dataset) or not (generated by the generator). The generator
+    is trained to minimize the discriminator’s performance, whereas the discriminator
+    is trained to maximize it.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Conditional GANs allow for samples to be conditioned on a particular class or
+    property by passing sample attribute information both to the generator and the
+    discriminator.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The CTGAN (Conditional Tabular GAN) model uses conditional generation to synthesize
+    new robust and representative tabular data, even in complex heterogeneous and
+    unbalanced environments.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the next chapter, we will explore meta-optimization. Meta-optimization involves
+    tuning hyperparameters across the training pipeline, as we will realize that this
+    is especially important for tabular data modeling.
+  prefs: []
+  type: TYPE_NORMAL

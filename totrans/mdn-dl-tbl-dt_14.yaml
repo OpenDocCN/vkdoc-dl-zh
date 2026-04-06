@@ -1,0 +1,565 @@
+- en: 11. Multi-model Arrangement
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '*Democracy cannot succeed unless those who express their choice are prepared
+    to choose wisely. The real safeguard of democracy, therefore, is education.*'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: —Franklin D. Roosevelt, US President
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: A single model calling all the shots on the final decisions is somewhat of a
+    dictatorship. A dictator can be efficient, but often successful decisions are
+    informed by a collective group of thinkers. *Multi-model arrangement* concerns
+    the construction of model systems in which models interact in different ways to
+    produce a theoretically more informed output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Different models offer different perspectives when modeling any datasets. Even
+    though two models may obtain the same performance metric value, their *performance
+    distributions* – that is, how their strengths and weaknesses are distributed across
+    the dataset and the space of new data – are likely different. One particular model
+    may be better suited toward certain types of samples or approaches prediction
+    in broad strokes rather than thin slices. One model might be more aggressive and
+    volatile with predictions, whereas a different one may be more conservative and
+    reserved across samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rather than just choosing one particular model, we can choose several different
+    models to form a multi-model arrangement. We pass the input into the entire system,
+    rather than a singular model, and aggregate the output to form a prediction informed
+    by multiple different perspectives. Aggregating/ensembling models in well-designed
+    ways can be incredibly effective, as has been demonstrated in previous chapters
+    (notably, in the “Boosting and Stacking Neural Networks” section of Chapter [7](525591_1_En_7_Chapter.xhtml),
+    on tree-Based models).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this brief chapter, we will cover three key multi-model arrangement techniques:
+    average weighting, input-informed weighting, and meta-evaluation. We will also
+    discuss meta-evaluation, a multi-model arrangement technique that can be used
+    to estimate model confidence/error in contexts where a probability is not easily
+    available.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Average Weighting
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Average weighting is a fairly intuitive and simple method to aggregate the
+    outputs of multiple models together. Given a set of model outputs ![$$ \left\{{\hat{y}}_1,{\hat{y}}_2,\dots,
+    {\hat{y}}_n\right\} $$](../images/525591_1_En_11_Chapter/525591_1_En_11_Chapter_TeX_IEq1.png),
+    we can simply take the average of the outputs to obtain an aggregate result ![$$
+    \overline{\hat{y}} $$](../images/525591_1_En_11_Chapter/525591_1_En_11_Chapter_TeX_IEq2.png)
+    (Figure [11-1](#Fig1)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \overline{\hat{y}}=\frac{1}{n}{\sum}_{i=1}^n{\hat{y}}_i $$](../images/525591_1_En_11_Chapter/525591_1_En_11_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of average weighting. It presents input data with model A alpha,
+    B beta, C gamma, and D delta and weighted output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Averaging ensemble
+  prefs: []
+  type: TYPE_NORMAL
+- en: For instance, say we have a Random Forest classifier, decision tree classifier,
+    Gradient Boosting classifier, and neural network model trained on the Higgs Boson
+    dataset. We can take the average of their outputs and hopefully obtain improved
+    performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, it is almost always true that some models are better than others.
+    Models that are better should have a higher weight in the output. Rather than
+    taking a simple average, we can take a *weighted average* by associating each
+    model with a weighting coefficient representing how much of an impact it has on
+    the final system output. Given a set of model weights {*w*[1], *w*[2], …, *w*[*n*]}
+    and model outputs ![$$ \left\{{\hat{y}}_1,{\hat{y}}_2,\dots, {\hat{y}}_n\right\}
+    $$](../images/525591_1_En_11_Chapter/525591_1_En_11_Chapter_TeX_IEq3.png), we
+    can simply obtain a weighted average/linear combination ![$$ \overline{\hat{y}}
+    $$](../images/525591_1_En_11_Chapter/525591_1_En_11_Chapter_TeX_IEq4.png) (Figure
+    [11-2](#Fig2)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \overline{\hat{y}}={\sum}_{i=1}^n{\hat{y}}_i\cdotp {w}_i $$](../images/525591_1_En_11_Chapter/525591_1_En_11_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a weighted averaging ensemble. It presents the input data with
+    model A alpha, B beta, C gamma, and D delta and weighted output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weighted averaging ensemble
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are many approaches we can use to find the optimal model weighting set
+    *w*. If the models are performing a regression or binary classification problem,
+    we can train a Linear Regression model to predict the ground truth given a dataset
+    of model outputs ![$$ \left\{{\hat{y}}_1,{\hat{y}}_2,\dots, {\hat{y}}_n\right\}
+    $$](../images/525591_1_En_11_Chapter/525591_1_En_11_Chapter_TeX_IEq5.png) for
+    each sample. This is quick to implement and train.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that it is considered good practice to train meta-models on the validation
+    dataset, although the subject is up for debate. The logic is as such: when we
+    actually deploy the model in a real-world setting, we want the meta-model to incorporate
+    the predictions of models operating in a real-world setting (in which models may
+    make mistakes), rather than in a training regime. However, this can require infeasible
+    data splitting, especially in the context of small datasets. It is acceptable
+    to train an aggregatory Linear Regression model to predict the training set labels
+    given model predictions informed by the training set inputs, given that the models
+    are not overfitting.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using Linear Regression is less suited for multiclass problems, because the
+    model outputs one of many possible classes for each sample. One cannot simply
+    average the predictions in a trivial way. Instead, we can use Bayesian optimization
+    frameworks to find the optimal weighting for each model prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To demonstrate, let’s consider the NASA Wildfire dataset. The objective is to
+    categorize a satellite-observed wildfire into one of four types – presumed vegetation
+    fire, active volcano, other static land source, or offshore – given collected
+    satellite reading data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s begin by creating an ensemble of classifiers and training each on the
+    dataset (Listing [11-1](#PC1)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: For convenience, let’s write an ensemble class that simply weights all models’
+    predictions the same. We begin by creating a set of blank votes for each sample
+    to be predicted upon. Each model adds a “vote” for which class it predicts a certain
+    sample falls into. We then choose the class that has the highest number of votes
+    as the final class. All models have the same vote weight; this gives it the average
+    ensembling quality (Listing [11-2](#PC2)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: As one may expect, the performance of such an ensemble is mediocre and worse
+    than several of the top-performing models in isolation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can modify our `AverageEnsemble` class to accept a set of model weights;
+    rather than incrementing a vote for a class with `+1`, we increment it by the
+    assigned vote weightage. This allows some models to have more general influence
+    than others in determining the final outcome (Listing [11-3](#PC3)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can now use Hyperopt to optimize the set of `modelweights`. Our objective
+    function creates a `WeightedAverageEnsemble` with the given set of models and
+    the sampled set of parameters. We’ll consider a weighted ensemble to be better
+    if the F1 score is higher. Because this is a multiclass problem but the F1 score
+    is defined in original form for binary classification, we need to pass a mechanism
+    by which to apply the F1 score to multiple classes. Specifying `average=''macro''`
+    aggregates the F1 score intuitively: it is simply the average of the F1 scores
+    for each of the individual classes (Listing [11-4](#PC4)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s demonstrate how we might do something similar with neural networks. Consider
+    the following set of five different neural network model architectures: `modelA`,
+    `modelB`, `modelC`, `modelD`, and `modelE` (Listing [11-5](#PC5)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Each model has a different “spirit” or “character.” Some process inputs more
+    bluntly and others more thoroughly. Some use one-dimensional convolutions, some
+    use two-dimensional convolutions, and some use nonlinearity. Diversity makes for
+    a strong ensemble (Figures [11-3](#Fig3) through [11-7](#Fig7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig7_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a model E design. It presents 11 levels with input 5 as input
+    layer, dense 18, reshape 1, con v 1 d, con v 1 d 1, max pooling 1 d, con v 1 d
+    2, con v 1 d 3, flatten 1, dense 19, and dense 20.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model E architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig6_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a model D design. It presents 11 levels with input 3 as input
+    layer, dense 15, reshape, con v 2 d, con v 2 d 1, max polling 2 d, con v 2 d 2,
+    con v 2 d 3, flatten, dense 16, and dense 17.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model D architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig5_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flow diagram of a model C design. It presents 7 levels with input 3 as input
+    layer, dense 8, dense 9 and 12, dense 10, dense 11, concatenate, and dense 14.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model C architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig4_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a model B design. It presents 6 levels with input 2 as input
+    layer, dense 3, dense 4, dense 5, dense 6, and dense 7.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model B architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a model A design. It presents 4 levels with input 1 as input
+    layer, dense, dense 1, and dense 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model A architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [11-6](#PC6) demonstrates the process of training each of these models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Since neural networks output probabilities (as opposed to ordinal integers representing
+    classes used in scikit-learn models), we simply scale the probabilities by a weighting
+    factor and add the predicted probabilities, choosing the class with the highest
+    “continuous vote” as the final class (Listing [11-7](#PC7)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Our optimization procedure looks pretty similar as before (Listing [11-8](#PC8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, because we are working with neural networks – highly versatile computational
+    structures – we can also use other methods. One, for instance, is to integrate
+    all these models into one large piece. In order to weight/multiply each model’s
+    prediction by a certain quantity, we’ll use a bit of a “cheat” and apply a 1-length
+    convolution, which simply multiplies each element in a given sequence by the same
+    value (assuming the bias is disabled). Afterward, we will simply add each of the
+    scaled model predictions together and then pass through softmax such that the
+    output of the complete linked model architecture remains a set of valid class
+    probabilities (Listing [11-9](#PC9), Figure [11-8](#Fig8)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig8_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a meta-model design. It presents model A and B sequential, model
+    C functional, model D and E sequential, with input 6 as input layer, and each
+    model with 3 levels that connect to levels of add and lambda.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: A meta-model architecture combining each of the models together and automatically
+    determining weightings
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Another approach would be to concatenate each of the outputs along a joint axis
+    and to apply a time-distributed dense layer across each dimension of the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you call `model.summary()`, you’ll find that the total number of parameters
+    is 22,326; 22,311 are untrainable because they belong to `modelA`, `modelB`, `modelC`,
+    `modelD`, or `modelE`. The remaining five trainable parameters are simply the
+    output weights for each of the models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fitting is standard (Listing [11-10](#PC10)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: An advantage of this is design is that we can do some more fine-tuning overall
+    by unfreezing each of the models and training the entire architecture to further
+    optimize each of the models’ weights in relationship to each other (Listing [11-11](#PC11)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: This can be a good strategy to build effective large networks from a wide, diverse
+    ensemble of smaller candidate models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Input-Informed Weighting
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Average weighting allows us to understand which models are generally more trustworthy
+    and which ones are less trustworthy. The more trustworthy models are ideally given
+    a higher weight, whereas the less trustworthy models are weighted lower. However,
+    some models may specialize in predicting a minority case; because they perform
+    poorer overall, however, average weighting will mark these “specialist” models
+    as generally untrustworthy and weight their prediction contributions down *for
+    all samples* (even when it is predicting on a sample case it “specializes” in).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To reconcile this problem, we need to use a more complex form of weighting:
+    *input-informed weighting*. In input-informed weighting, the specific weighting
+    configuration is not static but rather dependent on the input received. This way,
+    if a particular model or set of models specializes on a certain input, its contributions
+    will be ideally weighted higher (and lower for other inputs it performs poorly
+    on).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sort of scheme works best for neural networks, which are able to capture
+    complex relationships between the “specialization” or performance distribution
+    of model performance and certain types of inputs. Let’s create a weighting model
+    that takes in an input and outputs several outputs, one for each model (Listing
+    [11-12](#PC12)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This weighting model can be incorporated into the meta-model: the output of
+    each model is multiplied by the corresponding weighting of the weighting model
+    (which itself predicts weights informed by the input) (Listing [11-13](#PC13),
+    Figure [11-9](#Fig9)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a design of an input ensembled model. It presents the model functional
+    for input 7 as input layer along with model A, E, D sequential, and model C functional.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: An input-informed ensemble model architecture.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'A good example of similar techniques at work in deep learning research literature
+    can be found in the paper “Who Said What: Modeling Individual Labelers Improves
+    Classification”^([1](#Fn1)) by Melody Y. Guan, Varun Gulshan, Andrew M. Dai, and
+    Geoffrey E. Hinton. Guan et al. tackle the problem of modeling expert-crowdsourced
+    annotations. In this data collection scheme, a set of specialized data is labeled
+    by multiple expert annotators. This scheme occurs often, for instance, in modeling
+    medical datasets, in which several medical professionals may annotate a single
+    sample. However, we may sometimes encounter disagreement or discrepancy in the
+    labels of different annotators on the same sample.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The simple and dominant method to deal with disagreement in crowdsourced annotations
+    is to somehow aggregate the different annotations and model the aggregated annotation.
+    For instance, if five doctors rate the severity of a diagnosis from 0 to 100 as
+    {88, 97, 73, 84, 86}, the overall annotation for the sample would be listed as
+    85.6\. The model would then be trained to predict the diagnosis severity of the
+    sample as 85.6.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Guan et al. instead predict each expert’s annotations for a particular sample.
+    In continuation of our five-doctor example, the model would be trained to jointly
+    predict each of the diagnoses {88, 97, 73, 84, 86}. Then, the model learns the
+    optimal averaging weights for each model, similar to our previous discussion of
+    weighted averaging of model predictions. Guan et al. also design and train a more
+    complex model in which the weighting is input-informed. Ultimately, the research
+    finds – to paraphrase from the paper itself – that aggregating the modeled annotations
+    beats modeling the aggregated annotation. This is the power of meta-modeling at
+    work (Figure [11-10](#Fig10))!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig10_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 3 illustrations. They present training phase 1 with learning labeler models,
+    training phase 2 with learning averaging weights, and evaluation phase of predictions
+    by individual labeler models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Different learning phases/types of a multi-modeling ensemble. From Guan et
+    al., “Who Said What: Modeling Individual Labelers Improves Classification”'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Meta-evaluation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We can use principles and ideas from multi-model arrangement to understand
+    a useful technique for real-world deployment of machine learning and/or deep learning
+    models: meta-evaluation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For a certain set of problems, model confidence is trivially obtainable because
+    it is inherently embedded in the algorithm design. Logistic Regression, for instance,
+    directly gives us an estimate of the model’s “confidence” that a particular input
+    falls into a particular class. Neural networks trained on classification problems
+    directly return the probability that an input belongs to a certain class. However,
+    in many other cases, gauging model confidence and/or error is not as clear.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In many cases, even the output class probabilities of a classification network
+    don’t provide meaningful information about the confidence/trustworthiness of the
+    network’s predictions, due to the softmax layer used in classification output
+    layers. This forces all output probabilities to sum to 1\. One technique used
+    specifically for classification networks to reconcile this problem is to introduce
+    an additional class representing “none of the above,” which can be trained on
+    images from none of the classes in the original dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: During model development, we generally care only about aggregate-level model
+    error. We want to minimize the aggregate error (e.g., Mean Squared Error, mean
+    binary cross-entropy, etc.) of the model across the dataset. However, when models
+    are deployed, they operate on a sample-by-sample basis. It becomes important to
+    know when a model’s predictions are likely to be correct or incorrect for each
+    sample being used for inference and by how much. This can be used to gauge how
+    to act based on a model’s predictions. For instance, if a model gives a diagnosis
+    that a patient does indeed have cancer, we would like to know the model’s specific
+    confidence on this sample case more than the general knowledge that the model
+    has such-and-such error rate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Listing [11-14](#PC14) defines an architecture (visualized in Figure [11-11](#Fig11))
+    that estimates the error of the prediction given the original input and the predicted
+    output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/525591_1_En_11_Chapter/525591_1_En_11_Fig11_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A flowchart of a meta-model design. It presents 7 levels with data as input
+    layer, dense, dense 1, dense 2 and 3, concatenate, dense 4, and dense 5.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 11-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: A meta-modeling architecture
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, we can train on the error. In this case, we want to give the model both
+    the original inputs and the predicted values; the target is the absolute error
+    of the prediction (Listing [11-15](#PC15)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: During the prediction phase, you can then pass in the prediction (along with
+    the original input) through the meta-evaluation model to get an understanding
+    for how much you can trust the individual prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This technique is similar to that of residual learning employed in boosting
+    ensembles (see Chapter [1](525591_1_En_1_Chapter.xhtml), on Gradient Boosting
+    algorithms, and Chapter [7](525591_1_En_7_Chapter.xhtml), on GrowNet).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another technique used for large neural networks is to force the neural network
+    to both make the formal prediction and simultaneously estimate the error of such
+    a prediction. By this method, the error estimation is made “self-consciously”
+    by the model with knowledge of the internal states used to form a prediction.
+    However, it is important to severely discount the importance of the error estimation
+    output early on in training (like changing the value of *α* for multitask autoencoders)
+    to ensure the network reaches a point of satisfactory performance such that estimating
+    error is feasible and meaningful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Key Points
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, we discussed various multi-model arrangement methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multi-model arrangement provides a set of tools to composite multiple models
+    together. This can make systems more robust, jointly informed, and self-aware.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In simplest form, the output of all models in an ensemble can be averaged. However,
+    some models may perform better than others. Weighted averaging, in which each
+    model’s prediction is associated with a weight, captures relative performance/trustworthiness
+    across an ensemble of models. Input-informed weighting makes this weighting dependent
+    on the type of input, to accommodate model specialization in certain types of
+    inputs. All weightings can be learned through meta-optimization or, if all models
+    are neural networks, can be fixed and arranged into a meta-neural network.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Meta-evaluation is a framework to predict a model’s error on a per-sample basis.
+    This allows for the characterization of model trustworthiness and confidence in
+    live deployment.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In this book’s final chapter, we will look at deep learning interpretability.
+  prefs: []
+  type: TYPE_NORMAL

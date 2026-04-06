@@ -1,0 +1,698 @@
+- en: 5. Collaborative Filtering Using Matrix Factorization, Singular Value Decomposition,
+    and Co-Clustering
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 'Chapter [4](537881_1_En_4_Chapter.xhtml) explored collaborative filtering and
+    using the KNN method. A few more important methods are covered in this chapter:
+    matrix factorization (MF), singular value decomposition (SVD), and co-clustering.
+    These methods (along with KNN) fall into the model-based collaborative filtering
+    approach. The basic arithmetic method of calculating cosine similarity to find
+    similar users falls into the memory-based approach. Each approach has pros and
+    cons; depending on the use case, you must select the suitable approach.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [5-1](#Fig1) explains the two types of approaches in collaborative filtering.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig1_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A framework exposes the classification of collaborative filtering. It classifies
+    into 2 techniques: memory-based approach and model-based approach. The definitions,
+    advantages, and disadvantages are exposed.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The two approaches of collaborative filtering explained
+  prefs: []
+  type: TYPE_NORMAL
+- en: The memory-based approach is much easier to implement and explain, but its performance
+    is often affected due to sparse data. But on the other hand, model-based approaches,
+    like MF, handle the sparse data well, but it’s usually not intuitive or easy to
+    explain and can be much more complex to implement. But the model-based approach
+    performs better with large datasets and hence is quite scalable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter focuses on a few popular model-based approaches, such as implementing
+    matrix factorization using the same data from Chapter [4](537881_1_En_4_Chapter.xhtml),
+    SVD, and co-clustering models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Matrix Factorization, Co-Clustering, and SVD
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The following implementation is a continuation of Chapter [4](537881_1_En_4_Chapter.xhtml)
+    and uses the same dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s look at the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-2](#Fig2) shows the DataFrame from Chapter [4](537881_1_En_4_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A data frame exposes the input data that include invoice number, stock code,
+    quantity, invoice date, delivery date, discount percentage, ship mode, shipping
+    cost, and customer I D.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Input data
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s reuse item_purchase_df from Chapter [4](537881_1_En_4_Chapter.xhtml).
+    It is the matrix containing the items and the information on whether customers
+    bought them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-3](#Fig3) shows the item purchase DataFrame/matrix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig3_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A data frame exposes the data of items purchased. The customer I D and stock
+    code are represented.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Item purchase DataFrame/matrix
+  prefs: []
+  type: TYPE_NORMAL
+- en: This chapter uses the Python package called surprise for modeling purposes.
+    It has implementations of popular methods in collaborative filtering, like matrix
+    factorization, SVD, co-clustering, and even KNN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, let’s format the data into the proper format required by the surprise
+    package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Start by stacking the DataFrame/matrix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-4](#Fig4) shows the output DataFrame after stacking.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A data frame exposes the output of stacked item purchases. The stock code, customer
+    I D, and quantity are represented. Every quantity is observed with 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stacked item purchase DataFrame/matrix
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see, items_purchase_df has 3538 unique items (rows) and 3647 unique
+    users (columns). The stacked DataFrame is 3538 × 3647 = 12,903,086 rows, which
+    is too big to pass into any algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s shortlist some customers and items based on the number of orders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, put all the IDs in a list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following imports the counter to count the number of orders made by each
+    customer and for each item.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Count the number of orders by each customer and store that information in a
+    DataFrame.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Drop all customer IDs with less than 120 orders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Rename the index column as 'CustomerID' for the inner join.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-5](#Fig5) shows the customer count DataFrame output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A data frame exposes the count of the customer. The customer I D and the quantity
+    are represented. The model of the data frame: 568 rows and 2 columns.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Customer count DataFrame
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly, repeat the same process for items (i.e., counting the number of orders
+    placed per item and storing it in a DataFrame).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Drop all items that were ordered less than 120 times.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Rename the index column as 'Description' for the inner join.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-6](#Fig6) shows the output item count DataFrame.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A data frame exposes the output of item count. The customer I D and the quantity
+    are represented. The model of the data frame: 679 rows and 2 columns.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: Item count DataFrame
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, apply a join on both DataFrames with stacked data to create the shortlisted
+    final DataFrame.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-7](#Fig7) shows the shortlisted DataFrame output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'A data frame exposes the output of shortlisted data. The stock code, customer
+    I D, and quantity are represented. The data frame model: 385672 rows and 3 columns.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: The final shortlisted DataFrame
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now that the size of the data has been reduced, let’s describe it and view the
+    stats.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-8](#Fig8) describes the shortlisted DataFrame.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A data frame reports the shortlisted data. The customer I D, and quantity along
+    with the mean, count, minimum, and maximum values are exposed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Describes the shortlisted DataFrame
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can see from the output that the count has significantly reduced to 385,672
+    records, from 12,903,086\. But this DataFrame is to be formatted further using
+    built-in functions from the surprise package to be supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Read the data in a format supported by the surprise library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: The range has been set as 0,5095 because the maximum quantity value is 5095.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Load the dataset in a format supported by the surprise library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: The final formatted data is ready.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, let’s split the data to train and test for validating the models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Implementing NMF
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Let’s start by modeling the non-negative matrix factorization method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [5-9](#Fig9) explains matrix factorization (multiplication).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig9_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A representation of matrix factorization. The purchase matrix is equal to the
+    user matrix multiplied by the item matrix. A, B, C, and D indicate the users.
+    W, X, Y, and Z indicate the items.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Matrix factorization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Matrix factorization is a popular method used in building collaborative filtering-based
+    recommendation systems. It is a basic embedding model where latent/hidden features
+    (embeddings) are generated from the user and item matrixes using matrix multiplication.
+    This reduces the dimensionality of the full input matrix and hence is a compact
+    representation, increasing the scalability and performance. These latent features
+    are then used to fit an optimization problem (usually minimizing an error equation)
+    to get to the predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using built-in functions, you can calculate the performance metrics like RMSE
+    (root-mean-squared error) and MAE (mean absolute error).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: The RMSE and MAE are moderately high for this model, so let’s try the other
+    two and compare them at the end.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can also cross-validate (using built-in functions) to further validate these
+    values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-10](#Fig10) shows the cross-validation output for NMF.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A representation exhibits the outcome of cross-validation for N M F. Evaluating
+    R M S E, M A E, of algorithm N M F on 5 splits is exposed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross-validation output for NMF
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cross-validation shows that the average RMSE is 427.774, and MAE is approximately
+    272.627, which is moderately high.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementing Co-Clustering
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Co-clustering (also known as *bi-clustering*) is commonly used in collaborative
+    filtering. It is a data-mining technique that simultaneously clusters the columns
+    and rows of a DataFrame/matrix. It differs from normal clustering, where each
+    object is checked for similarity with other objects based on a single entity/type
+    of comparison. As in co-clustering, you check for co-grouping of two different
+    entities/types of comparison for each object simultaneously as a pairwise interaction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s try modeling with the co-clustering method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calculate the RMSE and MAE performance metrics using built-in functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: The RMSE and MAE are very low for this model. Until now, this has performed
+    the best (better than NMF).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross-validate (using built-in functions) to further validate these values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-11](#Fig11) shows the cross-validation output for co-clustering.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A representation exposes the output of cross-validation for co-clustering. Evaluating
+    R M S E and M A E of algorithm co-clustering on 5 splits are depicted.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross-validation output for co-clustering
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cross-validation shows that the average RMSE is 14.031, and MAE is approximately
+    6.135, which is quite low.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementing SVD
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Singular value decomposition is a linear algebra concept generally used as a
+    dimensionality reduction method. It is also a type of matrix factorization. It
+    works similarly in collaborative filtering, where a matrix with rows and columns
+    as users and items is reduced further into latent feature matrixes. An error equation
+    is minimized to get to the prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s try modeling using the SVD method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calculate the RMSE and MAE performance metrics using built-in functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: The RMSE and MAE are significantly high for this model. Until now, this has
+    performed the worst (worse than NMF and co-clustering).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross-validate (using built-in functions) to further validate these values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-12](#Fig12) shows the cross-validation output for SVD.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A representation exposes the output of cross-validation for S V D. Evaluating
+    R M S E and M A E of algorithm S V D on 5 splits are depicted.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross-validation output for SVD
+  prefs: []
+  type: TYPE_NORMAL
+- en: The cross-validation shows that the average RMSE is 4831.928 and MAE is approximately
+    4821.549, which is very high.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Getting the Recommendations
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The co-clustering model has performed better than the NMF and the SVD models.
+    But let’s validate the model further once more before using the predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For validating the model, let’s use item 47590B and customer 15738.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s get the prediction for the same combination to see the estimation or prediction.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: The predicted value given by the model is 133.01, while the actual was 78\.
+    It is close to the actual and validated the model performance even further.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The predictions are from the co-clustering model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s use these predictions and see the best and the worst predictions,
+    but first, let’s get the final output onto a DataFrame.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: But first, let’s also add important information like the number of item orders
+    and customer orders for each record using the following function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following calls these functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calculate the error component to get the best and worst predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-13](#Fig13) shows the prediction DataFrame.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig13_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A data frame exposes the prediction data. The item id, customer id, quantity,
+    prediction, details, item orders, customer orders, and error are represented.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prediction DataFrame
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following gets the best predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-14](#Fig14) shows the best predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig14_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A data frame exposes the best predictions data. The item id, customer id, quantity,
+    prediction, details, item orders, customer orders, and error are represented.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Best predictions
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following gets the worst predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: Figure [5-15](#Fig15) shows the worst predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/537881_1_En_5_Chapter/537881_1_En_5_Fig15_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A data frame exposes the data of worst predictions. The item id, customer id,
+    quantity, prediction, details, item orders, customer orders, and error are represented.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-15
+  prefs: []
+  type: TYPE_NORMAL
+- en: Worst predictions
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can now use the predictions data to get to the recommendations. First, find
+    the customers that have bought the same items as a given user, and then from the
+    other items they have bought, to fetch the top items and recommend them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s again use customer 12347 and create a list of the items this user bought.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: Get the list of customers who bought the same items as user 12347.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s filter these customers (customer_list) from predictions data, remove
+    the items already bought, and recommend the top items (prediction).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: The recommended list of items for user 12347 is achieved.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter continued the discussion of collaborative filtering-based recommendation
+    engines. Popular methods like matrix factorization, SVD, and co-clustering were
+    explored with a focus on implementing all three models. For the given data, the
+    co-clustering method performed the best, but you need to try all the different
+    methods available to see which best fits your data and use case in building a
+    recommendation system.
+  prefs: []
+  type: TYPE_NORMAL

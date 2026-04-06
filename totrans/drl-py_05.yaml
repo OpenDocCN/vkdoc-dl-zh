@@ -1,0 +1,1960 @@
+- en: 5. Function Approximation and Deep Learning
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: The previous three chapters looked at various approaches to planning and control—first
+    at the dynamic programming (DP), then at the Monte Carlo approach (MC), and finally
+    at the temporal difference (TD) approach. In all these approaches, you saw problems
+    where the state space and actions were discrete. Only in the previous chapter,
+    toward the end, did I talk about Q-learning in a continuous state space. You discretized
+    the state values using an arbitrary approach and trained a learning model. This
+    chapter extends that approach by talking about the theoretical foundations of
+    approximation and how it impacts the setup for reinforcement learning. It will
+    then look at the various approaches to approximating values, first with a linear
+    approach that has a good theoretical foundation and then with a nonlinear approach
+    with neural networks. This aspect of combining deep learning with reinforcement
+    learning is the most exciting development and has moved reinforcement learning
+    algorithms to scale.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As usual, the approach is to first look at things in the context of the *prediction/estimation*
+    setup, where the agent follows a given policy in order to learn the state value
+    and/or state action values. This will be followed by talking about *control*—finding
+    the optimal policy. The example will continue to be in a model-free world, where
+    you do not know the transition dynamics. After the introduction, I will talk about
+    the issues of convergence and stability in the world of function approximation.
+    So far, convergence has not been a big issue in the context of the exact and discrete
+    state spaces. However, function approximation brings about new issues that need
+    to be considered for theoretical guarantees and practical best practices. The
+    chapter also touches upon batch methods and compares them to the incremental learning
+    approach discussed in the first part of this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter closes with a quick overview of deep learning, basic theory, and
+    the basics of building/training models using PyTorch, PyTorch Lightning, and TensorFlow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Reinforcement learning can be used to solve very big problems with many discrete
+    state configurations or problems with continuous state space. Consider the game
+    of backgammon, which has close to 10^(20) discrete states, or consider the game
+    of Go, which has close to 10^(170) discrete states. Also consider environments
+    like self-driving cars, drones, or robots—these all have a continuous state space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Up to now, you have seen problems where the state space was discrete and also
+    small in size, such as the grid world with ~100 states or the taxi world with
+    500 states. How do you scale the algorithms you have learned so far to bigger
+    environments or environments with continuous state spaces? All along, the state
+    values *V*(*s*) or the action values *Q*(*s*, *a*) have been represented with
+    a table, with one entry for each value of state *s* or a combination of state
+    *s* and action *a*. As the numbers increase, the table size is going to become
+    huge, making it infeasible to be able to store state or state action values in
+    a table. Further, there will be too many combinations, which can slow down the
+    learning of a policy. The algorithm may spend too much time in states that have
+    a very low probability in a real run of the environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s take a different approach now. Let’s represent the state value (or state-action
+    value) with the following function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{v}\left(s;w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ1.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Instead of representing values in a table, they are now being represented by
+    the function ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq1.png)
+    or ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq2.png),
+    where the parameter *w* is the parameter of the function that defines the policy
+    π(*a*| *s*) that the agent follows. And where *s* or (*s*, *a*) are the inputs
+    to the state or state-value functions. The parameters w are the weights of a deep
+    learning neural network or the tunable parameters of the function that defines
+    the policy. An RL algorithm uses various learning approaches to tweak the values
+    of w to obtain the desired behavior of the agent, first in terms of policy π(*a*|
+    *s*), which in turn leads to the state value function ![$$ \hat{v}\left(s;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq3.png) or the
+    state action value function ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq4.png).
+    You choose the number of parameters ∣*w*∣, which is lot smaller than the number
+    of states ∣*s*∣ or the number of state-action pairs (|*s*| × |*a*|). The consequence
+    of this approach is that there is a generalization of representation of the state
+    of the state-action values. When you update the weight vector *w* based on some
+    update equation for a specific state *s* or state action pair (*s*, *a*), it not
+    only updates the value for that specific *s* or (*s*, *a*), but it also updates
+    the values for many other states or state actions that are close to the original
+    *s* or (*s*, *a*), the state or state action pair for which the update has been
+    carried out. This depends on the geometry of the function. The other values of
+    states near *s* will also be impacted by such an update, as shown previously.
+    You are approximating the values with a function that is a lot more restricted
+    than the number of states. Just to be specific, instead of updating *v*(*s*) or
+    *q*(*s*, *a*) directly, you now update the parameter set *w* of the function,
+    which in turn impacts the value estimates ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq5.png)
+    or ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq6.png).
+    Of course, like before, you carry out the *w* update using the MC or TD approach.
+    There are various approaches to function approximation. You could feed the state
+    vector (the values of all the variables that signify the state, such as position,
+    speed, location, etc.) and get ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq7.png),
+    or you could feed the state and action vectors and get ![$$ \hat{q}\left(s,a;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq8.png) as an
+    output. An alternative approach that is very dominant in the case of actions being
+    discrete and coming from a small set is to feed state vector *s* and get ∣*A*∣
+    number of ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq9.png),
+    one for each action possible (∣*A*∣ denotes the number of possible actions). Figure
+    [5-1](#Fig1) shows the schematic of various approaches for using a function to
+    represent ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq10.png)
+    or ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq11.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram depicts three blocks labeled W and following inputs and outputs. Left.
+    Input is s and output is v hat of s, w. Middle. Inputs are s and a and output
+    is q hat of s, a, and w. Right. The input is s and the outputs are q hat of s,
+    a 1, w up to q hat of s, a m, w.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ways to represent ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq12.png)
+    or ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq13.png)using
+    the function approximation approach. The first and last ones are the most common
+    ones used in this chapter
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are various approaches to building such functional approximators, but
+    this chapter explores two common approaches—linear approximators using tiling
+    and nonlinear approximators using neural networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, before getting into this, I need to revisit theoretical foundations
+    to see what operations are required to make *w* move such that you can successively
+    reduce the error between the target values and the current estimates of state
+    or state-action values, *v*(*s*) or *q*(*s*, *a*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Theory of Approximation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Function approximation is a topic studied extensively in the field of supervised
+    learning, wherein based on training data you build a generalization of the underlying
+    model. Most of the theory from supervised learning can be applied to reinforcement
+    learning with functional approximation. However, RL with functional approximation
+    brings to the fore new issues, such as how to bootstrap as well as its impact
+    on nonstationarity. In supervised learning, while the algorithm is learning, the
+    problem/model from which the training data was generated does not change. However,
+    when it comes to RL with function approximation, the way the target (labeled *output*
+    in supervised learning) is formed, it induces nonstationarity, and you need to
+    come up with new ways to handle it. What I mean by *nonstationarity* is that you
+    do not know the actual target values of *v*(*s*) or *q*(*s*, *a*). You use either
+    the MC or TD approach to form estimates and then use these estimates as “targets.”
+    As you improve the estimates of the target values, you use the revised estimates
+    as new targets. In supervised learning it is different—the targets are given and
+    fixed during training. The learning algorithm has no impact on the targets. In
+    reinforcement learning, you do not have actual targets, and you use the estimates
+    of the target values. The agent is trying to find optimal actions, such as *v*(*s*)
+    or *q*(*s*, *a*). The targets in the learning algorithm change. Therefore, the
+    targets are not fixed or stationary during the learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s revisit the update equations for MC (Equation [4-2](502835_2_En_4_Chapter.xhtml#Equ2))
+    and TD (Equation [4-5](502835_2_En_4_Chapter.xhtml#Equ5)). I have modified the
+    equations to make both MC and TD use the same notations of subscript *t* for the
+    current time and *t* + 1 for the next instant. Both equations carry out the same
+    update to move *V*[*t*](*s*) closer to its target, which is *G*[*t*](*s*) in the
+    case of the MC update and *R*[*t*] + 1 + *γ* · *V*[*t*](*s*^′) for the TD(0) update.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha\ \left[{G}_t(s)-{V}_t(s)\right] $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-2)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha \left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime}\right)-{V}_t(s)\right]
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ3.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is similar to what you do in supervised learning, especially in linear
+    least square regression. You have the output values/targets *y*(*t*) and you have
+    the input features *x*(*t*), together called *training data*. You can choose a
+    model *Model*[*w*][*x*(*t*)] like the polynomial linear model, decision tree,
+    or support vectors, or even other nonlinear models like neural nets. The training
+    data is used to minimize the error between what the model is predicting and the
+    actual output values from the training set. This is done by minimizing a loss
+    function as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J(w)={\left[y(t)-\hat{y}\left(t;w\right)\right]}^2;\mathrm{where}\ \hat{y}\left(t;w\right)={Model}_w\left[x(t)\right]
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When *J*(*w*) is a differentiable function, which is the case in this book,
+    you can use gradient descent to tweak the weights/parameters *w* of the model
+    to minimize the error/loss function *J*(*w*). Usually, the update is carried out
+    in batches multiple times using the same training data until the loss stops reducing
+    further. The model with weights *w* has now learned the underlying mapping from
+    input *x*(*t*) to output *y*(*t*). The way the delta update to the weights is
+    carried out is given in the following equations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gradient of *J*(*w*) wrt *w*  ∶ =∇[*w*]*J*(*w*)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For the loss function given in Equation [5-4](#Equ4), this becomes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_wJ(w)=-2\cdotp \left[y(t)-\hat{y}\left(t;w\right)\right]\cdotp
+    {\nabla}_w\hat{y}\left(t;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: If you remember your calculus, you will remember that ∇[*w*]*J*(*w*) is a vector
+    in weight space—that is, it has ∣*w*∣ components. The direction of this vector
+    is more important than the actual values of the components. The direction of ∇[*w*]*J*(*w*)
+    is the direction in ∣*w*∣ space, which results in a maximum rate of change of
+    *J*(*w*) as *w* changes. As *J*(*w*) is the squared loss—that is, the difference
+    between actual and predicted values, you want to reduce *J*(*w*), the error, as
+    much as possible. You can achieve this by moving *w* parameters in the negative
+    direction of ∇[*w*]*J*(*w*). This will give you a new set of *w* parameters such
+    that the value of *J*(*w*) is lowered.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t-\alpha {\nabla}_wJ(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-5)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The weights move in the direction that minimize the loss—that is, the difference
+    between the actual and predicted output values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Moving on, let’s spend some time talking about the various approaches to function
+    approximation. The most common approaches are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Linear combination of features. You combine the features (such as speed, velocity,
+    position, etc.) weighted by vector *w* and use the computed value as the state
+    value. Common approaches are as follows:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Polynomials
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Fourier basis functions
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Radial basis functions
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Coarse coding
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Tile coding
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Nonlinear but differentiable approaches, with neural networks being the most
+    popular and currently trending one.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Nonparametric, memory-based approaches.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This book mostly talks about deep learning–based neural network approaches that
+    suit unstructured inputs, such as images captured by the agent’s vision system
+    or freeform text using natural language processing (NLP). Later parts of this
+    chapter and the next chapter are devoted to using deep learning–based function
+    approximation, and you will see many variations with full code examples using
+    PyTorch. But we are getting ahead of ourselves. Let’s first examine a few common
+    linear approximation approaches such as coarse coding and tile coding. As the
+    focus of this book is on the use of deep learning in reinforcement learning, I
+    do not devote a lot of time to various other linear approximation approaches.
+    Also, just because I am not devoting time to all the linear approaches, it does
+    not mean that they lack power of effectiveness. Depending on the problem at hand,
+    the linear approximation approach may be the right way to go; it’s effective,
+    fast, and has convergence guarantees.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Coarse Coding
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s revisit at the mountain car problem discussed in Figure [2-2](502835_2_En_2_Chapter.xhtml#Fig2).
+    The car has a two-dimensional state, a position, and a velocity. Suppose you divide
+    the two-dimensional state space into overlapping circles with each circle representing
+    a feature. If state *S* lies inside a circle, that particular feature is present
+    and has a value of 1; otherwise, the feature is absent and has a value of 0\.
+    The number of features is the number of circles. Let’s say you have *p* circles;
+    then you have converted a two-dimensional continuous state space into a p-dimensional
+    state space, where each dimension can be 0 or 1\. In other words, each dimension
+    can belong to {0,1}.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '{0,1} represents the set of possible values—0 or 1\. (0,1)—with regular brackets
+    representing the range of values—that is, any value from 0 to 1 with 0 and 1 excluded.
+    [0,1) represents the range of values between 0 to 1 plus the value on left—that
+    is, 0 is included in the range and the value 1 on the right side of the range
+    is excluded.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: All those features represented by circles in which the state *S* lies will be
+    “on” or equal to 1\. Figure [5-2](#Fig2) shows an example. Two states are shown
+    in the diagram, and depending on the circles that these points lie inside, the
+    corresponding features will be turned on, while other features will be turned
+    off. The generalization will depend on the size of the circles and how densely
+    they are packed together. If the circles are replaced by ellipses, the generalization
+    will be more in the direction of the elongation. You could also choose shapes
+    other than circles to control the amount of generalization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig2_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A Venn diagram of 4 overlapped circles represents the coarse coding in two dimensions.
+    The center overlapped area of all the circles is S, and the other 2 labeled circles
+    are S 1, and S 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Coarse coding in two dimensions using circles. The generalization depends on
+    the size of circles as well as the density with which the circles are placed together
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now consider the case with large, densely packed circles. A large circle makes
+    the initial generalization wide where two faraway states are connected because
+    they fall inside at least one common circle. However, the density (i.e., number
+    of circles) allows you to control the fine-grained generalization. By having many
+    circles, you ensure that even nearby states have at least one feature that is
+    different between two states. This will hold even when each of the individual
+    circles is big. With the help of experiments with varying configurations of the
+    circle size and number of circles, you can fine-tune the size and number of circles
+    to control the generalization appropriate for the problem/domain in question,
+    controlling generalization with the size of the shape and granularity with the
+    density of the shapes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tile Encoding
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Tile encoding is a form of coarse coding that can be programmatically planned.
+    It works well over multidimensional space, making it much more useful than generic
+    coarse coding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s consider a two-dimensional space like the mountain car I just talked about.
+    You divide the space into nonoverlapping grids covering the whole space. Each
+    such division is called *tiling*, as shown in the left diagram of Figure [5-3](#Fig3).
+    The *tiles* are square here and, depending on the location of state *S* on this
+    2*D* space, only one tile is 1, while all other tiles are 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A node diagram. Node s t leads to node a t through policy. Nodes s t and a t
+    lead to node s t plus 1 that further leads to nodes a t plus 1 and s t plus 2\.
+    Node a t plus 1 leads to node s t plus 2\. A dashed line labeled transition is
+    drawn between nodes s t plus 1 and a t and s t plus 1 and s t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Policy and transition dynamics under Markov assumptions
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A 4 by 4 grid with a highlighted dot at the bottom right of a cell in the third
+    column and second row. On the right, multiple shaded, overlapped 4 by 4 grids
+    are represented with a highlighted cell in the third column and second row containing
+    a dot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tile coding. You have 4×4=16 tiles in a single tiling, as shown in the left
+    figure. And you have four tilings overlapping each other, as shown in four different
+    colors in the right figure. A state (green color dot) lights up a single tile
+    from each tiling. The generalization is controlled by the number of tiles in a
+    single tiling as well as the total number of tilings
+  prefs: []
+  type: TYPE_NORMAL
+- en: You then have a number of such *tiling* offset from each other. Suppose you
+    use *n* tilings; then for a state, only one tile from each tiling will be on.
+    In other words, if there are *n* tilings, then exactly *n* features will be 1,
+    a single feature from each of the *n* tilings. Figure [5-3](#Fig3) shows an example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that if the learning rate of step size were *α*(alpha) in Equations [5-1](#Equ1)
+    and [5-2](#Equ2), you would now replace it with ![$$ \frac{\alpha }{n} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq14.png)
+    where *n* is the number of tilings. This makes the algorithm scale free of the
+    number of tilings. As both coarse coding and tile encoding use binary features,
+    digital computers can speed up computations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The nature of the generalization now depends on the following factors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of tiles in a single tiling (the left figure in Figure [5-3](#Fig3)).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The number of tilings (the right figure in Figure [5-3](#Fig3) showing four
+    tilings in four different colors).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The nature of offset, whether uniform and symmetric or asymmetric.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: There are some general strategies to determine the previous numbers. Consider
+    the situation where each tile in a single tiling is a square of width *w*. For
+    a continuous space of *k* dimensions, it will be a *k*-dimensional square with
+    each side of width *w*. Suppose you have *n* tilings, and hence the tilings need
+    to be offset from each other by a distance of ![$$ \frac{w}{n} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq15.png)
+    in all dimensions. This is known as a *displacement vector*. The first heuristic
+    is to choose *n* such that *n* = 2^(*i*) ≥ 4*k*. The displacement in each direction
+    is an odd multiple (1, 3, 5, 7, …., 2*k* − 1) of displacement vector ![$$ \frac{w}{n}
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq16.png). The
+    upcoming example uses a library to help you divide the two-dimensional mountain
+    car state space into appropriate tilings. You will provide the 2D state vector,
+    and the library will give you back the active tiles vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Challenges in Approximation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: While I leverage the knowledge of supervised learning–based methods like gradient
+    descent explained earlier, you have to keep two things in mind that make gradient-based
+    methods harder to work in reinforcement learning as compared to the supervised
+    learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, in supervised learning, the training data is held constant. The data
+    is generated from the model, which does not change during the data generation
+    process. It is a ground truth that is given to you. You are building a function
+    whose parameters are identified by using this training data to learn input to
+    output mapping. The data provided to the training algorithm is external to the
+    learning process/algorithm. It does not depend on the algorithm in any way. It
+    is given as constant and independent of the learning algorithm. Unfortunately,
+    in RL, especially in a model-free setup, this is not the case. The data used to
+    generate training samples is based on the policy the agent is following, and it
+    is not a complete picture of the underlying model. As you explore the environment,
+    you learn more and adjust the policy. This change in policy leads to exploration
+    of news states and actions, which in turns generates a new set of training data
+    for the next step of iteration. You either use the MC-based approach of observing
+    an actual trajectory or bootstrap under TD to form an estimate of the target value,
+    the *y*(*t*). As you explore, learn more, and adjust the policy, the target *y*(*t*)
+    for a given specific state changes, which is not the case in supervised learning.
+    This is known as the problem of *nonstationary targets*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Second, supervised learning is based on the theoretical premise of samples being
+    uncorrelated to each other, mathematically known as i.i.d. (for “independent identically
+    distributed”) data. All the algorithms for regression, classification, trees,
+    and support vector machines are based on this i.i.d. assumption. However, in RL,
+    the data you see depends on the policy that the agent followed to generate the
+    data. In a given episode, the states you see are dependent on the policy the agent
+    is following at that instant. States that come in later time steps depend on the
+    action (decisions) the agent took earlier. In other words, the data is *correlated*.
+    The next state *s*[*t* + 1] you see depends on the current state *s*[*t*] and
+    the action *a*[*t*] agent takes in that state. Note that this assumes that the
+    Markov property (the future state *s*[*t* + 1]) depends only on the current state
+    *s*[*t*] and action *a*[*t*] you take. There is no dependence on the past—that
+    is, either actions or states from time step *t* − 1 or before. The relationship
+    can be expressed by way of a dependency graph, as shown in Figure [5-4](#Fig4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: This temporal dependence on data in RL means that you cannot shuffle the data
+    in the case of RL and that each data point, unlike with supervised learning, cannot
+    be used in isolation. The whole trajectory of data points from the beginning of
+    an episode to the end must be used together.
+  prefs: []
+  type: TYPE_NORMAL
+- en: These two issues make function approximation harder in an RL setup. As you go
+    along, you will see the various approaches that have been taken to address these
+    challenges. These approaches do not always come with theoretical guarantees—rather
+    with practical hacks and ways that have proven useful and do carry some intuitive
+    reasoning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With a broad understanding of the approach, it is time now to start with the
+    usual course of first looking at value *prediction/estimate* to learn a function
+    that can represent the value functions *v*(*s*) or state-action value functions
+    *q*(*s*, *a*). You will then look at the *control* aspect—that is, the process
+    of optimizing the policy π(*a*| *s*) that the agent should follow. It will follow
+    the usual pattern of using Generalized Policy Iteration (GPI), just like the approach
+    in the previous chapter—alternating between predicting/estimating the state-action
+    values and using a greedy policy to control/identify the best action. And you
+    keep iterating in this loop until some convergence is observed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Incremental Prediction: MC, TD, TD(***λ***)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section looks at the prediction problem,—that is, how to estimate the state
+    values using function approximation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Following along, you will now attempt to extend the supervised training process
+    of tuning a model using training data consisting of inputs and targets. This is
+    done to function approximation under RL using the loss function in Equation [5-4](#Equ4)
+    and weight update, as shown in Equation [5-5](#Equ5). If you compare the loss
+    function in Equation [5-4](#Equ4) and the MC/TD updates in Equations [5-2](#Equ2)
+    and [5-3](#Equ3), you can draw a parallel by thinking of MC and TD updates as
+    operations, which are trying to minimize the error between the actual target *V*[π](*s*)
+    and the current estimate *V*[*t*](*s*). You can represent the loss function as
+    follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J(w)={E}_{\uppi}{\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}^2 $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-6)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is similar to the loss function for supervised learning, as shown in Equation
+    [5-4](#Equ4). Following the same derivation as in Equation [5-5](#Equ5) and using
+    stochastic gradient descent (i.e., replacing expectation with update in each sample),
+    you can write the update equation for weight vector *w* as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t-\alpha .{\nabla}_w\ J(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{V}_{\pi }(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\
+    {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, *w* represents the weight vector of the model—that is, the tunable parameters
+    of the model that are progressively improved to fit the model to the state values
+    observed for a given policy. However, unlike supervised learning, you do not have
+    the actual/target output values *V*[π](*s*); rather, you use estimates of these
+    targets. With MC, the estimate/target of *V*[π](*s*) is *G*[*t*](*s*), *w*hile
+    the estimate/target under TD(0) is *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′). Accordingly,
+    the updates under MC and TD(0) with functional approximation can be written as
+    follows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'MC update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\
+    {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-8)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TD(0) update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma \bullet {V}_t\left({s}^{\prime
+    };w\right)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-9)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A similar set of equations can be written for q-values. You will see that in
+    the next section. This is along the same lines of what you did for the MC and
+    TD control sections in the previous chapter; first you use state action values
+    in a model-free world to build accurate estimates of the state action values under
+    the current policy and then use greedy updates to find values, maximizing actions
+    in each individual state. Moving back and continuing with the derivation of weight
+    update equation, let’s first consider the setup of linear approximation where
+    the state value ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq17.png)
+    can be expressed as a dot product of state vector *x*(*s*) and weight vector *w*,
+    each with vector component dimension index represented as *i*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{v}\left(s;w\right)=x{(s)}^T\cdotp w=\sum \limits_i{x}_i(s)\cdotp
+    {w}_i $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ10.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-10)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the previous expression, the gradient of ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq18.png)
+    with respect to *w* will be the state vector *x*(*s*)—that is:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_w{V}_t\left(s;w\right)=x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ11.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-11)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Combining Equation [5-11](#Equ11) with Equation [5-7](#Equ7) gives the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{V}_{\pi }(s)-{V}_t\left(s;w\right)\right].x(s)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ12.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-12)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As discussed earlier, you do not know the true state value *V*[π](*s*), and
+    hence you use an estimate *G*[*t*](*s*) in the MC approach and an estimate *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′)
+    in the TD(0) approach. This gives you the weight update rules for MC and TD in
+    the linear approximation case as follows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'MC update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{V}_t\left(s;w\right)\right].x(s)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ13.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-13)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TD(0) update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma \ast {V}_t\left({s}^{\prime
+    };w\right)-{V}_t\left(s;w\right)\right].x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-14)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In simple terms, the update to weights—that is, the second term on the right
+    side of Equation [5-14](#Equ14) can be expressed as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Update = learning rate x prediction error x feature value
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Where learning rate is α, prediction error is denoted as *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′;
+    *w*) − *V*[*t*](*s*; *w*) and feature value is *x*(*s*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s tie this back to the table-based approach for the discrete states that
+    you saw in the previous chapter. The table lookup—that is, using state or state-action
+    values as an index to look into a table or a dictionary to get the values—is a
+    special case of the linear approach. Consider that each component of *x*(*s*)
+    is either 1 or 0 and only one of them can have a value of 1, with the rest of
+    the features being 0\. *x*^(*table*)(*s*) is a column vector of size p in which
+    only one element can have a value of 1 at any point, with the rest of the elements
+    equal to 0\. Depending on the state the agent is in, the corresponding element
+    would be 1\. Therefore, the number of elements in the column vector (*p*) is equal
+    to the number of states the agent can exit in. This is as shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {x}^{table}(s)=\left(\genfrac{}{}{0pt}{}{1\left(s={s}_1\right)}{\begin{array}{c}..\\
+    {}..\\ {}1\left(s={s}_p\right)\end{array}}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The weight vector comprises the values of state v(s) for each *s* = *s*[1],
+    *s*[2], …*s*[*p*].
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ w=\left(\genfrac{}{}{0pt}{}{w_1}{\begin{array}{c}..\\ {}..\\ {}{w}_p\end{array}}\right)=\left(\genfrac{}{}{0pt}{}{v\left({s}_1\right)}{\begin{array}{c}..\\
+    {}..\\ {}v\left({s}_1\right)\end{array}}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Using these expressions in Equation [5-10](#Equ10), you get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{v}\left(s={s}_k;w\right)=x{(s)}^T.w=v\left({s}_k\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You can see that the value of state *s* = *s*[*k*] can be expressed as a dot
+    product of the state vector *x*(*s*) and the weight vector *w*. If you substitute
+    this expression back into Equation [5-13](#Equ13) for the MC update or into Equation
+    [5-14](#Equ14) for the TD(0) update, you get the familiar update rules derived
+    directly for discrete state situation in Chapter [4](502835_2_En_4_Chapter.xhtml).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is the MC update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha .\left[{G}_t(s)-{V}_t(s)\right],\kern0.5em
+    s\ \epsilon\ {s}_1,{s}_1,\dots, {s}_p $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ15.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-15)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is the TD(0) update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha .\left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime}\right)-{V}_t(s)\right],\kern0.5em
+    s\ \epsilon\ {s}_1,{s}_1,\dots, {s}_p $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ16.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-16)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The previous derivation was to tie back the table lookup back as a special case
+    of a more general linear function approximation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One more point to note that I glossed over while deriving the update equations
+    were the details of the target estimates *G*[*t*](*s*) in MC and *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′)
+    in TD(0). These estimates are not some constant fixed value. These are also dependent
+    on the policy—for MC, directly on the sample episode return *G*[*t*](*s*) and
+    on the value of next state *V*[*t*](*s*^′) in the case of TD(0). As an example,
+    let’s revisit Equation [5-6](#Equ6) and replace *V*[π](*s*) with the TD target
+    and then take the gradient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J(w)={\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}^2 $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Replacing *V*[π](*s*) with the value of target based on the model , you have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J(w)={\left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime };w\right)-{V}_t\left(s;w\right)\right]}^2
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: If you take the derivative of *J*(*w*) with respect to *w*, you will actually
+    get two terms, one due to the derivative of *V*[*t*](*s*^′; *w*), the next state
+    value, and another term due to the derivative of *V*[*t*](*s*; *w*), the current
+    state value. Such an approach of taking both gradient contributions ∇*V*[*t*](*s*^′;
+    *w*) and ∇*V*[*t*](*s*; *w*) introduces shifting of target values and has shown
+    to worsen the speed of learning. First, the reason is that you want the targets
+    to stay constant, and hence you need to ignore the contribution due to ∇*V*[*t*](*s*^′;
+    *w*). Second, conceptually with gradient descent, you are trying to pull the value
+    of the current state *V*[*t*](*s*; *w*) toward its target. Taking the second contribution
+    term ∇*V*[*t*](*s*^′; *w*) means that you are trying to move the value of the
+    next state *S* = *s*^′ toward the value of the current state *S* = *s*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In summary, you take only the derivative of the current state value *V*[*t*](*s*;
+    *w*) and ignore the derivative of the next state value *V*[*t*](*s*^′; *w*). The
+    approach makes the value estimation look similar to the approach used with supervised
+    learning with stationary targets. This is also the reason that sometimes the gradient
+    descent method used in Equations [5-8](#Equ8) and [5-9](#Equ9) are also called
+    *semi-gradient* methods. It is because you are taking gradient for the current
+    state and ignoring any update in weights due to the gradient of the next state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As I touched on earlier, the convergence of algorithms is not guaranteed anymore,
+    unlike the guarantee you had in the tabular setup due to contraction theorem.
+    However, most of the algorithms with some careful considerations do converge in
+    practice. Table [5-1](#Tab1) shows the convergence of various prediction/estimation
+    algorithms. I will not be going into the detailed explanation of these convergence
+    properties. Such a discussion is more suited for a book with a focus on the theoretical
+    aspects of learning. This book is a practical one, with just enough theory to
+    understand the background and appreciate the nuances of algorithms. The core focus
+    is on coding these algorithms in deep learning libraries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convergence of Prediction/Estimation Algorithms
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Policy Type | Algorithm | Table Lookup | Linear | Nonlinear |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| On-policy | MCTD(0)TD(λ) | YYY | YYY | YNN |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Off-policy | MCTD(0)TD(λ) | YYY | YNN | YNN |'
+  prefs: []
+  type: TYPE_TB
+- en: In a later section, you will see how the combination of bootstrapping (e.g.,
+    TD), function approximation and off-policy, all present together, can impact stability
+    adversely unless careful consideration is given to the learning process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The next section looks at control problems, which define how to optimize a policy
+    with a function approximation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Incremental Control
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section moves from state value prediction to that of control—that is, finding
+    the optimal policy. This chapter follows a similar approach as in the previous
+    chapter. You start with function approximation to estimate the q-values. The q-value
+    is represented by a model with weight/parameters *w*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ17.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-17)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As before, you form a loss function between the target and current value. This
+    is being done so that, based on the sample of q-values, you can tweak the parameters
+    for the model to estimate the q-values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ J(w)={E}_{\pi}\left[{\left({q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right)}^2\right]
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ18.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-18)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to make fit better, you need to reduce the loss function in Equation
+    [5-18](#Equ18). You can achieve that by doing gradient descent on weight *w* so
+    that loss is reduced iteratively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t-\kern0.5em \alpha .{\nabla}_wJ(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\nabla}_wJ(w)=\left[{q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(s,a;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ19.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-19)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like before, in the case of a linear model where ![$$ \hat{q}\left(s,a;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq19.png) is represented
+    as a linear equation ![$$ \hat{q}\left(s,a;w\right)=x{\left(s,a\right)}^T.w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq20.png),
+    you can simplify the equation. The derivative ![$$ {\nabla}_w\hat{q}\left(s,a;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq21.png), in a
+    linear case, as shown previously, will become ![$$ {\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right)=\mathrm{x}\left(\mathrm{s},\mathrm{a}\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq22.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is one more change you need to make to Equation [5-19](#Equ19) like you
+    did in the previous section. You do not know the true q-value *q*[π](*s*, *a*).
+    Like before, you replace it with the estimates using either MC or TD, giving you
+    a set of weight update equations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'MC update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{q}_t\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ20.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-20)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TD(0) update:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp {q}_t\left({s}^{''},{a}^{''};w\right)\hbox{--}
+    {q}_t\left(s,a;w\right)\right]\cdotp {\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ21.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-21)
+  prefs: []
+  type: TYPE_NORMAL
+- en: These equations allow you to carry out q-value estimation/prediction. This is
+    the *evaluation* step of generalized policy iteration, where you carry out multiple
+    rounds of gradient descents to improve on the q-value estimates for a given policy
+    and get them close to the actual target values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Evaluation* is followed by greedy policy maximization to improve the policy.
+    Figure [5-5](#Fig5) shows the process of iteration under GPI with function approximation.
+    You can observe that the arrows are not touching the bottom line *q*[*w*] = *q*[π],
+    which indicates that while converging you do not need to go all the way. You could
+    carry out a few gradient steps and then do a policy update with greedy maximization,
+    followed again with another cycle of gradient steps and a greedy policy update.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram depicts a decreasing line labeled pi = epsilon minus greedy and an
+    increasing line labeled q w = q pi. They meet at a point labeled q w nearly equal
+    to q asterisks. A zig zag line made of arrow is drawn inside the lines. The starting
+    point of the zig zag line is labeled initial w.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generalized policy iteration with function approximation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Semi-gradient** ***n*****-step SARSA Control**'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Having looked at the theoretical derivation, it is now time to apply all the
+    learning of this chapter to train an agent. Just a bit more theory—an actual algorithm
+    pseudocode that implements SARSA control. If you remember from the previous chapter,
+    SARSA is an on-policy algorithm. You will use n-step returns to improve the variance
+    of estimates as you saw in the previous chapter. As you will be implementing Equation
+    [5-20](#Equ20), this algorithm will be called “Semi-gradient N-step SARSA control”.
+    Figure [5-6](#Fig6) shows the pseudocode of the algorithm. As with the standard
+    SARSA setup, you use an *ϵ*-greedy policy to sample the environment and collect
+    tuples of state, action, reward, next state, and next action (*s*[*t*], *a*[*t*],
+    *r*[*t* + 1], *s*[*t* + 1], *a*[*t* + 1]) and then use these observations to form
+    n-step returns. This is followed by a gradient step using Equation [5-20](#Equ20)
+    to take a step and improve the estimate of q-values. As q-values improve and you
+    use these q-values to run the next episode using *ϵ*-greedy policy, you are implicitly
+    carrying out the policy update. Note that you use *ϵ*-greedy policy, as you are
+    in an on-policy setup and you need exploration to make sure that you do enough
+    exploration of the state space.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm of semi gradient n step S A R S A for episodic control consists
+    of 25 lines of code. It starts with the input of a differentiable function q hat
+    left parentheses a, a semicolon w right closing parentheses colon S within mod
+    multiplied A within mod multiplied by R d leads to R.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: n-step semi-gradient SARSA for episodic control
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *w* update uses Equation [5-20](#Equ20) with the target being *G*, the *n*-step
+    return.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You will now see how to apply this to mountain car environment, which has continuous
+    state space. You will be using tile encoding studied earlier in this chapter to
+    build a function approximator to the state values. Tile encoding is a binary feature
+    approximator. In the setup:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \hat{q}\left(S,A;w\right)=x{\left(S,A\right)}^T.w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equj.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where *x*(*S*, *A*) is the tile encoded feature vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accordingly, ![$$ \nabla \hat{q}\left({S}_{\uptau},{A}_{\uptau};w\right)=x\left(S,A\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq23.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this example of tile encoding, you use the implementation of tile coding
+    by Rich Sutton, which you can explore in the Python script file `tiles3.py`. This
+    is an implementation of grid-style tile codings, based originally on the UNH CMAC
+    code,^([1](#Fn1)) but by now highly changed. You provide a function, called “`tiles`”,
+    that maps floating and integer variables to a list of tiles, and a second function
+    “`tiles-wrap`” that does the same while wrapping some floats to provided widths
+    (the lower wrap value is always 0). The float variables are gridded at unit intervals,
+    so generalization will be by approximately one in each direction, and any scaling
+    will have to be done externally before calling tiles.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Num-tilings` should be a power of 2, for example, 16\. To make the offsetting
+    work properly, it should also be greater than or equal to four times the number
+    of floats. The first argument is either an index hash table of a given size (created
+    by `make-iht(size)`), an integer “`size`” (range of the indices from 0), or nil
+    (for testing, indicating that the tile coordinates are to be returned without
+    being converted to indices).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You use the `tiles3.py` to build the `QEstimator` class, as shown in Listing
+    [5-1](#PC1). The `QEstimator` class holds the weights and tiles the observation
+    space. The complete code is given in the Python notebook called `5.a-n-step-SARSA.ipynb`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: As shown in Listing [5-2](#PC2), the `get_active_features` function takes as
+    input continuous two-dimensional values of *S* and the discrete input action *A*
+    to return the tile-encoded `active_feature` *x*(*S*, *A*)—that is, binary tiling
+    features that are active for a given (*S*, *A*). The `q_predict` function also
+    takes as input (*S*, *A*) and returns the estimate ![$$ \hat{q}\left(S,A;w\right)=x{\left(S,A\right)}^T\cdotp
+    w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq24.png). It
+    internally calls `get_active_features` to first get features and carries out a
+    dot product with the weight vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The weight update equation shown toward the end of the algorithm in Figure [5-6](#Fig6)
+    is what the `q_update` function carries out. The `get_eps_greedy_action` functions
+    carries out action selection using ε-greedy ![$$ \hat{q}\left({S}_0,\kern0.5em
+    \bullet; w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq25.png).
+    Listing [5-3](#PC3) shows the code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The main training algorithm of the SARSA agent, as shown in Figure [5-6](#Fig6),
+    is implemented in the function `sarsa_n`, calling functions from `QEstimator`
+    as required. Listing [5-4](#PC4) contains the code. The implementation is straightforward
+    Python code following the pseudocode of Figure [5-6](#Fig6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Similar to many examples in the previous chapter, there is also a helper function
+    called `plot_rewards` that plots the per-episode returns and records a video of
+    the trained agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [5-7](#Fig7) shows the result of running this algorithm to train the
+    mountain car. Within 50 episodes, the agent reaches a steady state, and it reaches
+    the goal of hitting the flag on the right side of the valley in about 110 time
+    steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of return per episode versus episode number. It plots a line for
+    the semigrad n step S A R S A of lambda, which starts at (0, negative 500), rises
+    upward, sharply fluctuates, and ends at (1000, negative 105). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: n-step semi-gradient SARSA with MountainCar
+  prefs: []
+  type: TYPE_NORMAL
+- en: This completes the n-step semi-gradient SARSA example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Semi-gradient SARSA(λ) Control
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'This section looks at the semi-gradient SARSA(*λ*) algorithm with eligibility
+    traces. As you saw in the previous chapter, in the MC update using the full episode
+    return—that is λ = 1, TD(0) uses one step next state estimate to form the target—that
+    is, λ = 0\. n-step uses the returns from next n-steps followed by the q-value
+    estimate for the state after n-step to form the target estimate, which is midway
+    through the MC of the full episode and TD(0) of one step. How do you decide the
+    value of *n*? Eligibility traces uses the full spectrum of one step update to
+    full episode return by adding all the rewards for all possible values of *n*.
+    The weight of these returns is controlled by the value of λ, which can vary from
+    0 to 1\. In other words, SARSA(*λ*) further generalizes the n-step SARSA. When
+    the state or state-action values are represented by binary features with linear
+    function approximation (like in the case of the mountain car with tile encoding),
+    you get the algorithm in Figure [5-8](#Fig8). This algorithm introduces a concept
+    of eligibility trace that has the same number of components as the weight vector.
+    The *weight vector* is the long-term memory over many episodes to generalize from
+    all the examples shown. The *eligibility trace* is short-term memory lasting less
+    than the length of episode. It helps during the learning process by having an
+    effect on weight. Consider the case of a wave pattern that slops upward in the
+    graph. The weight vector is like the slop of the upward overall trend and eligibility
+    trace is like the local neighborhood fluctuations from one peak of the wave to
+    another, which is going up and down in that local vicinity. I will not go into
+    the detailed derivations of the update rules. You can refer to the book titled
+    *Reinforcement Learning: An Introduction*^([2](#Fn2)) for a detailed explanation
+    of the concepts and mathematical derivations.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: An algorithm of semi gradient S A R S A lambda for episodic control consists
+    of 29 lines of code. It starts with a tile function F of s comma a giving the
+    active tile indices of i for a given state and action s comma a.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: Semi-gradient SARSA(*λ*) for episodic control when features are binary and the
+    value function is a linear combination of the feature vector and the weight vector
+  prefs: []
+  type: TYPE_NORMAL
+- en: As in the previous subsection, you will run this algorithm on the mountain car
+    environment. The `5.b-lambda-sarsa.ipynb` notebook contains the full code. Listing
+    [5-5](#PC5) gives the code for the implementation of eligibility trace update
+    as shown in Figure [5-8](#Fig8). Accumulating trace adds one to the previous trace
+    for active tiles, while replacing trace makes the trace for index *i* as one for
+    active tile index *i*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `QEstimator` class from n-step SARSA is modified to store the trace values
+    and to use the trace in the weight `q_update` update function, as shown in Listing
+    [5-6](#PC6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `sarsa_lambda` function implements the overall learning algorithm given
+    in Figure [5-8](#Fig8). It is a straight implementation of the pseudocode from
+    that figure. Listing [5-7](#PC7) shows the code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: You also have a function to run the trained agent through some episodes and
+    record the behavior. Once you have trained the agent and generated the animation,
+    you can run the MP4 file and see the strategy that the agent follows to reach
+    the goal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [5-9](#Fig9) shows the result of running the SARSA(λ) algorithm to train
+    the mountain car. You can see that the results are similar to those in Figure
+    [5-7](#Fig7). This is too small a problem, but for larger problems, eligibility
+    trace–driven algorithms will show better and faster convergence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A line graph of return per episode versus episode number. It plots a line for
+    the semi grad S A R S A of lambda, which starts at (0, negative 500), rises upward,
+    sharply fluctuates, and ends at (1000, negative 220). Values are estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: Semi-gradient SARSA(*λ*) with the mountain car
+  prefs: []
+  type: TYPE_NORMAL
+- en: This concludes the example of running SARSA(λ) on mountain car environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convergence in Functional Approximation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s start exploring convergence by looking at an example. As shown in Figure
+    [5-10](#Fig10), let’s consider a two-state transition as part of some MDP. Let’s
+    assume you will use function approximation with the value of the first state being
+    *w* and the value of the second state being 2*w*. Note that *w* is a single number
+    and not a vector.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram represents a circle for w, which leads to a circle of 2 w for a two
+    step transition under functional approximation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: Two-step transition under functional approximation
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assume that *w* = 10 and the agent transitions from the first state to the second
+    state—that is, from the state with the value 10 to the state with the value 20\.
+    This example also assumes that the transition from the first state to the second
+    state is the only possible transition in the first state, and the reward for this
+    transition is zero every time. Let the learning rate be *α* = 0.1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s now apply Equation [5-14](#Equ14) to the first state in Figure [5-10](#Fig10).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma .{V}_t\left({s}^{\prime
+    };w\right)-{V}_t\left(s;w\right)\right].x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equk.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now substitute the values. Substitute *α* = 0.1, which is what you have assumed,
+    *R*[*t* + 1] = 0 which is also the assumption. The state values are given in Figure
+    [5-10](#Fig10)—next state *V*[*t*](*s*^′; *w*) = 2*w*[*t*], current state value
+    *V*[*t*](*s*; *w*) = *w*[*t*]. The state feature vector is one dimensional and
+    has a value of 1—that is, *x*(*s*) = ∇[*w*]*V*[*t*](*s*; *w*) = 1\. With all these
+    substitutions, you get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+0.1\cdotp \left[0+\gamma \cdotp 2\ {w}_t-{w}_t\right].1
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+0.1\cdotp {\mathrm{w}}_{\mathrm{t}}\cdotp \left(2\upgamma
+    -1\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Now assume that γ is close to 1, and the current weight *w*[*t*] is 10\. The
+    updated weight will look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}=10+0.1\cdotp 10\cdotp \left(2-1\right)=11 $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equn.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Actually, as long as (2γ − 1) > 0, every update will lead to the divergence
+    of weight *w*. It goes to show that function approximation can cause divergence.
+    This is because of the value generalization where updating the value of a given
+    state also updates the value of nearby or related states. There are three angles
+    to the instability issue as listed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Function approximation*: A way to generalize for a very large state space
+    using a model with the number of parameters smaller than the total number of possible
+    states.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Bootstrapping*: Forming target values using estimates of state values, for
+    example, in TD(0) the target being the estimate *R*[*t* + 1] + γ · *V*[*t*](*s*^′;
+    *w*)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*Off-policy learning*: Training the agent using a behavior policy but learning
+    a different optimal policy.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The presence of these three components together significantly increases the
+    chances of divergence even in a simple prediction/estimation scenario. The control
+    and optimization problems are even more complex to analyze. It has also been shown
+    that instability can be avoided as long as all three are not present together.
+    That begs the question, could you drop any of the three and assess the impact
+    of such a drop?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Function approximation, especially using neural networks, has made RL practical
+    for large real-world problems. Other alternatives are not practical. Bootstrapping
+    has made the process sample efficient. The alternative of forming targets by watching
+    the whole episode, while feasible, is not very practical. Off-policy learning
+    can be replaced with on-policy, but again for RL to become close to the way humans
+    learn, you need off-policy to learn about some problem/situation by exploring
+    another, similar problem. Therefore, there are no easy answers to this. You cannot
+    drop any of the three requirements with low impact. That’s the theoretical side.
+    In practice, most of the time, algorithms converge with some careful monitoring
+    and tweaking—such as use of replay buffers, learning rates, and ideas like double
+    Q-learning. Chapters [6](502835_2_En_6_Chapter.xhtml) and [7](502835_2_En_7_Chapter.xhtml)
+    discuss some of these practical tweaks in the context of DQN.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While training, it is important to periodically evaluate the agent and plot
+    the curve of the return per episode. If it shows wild fluctuations, it is an indication
+    that training is unstable. Remember that it will almost never be a smooth curve,
+    but it should also not be wildly fluctuating.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gradient Temporal Difference Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The semi-gradient TD learning with the update equation shown in Equation [5-9](#Equ9)
+    does not follow a true gradient. While taking the gradient of a loss function,
+    you kept the estimate of the target—that is, *R*[*t* + 1] + γ · *V*[*t*](*s*^′;
+    *w*), constant. It did not appear in the derivative with respect to the weight
+    *w*. The real Bellman error is *R*[*t* + 1] + γ · *V*[*t*](*s*^′; *w*) − *V*[*t*](*s*;
+    *w*), and the derivative of it ideally should have had gradient terms for both
+    *V*[*t*](*s*^′; *w*) and *V*[*t*](*s*; *w*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is a variation of this known as *gradient temporal difference learning*
+    that follows the true gradient and offers convergence in all the cases of table
+    lookup, linear and nonlinear functional approximation, and both the under on-policy
+    and off-policy methods. Adding this to the mix of algorithms, Table [5-1](#Tab1)
+    can be modified as shown in Table [5-2](#Tab2). I do not go into the mathematical
+    proof of it in this book because the focus of the book is on the practical implementations
+    of the algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convergence of Prediction/Estimation Algorithms
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Policy Type | Algorithm | Table Lookup | Linear | Nonlinear |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| On-policy | MCTD(0)TD(λ)Gradient TD | YYYY | YYYY | YNNY |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Off-policy | MCTD(0)TD(λ)Gradient TD | YYYY | YNNY | YNNY |'
+  prefs: []
+  type: TYPE_TB
+- en: Continuing further, Table [5-3](#Tab3) lists the convergence of control algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 5-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convergence of Control Algorithms
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Algorithm | Table Lookup | Linear | Nonlinear |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| MC control | Y | (Y) | N |'
+  prefs: []
+  type: TYPE_TB
+- en: '| On Policy TD (SARSA) | Y | (Y) | N |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Off policy Q-Learning | Y | N | N |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Gradient Q-Learning | Y | Y | N |'
+  prefs: []
+  type: TYPE_TB
+- en: (Y) fluctuates around the near-optimal value function. The guarantee of convergence
+    is off in all nonlinear cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Batch Methods (DQN)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Up to now, the chapter has been focusing on algorithms that were incremental—that
+    is, you sampled transition and then using the values you updated the weight vector
+    *w* with the help of stochastic gradient descent. But this approach is not sample
+    efficient. You discard a sample after using it only once. However, with nonlinear
+    function approximation, especially with neural networks, you need multiple passes
+    over the network to make the network weights converge to true values. Further,
+    in many real-life scenarios like robotics, you need sample efficiency on two counts:
+    neural networks with the slow convergence and hence the need for multiple passes,
+    and generating samples in real life being very slow. In this section on batch
+    reinforcement methods, I take you through the use of batch methods specifically
+    with Deep Q Networks, which are the deep neural network version of the off-policy
+    Q-learning.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Like before, you estimate the state value using function approximation as shown
+    in Equation [5-1](#Equ1): ![$$ \hat{v}\left(s,w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq26.png).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Consider that you somehow know the actual state value *v*[π](*s*), and you are
+    trying to learn the weight vector *w* to arrive at a good estimate ![$$ \hat{v}\left(s,w\right)\approx
+    {v}_{\pi }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq27.png).
+    You collect a batch of experiences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ D=\left\{&lt;{s}_1,{v}_1^{\pi }&gt;,&lt;{s}_2,{v}_2^{\pi }&gt;,\dots .,&lt;{s}_T,{v}_T^{\pi
+    }&gt;\right\} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equo.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You then form a least squares loss as the average of the difference between
+    the true value and the estimate and then carry out gradient descent to minimize
+    error. You use a mini-batch gradient descent to take a sample of past experiences
+    and use that to move the weight vector using a learning rate α.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ LS(w)={E}_D\left[{\left({v}_{\pi }(s)-\hat{v}\left(s;w\right)\right)}^2\right]
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equp.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Then approximate the expectation as the mean of the samples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ LS(w)=\frac{1}{N}\sum \limits_{i=1}^N{\left({v}_{\pi}\left({s}_i\right)-\hat{v}\left({s}_i;w\right)\right)}^2
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ22.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-22)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Taking gradient of *LS*(*w*) with respect to *w* and using the negative gradient
+    to adjust *w*, you get the weight update Equation [5-23](#Equ23). Note that it
+    is similar to Equation [5-7](#Equ7)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{v}_{\pi}\left({s}_i\right)-\hat{v}\left({s}_i;w\right)\right].{\nabla}_w\
+    \hat{v}\left({s}_i;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ23.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-23)
+  prefs: []
+  type: TYPE_NORMAL
+- en: As before, you can move from state values *v*(*s*; *w*) to state-action values
+    *q*(*s*, *a*; *w*) and carry out a similar update with q-values. To remind the
+    readers once more, the purpose of moving from state values to state-action values
+    is to be able to find the optimal policy for a given state. As you have q-values
+    for all possible actions in a state, you can choose the optimal action in that
+    state, do so for all states and then again carry out the estimation/prediction
+    of q-values followed by optimal action selection. Keep repeating these until some
+    kind of convergence of policy and q-values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{q}_{\pi}\left({s}_i,{a}_i\right)-\hat{q}\left({s}_i,{a}_i;w\right)\right].{\nabla}_w\
+    \hat{q}\left({s}_i,{a}_i;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ24.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-24)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you remember from past derivations, you do not know the true value functions,
+    *v*[π](*s*[*i*]) or *q*[π](*s*[*i*], *a*[*i*]). As before, you replace the true
+    values with the estimates using either the MC or TD approach. Let’s now look at
+    a flavor of this called DQN, the deep learning version of Q-learning shown in
+    Chapter [4](502835_2_En_4_Chapter.xhtml). In DQN, an off-policy algorithm, you
+    sample the current state *s*, take a step *a* as per the current behavior policy,
+    and an ϵ-greedy policy using current q-values. You observe the reward *r* and
+    next state *s*^′. You use ![$$ \underset{a^{\prime }}{\max}\hat{q}\left({s}^{''},\bullet;
+    w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq28.png)
+    for all actions *a*^′ possible in the state *s*^′ to form the target. This is
+    shown here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {q}_{\uppi}\left({s}_i,{a}_i\right)={r}_i+\underset{a''}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };{w}_t^{-}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equq.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Here you have used a different weight vector ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq29.png)
+    to calculate the estimate of the target. Essentially, you have two networks, one
+    called *online* with weights *w*, which is being updated as per Equation [5-24](#Equ24),
+    and a second similar network called *target network* but with a copy of the weight
+    called *w*^−. Weight vector *w*^− is updated less frequently, say after every
+    100 updates of online network weight *w*. This approach keeps the target network
+    constant and allows you to use the machinery of supervised learning. Also note
+    that the subscript *i* denotes the sample in the mini-batch and *t* denotes the
+    index at which weights are updated. The final update equation with all this put
+    together can be written as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{r}_i+\gamma
+    {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime
+    };{w_t}^{-}\right)-\hat{q}\left({s}_i,{a}_i;{w}_t\right)\right].{\nabla}_{w_t}\
+    \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ25.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-25)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This equation looks very daunting. Let’s unpack it. The expression ![$$ {r}_i+\gamma\
+    {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime
+    };{w_t}^{-}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq30.png)
+    is the target value for *q*(*s*[*i*], *a*[*i*]) and is formed using a different
+    neural network with weights ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq31.png).
+    The current q-value estimate is given by ![$$ \hat{q}\left({s}_i,{a}_i;{w}_t\right),
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq32.png) which
+    is done using a network with weights *w*[*t*]. You calculate the error by subtracting
+    current estimate from the target and then multiply this with the gradient of current
+    estimate—that is, ![$$ {\nabla}_{w_t}\ \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq33.png).
+    This is then averaged over all the *N* samples and added to current weight *w*[*t*]
+    using learning rate α. To collect the samples, you run the agent through the environment
+    using the *ε*-greedy policy and collect experiences in a buffer called replay
+    buffer *D*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You also update target network weights ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq34.png)
+    once in a while (say after every 100 batch updates of *w*[*t*]). You use the updated
+    q-values with ϵ-exploration to add more experiences to the replay buffer and carry
+    out the whole cycle once again. This in essence is the DQN approach. There is
+    a lot more to say about this in the next chapter, which is completely devoted
+    to DQN and its variants. For now, I leave the topic here and move on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linear Least Squares Method
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Experience replay as used in the batch method finds the least square solution,
+    minimizing the error between the target as estimated using TD or MC and the current
+    value function estimate. However, it takes many iterations to converge. However,
+    if you use linear function approximation for value function ![$$ \hat{v}\left(s;w\right)=x{(s)}^Tw
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq35.png) for prediction
+    and ![$$ \hat{q}\left(s,a;w\right)=x{\left(s,a\right)}^Tw $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq36.png)
+    for control, you can find the least square solution directly. Let’s look at the
+    prediction first.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Start with Equation [5-22](#Equ22) and substituting ![$$ \hat{v}\left(s;w\right)=x{(s)}^Tw
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq37.png), you
+    get this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ LS(w)=\frac{1}{N}\sum \limits_{i=1}^N{\left({v}_{\pi}\left({s}_i\right)-x{\left({s}_i\right)}^T.w\right)}^2
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Taking gradient of *LS*(*w*) with respect to *w* and setting it to zero, you
+    get the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \sum \limits_{i=1}^Nx\left({s}_i\right)\ {v}_{\pi}\left({s}_i\right)=\sum
+    \limits_{i=1}^Nx\left({s}_i\right).x{\left({s}_i\right)}^T\ w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equs.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Solving for *w* gives the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ w={\left(\sum \limits_{i=1}^Nx\left({s}_i\right).x{\left({s}_i\right)}^T\
+    \right)}^{-1}\sum \limits_{i=1}^Nx\left({s}_i\right)\ {v}_{\pi}\left({s}_i\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ26.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (5-26)
+  prefs: []
+  type: TYPE_NORMAL
+- en: The previous solution involves the inversion of a *NxN* matrix that requires
+    *O*(*N*³) computations. However, using Shermann-Morrison, you can solve this in
+    *O*(*N*²) time. As before, you do not know the true value *v*[π](*s*[*i*]). You
+    replace the true value with its estimate using MC, TD(0), or TD(*λ*) estimates
+    giving you linear least square MC (LSMC), LSTD, or LSTD(*λ*) prediction algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'LSMC: *v*[*π*](*s*[*i*]) ≈ *G*[*i*]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'LSTD: ![$$ {v}_{\pi}\left({s}_i\right)\approx R+\gamma\ \hat{v}\left({s}_i^{\prime
+    };w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq38.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'LSTD(λ): *v*[*π*](*s*[*i*]) ≈ *G*[*i*]^(*λ*)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: All these prediction algorithms have good convergence both for off-policy and
+    on-policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moving ahead, you extend the analysis to control using the q-value linear function
+    approximation and GPI where the previous approach is used for the q-value prediction,
+    followed by the greedy q-value maximization in the policy improvement step. This
+    is known as *linear least square policy iteration* (LSPI). You iterate through
+    these cycles of prediction followed by improvement until the policy converges—that
+    is, until the weights converge. The final result of linear least square Q-learning
+    (LSPI) is shown here, without going through the derivation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is the prediction step:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ w={\left(\sum \limits_{i=1}^N\;x\left({s}_i,{a}_i\right).{\left(x\left({s}_i,{a}_i\right)+\gamma
+    \kern0.33em x\left({s}_i^{\prime },\pi \left({s}_i^{\prime}\right)\right)\right)}^T\kern0.33em
+    \right)}^{-1}\sum \limits_{i=1}^N\;x\left({s}_i,{a}_i\right)\kern0.33em {r}_i
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: where (*i*) is the *i*^(*th*) sample (![$$ {s}_i,{a}_i,{r}_i,{s}_i^{\prime }
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq39.png)) from
+    experience replay *D* and ![$$ \uppi \left({s}_i^{\prime}\right)=\arg \underset{a^{'}}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq40.png)
+    —that is, the action with maximum q-value in state *s*^′.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'And here is the control step:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \uppi \left({s}_i^{\prime}\right)=\arg \underset{a''}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };{w}^{\mathrm{updated}}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In the control step, for each state *s*, you change the policy that maximizes
+    the q-value after the weight update *w* carried out in the previous prediction
+    step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you move farther into the book, the function approximation of either state
+    values *v*(*s*), state-action values *q*(*s*, *a*) and policy π(*s*| *a*) will
+    be based on some kind of neural network model. The training of these is governed
+    by use of deep learning frameworks like PyTorch, TensorFlow, or JAX. In this edition
+    of the book, I largely focus on PyTorch, which has gained significant traction
+    since the first edition of this book. PyTorch and its related ecosystem of libraries
+    is dominating at the moment. For completeness’ sake, I do cover TensorFlow variants
+    occasionally. To prepare you, the next section is a quick introduction to these
+    underlying deep learning frameworks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deep Learning Libraries
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Previous sections in the chapter showed that, to use the function approximation
+    approach, you need to have an efficient way to calculate the derivatives of state-value
+    function ![$$ {\nabla}_w\hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq41.png)
+    or the action-value function ![$$ {\nabla}_w\hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq42.png).
+    If you are using neural networks, you use back-propagation to calculate these
+    derivatives at each layer of the network. This is where libraries like PyTorch
+    and TensorFlow come into the picture. Similar to the NumPy library, they also
+    carry out vector/matrix computations in an efficient manner. Further, these are
+    highly optimized to handle tensors (arrays with more than two dimensions), both
+    using CPU and GPUs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In neural networks, you need to be able to back-propagate to calculate the gradients
+    of error with respect to the weights of layers at all levels. Both these libraries
+    are highly abstracted and optimized to handle this for you behind the scenes.
+    You just need to build the forward computation, taking input through all the computations
+    to give the final output. The libraries keep track of the computation graph and
+    allow you to carry out the gradient update to weights with just one function call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This section takes you through the popular frameworks such as PyTorch, PyTorch
+    Lightning, and TensorFlow. It is introductory level coverage. If you are familiar
+    with these libraries, you can skip this section. Also, if you are interested in
+    diving deep into the topic, you’d do well to take up further studies after getting
+    the basic introduction. You can refer to the resources on the Internet for more
+    details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PyTorch is a framework that allows manipulation of tensors using constructs
+    like NumPy. In addition, it has modules to allow auto differentiation to carry
+    out back-propagation, which forms the backbone of training a neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What Are Neural Networks
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Deep learning is based on artificial neural networks, which are made up of neurons.
+    A neuron takes inputs, calculates the weighted sum, and then passes the sum through
+    some kind of nonlinear function *f*(*h*) (called the activation function), as
+    shown in Figure [5-11](#Fig11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A neural network diagram. 3 input nodes of x 1, x 2, and 1 lead to a node of
+    summation through w 1, w 2, and b. The node for summation leads to a mode of h,
+    followed by a node of f of h, and ends with an output of y.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: A neuron in a neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: The training in deep learning refers to finding the weight vector [*w*[1], *w*[2],
+    *b*] using back-propagation. Of course, the neural network model is composed of
+    billions of such neurons grouped into layers and many such layers are stacked
+    together. The arrangement of the neural network layers has many varieties, giving
+    rise to architectures such as CNN (Convolutional Neural Networks), RNN (Recurrent
+    Neural Networks), and in last few years to the transformers architecture. The
+    world of large language models (LLMs) is dominated by transformers at its core
+    and comprises tens and hundreds of billions of weight parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A basic level architecture is comprised of simple layers, with all neurons from
+    the previous layers connected to all the neurons of the current layer. This formation
+    is called a *linear dense layer architecture*, as shown in Figure [5-12](#Fig12).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A diagram of a neural network. 16 numbers of nodes in the input layer pass through
+    different layers and render an output node in the hidden layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: A simple, fully connected neural network
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can take the MNIST image dataset and train a PyTorch model to predict the
+    digit based on the grayscale image that’s 24x24 pixels. Accordingly, the input
+    layer will have 768 inputs translating to flattened 24x24 image. The output will
+    have ten units, which will produce the probability that input image is a “1” or
+    “2” and so on. The complete code of end-to-end PyTorch training is given in the
+    Python notebook called `5.c-Intro-to-pytorch.ipynb`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Several hidden layers take 768 dimensional inputs to the first 192 units and
+    then to the 128 units, with the final output layer taking 128 units to 10 units.
+    You create the model in PyTorch by extending the PyTorch `Model` class and implementing
+    the forward method to take input image vector and output a ten-dimensional output
+    vector. Listing [5-8](#PC8) shows the code that creates this network in PyTorch.
+    The `__init__` function defines the layers of the network using the PyTorch supplied
+    `Linear` layer module. The `forward` function implements the flow of input tensor
+    through the network, outputting the ten-dimensional output vector. It returns
+    the raw score, which is converted into probability in the `predict` function with
+    the help of a `softmax` function. The `predict` function is just for convenience.
+    It is not required. The only two things that are required are defining the layers
+    of the network in `init` and implementing the `forward` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: You load the `MNIST` dataset and prepare `dataloaders` to supply images in batches
+    to the training code, as shown in Listing [5-9](#PC9). It consists of use of three
+    high-level functions—`transforms` transforms the images and does things like normalization
+    and conversion of image to PyTorch tensors, `datasets` downloads the dataset locally
+    and then wraps the downloaded dataset into a `DataLoader`, which supplies images
+    to the rest of the code in batches. These are highly optimized functions with
+    many parameters to tweak the behavior based on the specific need. You can read
+    more about these in the PyTorch documentation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training with Back-Propagation
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: After having defined the model and prepared the data, the next step is to train
+    the model. This involves first defining the optimizer that will be used to keep
+    track of gradients during back-propagation and the code to adjust the weights
+    on the neural network. Adam is a very popular optimizer with advanced and adaptive
+    capabilities to adjust the training step α as training progresses. There are many
+    more optimizers. Optimizer design is a big field of research on its own. You also
+    define a loss function, which must be minimized as part of training the network.
+    Listing [5-10](#PC10) shows the code for these steps. This is then followed by
+    the training code, in which you go over the training data in batches, calculate
+    the loss function value, and use the optimizer to do a back-propagation, adjusting
+    the weights.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once the model is trained, you can pass a new image and observe the probability
+    distribution of the model’s prediction. I created a custom function called `view_classification`
+    for the same. To pass images through the network and observe the outcome, you
+    need a short three-line code, as shown in Listing [5-11](#PC11).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: The output of passing an image of 4 is shown in Figure [5-13](#Fig13).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A processed simulation image of number 4 and a horizontal bar chart labeled
+    probability. The highest value of 0.90 is obtained by the bar at 4\. Values are
+    estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prediction of trained model on input image of the “4” digit
+  prefs: []
+  type: TYPE_NORMAL
+- en: In summary, the steps involved are 1) designing the model based on the problem
+    and keeping specific input size and output size in mind; 2) preparing the training
+    data; 3) defining the loss function and optimizer and finally; 4) the training
+    code to train the model. You will be following these steps in increasing complex
+    ways depending on the need of the agent learning algorithm in question.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch Lightning
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PyTorch Lightning is a library written to speed up model development and training
+    in PyTorch. PyTorch Lightning is the deep learning framework with “batteries included”
+    for professional AI researchers and machine learning engineers who need maximal
+    flexibility while super-charging performance at scale.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lightning organizes PyTorch code to remove boilerplate code and unlock scalability.
+    While doing so, it still offers full flexibility to try any idea without the boilerplate.
+    It helps you focus on the core parts of your model training and provides you with
+    a standard way to organize your code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Most of the code will remain the same as you saw in the raw PyTorch notebook.
+    The code to prepare data loaders is the same as before. You first create a network
+    model in PyTorch like before. Just for variety, I have used another shorter version
+    to create the neural network, this time using the `nn.Sequential` class from PyTorch,
+    as shown in Listing [5-12](#PC12). The complete code for end-to-end training using
+    PyTorch Lightning is given in the `5.d-Intro-to-pytorch-lighning.ipynb` notebook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: When using PyTorch Lightning, you create a lightning model by extending the
+    `pl.LightningModule` and implementing specific functions. This removes the need
+    for the long boilerplate code you have for training when using pure PyTorch without
+    Lightning. In this case, as shown in Listing [5-13](#PC13), you create a `LightningModule`
+    called `MNISTClassifier`. In the `__init__` function, you initialize the model
+    defined in Listing [5-12](#PC12). Next, you define the `training_step` function,
+    which takes a batch of input training data, passes it through the model, and calculates
+    the loss, which needs to be minimized. This function must return the loss which
+    will be used by the optimizer to calculate the gradients during back-propagation.
+    You then use `self.log` to log the results, which under the hood uses TensorBoard
+    to log. You also have the choice to forward logging data to “weights and biases”
+    or such other logging and experimentation services. Next, you implement a `test_step`
+    which largely mimics the `training_step` producing metrics that you want to track
+    during model performance evaluation. The last function you define is `configure_optimizers`
+    to define the optimizer that will be used during back-propagation of gradients
+    during the training phase.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: With PyTorch Lightning, once the Lightning module is defined, it requires one
+    line of code to run the training code. There is no need to load data in a loop
+    and run the backward step manually in the code. Listing [5-14](#PC14) shows the
+    training code you need to execute to train the model. You just need to define
+    a `trainer` and call the `fit` method on it by passing the `PyTorchLightning`
+    module defined earlier and the `dataloaders` to it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: The prediction code using the trained model remains the same as in PyTorch.
+    Figure [5-14](#Fig14) shows the performance of the trained model for one sample
+    of input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig14_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: A processed simulation image of number 5 and a horizontal bar chart labeled
+    probability. The highest value of 0.90 is obtained by the bar at 5\. Values are
+    estimated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure 5-14
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prediction of a trained model on input image of a“5” digit
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you can see, the use of PyTorch Lightning helps reduce the boilerplate code
+    overhead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TensorFlow
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: TensorFlow also largely follows the same pattern as PyTorch. It has its own
+    set of data loaders, model building patterns, loss and optimizer definitions,
+    and training loops. I’ll do a quick dive. The end-to-end training using TensorFlow
+    is given in the `5.e-Intro-to-tensorflow.ipynb` notebook. Listing [5-15](#PC15)
+    shows the code for downloading and creating the MNIST dataset under TensorFlow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: As with PyTorch, you define the neural network model using the `tf.keras.model.Sequential`
+    class, as shown in Listing [5-16](#PC16). It also gives the code for remaining
+    steps—that is, defining the loss function as well as tying the model with the
+    optimizer and loss function using the `model.compile` function call. Finally,
+    like PyTorch Lightning, you use `model.fit` to train the model using the training
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code to evaluate the output of the trained model on a sample image is shown
+    in Listing [5-17](#PC17). It is largely the same as what you saw in the case of
+    PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Like PyTorch or PyTorch Lightning, the model’s accuracy is very high after training.
+    The probability distribution of the model’s output in a sample image mimics the
+    kind of values you see in Figures [5-13](#Fig13) and [5-14](#Fig14).
+  prefs: []
+  type: TYPE_NORMAL
+- en: This completes the introduction of the popular three frameworks. There are many
+    more that are emerging, such as JAX, FastAI, Glueon from AWS, Microsoft, and so
+    on. I will stick to PyTorch most of the time and may occasionally show some sample
+    code using TensorFlow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this chapter, the primary focus was to look at the use of function approximation
+    for very large or continuous state spaces that cannot be handled using the approach
+    of table-based learning that you saw in previous chapters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The chapter talked about what it means to carry out optimization with function
+    approximation. I also showed how the concepts of training in supervised learning,
+    training a model to produce values close to targets, can be applied in reinforcement
+    learning. The chapter emphasized the need for the proper handling due to moving
+    targets and the sample interdependence that is present in RL.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You then looked at various strategies of functional approximation, including
+    linear and nonlinear ones. I also demonstrated that table-based methods are just
+    special cases of linear approximation. This was followed by a detailed discussion
+    of incremental methods for prediction and control. You saw these being applied
+    to the mountain car for build training agents using *n*-step SARSA and SARSA(*λ*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, the chapter talked about batch methods in general and explored the complete
+    derivation of the update rule for DQN, a popular algorithm from the family of
+    batch methods. You then looked at linear least squares methods for prediction
+    and control. Along the way, I kept highlighting the convergence issues in general
+    as well as convergence in the specific methods being discussed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: I concluded the chapter with a brief introduction to deep learning frameworks
+    like PyTorch, PyTorch Lightning, and TensorFlow.
+  prefs: []
+  type: TYPE_NORMAL

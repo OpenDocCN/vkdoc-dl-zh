@@ -1,0 +1,1211 @@
+- en: 9. Autoencoders
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In this chapter, we look at autoencoders. This chapter is a theoretical one,
+    covering the mathematics and the fundamental concepts of autoencoders. We discuss
+    what they are, what their limitations are, the typical use cases, and then look
+    at some examples. We start with a general introduction to autoencoders, and we
+    discuss the role of the activation function in the output layer and the loss function.
+    We then discuss what the reconstruction error is. Finally, we look at typical
+    applications, such as dimensionality reduction, classification, denoising, and
+    anomaly detection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As you have seen in many of the previous chapters, neural networks are typically
+    used in a supervised setting. Meaning that for each training observation ***x***[*i*],
+    we have one label or expected value, ***y***[*i*]. During training, the neural
+    network model will learn the relationship between the input data and the expected
+    labels. Now suppose we have only unlabeled observations, meaning we only have
+    our training dataset *S*[*T*], made of the *M* observations ***x***[*i*] with
+    *i* = 1, …, *M*
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {S}_T=\left\{{\boldsymbol{x}}_i\ |\ i=1,\dots, M\right\}\#(9.1) $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equa.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9.1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Where in general ***x***[*i*] ∈ ℝ^(*n*) with *n* ∈ ℕ. Autoencoders were introduced^([1](#Fn1))
+    by Rumelhart, Hinton, and Williams in 1986 with the goal of “learning to reconstruct
+    the input observations ***x***[*i*] with the lowest error possible”.^([2](#Fn2))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why would you want to learn to reconstruct the input observations? If you have
+    problems imagining what that means, think of having a dataset made of images.
+    An autoencoder is an algorithm that can give as output an image that is as similar
+    as possible to the input one. You may be confused, as there is no apparent reason
+    to do this. To better understand why autoencoders are useful, we need a more informative
+    (although not fully unambiguous) definition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An autoencoder is a type of algorithm with the primary purpose of learning an
+    “informative” representation of the data that can be used for different applications^([3](#Fn3))
+    by learning to reconstruct a set of input observations well enough.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To better understand autoencoders, we need to refer to their typical architecture,
+    visualized in Figure [9-1](#Fig1). The autoencoders’ main components are an encoder,
+    a latent feature representation, and a decoder. The encoder and decoder are simply
+    functions, while the *latent feature representation* typically means a tensor
+    of real numbers (more on that later). Generally speaking, we want the autoencoder
+    to reconstruct the input well enough. Still, at the same time, it should create
+    a latent representation (the output of the encoder part in Figure [9-1](#Fig1))
+    that is useful and meaningful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For example, latent features on handwritten digits^([4](#Fn4)) could be the
+    number of lines required to write each number or the angle of each line and how
+    they connect. Learning how to write numbers certainly does not require learning
+    the gray values of each pixel in the input image. We humans do not learn to write
+    by filling in pixels with gray values. While learning, we extract the essential
+    information that will allow us to solve a problem (writing digits, for example).
+    This latent representation (*how* to write each number) can then be very useful
+    for various tasks (for instance, feature extraction that can be then used for
+    classification or clustering) or simply for understanding the essential features
+    of a dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig1_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The general structure of an autoencoder
+  prefs: []
+  type: TYPE_NORMAL
+- en: In most typical architectures, the encoder and the decoder are neural networks^([5](#Fn5))
+    (that is the case we will discuss at length in this chapter) since they can be
+    easily trained with existing software libraries such as TensorFlow or PyTorch
+    with backpropagation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In general, the encoder can be written as a function *g* that will depend on
+    some parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\boldsymbol{h}}_i=g\left({\boldsymbol{x}}_i\right) $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equb.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where ***h***[*i*] ∈ ℝ^(*q*) (the latent feature representation) is the output
+    of the encoder block in Figure [9-1](#Fig1), when we evaluate it on the input
+    ***x***[*i*]. Note that we will have *g* : ℝ^(*n*) → ℝ^(*q*).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The decoder (and the output of the network that we indicate with ![$$ {\overset{\sim
+    }{\boldsymbol{x}}}_i $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq1.png))
+    can be written then as a second generic function *f* of the latent features
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {\overset{\sim }{\boldsymbol{x}}}_i=f\left({\boldsymbol{h}}_i\right)=f\left(g\left({\boldsymbol{x}}_i\right)\right).
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where ![$$ {\overset{\sim }{\boldsymbol{x}}}_i\boldsymbol{\in}{\mathbb{R}}^n
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq2.png). Training
+    an autoencoder simply means finding the functions *g*(·) and *f*(·) that satisfy
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \arg {\min}_{f,g}&lt;\left[\Delta \Big({\boldsymbol{x}}_i,f\left(g\left({\boldsymbol{x}}_i\right)\right)\right]&gt;
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Where Δ indicates a measure of how the input and output of the autoencoder
+    differ (basically our loss function will penalize the difference between the input
+    and output) and < · > indicates the average over all observations. Depending on
+    how you design the autoencoder, it may be possible to find *f* and *g* so that
+    the autoencoder learns to reconstruct the output perfectly, thus learning the
+    identity function. This is not very useful, as we discussed at the beginning of
+    the chapter, and to avoid this possibility, two main strategies can be used: creating
+    a bottleneck and adding regularization in some form.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We want the autoencoder to reconstruct the input well enough. Still, at the
+    same time, it should create a latent representation (the output of the encoder)
+    that is useful and meaningful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adding a “bottleneck,” (more on that later) is achieved by making the latent
+    feature’s dimensionality lower (often much lower) than the input’s. That is the
+    case that we look at in detail in this chapter. But before looking at this case,
+    let’s briefly discuss regularization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Regularization in Autoencoders
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'We will not discuss regularization at length in this chapter, but we should
+    at least mention it. This means enforcing sparsity in the latent feature output.
+    The simplest way of achieving this is to add a *ℓ*[1] or *ℓ*[2] regularization
+    term to the loss function. That will look like this for the *ℓ*[2] regularization
+    term:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \arg {\min}_{f,g}\left(\mathbbm{E}\left[\Delta \Big({\boldsymbol{x}}_i,g\left(f\left({\boldsymbol{x}}_i\right)\right)\right]+\lambda
+    \sum \limits_i{\theta}_i^2\right) $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Eque.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'In the formula, the *θ*[*i*] are the parameters in the functions *f*(·) and
+    *g*(·) (you can imagine that in the case where the functions are neural networks,
+    the parameters will be the weights). This is typically easy to implement, because
+    the derivative with respect to the parameters is easy to calculate. Another trick
+    that is worth mentioning is to tie the weights of the encoder to the weights of
+    the decoder^([6](#Fn6)) (in other words, make them equal). Those techniques, and
+    a few others that go beyond the scope of this book, have fundamentally the same
+    effect: to add sparsity to the latent feature representation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We turn now to a specific type of autoencoders: those that build *f* and *g*
+    with feed-forward networks that use a bottleneck. The reason for this choice is
+    that they are very easy to implement and are very effective.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Feed-Forward Autoencoders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A Feed-Forward Autoencoder (FFA) is a neural network made of dense layers^([7](#Fn7))
+    with a specific architecture, as shown in Figure [9-2](#Fig2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig2_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: A typical architecture of a Feed-Forward Autoencoder. The number of neurons
+    in the layers at first goes down as we move through the network, until it reaches
+    the middle and then starts to grow again, until the last layer has the same number
+    of neurons as the input dimensions
+  prefs: []
+  type: TYPE_NORMAL
+- en: A typical FFA architecture (although it’s not mandatory) has an odd number of
+    layers and is symmetrical with respect to the middle layer. Typically, the first
+    layer has a number of neurons *n*[1] = *n* (the size of the input observation
+    ***x***[***i***]). As we move toward the center of the network, the number of
+    neurons in each layer drops in some measure. The middle layer (remember we have
+    an odd number of layers) usually has the smallest number of neurons. The fact
+    that the number of neurons in this layer is smaller than the size of the input
+    is the *bottleneck* mentioned earlier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In almost all practical applications, the layers after the middle one are a
+    mirrored version of the layers before the middle one. For example, an autoencoder
+    with three layers could have the following numbers of neurons: *n*[1] = 10, *n*[2] = 5
+    and then *n*[3] = *n*[1] = 10 (supposing we are working on a problem where the
+    input dimension is *n* = 10). All the layers, up to and including the middle one,
+    make what is called the *encoder*, and all the layers from and including the middle
+    one (up to the output) make what is called the ***decoder*** , as you can see
+    in Figure [9-2](#Fig2). If the FFA training is successful, the result will be
+    a good approximation of the input, in other words ![$$ {\overset{\sim }{\boldsymbol{x}}}_i\approx
+    {\boldsymbol{x}}_i $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq3.png).
+    What is essential to notice is that the decoder can reconstruct the input by using
+    only a much smaller number (*q*) of features than the input observations initially
+    have (*n*). The output of the middle layer ***h***[***i***] is also called a *learned
+    representation* of the input observation ***x***[*i*].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The *encoder* can reduce the number of dimensions of the input observation (*n*)
+    and create a learned representation (***h***[***i***]) of the input that has a
+    smaller dimension *q* < *n*. This learned representation is enough for the decoder
+    to reconstruct the input accurately (if the autoencoder training was successful
+    as intended).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Activation Function of the Output Layer
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In autoencoders based on neural networks, the output layer’s activation function
+    plays a particularly important role. The most used functions are ReLU and sigmoid.
+    Let’s look at both and see some tips on when to use which as well as why you should
+    choose one instead of the other.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ReLU
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The *ReLU* activation function can assume all values in the range [0, ∞]. As
+    a reminder, its formula is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ ReLU(x)=\max \left(0,x\right). $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: It’s a good choice when the input observations ***x***[*i*] assume a wide range
+    of positive values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the input ***x***[*i*] can assume negative values, the ReLU is a terrible
+    choice, and the identity function is a much better choice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The ReLU activation function for the output layer is well suited for cases when
+    the input observations ***x***[*i*] assume a wide range of positive, real values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sigmoid
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The sigmoid function *σ* can assume all values in the range ]0, 1[. As a reminder,
+    its formula is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \sigma (x)=\frac{1}{1+{e}^{-x}}. $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equg.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This activation function can only be used if the input observations ***x***[*i*]
+    are all in the range ]0, 1[ or if you have normalized them to be in that range.
+    Consider as an example the MNIST dataset. Each value of the input observation
+    ***x***[*i*] (one image) represents the gray values of the pixels that can assume
+    any value from 0 to 255\. Normalizing the data by dividing the pixel values by
+    255 would make each observation (each image) have only pixel values between 0
+    and 1\. In this case, the sigmoid would be a good choice for the output layer’s
+    activation function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sigmoid activation function for the output layer is a good choice in all
+    cases where the input observations assume only values between 0 and 1 or if you
+    have normalized them to assume values in the range ]0, 1[.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Loss Function
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As with any neural network model, we need to minimize a loss function. This
+    loss functions should measure the difference between the input ***x***[*i*] and
+    output ![$$ {\overset{\sim }{\boldsymbol{x}}}_i $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq4.png).
+    If you remember the explanations at the beginning, you will realize that this
+    loss function will be
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \mathbbm{E}\left[\Delta \Big({\boldsymbol{x}}_i,g\left(f\left({\boldsymbol{x}}_i\right)\right)\right].
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equh.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Where for FFAs, *g*, and *f* will be the functions that are obtained with dense
+    layers, as discussed in the previous sections. Remember that an autoencoder is
+    trying to learn an approximation of the identity function; therefore, you want
+    to find the weights in the network that give you the smallest difference according
+    to some metric (Δ(·)) between ***x***[*i*] and ![$$ {\overset{\sim }{\boldsymbol{x}}}_i
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq5.png). Two loss
+    functions are widely used for autoencoders: Mean Squared Error (MSE) and Binary
+    Cross-Entropy (BCE). Let’s look more in-depth at both since they can only be used
+    when specific requirements are met.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mean Square Error
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Since an autoencoder is trying to solve a regression problem, the most common
+    choice for the loss function is the Mean Square Error (MSE):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {L}_{MSE}= MSE=\frac{1}{M}\sum \limits_{i=1}^M{\left|{\boldsymbol{x}}_i-{\overset{\sim
+    }{\boldsymbol{x}}}_i\right|}^2 $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equi.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The symbol ∣ · ∣ indicates the norm of a vector,^([8](#Fn8)) and *M* is the
+    number of the observations in the training dataset. It can be used in almost all
+    cases, independently of how you choose your output layer activation function or
+    how you normalize the input data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is easy to show that the minimum of *L*[*MSE*] is found for ![$$ {\overset{\sim
+    }{\boldsymbol{x}}}_i={\boldsymbol{x}}_i $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq6.png).
+    To prove it, let’s calculate the derivative of *L*[*MSE*] with respect to a specific
+    observation, *j*. Remember that the minimum is found when this condition
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Figa_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: is met for all *i* = 1, …, *M*. To simplify the calculations, let’s assume that
+    the inputs are one dimensional^([9](#Fn9)) and let’s indicate them with *x*[*i*].
+    We can write
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Figb_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Equation (9.2) is satisfied when ![$$ {x}_j=\tilde{x}_{j} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq7.png)
+    as can be easily seen, as we wanted to prove. To be precise, we also need to show
+    that
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial^2{L}_{MSE}}{\partial \tilde{x}_{j}^2}&gt;0 $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equl.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is easily proved as we have
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial^2{L}_{MSE}}{\partial \tilde{x}_{j}^2}=\frac{2}{M} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equm.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is greater than zero, therefore confirming our assumption that for ![$$
+    {x}_j=\tilde{x}_{j} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq8.png)
+    we indeed have a minimum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Binary Cross-Entropy
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: If the activation function of the output layer of the FFA is a sigmoid function,
+    thus limiting neuron outputs to be between 0 and 1, and the input features are
+    normalized to be between 0 and 1, we can use the binary cross-entropy as a loss
+    function, indicated here with *L*[*CE*]. Note that this loss function is typically
+    used in classification problems, but it works beautifully for autoencoders. The
+    formula for it is
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Figc_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Where *x*[*j*, *i*] is the *j*^(*th*) component of the *i*^(*th*) observation.
+    The sum is over the entire set of observations and over all the components of
+    the vectors. Can we prove that minimizing this loss function is equivalent to
+    reconstructing the input as well as possible? Let’s calculate where *L*[*CE*]
+    has a minimum with respect to ![$$ {\overset{\sim }{\boldsymbol{x}}}_i $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq9.png).
+    In other words, we need to find out which values should ![$$ {\overset{\sim }{\boldsymbol{x}}}_i
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq10.png) assume
+    to minimize *L*[*CE*]. As we have done for the MSE, to make the calculations easier,
+    let’s consider the simplified case where ***x***[*i*] and ![$$ {\overset{\sim
+    }{\boldsymbol{x}}}_i $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq11.png)
+    are one-dimensional and let’s indicate them with *x*[*i*] and ![$$ \tilde{x}_{i}
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq12.png).
+  prefs: []
+  type: TYPE_NORMAL
+- en: To find the minimum of a function, as you should know from calculus, we need
+    the first derivative of *L*[*CE*]. In particular, we need to solve the set of
+    M equations
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Figd_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: In this case, it is easy to show that the binary cross-entropy *L*[*CE*] is
+    minimized when ![$$ {x}_i=\tilde{x}_{i} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq13.png)
+    for *i* = 1, …, *M*. Note that strictly speaking, this is true only when *x*[*i*] is
+    different than 0 or 1 since ![$$ \tilde{x}_{i} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq14.png)
+    can be neither 0 nor 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To find when the *L*[*CE*] is minimized, we can derive *L*[*CE*] with respect
+    to a specific input ![$$ \tilde{x}_{j} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq15.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fige_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now remember that we need to satisfy the condition
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Figf_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: That can happen only if ![$$ {x}_j=\tilde{x}_{j} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq16.png),
+    as can be seen in Equation ([9.3](#Par2661125)). To make sure that this is a minimum,
+    we need to evaluate the second derivative. Since the point for which the first
+    derivative is zero is a minimum only if
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial^2{L}_{CE}}{\partial \tilde{x}_{j}^2}&gt;0 $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equr.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We can calculate the second derivative at the minimum point ![$$ {x}_j=\tilde{x}_{j}
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq17.png)easily
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Figg_HTML.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Now remember that ![$$ \tilde{x}_{j}\in \left]0,1\right[ $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq18.png).
+    We can immediately see that the denominator of the previous formula is greater
+    than zero. The nominator is also clearly greater than zero since ![$$ 1-\tilde{x}_{i}&gt;0
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq19.png). Dividing
+    two positive numbers gives a positive number, thus we have just proved that
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{\partial^2{L}_{CE}}{\partial \tilde{x}_{i}^2}&gt;0 $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equt.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The minimum of the cost function is reached when the output is exactly equal
+    to the inputs, as we wanted to prove .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: An essential prerequisite of using the binary cross-entropy loss function is
+    that the inputs *must* be normalized between 0 and 1 and the activation function
+    for the last layer must be a *sigmoid* or *softmax* function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Reconstruction Error
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The reconstruction error (RE) is a metric that gives you an indication of how
+    accurately (or poorly) the autoencoder was able to reconstruct the input observation
+    ***x***[*i*]. The most typical RE used is the MSE
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ RE\equiv MSE=\frac{1}{M}\sum \limits_{i=1}^M{\left|{\boldsymbol{x}}_i-{\overset{\sim
+    }{\boldsymbol{x}}}_i\right|}^2\#(9.3) $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equu.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: (9.4)
+  prefs: []
+  type: TYPE_NORMAL
+- en: That can be easily calculated. The RE is used often when doing anomaly detection
+    with autoencoders, as we explain later. There is an easy explanation of the reconstruction
+    error. When the RE is significant, the autoencoder could not reconstruct the input
+    well, while when it is small, the reconstruction was successful. Figure [9-3](#Fig3)
+    shows an example of big and small reconstruction errors when an autoencoder tries
+    to reconstruct an image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig3_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: An example of big and small reconstruction errors when an autoencoder tries
+    to reconstruct an image
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example: Reconstructing Handwritten Digits'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s now see how an autoencoder performs with a real example , using the MNIST
+    dataset. This dataset^([10](#Fn10)) contains 70,000 handwritten digits from 0
+    to 9\. Each image is 28 × 28 pixels with only gray values, which means that we
+    have 784 features (the pixel gray values) as inputs. Let’s start with an autoencoder
+    with three layers and with the numbers of neurons in each layer equal to (784,16,784).
+    Note that the first and last layers *must* have a dimension equal to the input
+    dimensions. For this example, we used the Adam optimizer^([11](#Fn11)) as a loss
+    function the cross-entropy^([12](#Fn12)) and we trained the model for 30 epochs
+    with a batch size of 256\. Figure [9-4](#Fig4) shows two lines of images of digits.
+    The line at the top contains ten random images from the original dataset, while
+    the ones at the bottom are the reconstructed images with the autoencoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig4_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-4
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the top line, you can see the original digits from the MNIST dataset. In
+    contrast, the bottom line contains the digits reconstructed by the autoencoder
+    with the number of neurons equal to (784, 16, 784)
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is impressive that, to reconstruct an image with 784 pixels, ten classes,
+    and 70,000 images, only 16 features are needed. The result, although not perfect,
+    allows us to understand almost entirely which digit was used as input. Increasing
+    the middle layer’s size to 64 (and leaving all other parameters the same) gets
+    a much better result, as you can see in Figure [9-5](#Fig5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig5_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-5
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the top line you can see the original digits from the MNIST dataset. The
+    bottom line shows the digits reconstructed by the autoencoder with the number
+    of neurons equal to (784, 64, 784)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tells us that the relevant information on how to write digits is contained
+    in a much lower number of features than 784.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: An autoencoder with a middle layer smaller than the input dimensions (a bottleneck)
+    can be used to extract the essential features of an input dataset. This creates
+    a learned representation of the inputs given by the function *g*(***x***[*i*]).
+    Effectively an FFA can be used to perform *dimensionality reduction*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The FFA will not recreate the input digits well if the number of neurons in
+    the middle layer is reduced too much (if the bottleneck is too extreme). Figure
+    [9-6](#Fig6) shows the reconstruction of the same digits with an autoencoder with
+    only eight neurons in the middle layer. With only eight neurons in the middle
+    layer, you can see that some reconstructed digits are wrong. As you can see in
+    Figure [9-6](#Fig6), the 4 is reconstructed as a 9 and the 2 is reconstructed
+    to something that resembles a 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig6_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-6
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the top line you can see the original digits from the MNIST dataset. In contrast,
+    the bottom line contains the digits reconstructed by the autoencoder with the
+    number of neurons equal to (784, 8, 784)
+  prefs: []
+  type: TYPE_NORMAL
+- en: In Figure [9-7](#Fig7), you can compare the reconstructed digits by all the
+    FFAs we have discussed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig7_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-7
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the top line, you can see the original digits from the MNIST dataset. The
+    second line of digits contains the digits reconstructed by the FFA (784,8,784).
+    The third line is by the FFA (784,16,784), and the last line is by the FFA (784,64,784)
+  prefs: []
+  type: TYPE_NORMAL
+- en: From Figure [9-7](#Fig7) you can see how, by increasing the middle layer’s size,
+    the reconstruction gets better and better, as we expected.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For these examples, we used the binary cross-entropy as a loss function. But
+    the MSE would have worked also, and results can be seen in Figure [9-8](#Fig8).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig8_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-8
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the top line, you can see ten random original digits from the MNIST dataset.
+    The second line of digits contains the digits reconstructed with an FFA with 16
+    neurons in the middle layer and the binary cross-entropy as the loss function.
+    The last line contains images reconstructed with the MSE as a loss function
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autoencoder Applications
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Dimensionality Reduction
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As mentioned in this chapter , using the bottleneck method, the latent features
+    will have a dimension *q* that is smaller than the dimensions of the input observations
+    *n*. The *encoder* part (once trained) does natural (by design) dimension reduction,
+    thereby producing *q* real numbers. You can use the latent features for various
+    tasks, such as classification (as you will see in the next section) or clustering.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We would like to point out some of the advantages of dimensionality reduction
+    with an autoencoder compared to a more classical PCA approach. The autoencoder
+    has one main benefit from a computational point of view: it can deal with a very
+    large amount of data efficiently since its training can be done with mini-batches,
+    while PCA, one of the most used dimensionality reduction algorithms, needs to
+    do its calculations using the entire dataset. PCA is an algorithm that projects
+    a dataset on the eigenvectors of its covariance matrix,^([13](#Fn13)) thus providing
+    a linear transformation of the features Autoencoders are more flexible and consider
+    non-linear transformations of the features. The default PCA method uses ![$$ \mathcal{O}\left({d}^2\right)
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_IEq20.png) space
+    for data in *ℝ*^(*d*). This is, in many cases, not computationally feasible, and
+    the algorithm does not scale up with increasing dataset size. This may seem irrelevant,
+    but in many practical applications, the amount of data and the number of features
+    is so big that PCA is not a practical solution from a computational point of view.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The use of an autoencoder for dimensionality reduction has one main advantage
+    from a computational point of view: it can deal with a very large amount of data
+    efficiently since its training can be done with mini-batches.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Equivalence with PCA
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'This is not well known, but still worth mentioning. An FFA is equivalent to
+    a PCA if the following conditions are met:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You use a linear function for the encoder *g*(·)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You use a linear function for the decoder *f*(·)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You use the MSE for the loss function
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You normalize the inputs to
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![$$ {\hat{x}}_{i,j}=\frac{1}{\sqrt{M}}\left({x}_{i,j}-\frac{1}{M}\sum \limits_{k=1}^M{x}_{k,j}\right)
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equv.png)'
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+- en: The proof is long and can found in the notes by M.M. Kahpra for the course CS7015
+    (Indian Institute of Technology Madras) at [`http://toe.lt/1a`](http://toe.lt/1a).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classification
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Classification with Latent Features
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Let’s now suppose that we want to classify our input images of the MNIST dataset.
+    We can simply use all the features, in our case, the 784 pixel values of the images.
+    We can use an algorithm, such as kNN, for illustrative purposes. Doing this with
+    seven nearest neighbors on the training MNIST dataset (with 60,000 images) will
+    take around 16.6 minutes^([14](#Fn14)) (1000 sec) and gets you an accuracy on
+    the test dataset of 10,000 images of 96.4%. However, what happens if we use this
+    algorithm not with the original dataset, but with the latent features *g*(***x***[*i*])?
+    For example, say we consider an FFA with eight neurons in the middle layer and
+    again train a kNN algorithm on the latent features *g*(***x***[*i*]) ∈ *ℝ*⁸. In
+    that case, we get an accuracy of 89% in 1.1 sec. We get a gain of a factor of
+    1,000 in running time, for a loss of 7.4% in accuracy.^([15](#Fn15)) See Table
+    [9-1](#Tab1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-1
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Different Accuracies and Running Times When Applying the kNN Algorithm to
+    the Original 784 Features or the Eight Latent Features for the MNIST Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Input Data | Accuracy | Running Time |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Original data***x***[*i*] ∈ *ℝ*^(784) | 96.4% | 1000 sec. ≈16.6 min. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Latent Features g(***x***[*i*]) ∈ *ℝ*⁸ | 89% | 1.1 sec. |'
+  prefs: []
+  type: TYPE_TB
+- en: Using eight features allows us to get very good accuracy in just one second.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can do the same analysis with another dataset, the Fashion MNIST^([16](#Fn16))
+    dataset (a dataset from Zalando very similar to the MNIST one, only with clothing
+    images instead of handwritten digits) for illustrative purposes. The dataset has,
+    as the MNIST one, 60,000 training images and 10,000 test ones. Table [9-2](#Tab2)
+    shows a summary of the results of applying kNN to the testing portion of this
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-2
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Difference in Accuracy and Running Time When Applying the kNN Algorithm
+    to the Original 784 Features with an FFA with Eight Neurons and with an FFA with
+    16 Neurons for the Fashion MNIST Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Input Data | Accuracy | Running Time |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Original data ***x***[*i*] ∈ *ℝ*^(784) | 85.4% | 1040 sec. ≈16.6 min. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Latent Features *enc*(***x***[*i*]) ∈ *ℝ*⁸ | 79.9% | 1.2 sec. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Latent Features *enc*(***x***[*i*]) ∈ *ℝ*^(16) | 83.6% | 3.0 sec. |'
+  prefs: []
+  type: TYPE_TB
+- en: It is exciting to note that with an FFA with 16 neurons in the middle layer,
+    we reach an accuracy of 83.6% in just three sec. When applying a kNN algorithm
+    to the original features (784), we get an accuracy only 1.8% higher but with a
+    running time of around 330 times longer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using autoencoders and doing classification with the latent features is a good
+    way to reduce the training time by several orders of magnitude while incurring
+    a minor drop in accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Curse of Dimensionality: A Small Detour'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Is there any other reason that you would want to do dimensionality reduction
+    before doing the classification? Reducing running time is one reason, but another
+    important one plays a significant role when the input dimension is very large,
+    i.e., the datasets that have a very large number of features: the curse of dimensionality.
+    To understand why, we need to take a quick detour to look at the problem of high
+    dimensionality classification and discuss the *curse of dimensionality* . Let’s
+    consider the unit cube [0, 1]^(*d*) with *d* being an integer and *m* points in
+    it distributed randomly. How big should the length *l* of the smallest hyper-cube
+    be to contain at least one point? We can easily calculate it as follows'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ {l}^d\approx \frac{1}{m}\to l\approx {\left(\frac{1}{m}\right)}^{1/d}
+    $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equw.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We can easily calculate this value of *l* for various values of *d*. Let’s suppose
+    that we consider *m* = 1000 and summarize the results in Table [9-3](#Tab3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table 9-3
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Length *l* of the Smallest Hyper-Cube to Contain at Least One Point from
+    a Population of Randomly Distributed *m* Points
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| d | l |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 2 | 0.003 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 10 | 0.50 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 100 | 0.93 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 1000 | 0.99 |'
+  prefs: []
+  type: TYPE_TB
+- en: Furthermore, as you can see, the data becomes so sparse in high dimensions that
+    you need to consider the entire hyper-cube to capture one single observation.
+    When the data becomes so sparse, the number of observations you need in order
+    to train an algorithm properly becomes much bigger than the size of existing datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We could look at this differently. Let’s consider a small hyper-cube of side
+    *l* = 1/10\. How many observations will we find on average in this small portion
+    of the hyper-cube? This is easy to calculate and is given by
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![$$ \frac{m}{10^d} $$](../images/463356_2_En_9_Chapter/463356_2_En_9_Chapter_TeX_Equx.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: You can see that this number is very small for high values of *d*. For example,
+    if we consider *d* = 100 it’s easy to see that we would need more observations
+    than atoms in the universe^([17](#Fn17)) to find at least one observation in that
+    small portion of the hyper-cube.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performing dimensionality reduction is a viable method for reducing running
+    time dramatically while incurring a small drop in accuracy. In high-dimensionality
+    datasets, this becomes fundamental due to the curse of dimensionality.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Anomaly Detection
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Autoencoders are often used to perform anomaly detection on different datasets.
+    The best way to understand how anomaly detection works with autoencoders is to
+    look at it with a practical example. Let’s consider an autoencoder with only three
+    layers with 784 neurons in the first, 64 in the latent feature generation layer,
+    and 784 neurons in the output layers. We will train it with the MNIST dataset
+    and in particular with the 60,000 training portion of it, as we did in the previous
+    sections of this chapter. Now let’s consider the Fashion MNIST dataset. Let’s
+    choose an image of a shoe (see Figure [9-9](#Fig9)) from this dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig9_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-9
+  prefs: []
+  type: TYPE_NORMAL
+- en: A random image from the Zalando MNIST dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s add it to the testing portion of the MNIST dataset. The original testing
+    portion of MNIST has 10,000 images. With the shoe, we will have 10,001 images.
+    How can we use an autoencoder to find the shoe automatically in those 10,001 images?
+    Note that the shoe is an “outlier,” it’s an “anomaly” since it is an entirely
+    different image class than handwritten digits. To do that, we will take the autoencoder
+    we trained with the 60,000 MNIST images and calculate the reconstruction error
+    for the 10,001 test images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The main idea is that, since the autoencoder has only seen handwritten digits
+    images, it will not be able to reconstruct the shoe image. Therefore we expect
+    this image to have the biggest reconstruction error. We can see if that is the
+    case by taking the top two reconstruction errors. For this example, we used the
+    MSE for the reconstruction error. You can check out the code at [`https://adl.toelt.ai`](https://adl.toelt.ai).
+    The shoe has the highest reconstruction error: 0.062\. The autoencoder cannot
+    reconstruct the image, as shown in Figure [9-10](#Fig10).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig10_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-10
+  prefs: []
+  type: TYPE_NORMAL
+- en: The shoe and the autoencoder's reconstruction trained on the 60,000 handwritten
+    images of the MNIST dataset. This image has the biggest RE in the entire 10,001
+    test dataset we built, with a value of 0.062
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The second biggest RE is slightly less than one third of that of the shoe:
+    0.022\. This indicates that the autoencoder is doing a good job understanding
+    how to reconstruct handwritten digits. You can see the image with the second biggest
+    RE in Figure [9-11](#Fig11). This image could also be classified as an outlier,
+    as it’s not completely clear if it is a 4 or an incomplete 9.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig11_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-11
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The image with the second biggest RE in the 10,001 test dataset: 0.022'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The readers with the most experience may have noticed that we trained our autoencoders
+    on a dataset without any outliers and applied it to a second dataset with outliers.
+    This is not always possible, as very often the outliers are not known and are
+    lost in a big dataset. In general, you want to find outliers in a single big dataset
+    without any information on how many there are or how they look. Generally speaking,
+    anomaly detection can be done following these main steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Train an autoencoder on the entire dataset (or if possible, on a portion of
+    the dataset known not to have an outlier).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For each observation (or input) of the portion of the dataset known to have
+    the wanted outliers, calculate the RE.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Sort the observations by the RE.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Classify the observations with the highest RE as outliers. The number of observations
+    that classify as outliers will depend on the problem at hand and requires an analysis
+    of the results (and usually a lot of knowledge of the data and the problem).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Note that if you train the autoencoder on the entire dataset, there is an essential
+    assumption: the outliers are a negligible part of the dataset and their presence
+    will not influence how the autoencoder learns to reconstruct the observations.
+    This is one of the reasons that regularization is so essential. If the autoencoders
+    could learn the identity function, anomaly detection could not be done.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A classic example of anomaly detection is finding fraudulent credit card transactions
+    (the outliers). This case usually presents around 0.1% fraudulent transactions
+    and therefore this would be a case that would allow us to train the autoencoder
+    on the entire dataset. Another is fault detection in an industrial environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you train the autoencoder on the entire dataset at disposal, there is an
+    essential assumption: the outliers are a negligible part of the dataset and their
+    presence will not influence how the autoencoder learns to reconstruct the observations.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Model Stability: A Short Note'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Note that doing anomaly detection as described in the previous section seems
+    easy, but those methods are prone to overfitting and often give inconsistent results.
+    This means that training an autoencoder with a different architecture may well
+    give different REs and therefore other outliers. There are several ways of solving
+    this problem, but one of the simplest ways of dealing with instability of results
+    is to train different models and then take the average of the REs. Another often
+    used technique involves taking the maximum of the REs evaluated from several models.
+    This kind of approaches are called ensemble methods but go beyond the scope of
+    this book.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Anomaly detection done with autoencoders is prone to problems related to overfitting
+    and unstable results. It is essential to be aware of these problems and check
+    the results coming from different models to interpret the results correctly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this section serves to give you some pointers and is not meant to
+    be an exhaustive overview on how to solve this problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like autoencoders ensembles,^([18](#Fn18)) more advanced techniques are also
+    used to deal with problems of instable results coming, for example, from small
+    datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Denoising Autoencoders
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Denoising autoencoders ^([19](#Fn19)) are developed to auto-correct errors (noise)
+    in the input observations. As an example, imagine the handwritten digits we considered
+    before where we added some noise (for example, Gaussian noise) in the form of
+    randomly changing the gray values of the pixels. In this case, the autoencoders
+    should learn to reconstruct the image without the added noise. As a concrete example,
+    consider the MNIST dataset. We can add to each pixel a random value generated
+    by a normal distribution scaled by a factor (you can check out the code at [`https://adl.toelt.ai`](https://adl.toelt.ai)).
+    We can train an autoencoder using the noisy images as the input and the original
+    images as the output. The model should learn to remove the noise, since it is
+    random in nature and has no relationship to the images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Figure [9-12](#Fig12) shows the results. In the left column, you see the noisy
+    images; in the middle, the original ones; and on the right are the de-noised images.
+    It is quite impressive how well it works. Figure [9-12](#Fig12) was generated
+    by training an FFA autoencoder with three layers and 32 neurons in the middle
+    layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig12_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-12
+  prefs: []
+  type: TYPE_NORMAL
+- en: The results of denoising an FFA autoencoder with three layers and 32 neurons
+    in the middle layer . The noise was generated by adding a real number between
+    0 and 1 taken from a normal distribution. For details, see the code at [https://​adl.​toelt.​ai](https://adl.toelt.ai)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Beyond FFA: Autoencoders with Convolutional Layers'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This chapter has described autoencoders with a feed-forward architecture. But
+    autoencoders with convolutional layers works as well, and are often much more
+    efficient (especially when dealing with images). For example, in Figure [9-13](#Fig13),
+    you can see a comparison of the results of an FAA (with architecture 784,32,784)
+    and of a Convolutional Autoencoder (CA) with architecture (28x28), (26x26x64),
+    (24x24,32), (26x26x64), (28x28). Keep in mind the layers are convolutions, so
+    the first two numbers indicate the tensor dimensions and the third indicates the
+    number of kernels, which in this example had a size of 3x3\. The two autoencoders
+    have been trained with the same parameters (epochs, mini-batch size, etc.). You
+    can see how a CA gives better results than an FAA, since we are dealing with images.
+    To be fair, note that the feature generating layer is only marginally smaller
+    than the input layer in this example. The purpose of this example is to show you
+    that convolutional autoencoders are a viable solution because they work very well
+    in many practical applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../images/463356_2_En_9_Chapter/463356_2_En_9_Fig13_HTML.jpg)'
+  prefs: []
+  type: TYPE_IMG
+- en: Figure 9-13
+  prefs: []
+  type: TYPE_NORMAL
+- en: A comparison of the results of an FAA (with architecture 784,32,784) and of
+    a Convolutional Autoencoder (CA) with architecture (28x28), (26x26x64), (24x24,32),
+    (26x26x64), (28x28)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Another important aspect is that the feature-generating layer can be a convolutional
+    layer but can also be a dense one. There is no fixed rule and testing is required
+    to find the best architecture for your problem. It also depends on how you want
+    to model your latent features: as a tensor (multi-dimensional array) or as a one-dimensional
+    array of real numbers.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementation in Keras
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now let’s briefly look at how we can implement autoencoders in Keras. It is
+    quite easy so don’t worry. You will find many examples on the online version of
+    the book at [`https://adl.toelt.ai`](https://adl.toelt.ai). The easiest way of
+    implementing an autoencoder is to use the Keras Functional APIs. As an example,
+    we will consider as input the MNIST dataset, in other words the input shape of
+    the network will be `(784,)` (remember that the MNIST images are 28x28 pixels,
+    and therefore when flattened are vectors with 784 values). The network will consists
+    of two parts: the encoder and the decoder (check out Figure [9-2](#Fig2) if you
+    don’t remember exactly which part does what). Let’s look at the code and then
+    discuss it.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This is the smallest autoencoder that you can create (at least in terms of
+    the number of layers). It has the input layer (784 input values), the latent feature
+    layer (you decide on its dimension by giving the `feature_layer_dim` parameter
+    to the function), and then the output layer that must have of course the same
+    dimension as the input layer (784). If you want to make the network larger you
+    can of course add as many layers as you want. But the two most important characteristics
+    are that the input and output layer must have the same dimensions and that the
+    latent feature layer should have a smaller dimension than the input/output layer.
+    Once you define this function, you can use it easily to get three models: the
+    autoencoders, an encoder, and a decoder.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can train the autoencoder exactly as you do with Keras with any other neural
+    networks by using the `.fit()` call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Where you can imagine that `mnist_x_train` and `mnist_x_test` are two datasets
+    composed of several flattened MNIST handwritten digits. It is important to note
+    that we have given the dataset `mnist_x_train` as input to the network for the
+    images and for the output. In other words, there are no labels here. The labels
+    are the dataset itself, since we want the output to be as close to the input as
+    possible (remember the previous sections?).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can easily encode images, or in other words get the latent features of a
+    certain set of inputs by calling `predict()`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Where `mnist_x_test` is a hypothetical dataset that you want to encode. You
+    can use those `encoded_imgs` values to do anything you need, for example perform
+    classification or regression. By invoking `encoder.predict`, you basically have
+    performed dimensionality reduction on the input dataset, as we discussed in the
+    previous sections of the chapter. The decoding can be done just as easily
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: At [`https://adl.toelt.ai`](https://adl.toelt.ai) you will find examples of
+    autoencoders, anomaly detection with autoencoders, and denoising with autoencoders,
+    as described in this chapter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Exercise 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: List the most useful tasks you can use an autoencoder for. Can you think of
+    an application in your field of work?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercise 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Can you explain briefly what a sparse autoencoder is? How is it similar to an
+    autoencoder with a bottleneck?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercise 3
+  prefs: []
+  type: TYPE_NORMAL
+- en: How do you measure the performance of an autoencoder (which metric do you use)?
+    List the most commonly used metrics that you can use. Can you think of any additional
+    metric, in addition to those discussed in this chapter, that could be used?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercise 4
+  prefs: []
+  type: TYPE_NORMAL
+- en: Describe how anomaly detection works with autoencoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Further Readings
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Deep Learning Tutorial from Stanford University
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`http://ufldl.stanford.edu/tutorial/unsupervised/Autoencoders/`](http://ufldl.stanford.edu/tutorial/unsupervised/Autoencoders/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building autoencoders in Keras
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://blog.keras.io/building-autoencoders-in-keras.html`](https://blog.keras.io/building-autoencoders-in-keras.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction to autoencoders in TensorFlow
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://www.tensorflow.org/tutorials/generative/autoencoder`](https://www.tensorflow.org/tutorials/generative/autoencoder)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bank, D., Koenigstein, N., and Giryes, R., “Autoencoders”, arXiv e-prints, 2020,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`https://arxiv.org/abs/2003.05991`](https://arxiv.org/abs/2003.05991)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: R. Grosse, University of Toronto, Lecture on autoencoders
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`http://www.cs.toronto.edu/~rgrosse/courses/csc321_2017/slides/lec20.pdf`](http://www.cs.toronto.edu/%257Ergrosse/courses/csc321_2017/slides/lec20.pdf)'
+  prefs: []
+  type: TYPE_NORMAL
