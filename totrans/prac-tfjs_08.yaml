@@ -1,7 +1,9 @@
 - en: 8. Training an image classifier with transfer learning on Node.js
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 8. 在Node.js上使用迁移学习训练图像分类器
 - en: An intersection between the products we have so far built—a game, a web application,
     or a Chrome extension—is that they live in the browser. From this ecosystem, we
     have trained models, loaded others, visualized data, detected mean words, and
@@ -9,45 +11,59 @@
     with every day are in a server, and not client-side. There, from the server, we
     deploy and expose machine learning models to the users through a service. In this
     chapter, we will create one.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们迄今为止构建的产品——一个游戏、一个网络应用程序或一个Chrome扩展——之间的交集是它们都存在于浏览器中。从这个生态系统中，我们训练了模型，加载了其他模型，可视化了数据，检测了平均词汇，等等。但现实情况不同。与我们的应用程序不同，我们每天与之交互的大多数模型都在服务器上，而不是客户端。在那里，从服务器部署并暴露机器学习模型给用户，通过一个服务。在本章中，我们将创建一个。
 - en: Using **Node.js**, a runtime environment that executes JS code outside the browser,
     we will develop a server-side application for deploying and serving a TensorFlow.js
     model via a web service. But which model?
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用**Node.js**，一个在浏览器外执行JS代码的运行环境，我们将开发一个服务器端应用程序，通过网络服务部署和提供TensorFlow.js模型。但哪个模型呢？
 - en: Before creating the service—let’s call it the *Server*—you will write another
     Node.js program (the *Trainer*) for training an image classifier using the personalized
     dataset from Chapter [7](494424_1_En_7_Chapter.xhtml). However, instead of training
     it from scratch, you will apply **transfer training** to a pre-trained **MobileNet**
     model and start from there.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 在创建服务——让我们称它为*服务器*——之前，你将编写另一个Node.js程序（*训练器*），用于使用第[7](494424_1_En_7_Chapter.xhtml)章中个性化数据集训练一个图像分类器。然而，你不会从头开始训练它，而是将**迁移学习**应用于预训练的**MobileNet**模型，并从这里开始。
 - en: 'Wow, so many concepts: Node.js, servers, web services, transfer learning, and
     MobileNet. Well, there is another one! To inspect the training, we will use **TensorBoard**,^([1](#Fn1))
     a TensorFlow visualization toolkit that, among other features, provides tracking
     of the model’s performance metrics and loss values.'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 哇，这么多概念：Node.js、服务器、网络服务、迁移学习和MobileNet。嗯，还有一个！为了检查训练情况，我们将使用**TensorBoard**，^([1](#Fn1))这是一个TensorFlow可视化工具包，它提供了许多功能，其中包括模型性能指标和损失值的跟踪。
 - en: What is transfer learning?
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 迁移学习是什么？
 - en: Training a (large) deep learning model is a computationally extensive task that
     requires a vast amount of data. To get an idea, NVIDIA’s *Megatron-LM* (Shoeybi
     et al., 2019), an 8.3 billion parameter transformer model, required two days per
     epoch using 512 GPUs. Two days! Per epoch! I do not know about you, but I do not
     own that kind of hardware. So, how can we, ordinary people, train deep models
     in a relatively short time and with a limited dataset? An option is transfer learning.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 训练（大型）深度学习模型是一个计算密集型任务，需要大量的数据。为了有一个概念，NVIDIA的*Megatron-LM*（Shoeybi等人，2019年），一个83亿参数的转换器模型，每个epoch需要使用512个GPU两天时间。两天！每个epoch！我不知道你，但我没有那种硬件。那么，我们这些普通人如何才能在相对较短的时间内，以及有限的训练数据集下训练深度模型呢？一个选择是迁移学习。
 - en: Transfer learning refers to the technique of reusing parts (the trained weights)
     of a model as a starting point of another. In other words, it *transfers the knowledge
     learned in one setting to another* (Goodfellow et al., 2016). Using a pre-trained
     model as a base to a second one implies significantly speeding up the training
     of the target model and requiring less training data.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 迁移学习指的是将一个模型的部分（训练好的权重）作为另一个模型的起点来重用的技术。换句话说，它*将一个设置中学习到的知识转移到另一个设置中*（Goodfellow等人，2016年）。使用预训练模型作为第二个模型的基，意味着可以显著加快目标模型的训练速度，并减少所需的训练数据。
 - en: The main idea behind transfer learning consists of concatenating the base model’s
     layers to a new set of layers and training them. In practice, this involves using
     the upper layers (the first layers) of the base model since they are most likely
@@ -57,8 +73,10 @@
     To these frozen layers, then, you append the new set of layers, including the
     output layer, and train these with your data to create the relationship between
     what the base model knows and the target of your dataset.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 迁移学习背后的主要思想是将基础模型的层与一组新的层连接起来并对其进行训练。在实践中，这涉及到使用基础模型的上层（第一层），因为它们最有可能已经学会了数据集的高级特征，也就是说，这些特征可能是对新模型有用的。这些层有时被称为“冻结”层，因为它们的权重是固定的，不会进行训练。然后，在这些冻结层上，你附加新的层集，包括输出层，并使用你的数据进行训练，以创建基础模型所知与你的数据集目标之间的关系。
 - en: As useful as transfer learning is, it is not a perfect or a “one-size-fits-all”
     solution. When applying it, there are several things we must consider. One is
     the layer from which we should “truncate” the model, a decision that depends on
@@ -71,12 +89,16 @@
     such as ImageNet. Similarly, we need to keep in mind the input shape of the base
     model. For instance, our base model, MobileNet, is trained on images of size 224x224,
     so we have to resize our dataset before feeding it to the model.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然迁移学习很有用，但它并不是一个完美或“一刀切”的解决方案。在应用它时，我们必须考虑几个方面。其中之一是我们应该从哪一层“截断”模型，这个决定取决于训练集的大小；你拥有的数据越多，切割点（冻结的层越少）就越高（Géron，2019）。另一个可能的问题是原始模型的任务与我们想要训练的模型之间的相似性。例如，如果原始模型是用来检测土豆的，你不能期望它能很好地识别宇宙飞船（除非它们是土豆形状的宇宙飞船）。因此，尝试使用在类似数据集或大型多样化数据集上训练的基础模型，例如ImageNet。同样，我们还需要记住基础模型的输入形状。例如，我们的基础模型MobileNet是在224x224大小的图像上训练的，因此我们必须在将其输入模型之前调整我们的数据集大小。
 - en: Understanding MobileNet and ImageNet
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 理解MobileNet和ImageNet
 - en: Our base model is a MobileNet (Howard et al., 2017), a light and fast convolutional
     neural network architecture for visual applications, which include object detection,
     image classification, and novel ones like the PoseNet network from Chapter [5](494424_1_En_5_Chapter.xhtml).
@@ -85,8 +107,10 @@
     a special convolutional layer named depthwise separable convolution as well as
     batch normalization layers, ReLU activation layers, a convolutional layer, and
     a softmax layer for classification.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的基础模型是MobileNet（Howard等人，2017年），这是一种轻量级且快速的卷积神经网络架构，适用于视觉应用，包括目标检测、图像分类以及第[5](494424_1_En_5_Chapter.xhtml)章中提到的PoseNet网络等新颖的应用。MobileNet针对低资源设备，如嵌入式系统和手机，这就是为什么它以速度换取精度。它有超过25层，包括一个名为深度可分离卷积的特殊卷积层以及批量归一化层、ReLU激活层、一个卷积层和一个用于分类的softmax层。
 - en: The MobileNet model we will use was trained on the *ImageNet Large Scale Visual
     Recognition Challenge 2012* (ILSVRC2012) database (Russakovsky et al., 2015) where
     it achieved an accuracy of 70.6%. The dataset has 1,431,167 images and 1000 classes
@@ -95,32 +119,47 @@
     place, it is because this dataset is a subset of the larger ImageNet, which aims
     to cover most nouns of the English language. Having a model trained with such
     a mix of a diverse object might be beneficial for our transfer learning job.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将要使用的MobileNet模型是在2012年大规模视觉识别挑战（ILSVRC2012）数据库上训练的（Russakovsky等人，2015年），在该数据库上它达到了70.6%的准确率。该数据集包含1,431,167张图像和1000个类别，描述了各种物品、动物和物体，例如“足球”、“头盔”、“蜡烛”、“鳗鱼”和“数字时钟”。如果标签看起来杂乱无章，那是因为这个数据集是更大的ImageNet的一个子集，旨在涵盖大多数英语名词。使用这样多样化的物体混合训练的模型可能对我们的迁移学习工作有益。
 - en: Building the Trainer
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建训练器
 - en: Our first task is creating the Trainer, responsible for training the model.
     This program does two things, pre-processing the data and training the model,
     and so we will split the explanation into two parts. Besides, since we have a
     new framework, Node.js, we will start with a brief description of how to run TensorFlow.js
     in this environment.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的首要任务是创建训练器，负责训练模型。这个程序做两件事，预处理数据和训练模型，因此我们将解释分为两部分。此外，由于我们有一个新的框架，Node.js，我们将从如何在环境中运行
+    TensorFlow.js 的简要描述开始。
 - en: Setting up the environment
+  id: totrans-15
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 设置环境
 - en: 'The first step is installing Node.js. You can find the instructions at [`https://nodejs.org/en/`](https://nodejs.org/en/).
     Installing Node.js also installs **npm**, a package manager for JavaScript projects.
     Once ready, add a directory in your preferred location and create the file *package.json*,
     a document with metadata about the project. Ours looks like this:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一步是安装 Node.js。你可以在这里找到说明：[https://nodejs.org/en/](https://nodejs.org/en/)。安装
+    Node.js 也会安装 **npm**，它是 JavaScript 项目的包管理器。一旦准备就绪，在您首选的位置添加一个目录并创建 *package.json*
+    文件，这是一个包含项目元数据的文档。我们的看起来像这样：
 - en: '[PRE0]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: The first three keys are the project’s name, version, and description. Then
     comes the `scripts` property, a dictionary of commands. For example, we have a
     `train` command whose value is `node trainer.js`, so executing `npm train` in
@@ -128,69 +167,107 @@
     the project’s dependencies, which are Node.js version of TensorFlow.js, *Express*
     and *Multer*, two we will use for the web service. If your computer has an NVIDIA
     GPU and supports CUDA, you could instead use the GPU variant, *tfjs-node-gpu*.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 前三个键是项目的名称、版本和描述。然后是 `scripts` 属性，一个命令字典。例如，我们有一个 `train` 命令，其值是 `node trainer.js`，所以在包含
+    *package.json* 的路径下执行 `npm train` 会运行 `node trainer.js`。下一个属性定义了项目的依赖项，包括 TensorFlow.js
+    的 Node.js 版本、*Express* 和 *Multer*，这两个我们将用于网络服务。如果你的计算机有 NVIDIA GPU 并支持 CUDA，你可以使用
+    GPU 变体，*tfjs-node-gpu*。
 - en: To make sure everything is working, first, run `npm i` to install the dependencies.
     When that finishes, create a file named *trainer.js*, add the line `console.log('boo!');`,
     and execute `npm run train` from the console.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了确保一切正常工作，首先运行 `npm i` 安装依赖项。当完成时，创建一个名为 *trainer.js* 的文件，添加一行 `console.log('boo!');`，然后从控制台执行
+    `npm run train`。
 - en: Loading and pre-processing the images
+  id: totrans-20
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 加载和预处理图像
 - en: 'Did it work? Cool. Now, remove the “boo” line and replace it with the following
     two to load TensorFlow.js and the *fs* (short for “File System”) module:'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 工作了吗？太好了。现在，删除“boo”行，并替换以下两行以加载 TensorFlow.js 和 *fs*（代表“文件系统”）模块：
 - en: '[PRE1]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Right after, declare these three variables:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，声明这三个变量：
 - en: '[PRE2]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: where `xTrain` is the dataset and `yTrain` the labels.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '`xTrain` 是数据集，`yTrain` 是标签。'
 - en: 'Next, create `readImage()`. The function consists of one call to `tf.tidy()`,
     to read images from the file system using *fs*’ `readFileSync()`, followed by
     `tf.node.decodeImage()` to decode it and convert to a tensor. Next, transform
     the tensor using the following methods:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，创建 `readImage()`。该函数包含一个对 `tf.tidy()` 的调用，用于使用 *fs* 的 `readFileSync()` 从文件系统读取图像，然后使用
+    `tf.node.decodeImage()` 解码它并将其转换为张量。接下来，使用以下方法转换张量：
 - en: '`resizeBilinear([224, 224])` to resize it to 224x224\. After this function,
     the tensor’s shape is [224, 224, 3]. The 3 is because of the colored image RGB
     channels.'
+  id: totrans-27
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用 `resizeBilinear([224, 224])` 将其调整到 224x224。在此函数之后，张量的形状是 [224, 224, 3]。3
+    是因为彩色图像有 RGB 通道。
 - en: '`expandDims()` to add an extra dimension. Tensor shape: [1, 224, 224, 3].'
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用 `expandDims()` 添加一个额外的维度。张量形状：[1, 224, 224, 3]。
 - en: '`toFloat()` to convert the values to floats.'
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用 `toFloat()` 将值转换为浮点数。
 - en: '`div(127.0)` to divide the values by 127.'
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用 `div(127.0)` 将值除以 127。
 - en: '`sub(1)` to subtract 1\. These last two methods bound the values between -1
     and 1 (RGB values range from 0 to 255).'
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用 `sub(1)` 减去 1。这两个最后的方法将值限制在 -1 和 1 之间（RGB 值范围从 0 到 255）。
 - en: 'To avoid keeping these intermediate tensors in memory, wrap up everything inside
     a `tf.tidy()`:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了避免在内存中保留这些中间张量，将所有内容包裹在 `tf.tidy()` 中：
 - en: '[PRE3]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The script’s second function is `getImages()`. This one takes two parameters,
     `dir`, a directory containing images, and `label`, the dataset’s labels, coded
     as numbers, for example, 0 for “pikachu.” `getImages()` uses *fs* method `readdir()`
@@ -203,26 +280,43 @@
     the others are 0\. For example, suppose that in our “pikachu and bottle” classifier,
     the index of class “pikachu” is 0, and that of “bottle” is 1\. Here, the one-hot
     encoding of a “bottle” label is [0, 1].
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的第二个函数是 `getImages()`。这个函数接受两个参数，`dir`，一个包含图像的目录，以及 `label`，数据集的标签，编码为数字，例如，0
+    代表“皮卡丘”。`getImages()` 使用 *fs* 方法 `readdir()` 和 foreach 来遍历目录中的文件，这些文件被函数 `readImages()`
+    使用来获取图像。在每个图像之后，它调用 `tf.oneHot()` 来创建一个 *one-hot* 张量，该张量编码图像的类别。一个 one-hot 向量是一个长度为
+    *n* 的向量，其中 *n* - 1 个值是零，剩下的一个是 1。在机器学习中，我们经常使用这种技术来以这种方式标记数据集，其中只有与实例类别对应的索引是
+    1，而其他的是 0。例如，假设在我们的“皮卡丘和瓶子”分类器中，类别“皮卡丘”的索引是 0，而“瓶子”的索引是 1。在这里，“瓶子”标签的 one-hot
+    编码是 [0, 1]。
 - en: 'With the image and label set, the missing step is concatenating them to `xTrain`
     and `yTrain` along the first axis, that is, to form a tensor of images:'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用图像和标签集后，缺失的步骤是将它们沿着第一个轴连接到 `xTrain` 和 `yTrain`，即形成一个图像的张量：
 - en: '[PRE4]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Training the model with transfer learning
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用迁移学习训练模型
 - en: Welcome to transfer learning! After repeating the term so many times, you must
     be (maybe) eager to apply it. So, let’s start right away with a new function named
     `train()`. The function’s first commands involve using the method `tf.loadLayersModel()`
     to load a version of MobileNet provided by Google and `tf.LayersModel.getLayer()`
     to get the layer “conv_pw_13_relu.”
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 欢迎来到迁移学习！在重复了这个术语这么多遍之后，你肯定（也许）渴望应用它。所以，让我们立即开始一个新的函数 `train()`。该函数的第一个命令涉及使用
+    `tf.loadLayersModel()` 方法加载由 Google 提供的 MobileNet 版本，以及使用 `tf.LayersModel.getLayer()`
+    获取层“conv_pw_13_relu。”
 - en: This “conv_pw_13_relu” layer is the cutting point. All the layers before this
     one are considered “frozen,” that is, they are the “learning” we will transfer
     (the base model). Why this particular layer? One reason is its proximity to the
@@ -230,40 +324,60 @@
     well with my dataset. However, you do not have to choose the same one. After we
     finish building the model, I would recommend trying different cutting points to
     see which one is better for your data.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个“conv_pw_13_relu”层是切割点。所有这个之前的层都被认为是“冻结的”，也就是说，它们是我们将要迁移的“学习”（基础模型）。为什么是这个特定的层？一个原因是它靠近输出层——这意味着我们将使用许多已学习的层——并且因为它在我的数据集上表现良好。然而，你不必选择相同的层。在我们完成模型构建后，我建议尝试不同的切割点，看看哪一个更适合你的数据。
 - en: '[PRE5]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Note
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Use `mobilenet.summary()` to see the network’s layers name.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 `mobilenet.summary()` 来查看网络的层名称。
 - en: 'Since we know the cutting point, let’s get the corresponding layers and build
     a new model with them. This model is not a sequential one, but a graph-based one
     that uses the functional approach we saw back in Chapter [1](494424_1_En_1_Chapter.xhtml).
     To create it, we will use the property inputs and outputs of the argument object
     to set its inputs and outputs (write this under the `cutoffLayer` line):'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们知道切割点，让我们获取相应的层并使用它们构建一个新的模型。这个模型不是一个顺序模型，而是一个基于图的模型，它使用我们在第 [1](494424_1_En_1_Chapter.xhtml)
+    章节中看到的函数式方法。为了创建它，我们将使用参数对象的属性输入和输出来设置其输入和输出（在 `cutoffLayer` 行下写入）：
 - en: '[PRE6]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: If you are curious, run `console.log(mobilenet.summary())` and `console.log(truncatedModel.summary())`
     to see the difference in the architecture.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你好奇，运行 `console.log(mobilenet.summary())` 和 `console.log(truncatedModel.summary())`
+    来查看架构的差异。
 - en: 'The following step is producing the intermediate activations using `truncatedModel.predict(xTrain)`.
     Mind that this is not “predicting” in the sense that we are used to because there
     is no classification output. Here, we are using the weights of the base model
     to produce an intermediate activation tensor used by the second model:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是使用 `truncatedModel.predict(xTrain)` 生成中间激活。请注意，这并不是我们习惯意义上的“预测”，因为没有分类输出。在这里，我们使用基础模型的权重来生成一个中间激活张量，该张量被第二个模型使用：
 - en: '[PRE7]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Now create the final model that takes the activation tensor as input and produces
     the image classification. The model needs three layers. The first of these is
     a flatten layer, whose `inputShape` is the shape of `truncatedModel`’s output.
@@ -272,39 +386,59 @@
     the activation function is softmax. Then compile it using the categorical cross-entropy
     loss function, an Adam optimizer with a learning rate of 0.001, and the accuracy
     metric.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在创建一个最终模型，该模型以激活张量作为输入并产生图像分类。该模型需要三个层。其中第一个是一个展平层，其 `inputShape` 是 `truncatedModel`
+    输出的形状。接下来是一个包含 20 个单位的密集层和一个 ReLU 激活函数。至于最后一个，添加另一个密集层，其中单位等于 `NUM_CLASSES`，激活函数是
+    softmax。然后使用分类交叉熵损失函数、学习率为 0.001 的 Adam 优化器和准确度指标来编译它。
 - en: 'To fit the model, this time, we will use a new callback `tf.node.tensorBoard()`.
     This callback writes the training’s metric and loss values in the directory specified
     in the function’s argument. Later, with TensorBoard, we will read these logs to
     track the training process. As for the other parameters, use the activation tensor
     as training data, the label `yTrain`, and a configuration object to set the batch
     size to 32 and epochs to 15\. Last, use `model.save()` to save the model:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了拟合模型，这次我们将使用一个新的回调 `tf.node.tensorBoard()`。这个回调将训练的指标和损失值写入函数参数中指定的目录。稍后，我们将使用
+    TensorBoard 读取这些日志以跟踪训练过程。至于其他参数，使用激活张量作为训练数据，标签 `yTrain`，并使用配置对象设置批大小为 32 和周期为
+    15。最后，使用 `model.save()` 保存模型：
 - en: '[PRE8]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: That’s it for `train()`. You can close the function.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: '`train()` 的内容到此为止。你可以关闭这个函数。'
 - en: Running the Trainer
+  id: totrans-52
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 运行训练器
 - en: 'To complete the script, define the starting point with an `init()` function
     :'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了完成脚本，使用 `init()` 函数定义起点：
 - en: '[PRE9]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Note that you need one call to `getImages()` per class. Their arguments are
     the path to a directory that should only contain images of one class and the label
     (as a number). If you have all the pictures under the same directory, please split
     them into two.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，你需要对每个类别调用一次 `getImages()`。它们的参数是包含一个类别的图像的目录路径（仅包含一个类别的图像）和标签（作为一个数字）。如果你所有的图片都在同一个目录下，请将它们分成两个。
 - en: Back at the terminal, open a second tab and run `pip install tensorboard` to
     install TensorBoard. Once installed, execute `npm run tensorboard` and click the
     given address (probably `http://localhost:6006`) to launch the tool. From the
@@ -312,130 +446,197 @@
     program needs about one minute to load and process all the images. While this
     happens, if you trace the computer’s memory usage, you will see how it fills up
     a bit and drops after the dispose methods.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 回到终端，打开第二个标签页并运行 `pip install tensorboard` 以安装 TensorBoard。安装完成后，执行 `npm run
+    tensorboard` 并点击提供的地址（可能是 `http://localhost:6006`）以启动工具。在终端的第一个标签页中，运行 `npm run
+    train` 以启动训练脚本。程序需要大约一分钟来加载和处理所有图像。在这个过程中，如果你追踪计算机的内存使用情况，你会看到它在 dispose 方法之后会稍微填充一些然后下降。
 - en: Note
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: pip is a Python package manager. To learn how to install it, visit [`https://pip.pypa.io/en/stable/installing/`](https://pip.pypa.io/en/stable/installing/).
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: pip 是一个 Python 软件包管理器。要了解如何安装它，请访问 [https://pip.pypa.io/en/stable/installing/](https://pip.pypa.io/en/stable/installing/)。
 - en: During the training, once you spot the log messages on the terminal, switch
     to TensorBoard (Figure [8-1](#Fig1)) to track the accuracy and loss. If they are
     not there, either wait a few seconds until the Trainer writes the log or click
     the refresh button.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练过程中，一旦你在终端上看到日志消息，切换到 TensorBoard（图 [8-1](#Fig1)）以跟踪准确度和损失。如果它们不在那里，要么等待几秒钟直到训练器写入日志，要么点击刷新按钮。
 - en: '![../images/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg](../images/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg)'
+  id: totrans-60
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg](../images/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg)'
 - en: Figure 8-1
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 8-1
 - en: TensorBoard
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorBoard
 - en: Note
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If you re-train, change the TensorBoard log directory on the callback or make
     sure it is empty. Otherwise, you will have logs from different trainings.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你重新训练，请在回调中更改 TensorBoard 日志目录或确保它是空的。否则，你将会有来自不同训练的日志。
 - en: With my dataset, the model achieved an accuracy of 0.85 and a loss of 0.207
     after ten epochs (not a terrible result). If you are not happy with yours, you
     could try several things starting with adjusting the hyperparameters’ learning
     rate, units, or the number of epochs. Another alternative is trying fewer layers
     of the base model (in this case, you might need to increase the size of the training
     set), adding more, or even changing the architecture of the top model.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用我的数据集，模型在十个周期后达到了 0.85 的准确率和 0.207 的损失（不是一个糟糕的结果）。如果你对结果不满意，你可以尝试调整超参数的学习率、单元或周期数。另一个选择是尝试减少基础模型的层数（在这种情况下，你可能需要增加训练集的大小），增加更多，甚至改变顶层模型的架构。
 - en: Building the Server
+  id: totrans-66
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建服务器
 - en: So, we have a nice model trained with transfer learning, but no way to interact
     with it. Until now. In this second part of the exercise, we will write the Server,
     a small Node.js program that exposes the model using a REST web service. Once
     deployed, you will be able to perform predictions (and see the response) with
     POST requests sent from the terminal.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，我们有一个使用迁移学习训练的不错模型，但没有与之交互的方法。直到现在。在这个练习的第二部分，我们将编写服务器，这是一个小的 Node.js 程序，它通过
+    REST Web 服务公开模型。一旦部署，你将能够通过从终端发送的 POST 请求进行预测（并查看响应）。
 - en: Serving the model
+  id: totrans-68
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 服务器模型运行
 - en: Create a new file and name it *server.js*. Then, import TensorFlow.js and two
     libraries—Express and Multer—that will help us build the web server. After the
     imports, create a function named `imageBufferToTensor()` to convert an `imageBuffer`
     to tensor. The function is the same `readImage()` as earlier but without the `fs.readFileSync()`
     line.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建一个新文件，并将其命名为 *server.js*。然后，导入 TensorFlow.js 和两个库——Express 和 Multer，这两个库将帮助我们构建网络服务器。导入之后，创建一个名为
+    `imageBufferToTensor()` 的函数，用于将 `imageBuffer` 转换为张量。该函数与之前的 `readImage()` 函数相同，但去掉了
+    `fs.readFileSync()` 这一行。
 - en: '[PRE10]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'Below it, define the function that creates and executes the server, `runServer()`:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面，定义创建和执行服务器的函数 `runServer()`：
 - en: '[PRE11]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: In the function’s first line, we load our model and MobileNet. As before, we
     have to use a truncated version of MobileNet to create the intermediate activation
     tensors. After loading the models, set up the web server with Express and use
     Multer’s `memoryStorage()` function to keep the uploaded images in memory.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 在函数的第一行，我们加载我们的模型和 MobileNet。和之前一样，我们必须使用 MobileNet 的截断版本来创建中间激活张量。加载模型后，使用
+    Express 设置网络服务器，并使用 Multer 的 `memoryStorage()` 函数将上传的图像保存在内存中。
 - en: Now we create the POST route. This route has a function called the *handler
     function* that runs when the application receives a request to the specified endpoint,
     for example, a POST request sent to `http://localhost:8081/upload`. The function
     takes two parameters, `req` (request) and `res` (response). `req` is an object
     containing information about the request, including the data, or in this case,
     the image, while `res` is the response we will send back to the user.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们创建 POST 路由。这个路由有一个名为 *handler function* 的函数，当应用程序接收到对指定端点的请求时（例如，发送到 `http://localhost:8081/upload`
+    的 POST 请求）会运行。该函数接受两个参数，`req`（请求）和 `res`（响应）。`req` 是一个包含请求信息的对象，包括数据，在这种情况下，是图像，而
+    `res` 是我们将发送给用户的响应。
 - en: 'This response is the prediction outcome, wrapped in a JSON object. To get it,
     we need three steps: convert the image buffer to tensor, produce the intermediate
     activation tensor, and classify it. To end the script, use `app.listen()` to listen
     for the requests in the specified port.'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个响应是预测结果，封装在一个 JSON 对象中。要获取它，我们需要三个步骤：将图像缓冲区转换为张量，生成中间激活张量，并对它进行分类。为了结束脚本，使用
+    `app.listen()` 监听指定端口上的请求。
 - en: Testing the model
+  id: totrans-76
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 测试模型
 - en: To test the model, return to the terminal and execute `npm run serve` to initialize
     the server. In another terminal tab (once the server is ready), run
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 要测试模型，回到终端并执行 `npm run serve` 以初始化服务器。在另一个终端标签页中（一旦服务器就绪），运行
 - en: '[PRE12]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'where `DIR_NAME` is the directory and `IMAGE_NAME` is the image you want to
     classify, for example:'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 `DIR_NAME` 是目录，`IMAGE_NAME` 是你想要分类的图像，例如：
 - en: '[PRE13]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'The result is the model prediction encoded as JSON, like this:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 结果是模型预测的 JSON 编码，如下所示：
 - en: '[PRE14]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: It might not look like much, but this service might serve as the starting point
     of a bigger project. To mention some ideas, you could consider deploying it in
     a remote server so you can predict from anywhere you want. Or imagine having a
     client, for example, a web app, that sends images to the server and tidily presents
     the outcome. It sounds fun. What do you think?
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 它可能看起来不多，但这个服务可能是一个更大项目的起点。例如，你可以考虑将其部署在远程服务器上，这样你就可以从任何你想要的地方进行预测。或者想象有一个客户端，例如一个网络应用程序，它将图像发送到服务器，并整洁地展示结果。听起来很有趣。你怎么看？
 - en: Recap
+  id: totrans-84
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 回顾
 - en: A TensorFlow.js application is not limited to live in the browser. With the
     right tools, namely, Node.js and TF.js’ own “node” backend mode, we can build
     hardware-accelerated software for training and deploying models in a server-side
@@ -446,47 +647,70 @@
     amount of data. While training, we had a glimpse at TensorBoard—TensorFlow’s visualization
     toolkit—for monitoring the procedure. Our second application, Server, loads the
     Trainer’s model and exposes it with a web service.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorFlow.js 应用程序并不仅限于在浏览器中运行。有了合适的工具，即 Node.js 和 TF.js 自带的“node”后端模式，我们可以在服务器端程序中构建用于训练和部署模型的硬件加速软件。在本章中，我们探讨了
+    TensorFlow.js 的 Node.js 版本，以创建一个训练模型和提供服务的应用程序。名为“训练器”的训练脚本使用迁移学习——一种将一个模型的知识转移到另一个模型的技术——来使用有限的数据量来适应图像分类器。在训练过程中，我们瞥了一眼
+    TensorBoard——TensorFlow 的可视化工具包——以监控过程。我们的第二个应用程序，服务器，加载训练器的模型并通过网络服务公开它。
 - en: Running TensorFlow.js under the Node.js runtime does more than just making it
     faster. It also provides a unique set of functionalities that allows us to do
     things such as decoding images, writing logs for TensorBoard, and accelerating
     the processes even further with its GPU version.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 Node.js 运行时下运行 TensorFlow.js 不仅使其更快，还提供了一套独特的功能，使我们能够执行解码图像、为 TensorBoard
+    记录日志以及通过其 GPU 版本进一步加速进程。
 - en: Exercises
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 练习
 - en: Empirically speaking, how does the object detection model from Chapter [7](494424_1_En_7_Chapter.xhtml)
     compare to this one?
+  id: totrans-88
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从经验的角度来看，第 [7](494424_1_En_7_Chapter.xhtml) 章节中的目标检测模型与这个模型相比如何？
 - en: Cut the base model at different layers and then perform transfer learning. Did
     you achieve better results? Worse?
+  id: totrans-89
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在不同的层上将基础模型剪裁，然后进行迁移学习。你实现了更好的结果吗？更差的结果？
 - en: Tweak the model’s hyperparameters.
+  id: totrans-90
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 调整模型的超参数。
 - en: For experimentation, can you achieve an acceptable accuracy using fewer training
     samples? The goal is to study how the base model performs on your dataset without
     seeing much of it.
+  id: totrans-91
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 对于实验，你能否使用更少的训练样本达到可接受的准确率？目标是研究基础模型在你的数据集上的表现，而不需要看到太多。
 - en: Train a model from scratch. Does it perform better than the one just did here?
     How many epochs did it need before achieving the same accuracy?
+  id: totrans-92
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从头开始训练一个模型。它的表现是否优于这里刚刚训练的那个？它需要多少个周期才能达到相同的准确率？
 - en: For the curious, open `model.json` and study the complete topology of the model.
+  id: totrans-93
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 对于好奇的人来说，打开 `model.json` 并研究模型的完整拓扑结构。
 - en: Share the model!
+  id: totrans-94
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 分享模型！
