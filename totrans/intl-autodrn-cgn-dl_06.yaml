@@ -1,7 +1,9 @@
 - en: 6. Sense and Avoidance
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 6. 感知与避障
 - en: In Chapter [5](494112_1_En_5_Chapter.xhtml), we used Gazebo and RViz to simulate
     the AI rover’s behavior. The input could be scripted or arrive through human control.
     We also integrated a LiDAR sensor to “visualize” obstacles in the AI rover’s vicinity.
@@ -9,76 +11,109 @@
     plug-in did not communicate with each other in Chapter [5](494112_1_En_5_Chapter.xhtml).
     This lack of communication between these plug-ins led to less intelligent movement
     around obstacles.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 在第[5](494112_1_En_5_Chapter.xhtml)章中，我们使用了Gazebo和RViz来模拟AI漫游车的行为。输入可以是脚本化的，也可以通过人类控制到达。我们还集成了一个激光雷达传感器来“可视化”AI漫游车附近的障碍物。然而，在第[5](494112_1_En_5_Chapter.xhtml)章中，AI漫游车的差速驱动控制器插件和激光雷达传感器插件之间没有进行通信。这些插件之间的通信不足导致了在障碍物周围运动的不智能。
 - en: We need these plug-ins to share data for intelligent navigation and trajectory
     control. To bridge this communication divide, we must create another plug-in with
     Python that sends and retrieves data from the plug-ins. This chapter will develop
     some simple controlling algorithms for the AI rover’s differential drive controller.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要这些插件来共享数据以实现智能导航和轨迹控制。为了弥合这种通信差距，我们必须创建另一个Python插件，用于从插件中发送和检索数据。本章将开发一些简单的控制算法，用于AI漫游车的差速驱动控制器。
 - en: We will then have an embedded, intelligent decision-making node that allows
     our AI rover to explore the Egyptian catacombs by sensing and avoiding obstacles,
     traps, and collapsed walls. This node will serve as the prototype for the cognitive
     deep learning engine developed in later chapters.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将拥有一个嵌入式、智能决策节点，它允许我们的AI漫游车通过感知和避开障碍物、陷阱和坍塌的墙壁来探索埃及地下墓穴。这个节点将成为后续章节中开发的认知深度学习引擎的原型。
 - en: Objectives
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 目标
 - en: 'The following are the objectives required for successful completion of this
     chapter:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是为成功完成本章所需的目标：
 - en: Make the AI rover detect and avoid an obstacle.
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 让AI漫游车检测并避开障碍物。
 - en: Develop the first inertial navigation system.
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 开发第一个惯性导航系统。
 - en: Learn rover mission handling with Python.
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用Python学习漫游车任务处理。
 - en: Develop the first Python script for obstacle avoidance.
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 开发第一个用于避障的Python脚本。
 - en: Understand how to upload and download Gazebo missions.
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 了解如何上传和下载Gazebo任务。
 - en: Verify and validate the first land rover controller within Gazebo simulations.
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 验证和验证Gazebo模拟中的第一个陆地漫游车控制器。
 - en: Discuss and review why deep learning is superior to standard state machine controller
     designs.
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 讨论和回顾为什么深度学习优于标准状态机控制器设计。
 - en: Summary, exercises, and hints.
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 摘要、练习和提示。
 - en: Understanding Coordinate Systems
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 理解坐标系
 - en: Before we try to program the rover to sense its environment, we need to understand
     how to identify locations, speeds, and velocities. For instance, while you are
     reading this book, you are sitting still. Your speed is zero kph, right? Obviously!
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们尝试编程漫游车感知其环境之前，我们需要了解如何识别位置、速度和速度。例如，当你阅读这本书时，你正坐着不动。你的速度是零千米每小时，对吧？显然！
 - en: Not so fast! From your point of view (POV), you are sitting still. But what
     about the alien hovering near the moon? They see you briskly speeding along at
     1,673 kph because of the Earth’s rotation.^([1](#Fn1)) Or the aliens hovering
     near the sun that see you traveling at a whopping 107,000 kph.^([2](#Fn2))
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 别急！从你的视角（POV）来看，你正坐着不动。但那些在月球附近盘旋的外星人呢？由于地球的旋转，他们看到你以每小时1,673公里的速度飞快地移动。[1](#Fn1)
+    或者那些在太阳附近盘旋的外星人，他们看到你以惊人的每小时107,000公里的速度旅行。[2](#Fn2)
 - en: What may feel strange is that ALL of these measurements of your speed are correct.
     It all depends on your POV. These POVs represent different coordinate systems.
     Another way of thinking about this in mathematical terms is where is the origin,
@@ -89,8 +124,10 @@
     the alien near the sun places its origin at the sun and it sees the Earth rotating
     and orbiting the sun. The orbital speed dominates the observation. Keen observers
     will notice this is a simplified explanation of Einstein’s theory of relativity.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 可能会感觉奇怪的是，你所有关于速度的测量都是正确的。这完全取决于你的视角。这些视角代表不同的坐标系。从数学角度思考的另一种方式是，你的“宇宙”的起点，O(0,0,0)，在哪里。静止的读者有一个相对于其当前位置的内部概念。换句话说，他们的起点随着他们移动。靠近月亮的外星人将其起点设在月亮上，其中一面始终面向旋转的地球。因此，观察到的旋转速度。最后，靠近太阳的外星人将其起点设在太阳上，它看到地球在围绕太阳旋转。轨道速度占主导地位。敏锐的观察者会注意到，这是一个对爱因斯坦相对论理论的简化解释。
 - en: So, when solving a problem in 3D space, we find that solutions to our questions
     will change depending on our POV. We refer to these POVs as coordinate systems.
     It behooves us to use the coordinate system that solves our problem the easiest
@@ -100,12 +137,17 @@
     our simulated world is easiest to describe in a global system. Doing the math
     to translate answers into the other coordinate systems is handled automatically
     by Gazebo.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，当在三维空间中解决问题时，我们发现我们的问题的解决方案将根据我们的视角（POV）而变化。我们将这些视角称为坐标系。我们有责任使用最简单解决我们问题的坐标系，并将其转换为其他系统。从我们的内部坐标系理解我们的速度和转向是最容易的。从局部坐标系描述创建地图或跟随路径是最容易的。最后，在全局系统中描述我们的模拟世界是最容易的。将答案转换为其他坐标系的数学计算由
+    Gazebo 自动处理。
 - en: Modeling the AI Rover World
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 建模人工智能漫游车世界
 - en: Retrieve all of the Xacro, URDF, launch, and Python script files developed in
     Chapter [5](494112_1_En_5_Chapter.xhtml). Use the same AI rover model, the differential
     drive controller, and the LiDAR sensor plug-in. The LiDAR sensor plug-in determines
@@ -113,77 +155,116 @@
     the nearest obstacles during exploration. What we expect to find is that this
     is not enough information to navigate a maze. The rover will become trapped. Using
     a camera *and* LiDAR sensors will supply enough information to navigate a maze.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 检索第 [5](494112_1_En_5_Chapter.xhtml) 章中开发的全部 Xacro、URDF、launch 和 Python 脚本文件。使用相同的
+    AI 漫游车模型、差速驱动控制器和 LiDAR 传感器插件。LiDAR 传感器插件确定障碍物与 AI 漫游车之间的距离。这在探索过程中识别最近的障碍物是必不可少的。我们期望找到的是，这不足以导航迷宫。漫游车可能会被困住。使用相机
+    *和* LiDAR 传感器将提供足够的信息来导航迷宫。
 - en: 'The AI rover is composed of the following components:'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 人工智能漫游车由以下组件组成：
 - en: 'Chassis and caster wheel: link type element'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 底盘和转向轮：链接类型元素
 - en: 'Right and left wheels: both link type element'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 右轮和左轮：都是链接类型元素
 - en: 'Right and left wheel joints: both joint type element'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 右轮和左轮关节：都是关节类型元素
 - en: LiDAR sensor package and plug-in
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: LiDAR 传感器包和插件
 - en: Organizing the Project
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 组织项目
 - en: 'Add the following highlighted sub-directories to the project:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 将以下突出显示的子目录添加到项目中：
 - en: '[PRE0]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'To generate the `ai_rover_worlds` ROS package directory, execute the following
     Linux terminal commands:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 要生成 `ai_rover_worlds` ROS 包目录，请执行以下 Linux 终端命令：
 - en: '[PRE1]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: This directory organization efficiently manages the complex obstacles. The `ai_rover_worlds`
     directory includes the URDF files describing the mazes and obstacles for each
     generated world. The `launch` folder has the XML files that initiate the world
     and obstacles required by Gazebo. The `worlds` folder has the XML files that describe
     the world to be generated in Gazebo.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 该目录组织有效地管理了复杂的障碍。`ai_rover_worlds` 目录包含了描述每个生成世界中迷宫和障碍的 URDF 文件。`launch` 文件夹包含启动
+    Gazebo 所需的世界和障碍的 XML 文件。`worlds` 文件夹包含描述在 Gazebo 中生成世界的 XML 文件。
 - en: Modeling the Catacombs (Simplified)
+  id: totrans-32
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 建模地下墓穴（简化版）
 - en: We can now create our first AI rover’s exploration world layout for the Egyptian
     catacombs by using the Gazebo editor, as we briefly reviewed in both Chapters
     [4](494112_1_En_4_Chapter.xhtml) and [5](494112_1_En_5_Chapter.xhtml). We will
     now create a simple one-room maze with a doorway and a cylindrical object (Figure
     [6-1](#Fig1)). Refer to Chapter [5](494112_1_En_5_Chapter.xhtml) about operating
     the Gazebo editor.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以使用Gazebo编辑器创建我们第一个AI探测车在埃及地下墓穴的探索世界布局，正如我们在第[4](494112_1_En_4_Chapter.xhtml)章和第[5](494112_1_En_5_Chapter.xhtml)章中简要回顾的那样。我们将创建一个简单的单室迷宫，包含一个门道和一个圆柱形物体（见图[6-1](#Fig1)）。关于操作Gazebo编辑器的信息，请参考第[5](494112_1_En_5_Chapter.xhtml)章。
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig1_HTML.jpg)'
+  id: totrans-34
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig1_HTML.jpg)'
 - en: A screenshot of the Gazebo editor. There are cubical objects arranged in the
     shape of a square with a doorway, and a cylindrical object at the bottom right
     is placed in it. It highlights A I rover on the top left within the catacomb.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: Gazebo编辑器的截图。图中展示了以门道形状排列的立方体物体，底部右方放置了一个圆柱形物体。它突出了位于地下墓穴顶左方的AI探测车。
 - en: Figure 6-1
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-1
 - en: First design of Egyptian catacomb with the column
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有柱子的埃及地下墓穴的第一个设计
 - en: 'Now that we have created our first partially enclosed Egyptian catacomb with
     a supporting column, we should save this 3D design in the following directory:
     `~/sim_gazebo_rviz_ws/src/ai_rover_worlds/worlds`. The name for this file is `ai_rover_catacombs.world`.
@@ -203,21 +284,29 @@
     we must then launch it from ROS. We can launch this world within ROS, at first,
     without a launch file. We can do this by executing the following Linux terminal
     commands in two separate windows within the Terminator terminal command:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经创建了一个带有支撑柱的部分封闭的埃及地下墓穴，我们应该将这个3D设计保存在以下目录中：`~/sim_gazebo_rviz_ws/src/ai_rover_worlds/worlds`。该文件的名称为`ai_rover_catacombs.world`。我们应该使用Ctrl+Shift+S选项保存此设计。设计保存选项允许我们存储这个埃及地下墓穴的初始设计，而不会意外导致Gazebo模拟器崩溃。Gazebo环境，根据您的特定计算机硬件特性，在保存过程中有崩溃的可能性。我们还可以看到，在这个简单的地下墓穴设计中，模拟的花岗岩块排列不齐。这种建筑是古埃及最早的一些古王国陵墓建筑（约公元前3100年）的典型特征。这些建筑例子尤其适用于那些非贵族阶级的古埃及人。排列不齐的花岗岩块也将使我们能够测试AI探测车的激光雷达和摄像头传感器在模拟运行期间是否能够确定和识别不均匀或排列不齐的表面的边界。我们还将看到AI探测车可能无法通过其传感器配置定位的“盲点”现象。一旦我们将这个设计保存在正确的目录中，我们必须然后从ROS启动它。我们可以在ROS中启动此世界，最初不需要启动文件。我们可以在两个分开的窗口中执行以下Linux终端命令来完成：
 - en: '[PRE2]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Note
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Launch this initial design by using the Linux terminal commands. It appears
     to be the best method to test ROS’s Gazebo interaction. However, this is still
     a guess on our part. We modify the launch file from Chapter [5](494112_1_En_5_Chapter.xhtml)
     to generate our “catacombs” and AI rover together. It is a simple exercise to
     spawn additional AI rovers.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用Linux终端命令启动这个初始设计。这似乎是测试ROS的Gazebo交互的最佳方法。然而，这仍然是我们的一部分猜测。我们修改了第[5](494112_1_En_5_Chapter.xhtml)章中的启动文件，以生成我们的“地下墓穴”和AI探测车。生成额外的AI探测车是一个简单的练习。
 - en: Once we have executed these Linux terminal commands, we should see the same
     display found in Figure [6-2](#Fig2). We do this to test, verify, and validate
     that the catacomb design can be successfully opened and operated by ROS. We will
@@ -233,11 +322,15 @@
     action would cause the Gazebo simulation to terminate. Listing [6-1](#PC4) is
     the source code listing of this modified launch file for the AI rover model and
     the generated catacombs.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦我们执行了这些Linux终端命令，我们应该看到与图[6-2](#Fig2)中相同的显示。我们这样做是为了测试、验证和确认地下墓穴设计可以被ROS成功打开和操作。然后我们将继续修改第[5](494112_1_En_5_Chapter.xhtml)章中的原始Gazebo和RViz启动文件。这个原始启动文件的名称是`ai_rover_remastered_gazebo.launch`。这个启动文件在一个空世界中生成并激活一个AI漫游车。我们现在将修改这个启动文件，使AI漫游车在图[6-2](#Fig2)中开发的埃及地下墓穴原点坐标处生成。原点坐标在图[6-2](#Fig2)中被红色方框突出显示，它与红色（x）、绿色（y）和蓝色（z）线相交。因此，AI漫游车将在红色方框内生成，周围是古代埃及地下墓穴。我们还必须确保地下墓穴世界永远不会与AI漫游车的生成位置重叠。这种行为会导致Gazebo模拟终止。列表[6-1](#PC4)是修改后的启动文件源代码列表，用于AI漫游车模型和生成的地下墓穴。
 - en: '[PRE3]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'There is only one modification to the original launch file from Chapter [5](494112_1_En_5_Chapter.xhtml):
     to add the `<arg name="world_name" value="$(find ai_rover_worlds)/worlds/ai_rover_catacomb.world"/>`
     line of XML source code following the line of source code that first launches
@@ -249,140 +342,213 @@
     be the terminal Linux commands required to execute this launch file with both
     the AI rover and its operational LiDAR system and the Egyptian catacombs generated
     together:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 对第[5](494112_1_En_5_Chapter.xhtml)章中的原始启动文件只有一个修改：在首次启动空世界后的源代码行中添加`<arg name="world_name"
+    value="$(find ai_rover_worlds)/worlds/ai_rover_catacomb.world"/>`行XML源代码。这个世界类似于一个干净的画布，之后我们生成AI漫游车探索埃及地下墓穴的模拟世界。因此，我们添加这一行以找到并启动正确的目录中的`ai_rover_catacomb.world`。我们现在将第[5](494112_1_En_5_Chapter.xhtml)章中修改后的启动文件重命名为`ai_rover_cat.launch`。以下是在终端Linux命令中执行此启动文件所需的命令，该启动文件将AI漫游车及其操作激光雷达系统和生成的埃及地下墓穴一起执行：
 - en: '[PRE4]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'We should now have two simulators: 1) The RViz simulator with the AI rover
     at the origin; and 2) the Gazebo environment with the Egyptian catacombs, AI rover
     (red box), and the LiDAR sensor sweep analysis (blue area). These generated items
     are shown in Figure [6-2](#Fig2).'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在应该有两个模拟器：1) 带有AI漫游车的RViz模拟器，位于原点；2) 带有埃及地下墓穴、AI漫游车（红色方框）和激光雷达传感器扫描分析（蓝色区域）的Gazebo环境。这些生成的项目如图[6-2](#Fig2)所示。
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig2_HTML.jpg)'
+  id: totrans-47
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig2_HTML.jpg)'
 - en: A screenshot of the Gazebo editor. It generates the Egyptian catacombs and A
     I rover. There are cubical objects arranged in the shape of a square with a doorway,
     and a cylindrical object at the bottom right is placed in it. A I rover is highlighted
     at the top left within the catacomb.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: Gazebo编辑器的截图。它生成了埃及地下墓穴和AI漫游车。有一些立方体物体以门道形状排列成方形，底部右边的圆柱形物体放置在其中。AI漫游车在地下墓穴的左上角被突出显示。
 - en: Figure 6-2
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-2
 - en: Generated Egyptian catacombs and AI rover
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的埃及地下墓穴和AI漫游车
 - en: 'Use the Teleops program to test the AI rover’s keyboard control commands within
     the catacombs (Chapter [5](494112_1_En_5_Chapter.xhtml)). Reusing the Teleops
     test and verification program reduces development time. We need to see if the
     Teleops program still controls the AI rover prototype to circumvent the wall boundaries
     and the column in the catacombs. Execute the following Linux terminal command
     in a secondary shell window:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 Teleops 程序在地下墓穴内测试 AI 探索车的键盘控制命令（第 [5](494112_1_En_5_Chapter.xhtml) 章）。重用
+    Teleops 测试和验证程序可以减少开发时间。我们需要查看 Teleops 程序是否仍然控制 AI 探索车原型以绕过地下墓穴的墙壁边界和柱子。在辅助的 shell
+    窗口中执行以下 Linux 终端命令：
 - en: '[PRE5]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: If all has worked correctly, you can now control the AI rover by keyboard commands.
     As such, you should now see something similar to Figure [6-3](#Fig3).
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果一切正常，你现在可以通过键盘命令控制 AI 探索车。因此，你现在应该看到类似于图 [6-3](#Fig3) 的内容。
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig3_HTML.jpg)'
+  id: totrans-54
   prefs: []
   type: TYPE_IMG
+  zh: '![图 6-3](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig3_HTML.jpg)'
 - en: A screenshot of the Gazebo editor. There are cubical objects arranged in the
     shape of a square with a doorway, and a cylindrical object is placed in it. A
     I rover is highlighted to the right of cylindrical object within the catacomb.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: Gazebo 编辑器的截图。有立方体物体以门的形式排列成方形，其中放置了一个圆柱形物体。AI 探索车在地下墓穴中圆柱形物体右侧被突出显示。
 - en: Figure 6-3
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-3
 - en: Manually controlled AI rover exploring catacombs
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 手动控制 AI 探索车探索地下墓穴
 - en: Now that we can navigate the AI rover in Gazebo, let us verify it works in RViz.
     Launch RViz by initiating `ai_rover.cat.launch`. Add `Laser_scan` as a topic to
     the Displays options found within RViz. We will now see the display shown in Figure
     [6-4](#Fig4) (see Chapter [5](494112_1_En_5_Chapter.xhtml) for appropriate settings).
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以在 Gazebo 中导航 AI 探索车，让我们验证它是否在 RViz 中也能正常工作。通过启动 `ai_rover.cat.launch`
+    来启动 RViz。将 `Laser_scan` 作为主题添加到 RViz 中的显示选项。现在我们将看到图 [6-4](#Fig4) 中所示的显示（参见第 [5](494112_1_En_5_Chapter.xhtml)
+    章节以获取适当的设置）。
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig4_HTML.png)'
+  id: totrans-59
   prefs: []
   type: TYPE_IMG
+  zh: '![图 6-4](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig4_HTML.png)'
 - en: A screenshot of the R V i z. It explore catacombs with the A I rover. There
     are semi arcs above the A I rover which are the Lidar signals. A box at the bottom
     right gives information about the image.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: R V i z 的截图。它使用 AI 探索车探索地下墓穴。AI 探索车上方有半圆形，这是激光信号。右下角的框提供了关于图像的信息。
 - en: Figure 6-4
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-4
 - en: RViz data display of AI rover exploring catacombs
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: RViz 数据显示 AI 探索车探索地下墓穴
 - en: Note
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'If you receive the following error:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你收到以下错误：
 - en: '`RLException: [ai_rover_teleop.launch] is neither a launch file in package
     [ai_rover_remastered_description] nor is [ai_rover_remastered_description] a launch
     file name. The traceback for the exception was written to the log file.`'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: '`RLException: [ai_rover_teleop.launch] 既不是包 [ai_rover_remastered_description]
+    中的启动文件，也不是 [ai_rover_remastered_description] 的启动文件名。异常的跟踪信息已写入日志文件。`'
 - en: 'Re-execute the following Linux terminal commands (source code or launch files
     might need recompilation at the home directory):'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 重新执行以下 Linux 终端命令（源代码或启动文件可能需要在主目录中重新编译）：
 - en: '`$ cd ~/sim_gazebo_rviz_ws/`'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: '`$ cd ~/sim_gazebo_rviz_ws/`'
 - en: '`$ catkin_make`'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: '`$ catkin_make`'
 - en: '`$ source devel/setup.sh`'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '`$ source devel/setup.sh`'
 - en: 'Next, we design, develop, test, verify, and validate the motion-planning, navigation,
     and map-creating script files using the simulated worlds in the `ai_rover_worlds`
     directory. We want to expand the `catkin_ws` directory to include intelligent
     control scripts, such as laser scan data extraction, to control the AI rover’s
     differential drive. Our goal is to create the following directory tree for the
     `catkin_ws` workspace:'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们使用 `ai_rover_worlds` 目录中的模拟世界来设计、开发、测试、验证和验证运动规划、导航和地图创建脚本文件。我们希望将 `catkin_ws`
+    目录扩展以包含智能控制脚本，例如激光扫描数据提取，以控制 AI 探索车的差速驱动。我们的目标是创建以下目录树结构用于 `catkin_ws` 工作空间：
 - en: '[PRE6]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Enter the following Linux terminal commands to create the directory tree listing
     for the `catkin_ws` workspace:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入以下 Linux 终端命令以创建 `catkin_ws` 工作空间的目录树列表：
 - en: '[PRE7]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'Create the `catkin` ROS package `Motion_Planning_Navigation_Goals` using the
     following Linux terminal commands:'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用以下 Linux 终端命令创建 `catkin` ROS 包 `Motion_Planning_Navigation_Goals`：
 - en: '[PRE8]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Let us quickly review the ROS package dependencies. The `rospy` package is a
     Python client library for ROS, allowing programmers to access the ROS control
     libraries. However, the `rospy` library is not computationally efficient. Instead,
     the library allows the programmer to quickly and efficiently develop ROS applications.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
 - en: The `std_msgs` dependency develops standard publisher/subscriber ROS messages,
     including common data types. These data types include float and double built-in
     data types and user-defined data types, such as the deep learning neural network
     or multi-arrays for geospatial processing.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
 - en: The `geometry_msgs` dependency provides messages for geometric elements (points,
@@ -391,6 +557,7 @@
     both subscribers and publishers. The differential drive plug-in uses these velocities.
     We need this `geometry_msgs` dependency to communicate the Python autonomous program’s
     linear and angular velocities to control the rover’s differential drive.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
 - en: The `sensor_msgs` dependency provides sensor messages, such as cameras and range-finding
@@ -399,89 +566,119 @@
     messages influence the Python autonomous programs to vary the differential drive
     plug-in’s linear and angular velocities. For more information on the LiDAR’s laser
     pipeline stacks, please refer to [`http://wiki.ros.org/sensor_msgs`](http://wiki.ros.org/sensor_msgs).
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
 - en: Laser Range-Finding Filter Settings
+  id: totrans-80
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: Set the LiDAR sensor settings to the values shown in Table [6-1](#Tab1) in the
     LiDAR sensor section of the `ai_rover_gazebo_plug-in.xacro` file.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
 - en: Table 6-1
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
 - en: LiDAR-Specific Program Settings
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
 - en: '| XML Setting | Value | Definition |'
+  id: totrans-84
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- |'
+  id: totrans-85
   prefs: []
   type: TYPE_TB
 - en: '| `<update_rate>` | 20 | Controls the sample rate (speed) of the laser data
     capture rate |'
+  id: totrans-86
   prefs: []
   type: TYPE_TB
 - en: '| `<samples>` | 1440 | How many samples for one LiDAR range sweep [`minAngle..maxAngle`]
     |'
+  id: totrans-87
   prefs: []
   type: TYPE_TB
 - en: '| `<frameName>` | `sensor_laser` | Virtual link between LiDAR sensor and chassis
     |'
+  id: totrans-88
   prefs: []
   type: TYPE_TB
 - en: Verify the program values fall within the LiDAR sensor’s actual physical specifications.
     The Gazebo simulator creates a more realistic LiDAR sensor with these values.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: 'After saving these values, determine if the updates were successful by executing
     the following in one window:'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE9]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'And execute the following in a second window:'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE10]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Once we have executed these commands, we can control the AI rover displayed
     in a simulation using the keyboard. Next, we will develop a Python script code
     to process and display the LiDAR sensor data.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: Laser Range-Finding Data
+  id: totrans-95
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'We will create our Python script within the `catkin_ws` workspace `Motion_Planning_Navigation_Goals`
     ROS package. This script will retrieve data from the `/ai_rover_remastered/laser_scan/scan`
     topic. Create the following Python script:'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE11]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Note
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
 - en: The `touch` command creates a file within directories without launching an application,
     such as a word processor or a development environment. The created files are empty.
     To create content, the appropriate application must be launched. The `chmod` command
     makes the `read_Lidar_data.py` file executable via `rosrun`.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '`touch` 命令在目录中创建文件，而不启动应用程序，例如文字处理器或开发环境。创建的文件是空的。要创建内容，必须启动适当的应用程序。`chmod`
+    命令使 `read_Lidar_data.py` 文件可通过 `rosrun` 执行。'
 - en: Enter the script found in Listing [6-2](#PC13).
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 进入列表 [6-2](#PC13) 中的脚本。
 - en: '[PRE12]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: The `clbk_laser` function passes the `msg` argument to `min(min(msg.ranges[xxxx:yyyy]),
     10)`, which then reads the data for each of the ten LiDAR sensor sectors, guaranteeing
     a maximum value of 10 meters. It converts the 1,440 samples into ten aggregated
@@ -492,108 +689,161 @@
     LiDAR sensor sweep. Because the AI rover has no blind spots, it can also travel
     backward if necessary. Figure [6-5](#Fig5) is the orientation layout of the LiDAR
     sensor.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: '`clbk_laser` 函数将 `msg` 参数传递给 `min(min(msg.ranges[xxxx:yyyy]), 10)`，然后读取每个激光雷达传感器十个扇区的数据，保证最大值为
+    10 米。它将 1,440 个样本转换为十个聚合扇区。每个扇区返回样本的最小值或将其限制在 10 米（激光雷达最大范围）。最小值是该扇区中距离 AI 探索车最近的障碍物的距离。每个扇区覆盖
+    36 度（36° x 10 = 360°）。因此，AI 探索车在连续的激光雷达传感器扫描过程中没有“盲点”。由于 AI 探索车没有盲点，如果需要，它也可以倒车。图
+    [6-5](#Fig5) 是激光雷达传感器的方向布局。'
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig5_HTML.jpg)'
+  id: totrans-103
   prefs: []
   type: TYPE_IMG
+  zh: '![图 6-5](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig5_HTML.jpg)'
 - en: A layout of the LiDAR sensor orientation. There is a square and at the top corners
     are two rectangular objects. Between them is a large circle and below it is a
     small circle. The arrows from large circle point toward degrees. 0 or 360, 90,
     180, and 270 degree.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 激光雷达传感器方向的布局。有一个正方形，在其顶部角落有两个矩形物体。它们之间有一个大圆，下面有一个小圆。大圆的箭头指向度数。0 或 360，90，180
+    和 270 度。
 - en: Figure 6-5
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-5
 - en: LiDAR sensor orientation and layout
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 激光雷达传感器方向和布局
 - en: The larger solid black circle in the center of Figure [6-5](#Fig5) is the LiDAR
     sensor. The smaller solid black circle toward the bottom of Figure [6-5](#Fig5)
     is the caster wheel. The LiDAR sweep begins at 180° and then ends at 180°. The
     red arrow is the propagating LiDAR laser beam.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [6-5](#Fig5) 中中心的较大实心黑色圆圈是激光雷达传感器。图 [6-5](#Fig5) 底部较小的实心黑色圆圈是万向轮。激光雷达扫描从 180°
+    开始，然后结束于 180°。红色箭头是传播的激光雷达激光束。
 - en: 'To run our program `read_Lidar_data.py`, add the following main test driver
     found in lines 23–32\. The source code contained within `main()` performs the
     following functions:'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 要运行我们的程序 `read_Lidar_data.py`，请添加以下主测试驱动程序，该程序位于第 23-32 行。`main()` 函数内部的源代码执行以下功能：
 - en: '**rospy.init_node(‘read_Lidar_data’)**: Attaches to ROS.'
+  id: totrans-109
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rospy.init_node(''read_Lidar_data'')**：连接到 ROS。'
 - en: '**rospy.Subscriber():** Subscribes to the `Laser_scan` and `msg_Lidar_laser`
     topics.'
+  id: totrans-110
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rospy.Subscriber()**：订阅 `Laser_scan` 和 `msg_Lidar_laser` 主题。'
 - en: '**rospy.Publisher():** Publishes to the `ai_rover_remastered base_controller/cmd_vel`
     topic for controlling the AI rover.'
+  id: totrans-111
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rospy.Publisher()**：发布到 `ai_rover_remastered base_controller/cmd_vel` 主题，以控制
+    AI 探索车。'
 - en: '**rospy.spin():** Keeps the program from shutting down on its own. The program
     can only be shut down by the operator.'
+  id: totrans-112
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rospy.spin()**：防止程序自行关闭。程序只能由操作员关闭。'
 - en: 'To run the `read_Lidar_data.py rosrun` executable, reenter the following Linux
     terminal commands:'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 要运行 `read_Lidar_data.py rosrun` 可执行文件，请重新输入以下 Linux 终端命令：
 - en: '[PRE13]'
+  id: totrans-114
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'After recompiling everything, run the program with the following:'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 重新编译所有内容后，使用以下命令运行程序：
 - en: '[PRE14]'
+  id: totrans-116
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Note
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If either the Gazebo AI rover catacomb program or keyboard Teleops is not running,
     recompile/load both launch files and try running the `read_Lidar_data.py` program
     again.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果 Gazebo AI 探索车地下城程序或键盘遥操作程序没有运行，请重新编译/加载这两个启动文件，然后再次尝试运行 `read_Lidar_data.py`
+    程序。
 - en: Your data should look like that in Figure [6-6](#Fig6).
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的数据应类似于图 [6-6](#Fig6)。
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig6_HTML.jpg)'
+  id: totrans-120
   prefs: []
   type: TYPE_IMG
+  zh: '![图 6-5](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig6_HTML.jpg)'
 - en: A schematic of the LiDAR sensor. At the top, a box highlights the distance 0.7486084699630737\.
     Below it is the catacomb which has a cylindrical object and highlights the A I
     rover, and on the right is a box which provides information about the image.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 6-6
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
 - en: LiDAR sensor analysis at 0.748 meters
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
 - en: We should perform a sanity check and visually inspect that the AI rover is currently
     0.75 meters from the wall. Figure [6-7](#Fig7) shows our numbers make sense. Moving
     the AI rover a little southeast, our numbers change to those in the figure.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig7_HTML.jpg)'
+  id: totrans-125
   prefs: []
   type: TYPE_IMG
 - en: A schematic of the LiDAR sensor. At the top, a box highlights the distance 1.736396312713623\.
     Below it is the catacomb which has a cylindrical object and highlights the A I
     rover, and on the right is a box which provides information about the image.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 6-7
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
 - en: LiDAR sensor analysis at 1.736 meters
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
 - en: We have determined that the LiDAR sensor system is operational. We conducted
@@ -602,53 +852,69 @@
     physics. By performing these iterative tests of every single development of the
     AI rover, our odds of building a fully operational AI rover are improved. It also
     narrows the location we need to search when looking for the source of an error.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
 - en: Use Table [6-2](#Tab2) to visualize and interpret the 10-element array shown
     in Figure [6-7](#Fig7). The sensor data is simplified to [INFO] [1598600815.242010]
     [1.76, 2.57, 2.56, 3.29, 2.06, 2.14, 2.44, 2.45, 1.71, 1.63].
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
 - en: Table 6-2
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
 - en: LiDAR Sensor Readings from Figure [6-7](#Fig7), Interpreted
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
 - en: '| Sector | Direction | Degrees of Coverage | Nearest Object |'
+  id: totrans-133
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- | --- |'
+  id: totrans-134
   prefs: []
   type: TYPE_TB
 - en: '| SectorA | back_right | 144° to 180° | 1.76 meters |'
+  id: totrans-135
   prefs: []
   type: TYPE_TB
 - en: '| SectorB | back_center_right | 108° to 144° | 2.57 meters |'
+  id: totrans-136
   prefs: []
   type: TYPE_TB
 - en: '| SectorC | Right | 72° to 108° | 2.56 meters |'
+  id: totrans-137
   prefs: []
   type: TYPE_TB
 - en: '| SectorD | front_center_right | 36° to 72° | 3.29 meters |'
+  id: totrans-138
   prefs: []
   type: TYPE_TB
 - en: '| SectorE | front_right | 0° to 36° | 2.06 meters |'
+  id: totrans-139
   prefs: []
   type: TYPE_TB
 - en: '| SectorF | front_left | 324° to (360° or 0°) | 2.14 meters |'
+  id: totrans-140
   prefs: []
   type: TYPE_TB
 - en: '| SectorG | front_center_left | 288° to 324° | 2.44 meters |'
+  id: totrans-141
   prefs: []
   type: TYPE_TB
 - en: '| SectorH | Left | 252° to 288° | 2.45 meters |'
+  id: totrans-142
   prefs: []
   type: TYPE_TB
 - en: '| SectorI | back_center_left | 216° to 252° | 1.70 meters |'
+  id: totrans-143
   prefs: []
   type: TYPE_TB
 - en: '| SectorJ | back_left | 180° to 216° | 1.62 meters |'
+  id: totrans-144
   prefs: []
   type: TYPE_TB
 - en: Each sector represents 1/10th of the LiDAR sweep (Figure [6-8](#Fig8)). SectorA
@@ -657,69 +923,99 @@
     and 180° with respect to the AI rover. The object may also be in two sectors;
     i.e., the sensor data does not infer size. All of the other sectors can be interpreted
     similarly.
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig8_HTML.jpg)'
+  id: totrans-146
   prefs: []
   type: TYPE_IMG
 - en: A schematic of the LiDAR sensor sector orientation. It has 10 sectors labeled
     a to j from bottom right to the bottom left. On the top 0, positive negative 2
     of pi, on the right negative pi over 2, on the bottom positive negative pi, and
     on the left positive pi over 2 are labeled.
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: LiDAR传感器区域方向的示意图。它有10个从右下角到左下角的区域，标记为a到j。在顶部0，正负2π，在右侧负π/2，在底部正负π，在左侧正π/2处有标记。
 - en: Figure 6-8
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-8
 - en: LiDAR sensor sector orientation and layout
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: LiDAR传感器区域方向和布局
 - en: Obstacle Sense-and-Avoidance
+  id: totrans-150
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 障碍物感知与规避
 - en: This section bridges the information presented in Chapters [1](494112_1_En_1_Chapter.xhtml)
     through [5](494112_1_En_5_Chapter.xhtml) (manual control) with the remaining chapters
     (intelligent autonomous control). We now take our first steps toward developing
     an autonomous rover; i.e., it makes its own decisions through the maze. It achieves
     this through a simple control algorithm. The control algorithm sends commands
     to the actuators/motors.
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节将第[1](494112_1_En_1_Chapter.xhtml)章至第[5](494112_1_En_5_Chapter.xhtml)章（手动控制）中介绍的信息与剩余章节（智能自主控制）联系起来。我们现在迈出第一步，开发一个自主式漫游车；即，它能在迷宫中自主做出决策。它是通过一个简单的控制算法实现这一点的。控制算法向执行器/电机发送命令。
 - en: 'Organize the control algorithm folder directories as follows:'
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 按以下方式组织控制算法文件夹目录：
 - en: '[PRE15]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'This creates an empty `sense_avoid_obstacle.py` file in the `scripts` directory.
     The following is the tree structure of listing files and folder directories:'
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将在`scripts`目录中创建一个空的`sense_avoid_obstacle.py`文件。以下为列表文件和文件夹目录的树形结构：
 - en: '[PRE16]'
+  id: totrans-155
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Now that we have an understanding of our tree-structure organization, we must
     return our attention to the source code contained within the `sense_avoid_obstacle.py`
     ROS program node. Listing [6-3](#PC18) provides this source code.
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经理解了我们的树形结构组织，我们必须将注意力转回到`sense_avoid_obstacle.py` ROS程序节点中的源代码。列表[6-3](#PC18)提供了这段源代码。
 - en: '[PRE17]'
+  id: totrans-157
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Source Code Analysis
+  id: totrans-158
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 源代码分析
 - en: There are ten functions defined within this program, including six for wheel
     movement. The last function (`main` 108–119) is similar to the other versions
     of the `main` previously discussed in the `read_Lidar_data.py` program. We will
     ignore lines of code that are repeated from previous iterations.
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个程序中定义了十个函数，包括六个用于轮子移动。最后一个函数（`main` 108–119）与之前在`read_Lidar_data.py`程序中讨论的其他版本的`main`类似。我们将忽略从先前迭代中重复的代码行。
 - en: We will now define the following contents of the `main` function.
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在将定义`main`函数的以下内容。
 - en: 'Lines 13–25\. Retrieves data from the LiDAR sensor arcs, capping them at a
     maximum of 10 meters. For instance, `''sectorA'': min(min(msg.ranges[0:143]),
     10)` grabs the smallest value from all 144 data samples from the first arc, SectorA,
@@ -728,32 +1024,45 @@
     of the LiDAR data, refer to the “Interpreting the LiDAR” section in this chapter.
     Additionally, review the `read_Lidar_data.py` program in “Laser Range Finding
     Data.”'
+  id: totrans-161
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '第13–25行。从LiDAR传感器弧段检索数据，最大限制为10米。例如，`''sectorA'': min(min(msg.ranges[0:143]),
+    10)`从第一个弧段，区域A的所有144个数据样本中获取最小值，并将其限制在10。所以，如果所有144个数据样本都大于10，区域A将被分配值为10。有关LiDAR数据的解释信息，请参阅本章的“解释LiDAR”部分。此外，请参阅“激光测距数据”中的`read_Lidar_data.py`程序。'
 - en: Lines 26–27\. Saves values to log file and then calls `sense_and_avoid` (line
     94)
+  id: totrans-162
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第26–27行。将值保存到日志文件，然后调用`sense_and_avoid`（第94行）
 - en: Lines 28–70\. These similar-looking functions just set the linear velocity in
     the x-axis (how fast we are going forward) and the angular velocity in the z-axis
     (how fast we turn). For instance, if there are objects in the right quadrant,
     we can turn left at a relatively slow speed. If there are objects directly in
     front of us, we want to quickly turn in another direction.
+  id: totrans-163
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第28–70行。这些看起来相似的功能只是设置x轴（我们前进的速度）的线性速度和z轴（我们旋转的速度）。例如，如果右象限有物体，我们可以以较慢的速度向左转。如果物体直接在我们面前，我们希望快速转向另一个方向。
 - en: Note 1
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意1
 - en: When we turn, there is no forward momentum. We either move forward or we turn,
     not both. This makes coding a lot easier.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们转向时，没有前进的动量。我们要么前进，要么转向，不能两者同时进行。这使得编码变得容易得多。
 - en: Note 2
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意2
 - en: 'The turning command is how fast we turn in a given direction, not a target
     angle. The sensor readings happen approximately 10 times per second. Therefore,
     if we tell the rover to turn at a rate of 45° per second, the rover will have
@@ -762,26 +1071,41 @@
     2) This can and will cause an infinite loop, where the rover turns back and forth.
     We will talk about and review a control systems solution to this issue in the
     Chapter [5](494112_1_En_5_Chapter.xhtml) “Summary” section.'
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: '转向命令是我们以多快速度在给定方向上转动，而不是目标角度。传感器的读数大约每秒发生 10 次。因此，如果我们告诉漫游器以每秒 45° 的速度转向，当新的传感器读数发生时，漫游器只转动了
+    4.5°。这个新的读数会覆盖先前的 `Twist()` 命令：1) 这就是为什么我们使用“软”和“硬”转向的原因。2) 这可能会导致无限循环，其中漫游器来回转动。我们将在第
+    [5](494112_1_En_5_Chapter.xhtml) 章“总结”部分讨论并审查控制系统的解决方案来解决这个问题。 '
 - en: 'Taking the next section of code out of order:'
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 不按顺序取出下一段代码：
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig9_HTML.png)'
+  id: totrans-169
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig9_HTML.png)'
 - en: An illustration of four sensors labeled 8, 4, 2, and 1, with sectors and bits.
     Sensor 8 consists of sector G and 0 b x 000 bit, sensor 4 consists of sector F
     and 0 b 0 x 00, sensor 2 consists of sector E and 0 b 00 x 0, and sensor 1 consists
     of sector D and 0 b 000 x.
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 四个标记为 8、4、2 和 1 的传感器的示意图，以及区域和位。传感器 8 由区域 G 和 0 b x 000 位组成，传感器 4 由区域 F 和 0
+    b 0 x 00 位组成，传感器 2 由区域 E 和 0 b 00 x 0 位组成，传感器 1 由区域 D 和 0 b 000 x 位组成。
 - en: Figure 6-9
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-9
 - en: Bit location encoding for each forward sector
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个前向区域的位位置编码
 - en: Lines 74–99\. This section encodes the four sensors. Initially, we assume there
     are no close objects (set `bitVar` to `0b0000`). If an object is close (sector
     value < 1m), we set the appropriate bit in `bitVar` to `1`. As illustrated in
@@ -790,32 +1114,46 @@
     place, hence the bit-or bitVar = bitVar | 2; flips the “2’s” place (See Figure
     [6-9](#Fig9)). For more information regarding the `sense_and_avoid` function please
     refer to the “Sensing and Avoiding Obstacles” section.
+  id: totrans-173
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 行 74–99\. 这部分编码四个传感器。最初，我们假设没有近距离物体（将 `bitVar` 设置为 `0b0000`）。如果一个物体靠近（区域值小于
+    1m），我们在 `bitVar` 中设置适当的位为 `1`。如图 [6-9](#Fig9) 所示，如果区域 E 有物体，我们“翻转”区域 E 位（`0b00x0`），其中第二位的位被改变。这是“2的位”，因此位或
+    `bitVar = bitVar | 2`；翻转“2的位”（见图 [6-9](#Fig9)）。有关 `sense_and_avoid` 函数的更多信息，请参阅“感知和避障”部分。
 - en: Note
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This is not our first iteration of this piece of code. After our first iteration,
     we recognized that the sixteen different cases represented by the four sensors
     (D, E, F, and G) only resulted in six possible outcomes (`Forward, Soft_Left,
     Hard_Left, Hard_Right, Soft_Right,` and `Retreat`). Furthermore, encoding the
     four sectors into a single 4-bit variable sped up the code tremendously. This
     code rewriting is called *refactoring*.
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 这不是我们第一次迭代这段代码。在我们的第一次迭代之后，我们认识到，由四个传感器（D、E、F 和 G）表示的十六种不同情况只导致了六种可能的结果（`前进`、`软左转`、`硬左转`、`硬右转`、`软右转`
+    和 `撤退`）。此外，将四个区域编码到单个 4 位变量中极大地加快了代码的执行速度。这种代码重写被称为 *重构*。
 - en: Lines 52–72\. With the encoded `bitVar`, we can do a quick “dictionary” lookup
     of the appropriate rover movement. The movement decision is based on the location
     of nearby objects encoded in “arguments.” Line 125 passes the encoded `bitVar`
     to switch_movement_options(arguments), and this chooses the “correct” direction
     to move.
+  id: totrans-176
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 行 52–72\. 使用编码后的 `bitVar`，我们可以快速进行适当的“字典”查找，以确定漫游器的移动。移动决策基于“参数”中编码的附近物体的位置。第
+    125 行将编码后的 `bitVar` 传递给 `switch_movement_options(arguments)`，这将选择移动的“正确”方向。
 - en: Interpreting the LiDAR Sensor Data
+  id: totrans-177
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 解释激光雷达传感器数据
 - en: The callback function, `msg_Lidar_laser`, handles information and messages from
     the LiDAR sensor for the subscriber defined in the main function (line 112). The
     `msg_Lidar_laser` function partitions the LiDAR sensor sweep messages into ten
@@ -825,38 +1163,58 @@
     and, based on the return time, the distance to the obstruction is calculated.
     All 1,440 data points are sent by the LiDAR as an event that the `msg_Lidar_laser`
     is listening for and are processed into the ten equally spaced sectors.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 回调函数 `msg_Lidar_laser` 处理主函数中定义的订阅者从 LiDAR 传感器接收的信息和消息（第 112 行）。`msg_Lidar_laser`
+    函数将 LiDAR 传感器扫描消息划分为十个等距的 36 度扇区，供 AI 探索车使用。LiDAR 在每个旋转中发送 1,440 激光脉冲。每个脉冲都是来自
+    LiDAR 的射线，延伸到无限远处，除非射线遇到障碍物。脉冲反射 LiDAR，并根据返回时间计算障碍物的距离。所有 1,440 个数据点都由 LiDAR 以事件的形式发送，`msg_Lidar_laser`
+    正在监听这些事件，并将它们处理成十个等距的扇区。
 - en: The purpose of having ten equally spaced 36-degree sectors is to cover one entire
     revolution around the AI rover. This allows the AI rover to “see” and travel in
     any required direction, including forward, left, right, and backward. Traveling
     in any direction allows the AI rover to navigate and avoid obstacles and cave-ins
     within the Egyptian catacombs.
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 有十个等距的 36 度扇区的目的是覆盖 AI 探索车周围的一整个旋转。这允许 AI 探索车“看到”并在任何所需的方向上行驶，包括向前、向左、向右和向后。在任何方向上行驶都允许
+    AI 探索车在埃及地下墓穴中导航并避开障碍物和坍塌。
 - en: Sensing and Avoiding Obstacles
+  id: totrans-180
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 感知和避开障碍物
 - en: The `sense_and_avoid` function is a simple finite state machine (FSM) implementing
     simplistic behavior (see Figure [6-10](#Fig10)).
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: '`sense_and_avoid` 函数是一个简单的有限状态机 (FSM)，实现了简单的行为（见图 [6-10](#Fig10)）。'
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig10_HTML.jpg)'
+  id: totrans-182
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig10_HTML.jpg)'
 - en: A decision diagram. There is a double headed arrow between turn completed and
     forward at the top and bottom, respectively. The flow is in upward direction from
     the forward to the turn completed through hard left, soft left and reverse on
     the left, and soft right and hard right on the right.
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个决策图。在顶部和底部，转弯完成和向前之间各有一个双头箭头。流向是从前方到转弯完成，通过左边的硬左转、软左转和反向，以及右边的软右转和硬右转。
 - en: Figure 6-10
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-10
 - en: Decision finite state machine showing different turning decisions
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 显示不同转弯决策的决策有限状态机
 - en: 'When developing a complex system, such as an intelligent drone, approach the
     solution in small, incremental steps. To simplify our decision-making choices
     about turning, we are only going to use the front four sectors’ data; i.e., sectors
@@ -866,23 +1224,35 @@
     forward, soft left, soft right, hard left, hard right, and turn around (see Figure
     [6-11](#Fig11)). (If the “front six” sectors were used for the decision-making,
     we would have 64 combinations! Much more complex!)'
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 在开发复杂系统，例如智能无人机时，以小步骤、逐步的方式来解决问题。为了简化我们对转弯的决策选择，我们只将使用前四个扇区的数据；即扇区 D、E、F 和 G。这些传感器数据用于确定是否存在距离小于一米的物体在我们的路径上。这四个扇区组成十六种组合，以确定探测车将前往的方向。只有六个可能的方向：向前、软左转、软右转、硬左转、硬右转和原地转弯（见图
+    [6-11](#Fig11)）。（如果使用“前六个”扇区进行决策，我们将有 64 种组合！要复杂得多！）
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig11_HTML.jpg)'
+  id: totrans-187
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig11_HTML.jpg)'
 - en: A schematic of the forward-facing sectors of LiDAR sensor. The sectors are labeled
     c to h. The directions from bottom left to bottom right are as follows. Positive
     pi over 2; front, center, left; front, left; 0, positive negative 2 of pi; front,
     right; front, center, right; and negative pi over 2.
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: LiDAR 传感器正前方扇区的示意图。扇区标记为 c 到 h。从左下角到底右角的方位如下。正 π/2；前方、中心、左；前方、左；0，正负 2π；前方、右；前方、中心、右；和负
+    π/2。
 - en: Figure 6-11
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-11
 - en: Forward-facing sectors are used to decide the next move
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 正前方扇区用于决定下一步行动
 - en: 'Each of the four forward-facing sectors returns the distance of the nearest
     object in that sector. As can be seen in Table [6-3](#Tab3), we encode the results
     in `bitVar`. For example, SectorG might return the value `10`. That means the
@@ -897,67 +1267,88 @@
     If a cell is blank, the nearest object in that direction is far away and of no
     immediate danger. If the cell has “< 1m,” then an object is very close and should
     be avoided.'
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
 - en: Table 6-3
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
 - en: Decision Table Using the Four Forward Sectors to Choose One of Six Decisions.
     Blank Cell Indicates No Nearby Object Detected in Those Sectors
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
 - en: '| Case | bitVar | SectorG | SectorF | SectorE | SectorD | Decision |'
+  id: totrans-194
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- | --- | --- | --- | --- |'
+  id: totrans-195
   prefs: []
   type: TYPE_TB
 - en: '| 0 | 0000 | No nearby objects * | Forward |'
+  id: totrans-196
   prefs: []
   type: TYPE_TB
 - en: '| 1 | 0001 |   |   |   | < 1 m | Soft Left |'
+  id: totrans-197
   prefs: []
   type: TYPE_TB
 - en: '| 2 | 0010 |   |   | < 1 m |   | Soft Left |'
+  id: totrans-198
   prefs: []
   type: TYPE_TB
 - en: '| 3 | 0011 |   |   | < 1 m | < 1 m | Soft Left |'
+  id: totrans-199
   prefs: []
   type: TYPE_TB
 - en: '| 4 | 0100 |   | < 1 m |   |   | Soft Right |'
+  id: totrans-200
   prefs: []
   type: TYPE_TB
 - en: '| 5 | 0101 |   | < 1 m |   | < 1 m | Hard Left |'
+  id: totrans-201
   prefs: []
   type: TYPE_TB
 - en: '| 6 | 0110 |   | < 1 m | < 1 m |   | Hard Left |'
+  id: totrans-202
   prefs: []
   type: TYPE_TB
 - en: '| 7 | 0111 |   | < 1 m | < 1 m | < 1 m | Hard Left |'
+  id: totrans-203
   prefs: []
   type: TYPE_TB
 - en: '| 8 | 1000 | < 1 m |   |   |   | Soft Right |'
+  id: totrans-204
   prefs: []
   type: TYPE_TB
 - en: '| 9 | 1001 | < 1 m |   |   | < 1 m | Forward |'
+  id: totrans-205
   prefs: []
   type: TYPE_TB
 - en: '| 10 | 1010 | < 1 m |   | < 1 m |   | Hard Right |'
+  id: totrans-206
   prefs: []
   type: TYPE_TB
 - en: '| 11 | 1011 | < 1 m |   | < 1 m | < 1 m | Turn Around |'
+  id: totrans-207
   prefs: []
   type: TYPE_TB
 - en: '| 12 | 1100 | < 1 m | < 1 m |   |   | Soft Right |'
+  id: totrans-208
   prefs: []
   type: TYPE_TB
 - en: '| 13 | 1101 | < 1 m | < 1 m |   | < 1 m | Turn Around |'
+  id: totrans-209
   prefs: []
   type: TYPE_TB
 - en: '| 14 | 1110 | < 1 m | < 1 m | < 1 m |   | Hard Right |'
+  id: totrans-210
   prefs: []
   type: TYPE_TB
 - en: '| 15 | 1111 | < 1 m | < 1 m | < 1 m | < 1 m | Turn Around |'
+  id: totrans-211
   prefs: []
   type: TYPE_TB
 - en: Formally, the rover’s speed and direction are called the linear velocity and
@@ -966,19 +1357,24 @@
     (blue), as shown in Figure [6-12](#Fig12). Since we are using a rover and assuming
     flat ground at this time, the system reduces to 2D. After removing the “flat ground”
     assumption, our model will become more complex. But that is for a later chapter.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig12_HTML.jpg)'
+  id: totrans-213
   prefs: []
   type: TYPE_IMG
 - en: An illustration of the rover's internal coordinate system. The x-axis forward
     is the linear velocity, y-axis, and the z-axis turn is the angular rotation.
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 6-12
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
 - en: X-, y-, and z-axes are relative to the rover
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
 - en: 'There are two types of angular velocity: orbital and spin. For example, the
@@ -987,8 +1383,11 @@
     around an internal point. We use `Twist()` (line 96) to send the spin angular
     velocity to the AI rover. This causes the AI rover to rotate around the internal
     z-axis.'
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 存在两种类型的角速度：轨道角速度和自旋角速度。例如，地球围绕太阳公转；即地球围绕一个外部点（太阳）旋转。地球也围绕南北极轴自转；即地球围绕一个内部点旋转。我们使用
+    `Twist()`（第 96 行）将自旋角速度发送到 AI 漫游车。这导致 AI 漫游车围绕内部 z 轴旋转。
 - en: Another way of looking at orbital angular velocity (OAV) versus spin angular
     velocity (SAV) is the point of view. OAV is observed from outside the rover; i.e.,
     it interacts with multiple objects in the universe. The OAV for the Earth/sun
@@ -996,8 +1395,12 @@
     depends on other objects. On the other hand, SAV is an internal attribute. The
     SAV of the Earth is 24 hours. It does not change concerning other objects. Thus,
     we say the SAV is independent of the observer, whereas OAV is dependent.
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一种看待轨道角速度（OAV）与自旋角速度（SAV）的方法是视角。OAV 是从漫游车外部观察的；即它与宇宙中的多个物体相互作用。地球/太阳组合的 OAV
+    是 365 天，而月球/地球轨道的 OAV 是 28 天。OAV 取决于其他物体。另一方面，SAV 是一个内部属性。地球的 SAV 是 24 小时。它不随其他物体而改变。因此，我们说
+    SAV 与观察者无关，而 OAV 是相关的。
 - en: When we control the rover, we are using SAV. In other words, if we want to turn
     right 45°, we inform ROS to turn the rover 45°. But remember, ROS uses radians
     instead of degrees when calculating angles. Angular velocities are expressed as
@@ -1005,32 +1408,47 @@
     circle whose arc is equal to the radius. From our internal perspective, if we
     “turn left,” we pass a positive value. If we “turn right,” we pass a negative
     value. So our “turn left 45°” becomes “turn left π/4.”
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们控制漫游车时，我们使用 SAV。换句话说，如果我们想向右转 45°，我们通知 ROS 将漫游车转向 45°。但请记住，ROS 在计算角度时使用弧度而不是度数。角速度以每秒弧度表示，其中一弧度等于圆心处的角度，其弧长等于半径。从我们的内部视角来看，如果我们“向左转”，我们传递一个正值。如果我们“向右转”，我们传递一个负值。因此，我们的“向左转
+    45°”变为“向左转 π/4。”
 - en: Executing the Avoidance Code
+  id: totrans-220
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 执行避障代码
 - en: 'Execute the following Linux terminal commands in one opened terminal:'
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 在一个已打开的终端中执行以下 Linux 终端命令：
 - en: '[PRE18]'
+  id: totrans-222
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'Then, execute the following Linux terminal commands in a second terminal:'
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，在第二个终端中执行以下 Linux 终端命令：
 - en: '[PRE19]'
+  id: totrans-224
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Our rover now avoids simple obstacles, such as the support column. But this
     avoidance algorithm is not very smart! It only uses four specific sectors, and
     each avoidance decision was explicitly chosen by the programmer. What if the programmer
     did not understand all the possible situations and all the possible decisions?
     What if the actual world is so sophisticated that four sectors do not supply enough
     information to always make the correct decision?
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在的漫游车可以避开简单的障碍，例如支撑柱。但这个避障算法并不十分智能！它只使用四个特定的扇区，每个避障决策都是程序员明确选择的。如果程序员没有理解所有可能的情况和所有可能的决策怎么办？如果实际的世界如此复杂，以至于四个扇区无法提供足够的信息来始终做出正确的决策怎么办？
 - en: Using an artificial intelligence deep learning system (DLS) will allow the AI
     rover to have evolutionary and adaptive behaviors. The use of these advanced methods
     eliminates the programmer’s need to explicitly program all of these behaviors
@@ -1039,27 +1457,41 @@
     rover may get stuck in the corner because of the collapsed wall. The DLS AI rover
     should be able to intelligently escape the collapsed wall. We will add the DLS
     intelligence in the next chapter.
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用人工智能深度学习系统（DLS）将使 AI 漫游车具有进化和自适应的行为。使用这些高级方法消除了程序员使用有限状态机（FSM）明确编程所有这些行为和决策的需求。为了实现这些行为，我们用
+    DLS 替换了 FSM。例如，在图 [6-13](#Fig13) 中，基于 FSM 的漫游车可能会因为倒塌的墙壁而陷入困境。DLS AI 漫游车应该能够智能地逃离倒塌的墙壁。我们将在下一章中添加
+    DLS 智能性。
 - en: '![](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig13_HTML.jpg)'
+  id: totrans-227
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/494112_1_En_6_Chapter/494112_1_En_6_Fig13_HTML.jpg)'
 - en: A screenshot of the Gazebo editor. There are cubical objects arranged in the
     shape of a square with a doorway and a cylindrical object is placed in it. A I
     rover is highlighted to the left of cylindrical object, and the collapsed wall
     is highlighted at the top.
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: Gazebo编辑器的截图。这里有一些立方体物体以方形排列，其中有一个门，一个圆柱形物体放置在其中。一个I型探测车在圆柱形物体的左侧被突出显示，顶部被突出显示的坍塌墙壁。
 - en: Figure 6-13
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-13
 - en: Scenario with AI rover (red) and collapsed wall (yellow)
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 携带AI探测车（红色）和坍塌墙壁（黄色）的场景
 - en: Summary
+  id: totrans-231
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 摘要
 - en: The purpose of this chapter is to convey to the reader that the development
     of simple control is possible for the first generation of the AI rover. This chapter
     also exposes the severe limits of finite state machines in the creation of ever
@@ -1077,11 +1509,15 @@
     systems to control the angle heading of the AI rover itself and the direction
     of the AI rover’s goal position. The next chapter will be a small but critical
     step in the development of an autonomous rover.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章的目的是向读者传达，对于第一代AI探测车，简单的控制是可能的。本章还揭示了有限状态机在创建越来越复杂的机器人方面的严重限制，从而有必要创建深度学习、强化深度学习、贝叶斯学习和最终基于人工认知智能的控制器，这将使机器人能够探索未知环境，如埃及地下墓穴。我们还应指出，我们没有在传感器数据上使用任何类型的概率或统计分析来确定传感器噪声或误差。我们将在关于贝叶斯深度学习和传感器噪声及不确定性的统计分析章节中重新审视这个话题。我们将在下一章中讨论基于SLAM（同时定位与地图构建）的第一导航和制图技术。导航和制图的讨论还需要使用控制系统理论，以便我们理解为什么需要有两个主要控制系统来控制AI探测车本身的航向角度和目标位置的方向。下一章将是自主探测车开发中的一个微小但关键步骤。
 - en: Extra Credit
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: 额外加分
 - en: During the AI rover/catacomb simulations, you must have noticed that if the
     AI rover collides with a granite block it can push it to one side. In reality,
     this would never happen due to the AI rover’s small size, mass, and speed. How
@@ -1090,37 +1526,51 @@
     of inertia as a real-world granite block and column with the same dimensions?
     (Look to Chapters [4](494112_1_En_4_Chapter.xhtml) and [5](494112_1_En_5_Chapter.xhtml)
     on modifying the URDF source code.)
+  id: totrans-234
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在AI探测车/地下墓穴模拟过程中，你一定注意到了，如果AI探测车与花岗岩方块相撞，它可以将其推到一边。在现实中，由于AI探测车体积小、质量轻和速度慢，这种情况永远不会发生。你将如何修改URDF
+    XML文件，以便埃及地下墓穴中发现的花岗岩方块和支撑柱具有与相同尺寸的真实世界花岗岩方块和柱子相同的模拟质量和惯量？（参考第[4](494112_1_En_4_Chapter.xhtml)章和第[5](494112_1_En_5_Chapter.xhtml)章，关于修改URDF源代码。）
 - en: Is the AI rover still able to push the granite blocks to one side if it collides
     with a block with a real-world mass and moment of inertia?
+  id: totrans-235
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果AI探测车与一个具有真实世界质量和惯量的方块相撞，它是否仍然能够将花岗岩方块推到一边？
 - en: We know that we currently have 16 combinations for `bitVar` and for the four
     front sectors that we have used (D, E, F, and G) in `sense_avoid_obstacle.py`.
     How many combinations for `bitVar` would we have if we added both the left (SectorH)
     and the right (SectorC) LiDAR sectors? Please list all of the combinations of
     `bitVar` by using Sectors C, D, E, F, G, and H.
+  id: totrans-236
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们知道我们目前有16种`bitVar`的组合，以及我们在`sense_avoid_obstacle.py`中使用的四个前部区域（D、E、F和G）。如果我们添加左侧（区域H）和右侧（区域C）的LiDAR区域，我们将有多少种`bitVar`的组合？请使用区域C、D、E、F、G和H列出所有`bitVar`的组合。
 - en: We can see that we are only using the four front LiDAR sectors. What gains could
     we make if we were to incorporate both the left (SectorH) and the right (SectorC)
     LiDAR sectors into `sense_avoid_obstacles.py`? How would we go about reprogramming
     this particular Python ROS node program?
+  id: totrans-237
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们可以看到我们只使用了四个前方的激光雷达区域。如果我们把左侧（区域H）和右侧（区域C）的激光雷达区域也加入到`sense_avoid_obstacles.py`中，我们可能会获得哪些收益？我们该如何重新编程这个特定的Python
+    ROS节点程序？
 - en: We are currently using ten sectors for the LiDAR sensor array sweep? Is this
     the only number of LiDAR sectors we could use? If not, then what would be the
     ideal number of LiDAR sensor sweep sectors?
+  id: totrans-238
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们目前使用十个区域进行激光雷达传感器阵列扫描？这是我们能使用的激光雷达区域数量的唯一选择吗？如果不是，那么理想的激光雷达传感器扫描区域数量是多少？
 - en: How do we modify the source code for the simulated LiDAR sensor range from 10
     meters to 30 meters?
+  id: totrans-239
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们如何修改模拟激光雷达传感器的源代码，将其范围从10米增加到30米？
