@@ -1,4 +1,5 @@
 - en: 7. Improvements to DQN**
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
@@ -9,12 +10,15 @@
     chapter with each variant of DQN as a standalone topic. You can skip this chapter
     in the first pass and come back to it when you want to explore specific variants
     of DQN.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
 - en: The first variant of DQN covered in this chapter is prioritized replay.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
 - en: Prioritized Replay
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -22,24 +26,28 @@
     that addresses some key issues in the online version, such as updates being done
     with each transition and a transition being discarded right after that one step
     of learning. The following are the key issues in the online versions:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
 - en: The training samples (transitions) are correlated, breaking i.i.d. (independent
     identically distributed) assumptions. With online learning, you have correlated
     transitions in a sequence. Each transition is linked to the previous one. This
     breaks the i.i.d. assumption that is required to apply a gradient descent.
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: As the agent learns and discards, it might never get to visit the initial exploratory
     transitions. If the agent goes down a wrong path, it will keep seeing examples
     from that part of the state space. It may settle on a suboptimal solution.
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: With neural networks, learning on a single transition basis is hard and inefficient.
     There will be too much variance for the neural networks to learn anything effective.
     Neural networks work best when they learn in batches of training samples.
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -55,6 +63,7 @@
     these importance scores as the probability of selection, assigning a higher probability
     of selection to important transitions as signified by their respective importance
     score?
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
 - en: This is what the authors of the paper “Prioritized Experience Replay”^([1](#Fn1))
@@ -62,20 +71,24 @@
     paper to create your own implementation of experience replay and apply it to the
     DQN agent for the `CartPole` environment. I start by talking a little bit about
     how these importance scores are assigned and how the loss *L* is modified.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
 - en: 'The key approach of this paper is to assign importance scores to training samples
     in the buffer using their TD errors. When a batch of samples is picked from the
     buffer, you calculate the TD error as part of the loss *L* calculation. The TD
     error is given by this equation:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\updelta}_i={r}_i+\left(\left(1- don{e}_i\right).\gamma .\underset{a^{\prime
     }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--}
     \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ1.png)'
+  id: totrans-11
   prefs: []
   type: TYPE_IMG
 - en: (7-1)
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
 - en: 'This appears inside Equation [6-3](502835_2_En_6_Chapter.xhtml#Equ3) where
@@ -85,13 +98,16 @@
     denotes the contribution that the sample transition *(i)* would have on the update.
     The authors used this reasoning to assign an importance score *p*[*i*] to each
     sample, where *p*[*i*] is given by this equation:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\mathrm{p}}_{\mathrm{i}}=\left|{\updelta}_{\mathrm{i}}\right|+\varepsilon
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ2.png)'
+  id: totrans-14
   prefs: []
   type: TYPE_IMG
 - en: (7-2)
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
 - en: A small constant ϵ is added to avoid the edge case of *p*[*i*] being 0 when
@@ -102,6 +118,7 @@
     training, you calculate the TD error δ[*i*] of each sample as part of the loss/gradient
     calculation. The TD error as calculated is then used to update the importance
     score of these samples in the buffer.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
 - en: There is another approach of rank-based prioritization that the paper talks
@@ -109,17 +126,21 @@
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq1.png), where
     *rank*(*i*) is the rank of transition (i) when the replay buffer transitions are
     sorted based on |δ[*i*]|.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
 - en: 'In the sample code, you will be using the first approach, which is called *proportional
     prioritization*. Next, at the time of sampling, you convert *p*[*i*] to probabilities
     by using the following equation:'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ P(i)=\frac{p_i^{\upalpha}}{\sum_i{p}_i^{\upalpha}} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ3.png)'
+  id: totrans-19
   prefs: []
   type: TYPE_IMG
 - en: (7-3)
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
 - en: Here, *P*(*i*) denotes the probability of transition (i) in the buffer getting
@@ -127,6 +148,7 @@
     to the transitions that have a higher TD error. Here, *α* is a hyperparameter,
     which was tuned using grid search, and the authors found α = 0.6 to be the best
     for the proportional variant that you will be implementing.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
 - en: 'The previous approach of breaking the uniform sampling with some kind of sampling
@@ -134,12 +156,15 @@
     the loss *L*. In the paper, this was corrected using *importance sampling* by
     weighing each sample with weight *w*[*i*] and then summing it up to get the revised
     loss function *L*. The equation for calculating weights is as follows:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {w}_i={\left(\frac{1}{N}.\frac{1}{P(i)}\right)}^{\upbeta} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ4.png)'
+  id: totrans-23
   prefs: []
   type: TYPE_IMG
 - en: (7-4)
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
 - en: Here, *N* is the number of samples in the training batch, and *P*(*i*) is the
@@ -154,28 +179,35 @@
     more aggressively at the same time as correcting for it more strongly. In this
     example, you use a constant value of 0.4 which is taken from some of the experiments
     in the paper.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
 - en: 'The weights are further normalized by ![$$ \frac{1}{ma{x}_i{w}_i} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq2.png)
     to ensure that the weights stay within bounds:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {w}_i^{IS}=\frac{1}{ma{x}_i{w}_i}{w}_i $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ5.png)'
+  id: totrans-27
   prefs: []
   type: TYPE_IMG
 - en: (7-5)
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
 - en: 'With these changes in place, the loss *L* equation is also updated to weigh
     each transition in the batch with *w*[*i*] as follows:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ L=\frac{1}{N}{\sum}_{i=1}^N{\left[{r}_i+\left(\left(1- don{e}_i\right).\upgamma
     .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--}
     \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2.{w}_i^{IS} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ6.png)'
+  id: totrans-30
   prefs: []
   type: TYPE_IMG
 - en: (7-6)
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
 - en: Notice the ![$$ {w}_i^{IS} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq3.png)
@@ -183,11 +215,13 @@
     back-propagation of the loss gradient with respect to the online neural network
     weights *w* (denoted as *w*[*t*], with a subscript *t* to highlight that weights
     change with as you iterate over batches for training).
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
 - en: Remember, the TD error in the previous equation is used to update the importance
     score back in the replay buffer for these transitions in the current training
     batch. This completes the theoretical discussion on the prioritized replay.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
 - en: You will now look at the implementation. The complete code of training a DQN
@@ -199,6 +233,7 @@
     you started. For a firm grasp of the material, you should follow the accompanying
     code in detail. It will be even better if you try to code it yourself after examining
     how the code works.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
 - en: 'Getting back to the explanation, you first look at the prioritized replay implementation,
@@ -217,11 +252,14 @@
     after the calculation of TD error in the loss step, you can update the priority/importance
     back in the buffer. The `update_priorities(idxs, new_priorities)` function is
     exactly for that purpose.'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE0]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Next, let’s look at the loss calculation. The code is almost similar to the
     TD loss computation you saw in Listing [6-3](502835_2_En_6_Chapter.xhtml#PC4).
     There are two changes. The first is multiplying the TD error with weights, in
@@ -233,30 +271,38 @@
     to update the priorities of the transitions forming the training batch. Listing
     [7-2](#PC2) highlights the code changes of the revised `compute_td_loss_priority_replay`
     function.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE1]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: The training code remains the same as before. You can look at the `7.a-dqn-prioritized-replay.ipynb`
     notebook to see the details. As before, you train the agent, and you can see that
     the agent learns to balance the pole really well with this approach. Figure [7-1](#Fig1)
     shows the training curves.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig1_HTML.jpg)'
+  id: totrans-40
   prefs: []
   type: TYPE_IMG
 - en: 2 graphs. Left. Mean return per episode. A fluctuating curve that increases
     between (0, 0) and (47, 1000) with 3 lowest peaks at (22, 220), (25, 420), and
     (31, 220). Right. It is bell-shaped with fluctuation between (0, 0) and (2000,
     0) with its peak at (600, 17). The values are approximate.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-1
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
 - en: Training curve for DQN agent with prioritized experience replay on CartPole
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
 - en: The paper has lot more to say about the theoretical background of prioritized
@@ -264,9 +310,11 @@
     on Atari games as well as how such an approach could be used for supervised learning
     with class imbalances. This completes the section on prioritized replay. You are
     advised to refer to the original paper and code notebooks for further details.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
 - en: Double DQN (DDQN)
+  id: totrans-45
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -281,17 +329,21 @@
     second value function, without having to introduce additional networks. The authors
     therefore propose to evaluate the greedy policy according to the online network,
     but using the target network to estimate its value.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: 'Let’s look at the max operation in the regular DQN. You calculate the TD target
     as follows:'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Y}^{DQN}=r+\upgamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}^{\prime
     },{a}^{\prime };{w}_t^{-}\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ7.png)'
+  id: totrans-48
   prefs: []
   type: TYPE_IMG
 - en: (7-7)
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: 'I have simplified the equation a bit by dropping the subscript (*i*) as well
@@ -299,11 +351,13 @@
     state. I have done so to keep the explanation uncluttered. Now, let’s unwrap this
     equation by moving the *max* inside. The previous update can be equivalently written
     as follows:'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \mathrm{r}+\upgamma .\hat{q}\left({s}^{\prime },\mathit{\arg}\underset{a^{\prime
     }}{\mathit{\max}}\hat{q}\left({s}^{\prime },{a}^{\prime };{w}_t^{-}\right);{w}_t^{-}\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equa.png)'
+  id: totrans-51
   prefs: []
   type: TYPE_IMG
 - en: 'I have moved the `max` inside by first taking the max action and then taking
@@ -319,14 +373,17 @@
     with weight ![$$ {w}_t^{-} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq7.png)
     is used to select the q-value for that best action. This change results in the
     updated TD target as follows:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \mathrm{r}+\upgamma .\hat{q}\left({s}^{\prime },\mathit{\arg}\underset{a^{\prime
     }}{\mathit{\max}}\hat{q}\left({s}^{\prime },{a}^{\prime };{w}_t\right);{w}_t^{-}\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ8.png)'
+  id: totrans-53
   prefs: []
   type: TYPE_IMG
 - en: (7-8)
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
 - en: 'Note that the inner network for selecting the best action is now using online
@@ -335,21 +392,26 @@
     network. You also periodically update the target network weights with the weights
     from the online network. The updated loss function that you use is as follows
     (bringing back the *done* flag and index *i*):'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Y}_i^{DDQN}={r}_i+\left(\left(1- don{e}_i\right).\gamma .\hat{q}\left({s}_i^{\prime
     },\arg \underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t\right);{w}_t^{-}\right)\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ9.png)'
+  id: totrans-56
   prefs: []
   type: TYPE_IMG
 - en: (7-9)
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ L=\frac{1}{N}{\sum}_{i=1}^N{\left[{Y}_i^{DDQN}\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}^2
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ10.png)'
+  id: totrans-58
   prefs: []
   type: TYPE_IMG
 - en: (7-10)
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
 - en: 'The authors show that the double DQN approach leads to significant reduction
@@ -368,37 +430,47 @@
     and then you use the target network with the best action to find the target q-value:
     `q_s1=agent(next_states)` and then `q_s1_a1max = q_s1_target[range(len(a1max)),
     a1max]`. The rest of the code for TD loss calculations remains the same.'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Running DDQN on `CartPole` produces the training graph shown in Figure [7-2](#Fig2).
     You may not notice a big difference, as `CartPole` is too simple a problem to
     show the benefits. In addition, the training algorithm is running for a small
     number of episodes to demonstrate the algorithms. For quantified benefits of the
     approach, you should look at the referenced paper.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig2_HTML.jpg)'
+  id: totrans-63
   prefs: []
   type: TYPE_IMG
 - en: 2 graphs. Left. Mean return per episode. It has an increasing curve with more
     fluctuation between (0, 0) and (25, 300). Right. T D loss history. It has a fluctuating
     bell curve between (0, 8) and (400, 3) with its peak at (200, 47). The values
     are approximate.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-2
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
 - en: Training curve for DDQN on CartPole from `7.b-ddqn.ipynb`
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
 - en: This completes the discussion on DDQN. The next section covers dueling DQN.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
 - en: Dueling DQN
+  id: totrans-68
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -414,36 +486,45 @@
     Network Architectures for Deep Reinforcement Learning”^([3](#Fn3)) took in 2016\.
     They showed that it led to significant improvements, and the improvement was higher
     as the number of possible actions in a state grew.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
 - en: 'Let’s derive the computation that the dueling DQN network performs. You saw
     the definition of state-value and action-value functions in Chapter [2](502835_2_En_2_Chapter.xhtml)
     in Equations [2-9](502835_2_En_2_Chapter.xhtml#Equ9) and [2-10](502835_2_En_2_Chapter.xhtml#Equ10),
     which are reproduced here:'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{G}_t|{S}_t=s\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equb.png)'
+  id: totrans-71
   prefs: []
   type: TYPE_IMG
 - en: '![$$ {q}_{\pi}\left(s,a\right)={E}_{\pi }\ \left[\ {G}_t\ \right|\ {S}_t=s,{A}_t=a\
     \Big] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ11.png)'
+  id: totrans-72
   prefs: []
   type: TYPE_IMG
 - en: (7-11)
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
 - en: 'Then, in Chapter [5](502835_2_En_5_Chapter.xhtml) on function approximation,
     you saw these equations change a bit with the introduction of parameters *w* when
     you switched to representing the state/action values as parameterized functions:'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \hat{v}\left(s;w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equc.png)'
+  id: totrans-75
   prefs: []
   type: TYPE_IMG
 - en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ12.png)'
+  id: totrans-76
   prefs: []
   type: TYPE_IMG
 - en: (7-12)
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
 - en: Both sets of Equations [7-11](#Equ11) and [7-12](#Equ12) show that *v*[π] measures
@@ -452,10 +533,12 @@
     that is called *advantage A*. Note that there is a bit of overload of notations.
     *A* inside *Q*(*S*, *A*) represents action, and *A*[π] on the left side of equation
     represents the advantage of taking an action *a*.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {A}_{\uppi}\left(s,a\right)={Q}_{\uppi}\left(s,a\right)-{V}_{\uppi}(s)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equd.png)'
+  id: totrans-79
   prefs: []
   type: TYPE_IMG
 - en: 'The authors created a network that takes in a state *S* as input and, after
@@ -463,45 +546,56 @@
     giving advantage *A* with part of the network being individual sets of layers,
     one for *V* and one for *A*. Finally, the last layer combines advantage *A* and
     state value *V* to recover *Q* by rearranging the Equation [7-13](#Equ13):'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {Q}_{\uppi}\left(s,a\right)={V}_{\uppi}(s)+{A}_{\uppi}\left(s,a\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ13.png)'
+  id: totrans-81
   prefs: []
   type: TYPE_IMG
 - en: (7-13)
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
 - en: Figure [7-3](#Fig3) shows a representative network architecture for the same.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig3_HTML.jpg)'
+  id: totrans-84
   prefs: []
   type: TYPE_IMG
 - en: A network model has 2 C N Ns connected to a flatten layer. It is distributed
     into 2 dense layers. They are connected to V of s and A of s, a, respectively,
     and converge into Q of s, a. The function reads, Q of s, a = V of s + A of s,
     a, minus 1 over modulus of a, sigma a, A of s, a.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-3
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
 - en: Dueling network. The network has a common set of weights in the initial layers,
     denoted as *w*[1], and then it branches off to have one set of weights *w*[2,]
     producing value *V* and another set of weights *w*[3], producing advantage *A*
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
 - en: 'Before you proceed, let’s rewrite Equation [7-13](#Equ13) with weights *w*[1],
     *w*[2], *w*[3] explicitly shown in expression. The revised equation looks like
     this:'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \hat{Q}\left(s,a;{w}_1,{w}_2,{w}_3\right)=\hat{V}\left(s;{w}_1,{w}_2\right)+\hat{A}\left(s,a;{w}_1,{w}_3\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ14.png)'
+  id: totrans-89
   prefs: []
   type: TYPE_IMG
 - en: (7-14)
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: Do you notice a problem in learning this kind of expression where you estimate
@@ -512,29 +606,36 @@
     but the state values *V* for each state could be shifted by some random amount
     individually, making it hard to use *V* as a true representative of the state
     values.
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
 - en: One way to force this issue of identifiability/uniqueness the authors suggested
     to force the advantage to have zero value for the chosen action, that is,. an
     action with maximum advantage.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \hat{Q}\left(s,a;{w}_1,{w}_2,{w}_3\right)=\hat{V}\left(s;{w}_1,{w}_2\right)+\left(\hat{A}\left(s,a;{w}_1,{w}_3\right)-\underset{a''}{\max}\hat{A}\left(s,{a}^{''};{w}_1,{w}_3\right)\right)
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ15.png)'
+  id: totrans-93
   prefs: []
   type: TYPE_IMG
 - en: (7-15)
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: The authors in the study found an alternative formulation to offer better stability
     where the `max` operation was replaced by an average.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ \hat{Q}\left(s,a;{w}_1,{w}_2,{w}_3\right)=\hat{V}\left(s;{w}_1,{w}_2\right)+\left(\hat{A}\left(s,a;{w}_1,{w}_3\right)-\frac{1}{\left|{a}^{\prime}\right|}{\sum}_{a^{\prime
     }}\hat{A}\left(s,{a}^{\prime };{w}_1,{w}_3\right)\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ16.png)'
+  id: totrans-96
   prefs: []
   type: TYPE_IMG
 - en: (7-16)
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
 - en: On the one hand, this loses the original semantics of V and A because they are
@@ -542,6 +643,7 @@
     of the optimization. With Equation [7-16](#Equ16) the advantages only needs to
     change as fast as the mean, instead of having to compensate any change to the
     optimal action’s advantage in 7-15.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
 - en: In the previous equation, weight *w*[1] corresponds to the initial common part
@@ -549,6 +651,7 @@
     value ![$$ \hat{V} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq8.png),
     and finally *w*[3] corresponds to the part of network that predicts advantage
     ![$$ \hat{A} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq9.png).
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: The authors named this architecture *dueling networks* as it has two networks
@@ -559,36 +662,45 @@
     buffer or the type of learning. In this walk-through, you will be using a simple
     replay buffer with uniform probability of selection for each transition in the
     buffer. Further, you will be using a DQN agent.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
 - en: The authors studied the improvement of this approach over a baseline single
     network, as shown Figure [7-4](#Fig4). It clearly shows the benefit of a dueling
     architecture.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig4_HTML.jpg)'
+  id: totrans-102
   prefs: []
   type: TYPE_IMG
 - en: A horizontal bar graph with the names of games and their corresponding percentages.
     It has a decreasing trend from top to bottom. The highest is Atlantis with 296.67%
     and the lowest is Freeway with negative 100%.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-4
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
 - en: 'Improvements of a dueling architecture over a baseline single network Source:
     Fig 4 of the paper^([4](#Fn4))'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
 - en: Compared to the notebook for vanilla DQN—`6.a-dqn_pytorch.ipynb`—the only change
     is the way the network is constructed. Listing [7-4](#PC4) shows the code for
     the dueling agent network.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE3]'
+  id: totrans-107
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: You have two layers in a common network (`self.fc1` and `self.fc2`). For *V*
     prediction, you have another two layers (`self.fc_value` and `self.value`) on
     top of `fc1` and `fc2`. Similarly, for advantage estimation, you again have a
@@ -597,29 +709,36 @@
     [7-16](#Equ16). The rest of the code, that is, the calculation of the TD loss
     and the gradient descent for the weight update, remains the same as that for DQN.
     Figure [7-5](#Fig5) shows the result of training the previous network on `CartPole`.
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig5_HTML.jpg)'
+  id: totrans-109
   prefs: []
   type: TYPE_IMG
 - en: 2 graphs. Left. Mean reward per episode. It has a fluctuating curve that rises
     from (0, 0) to (4, 540), drops, and remains stable till (30,290). Right. T D loss
     history. It has a fluctuating bell curve between (0, 10) and (500, 1) with its
     peak at (220, 99). The values are approximate.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-5
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
 - en: Training curves for a dueling network from .c-dueling_dqn.ipynb
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: As stated, you can try to substitute `ReplayBuffer` with `PrioritizedReplayBuffer.`
     You could also use DDQN instead of DQN as a learning agent. This concludes the
     discussion on dueling DQN. The next section discusses a very different variant.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
 - en: NoisyNets DQN
+  id: totrans-114
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -629,46 +748,57 @@
     a recent 2018 paper titled “Noisy Networks for Exploration,”^([5](#Fn5)) used
     a different approach of adding random perturbations to linear layers as parameters,
     and like network weights, these are also learned.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
 - en: 'The usual linear layers are affine transformations, as given by the following:'
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ y= wx+b $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Eque.png)'
+  id: totrans-117
   prefs: []
   type: TYPE_IMG
 - en: 'In noisy linear versions, you introduce random perturbations in the weights
     as given by the following equation:'
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ y=\left({\upmu}^w+{\upsigma}^w\odot {\upvarepsilon}^w\right)x+\left({\upmu}^b+{\upsigma}^b\odot
     {\upvarepsilon}^b\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ17.png)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
 - en: (7-17)
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
 - en: In the previous equation, μ^(*w*), σ^(*w*), μ^(*b*), and σ^(*b*) are the weights
     of the network that are learned. ϵ^(*w*) and ϵ^(*b*) are random noises that introduce
     randomness leading to exploration. Figure [7-6](#Fig6) shows a schematic diagram
     of the noisy version of the linear layer, which explains Equation [7-17](#Equ17).
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig6_HTML.jpg)'
+  id: totrans-122
   prefs: []
   type: TYPE_IMG
 - en: A schematic of a system with inputs x and epsilon superscript w, epsilon superscript
     b. The function reads w = mu superscript w + sigma superscript w, circled dot,
     epsilon superscript w, and b = mu superscript b + sigma superscript b, circled
     dot, epsilon superscript b p. The output is y = w x + b.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-6
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
 - en: The noisy linear layer. The weights and biases are a linear combination of the
     mean and standard deviation, which are learned just like the weights and biases
     in a regular linear layer (Figure 4 of the referenced paper [`https://arxiv.org/pdf/1706.10295.pdf`](https://arxiv.org/pdf/1706.10295.pdf))
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
 - en: 'In terms of specific noise distributions in linear layers of a noisy network,
@@ -680,6 +810,7 @@
     agents like DQN and dueling, where computational overhead can be significant.
     Consequently, Factorized noise is employed in DQN and dueling, while Independent
     noise is used in the distributed A3C, where computation time is less of a concern.'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
 - en: 'In line with the authors’ recommendations, you will implement the factorized
@@ -690,34 +821,42 @@
     and a *q*-size vector of Gaussian noise ϵ[*j*]. Each ![$$ {\epsilon}_{I,j}^w $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq11.png)
     and ![$$ {\upvarepsilon}_j^b $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq12.png)
     can now be written as follows:'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {\upvarepsilon}_{i,j}^w=f\left({\upvarepsilon}_i\right).f\left({\upvarepsilon}_j\right),
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equf.png)'
+  id: totrans-128
   prefs: []
   type: TYPE_IMG
 - en: '![$$ {\upvarepsilon}_j^b=f\left({\upvarepsilon}_j\right), $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equg.png)'
+  id: totrans-129
   prefs: []
   type: TYPE_IMG
 - en: '![$$ f(x)=\operatorname{sgn}(x).\sqrt{\left|x\right|} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ18.png)'
+  id: totrans-130
   prefs: []
   type: TYPE_IMG
 - en: (7-18)
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
 - en: 'For factorized networks like the one used here, the authors suggest initializing
     the weights as follows:'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
 - en: Each element μ[*i*, *j*] of μ^(*w*) and μ^(*b*) is sampled from a uniform distribution
     in the range of ![$$ U\left[-\frac{1}{\sqrt{p}},\frac{1}{\sqrt{p}}\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq13.png),
     where *p* is the number of input units.
+  id: totrans-133
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Similarly, each element σ[*i*, *j*] of σ^(*w*) and σ^(*b*) is initialized to
     a constant ![$$ \frac{\upsigma_0}{\sqrt{p}} $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq14.png)
     with the hyperparameter σ[0] set to 0.5.
+  id: totrans-134
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -729,10 +868,12 @@
     same noisy network is fixed used for a batch of transitions, the gradient is calculated,
     and the weights are adjusted. The network weights are sampled again from this
     modified weights before taking the next step.'
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
 - en: Section C of the paper provides the pseudocode for NoisyNet-DQN and NoisyNet-Dueling,
     that is, the NoisyNet version of DQN and Dueling DQN.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s now look at the code required to implement NoisyNet-DQN. You create a
@@ -749,6 +890,7 @@
     it through a set of noisy linear and regular linear layers, as per Equation [7-17](#Equ17).
     During training, you use the noisy version 7-17 and during inference, you use
     the usual version of linear layer without adding any noise.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
 - en: You also need some additional functions. In this case, I wrote a function called
@@ -757,11 +899,14 @@
     `reset_parameters` function resets the parameters following the strategy outlined
     in Equation [7-18](#Equ18). Listing [7-5](#PC5) shows the code for the noisy linear
     layer.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE4]'
+  id: totrans-139
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: You could use a noisy net with DQN, DDQN, dueling DQN, and prioritized replay
     in various combinations. However, for the purpose of the walk-through, I focus
     on using a regular replay buffer with DQN. You can also train using the regular
@@ -775,41 +920,52 @@
     the noise after each batch. This is in line with the recommendations of the paper
     to decorrelate. Listing [7-6](#PC6) contains the NoisyDQN version with these modifications.
     The rest of the implementation is similar to the vanilla DQN agent.
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE5]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The training code also has a minor modification. You reset the noise by calling
     `reset_noise` after each batch of samples has been processed. Listing [7-7](#PC7)
     shows the code with this change. Refer to the `7.d-noisynet_dqn.ipynb` notebook
     for the complete code.
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-143
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Training a NoisyDQN in the `CartPole` environment produces the training curves,
     as given in Figure [7-7](#Fig7). You may not see any significant difference between
     this variant and DQN (or for that matter, all the variants). The reason is that
     you are using a simple problem and training it for a short number of episodes.
     You are also not optimizing the parameters. The idea in the book is to teach you
     the inner details of a specific variant.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig7_HTML.jpg)'
+  id: totrans-145
   prefs: []
   type: TYPE_IMG
 - en: 2 graphs. Left. Mean return per episode. It has an increasing curve with fluctuation
     that remains constant from (0, 10) to (22, 10) and increases till (50, 275). Right.
     T D loss history exhibits an irregular left-skewed curve with fluctuation between
     (0, 2) and (900, 3.8). The values are approximate.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-7
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
 - en: NoisyNet DQN training graph
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
 - en: For a thorough study of the improvements and other observations, you are advised
@@ -818,66 +974,82 @@
     the details, you should try to code the example anew. Figure [7-8](#Fig8) shows
     the training curve from the paper where the NoisyNet DQN and the NoisyNet dueling
     learning progress is compared to the baseline version.
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig8_HTML.jpg)'
+  id: totrans-150
   prefs: []
   type: TYPE_IMG
 - en: 2 line graphs of median score versus million frames. Left. It indicates 2 increasing
     fluctuating patterns for D Q N and Noisy Net D Q N. They overlap between (0, 0)
     and (40,30). Right. It indicates 2 increasing and fluctuating patterns for dueling
     and Noisy net dueling. They overlap between (0, 0) and (15,95).
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-8
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
 - en: NoisyNet comparison to the baseline from Figure 2 of the paper [`https://arxiv.org/pdf/1706.10295.pdf`](https://arxiv.org/pdf/1706.10295.pdf)
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
 - en: 'You are also encouraged to try to code a noisy version of dueling DQN. Further,
     you could also try the DDQN variant of learning. In other words, with what you
     have learned so far, you could try the following combinations:'
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
 - en: DQN
+  id: totrans-155
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: DDQN (impacts how you learn)
+  id: totrans-156
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Dueling DQN (impacts the architecture of training)
+  id: totrans-157
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Dueling DDQN
+  id: totrans-158
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Replace the vanilla `ReplayBuffer` with a prioritized replay buffer
+  id: totrans-159
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Replace ε-exploration with NoisyNets in any of the previous approaches
+  id: totrans-160
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Code all combinations
+  id: totrans-161
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Try many other Gymnasium environments, making appropriate changes, if any, to
     the network
+  id: totrans-162
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Run some of them on Atari, especially if you have access to a GPU machine
+  id: totrans-163
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Categorical 51-Atom DQN (C51)
+  id: totrans-164
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -885,15 +1057,18 @@
     the authors argued in favor of the distributional nature of RL. Instead of looking
     at the expected values like the q-value, they looked at *Z*, a random distribution
     whose expectation is *Q*.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
 - en: 'Up to now you have been outputting *Q*(*s*, *a*) values for an input state
     *s*. The number of units in the output were of size `n_action`. In a way, the
     output values were the expected *Q*(*s*, *a*) as shown here:'
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Q\left(s,a\right)=E\left[R\left(s,a\right)\right]+\upgamma E\left[Q\left({s}^{''},{a}^{''}\right)\right]
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equh.png)'
+  id: totrans-167
   prefs: []
   type: TYPE_IMG
 - en: In practice you have been estimating it using the Monte Carlo technique of averaging
@@ -901,6 +1076,7 @@
     $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq15.png) of the
     actual expected value *E*[*Q*(*s*, *a*)] as discussed earlier in chapter on TD
     learning.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
 - en: 'In categorial 51-Atom DQN, for each *Q*(*s*, *a*) (i.e. one per action and
@@ -908,13 +1084,16 @@
     *a*) values: `n_atom` (51 to be precise) values for each *Q*(*s*, *a*). The network
     is now predicting the entire distribution modeled as a categorical probability
     distribution instead of just estimating the mean value of *Q*(*s*, *a*).'
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ Q\left(s,a\right)={\sum}_i{z}_i{p}_i\left(s,a\right) $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equi.png)'
+  id: totrans-170
   prefs: []
   type: TYPE_IMG
 - en: '*p*[*i*](*s*, *a*) is the probability that the action value at (*s*, *a*) will
     be *z*[*i*].'
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
 - en: You now have `n_action * n_atom` outputs, that is, `n_atom` outputs for each
@@ -922,18 +1101,21 @@
     you have `n_atom` probabilities, and these are the probability of the q-value
     being in any one of the `n_atom` discrete values in the range `V_min` to `V_max`.
     Refer to refer to the paper for more details.
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
 - en: In the C51 version of distributional RL, the authors took *i* to be 51 atoms
     (support points) over the values -10 to 10\. You will use the same setup in the
     code. As these values are parameterized in the code, you are welcome to change
     them and explore the impact.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
 - en: After the Bellman updates are applied, the values shift and may not fall on
     the 51 support points. There is a step of projection to bring back the probability
     distribution to the support points of 51 atoms, that is, to the immediate value
     of *z*[*i*].
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
 - en: The loss is also replaced from the mean squared error to cross-entropy loss.
@@ -941,6 +1123,7 @@
     involved, and it will be a good exercise for you to go through the paper together
     with the code to link each code line to the specific detail in the paper. This
     is an important skill a practitioner of RL needs to have.
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
 - en: 'Let’s now look at code. Similar to the DQN approach, you have the `CategoricalDQN`
@@ -951,31 +1134,40 @@
     points, which is carried out in the `compute_projection` function. The `compute_projection`
     function is used inside `td_loss_categorical_dqn` while calculating the loss.
     The rest of the training remains the same as before.'
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE7]'
+  id: totrans-177
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Figure [7-9](#Fig9) shows the training curves for running this through the `CartPole`
     environment.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig9_HTML.jpg)'
+  id: totrans-179
   prefs: []
   type: TYPE_IMG
 - en: 2 graphs. Left. Mean return per episode with an increasing curve having fluctuating
     peaks between (0, 10) and (30, 220). Right. T D loss history with a decreasing
     curve that begins at (0, 7.2), peaks at (10, 7.6), and drops to (500, 2.25). The
     values are approximate.
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-9
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
 - en: Categorical 51 Atom DQN (C51) training graph
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
 - en: Quantile Regression DQN
+  id: totrans-183
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -985,12 +1177,14 @@
     Reinforcement Learning with Quantile Regression,”^([7](#Fn7)) the authors used
     a slightly different approach than the original C51, however, in the same focus
     area of distribution RL.
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
 - en: Similar to the C51 approach of distributional RL, the QR-DQN approach also depended
     on using quantiles to predict the distribution of *Q*(*s*, *a*) instead of predicting
     an estimate of the average of *Q*(*s*, *a*). Both C51 and QR-DQN are variants
     of distributional RL and were produced by scientists from DeepMind.
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
 - en: The C51 approach modeled the distribution of *Q*^(*π*)(*s*, *a*) named *Z*^(*π*)(*s*,
@@ -1001,27 +1195,33 @@
     of `n_atoms`, spread uniformly over *V*[*min*] to *V*[*max*]. While the result
     worked, there was a bit of disconnect with the theoretical basis on which the
     algorithm was derived.
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
 - en: 'In QR-DQN, the approach is slightly different. The support points are still
     N but now the probabilities were fixed to 1/N with the location of these points
     being learned by the network. To quote the authors:'
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
 - en: '*We “transpose” the parametrization from C51: whereas the former uses N fixed
     locations for its approximation distribution and adjusts their probabilities,
     we assign fixed, uniform probabilities to N adjustable locations*'
+  id: totrans-188
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: The DQN network for QR DQN is similar to C51 DQN, as shown in Listing [7-9](#PC9).
     The network takes a batch of states to produce the distribution *Z* of *Q*(*s*,
     *a*).
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE8]'
+  id: totrans-190
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: The loss used in QR DQN is that of quantile regression loss mixed with Huber
     loss and called *Quantile Huber loss*. Equations 9 and 10 in the linked paper
     give the details. I do not provide the code listings as I want you to read the
@@ -1029,26 +1229,33 @@
     notebook. The paper is dense with mathematics, so unless you are very comfortable
     with advanced math, you should try to focus on the higher-level details of the
     approach.
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
 - en: Figure [7-10](#Fig10) shows the training reward and loss curves.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig10_HTML.jpg)'
+  id: totrans-193
   prefs: []
   type: TYPE_IMG
 - en: 2 graphs. Left. Mean reward per episode with an increasing line between (0,
     0) and (5, 1000) with a sharp bend at (4, 25). Right. T D loss history with a
     decreasing line between (0, 1.3) and (1, 1.195). The values are approximate.
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-10
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
 - en: Quantile regression DQN
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
 - en: Hindsight Experience Replay
+  id: totrans-197
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1056,6 +1263,7 @@
     the authors presented a sample efficient approach to learn in an environment where
     the rewards are sparse. The common approach is to shape the reward function in
     a way to guide the agents toward optimization. This is not generalizable.
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
 - en: Compared to RL agents, which learn from a successful outcome, humans seem to
@@ -1063,20 +1271,24 @@
     of the idea proposed in the hindsight replay approach known as *hindsight experience
     replay* (HER). While HER can be combined with various RL approaches, in this code
     walk-through, you will use HER with dueling DQN, called HER-DQN.
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
 - en: In the HER approach, after an episode is played out, say an unsuccessful one,
     you form a secondary objective where the original goal is replaced with the last
     state before termination as a goal for this trajectory.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
 - en: 'Say an episode has been played out *s*[0], *s*[1], …. *s*[*T*]. Normally you
     store a tuple of (*s*[*t*], *a*[*t*], *r*, *s*[*t* + 1], *done*) in the replay
     buffer. Let’s say the goal for this episode was *g* which could not be achieved
     in this run. In the HER approach, you will store the following in the replay buffer:'
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
 - en: (*s*[*t*]| |*g*, *a*[*t*], *r*, *s*[*t* + 1]| ∣ *g*, *done*)
+  id: totrans-202
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1084,15 +1296,18 @@
     *done*): other state transitions based on synthetical goals like last state of
     the episode as a sub-goal say g’. The reward is modified to show how state transition
     *s*[*t*] → *s*[*t* + 1] was good or bad for the sub-goal of *g*^′.'
+  id: totrans-203
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'The original paper discusses various strategies for forming these subgoals.
     You will use the one called `future`:'
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
 - en: '`future` replays with k random states which come from the same episode as the
     transition being replayed and were observed after it.'
+  id: totrans-205
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1104,19 +1319,24 @@
     Each action is to flip a bit. The bit to be flipped is the policy π(*a*| *s*)
     that agent is trying to learn. An episode ends if the agent finds the right configuration
     matching the goal or when agent has exhausted *n* actions in an episode.
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
 - en: Listing [7-10](#PC10) contains the code for the environment. The complete code
     is in the `7.g-her_dqn.ipynb` notebook.
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE9]'
+  id: totrans-208
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: You have implemented your own `render` and `step` functions so that the interface
     of this environment remains similar to the ones in Gymnasium and so that you can
     use the previously developed machinery. The `compute_reward` custom function returns
     the `reward` and `done` flags when given the input of a state and a goal.
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
 - en: The authors show that, with a regular DQN, where the state (configuration of
@@ -1125,27 +1345,33 @@
     approach, the agent is able to learn easily, even for large-digit combinations
     like 50 or so. Figure [7-11](#Fig11) shows the complete pseudocode from the paper
     with certain modifications to make it match with the notations.
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig11_HTML.jpg)'
+  id: totrans-211
   prefs: []
   type: TYPE_IMG
 - en: An algorithm of hindsight experience replay. The inputs are an off-policy algorithm,
     a strategy of sampling goals for replay, and a reward function. It initializes
     neural network A and replay buffer R, uses various loops and commands, and finally
     performs one step of gradient descent.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-11
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
 - en: HER using a future strategy
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
 - en: You use dueling DQN, which is similar to the one used for `CartPole` earlier
     in this chapter. For the BitFlipping environment, you use a smaller version of
     the same network. The most interesting part of the code is the implementation
     of the HER algorithm, as per the pseudocode given in Figure [7-11](#Fig11).
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s look at the way replay buffer is filled. There are two ways as discussed
@@ -1161,82 +1387,108 @@
     the bits of *s*[*t*] and *g*^′. The reward is -1 if these two do not match. Listing
     [7-11](#PC11) shows the way this is accomplished. This is part of the overall
     `train_her` agent training function in the `7.g-her_dqn.ipynb` notebook.
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE10]'
+  id: totrans-217
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Figure [7-12](#Fig12) shows the training curve. For a 50-bit `BitFlipping` environment,
     the agent with HER can successfully solve the environment 100 percent of the time.
     Remember, the environment starts with a random combination of 50 bits and has
     another random combination as the goal. The agent has a maximum of 50 flipping
     moves to reach the goal combination. An exhaustive search would require the agent
     to try each of the 2^(50) combinations except the one it started with.
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_7_Chapter/502835_2_En_7_Fig12_HTML.jpg)'
+  id: totrans-219
   prefs: []
   type: TYPE_IMG
 - en: A graph of success rate versus epoch for the number of bits = 50 indicates an
     increasing curve. It remains stable from (0, 0) to (5, 0), increases till (22.5,
     1), and stabilizes till (40, 1). The values are approximate.
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 7-12
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
 - en: 'Success rate graph: bit flipping environment with HER using a future strategy'
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
 - en: This brings you to the end of discussion on HER as well as to the end of chapter.
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
 - en: Summary
+  id: totrans-224
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: This was a short but dense chapter, where you looked at various modifications
     to the vanilla DQN.
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
 - en: The chapter began by looking at prioritized replay, where the samples from the
     buffer are picked based on a certain importance score assigned to them proportional
     to the magnitude of the TD error.
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
 - en: Following this, you revisited double Q-learning in the context of DQN, known
     as double DQN. This is an approach that impacts the way learning takes place and
     attempts to reduce the maximization bias.
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 随后，你回顾了在DQN（深度Q网络）背景下使用的双Q学习，称为双DQN。这是一种影响学习方式并试图减少最大化偏差的方法。
 - en: You then looked at dueling DQN in which two networks with an initial shared
     network were used. This was followed by NoisyNets in which ε-greedy exploration
     was replaced by noisy layers.
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，你研究了对抗式DQN，其中使用了两个具有初始共享网络的网络。这之后是NoisyNets，其中ε-贪婪探索被噪声层所取代。
 - en: Next, you looked at two flavors of distributional RL under which the network
     produced *Z*, a distribution of q-values. Instead of producing the expected action-value
     *Q*(*S*, *A*), in Distributional RL, the whole distribution is produced, specifically
     a categorical distribution. You also saw the use of the projection step and losses
     like *cross entropy* and *quantile Huber loss*.
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，你研究了两种分布式强化学习（Distributional RL）的变体，其中网络产生了 *Z*，即q值的分布。在分布式强化学习中，不是产生预期的动作值
+    *Q*(*S*, *A*)，而是产生整个分布，具体来说是一个分类分布。你还看到了投影步骤的使用以及像 *交叉熵* 和 *分位数Huber损失* 这样的损失。
 - en: The last section was on hindsight experience replay, which addresses learning
     in environments with sparse rewards. Previous learning approaches were centered
     on learning only from successful outcomes, but hindsight replay allows you to
     learn from unsuccessful outcomes as well.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后一节是关于事后经验重放，它解决了在稀疏奖励环境中学习的问题。之前的学习方法主要集中在只从成功的成果中学习，但事后重放允许你从失败的结果中学习同样。
 - en: Many of the algorithms and approaches you saw in this chapter are state-of-the-art
     research. You will gain a lot by looking at the original papers as well as going
     through the code line by line. I have also suggested the various combinations
     that you could try to code to further cement the concepts in your mind.
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章中你看到的大多数算法和方法都是最前沿的研究。通过查看原始论文以及逐行阅读代码，你将获得很多收获。我还建议了你可以尝试的各种组合，以进一步巩固你心中的概念。
 - en: This chapter concludes the exploration of value-based methods, where you learn
     a policy by first learning with *V* or *Q* functions and then use these to find
     an optimal policy. The next chapter switches to policy-based methods, where you
     find the optimal policy without the involvement of the intermediary step of learning
     *V*/*Q* functions.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章总结了基于价值的探索方法，其中你通过首先使用 *V* 或 *Q* 函数学习来学习策略，然后使用这些函数来找到一个最优策略。下一章将转向基于策略的方法，其中你将找到最优策略，而不涉及学习
+    *V*/*Q* 函数的中间步骤。
