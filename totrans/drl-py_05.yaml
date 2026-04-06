@@ -1,7 +1,9 @@
 - en: 5. Function Approximation and Deep Learning
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 5. 函数近似与深度学习
 - en: The previous three chapters looked at various approaches to planning and control—first
     at the dynamic programming (DP), then at the Monte Carlo approach (MC), and finally
     at the temporal difference (TD) approach. In all these approaches, you saw problems
@@ -15,8 +17,10 @@
     with neural networks. This aspect of combining deep learning with reinforcement
     learning is the most exciting development and has moved reinforcement learning
     algorithms to scale.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: '前三章探讨了规划与控制的多种方法——首先是动态规划（DP），然后是蒙特卡洛方法（MC），最后是时序差分（TD）方法。在所有这些方法中，你都看到了状态空间和动作是离散的问题。只有在上一章的结尾，我才讨论了连续状态空间中的Q学习。你使用任意方法对状态值进行离散化，并训练了一个学习模型。本章通过讨论近似理论的基础及其对强化学习设置的影响来扩展这种方法。然后，它将探讨近似值的各种方法，首先是具有良好理论基础的线性方法，然后是具有神经网络的非线性方法。将深度学习与强化学习结合的这一方面是最令人兴奋的发展，并将强化学习算法扩展到了规模。 '
 - en: As usual, the approach is to first look at things in the context of the *prediction/estimation*
     setup, where the agent follows a given policy in order to learn the state value
     and/or state action values. This will be followed by talking about *control*—finding
@@ -28,23 +32,31 @@
     to be considered for theoretical guarantees and practical best practices. The
     chapter also touches upon batch methods and compares them to the incremental learning
     approach discussed in the first part of this chapter.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 如同往常，方法首先是在**预测/估计**设置中观察事物，其中智能体遵循给定的策略以学习状态值和/或状态动作值。接下来将讨论**控制**——寻找最优策略。示例将继续在一个无模型的世界中进行，在这个世界中你不知道状态转移动态。介绍之后，我将讨论函数近似世界中收敛性和稳定性的问题。到目前为止，在精确和离散状态空间的情况下，收敛性并不是一个大问题。然而，函数近似带来了新的问题，这些新问题需要考虑理论保证和实际最佳实践。本章还涉及批量方法，并将它们与本章第一部分讨论的增量学习方法进行比较。
 - en: The chapter closes with a quick overview of deep learning, basic theory, and
     the basics of building/training models using PyTorch, PyTorch Lightning, and TensorFlow.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章以对深度学习、基本理论和使用PyTorch、PyTorch Lightning和TensorFlow构建/训练模型的基本知识的快速概述结束。
 - en: Introduction
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 引言
 - en: Reinforcement learning can be used to solve very big problems with many discrete
     state configurations or problems with continuous state space. Consider the game
     of backgammon, which has close to 10^(20) discrete states, or consider the game
     of Go, which has close to 10^(170) discrete states. Also consider environments
     like self-driving cars, drones, or robots—these all have a continuous state space.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 强化学习可以用来解决具有许多离散状态配置或连续状态空间的大问题。考虑国际象棋，它有接近10^(20)个离散状态，或者考虑围棋，它有接近10^(170)个离散状态。还考虑像自动驾驶汽车、无人机或机器人这样的环境——它们都具有连续状态空间。
 - en: Up to now, you have seen problems where the state space was discrete and also
     small in size, such as the grid world with ~100 states or the taxi world with
     500 states. How do you scale the algorithms you have learned so far to bigger
@@ -56,21 +68,32 @@
     a table. Further, there will be too many combinations, which can slow down the
     learning of a policy. The algorithm may spend too much time in states that have
     a very low probability in a real run of the environment.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，你已经看到了一些状态空间是离散且规模较小的例子，例如有 ~100 个状态的网络世界或拥有 500 个状态的车世界。那么，你如何将你迄今为止学到的算法扩展到更大的环境或具有连续状态空间的环境呢？一直以来，状态值
+    *V*(*s*) 或动作值 *Q*(*s*, *a*) 都是通过一个表来表示的，每个状态 *s* 或状态 *s* 和动作 *a* 的组合都有一个条目。随着数字的增加，表的大小将会变得巨大，使得在表中存储状态或状态动作值变得不可行。此外，组合的数量将会太多，这可能会减慢策略的学习速度。算法可能会花费太多时间在环境中实际运行概率非常低的状态上。
 - en: 'Let’s take a different approach now. Let’s represent the state value (or state-action
     value) with the following function:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们采取不同的方法。让我们用以下函数来表示状态值（或状态动作值）：
 - en: '![$$ \hat{v}\left(s;w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equa.png)'
+  id: totrans-8
   prefs: []
   type: TYPE_IMG
+  zh: '![向量 $\hat{v}\left(s;w\right)\approx {v}_{\pi }(s)$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equa.png)'
 - en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ1.png)'
+  id: totrans-9
   prefs: []
   type: TYPE_IMG
+  zh: '![动作值 $\hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right)$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ1.png)'
 - en: (5-1)
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-1)
 - en: Instead of representing values in a table, they are now being represented by
     the function ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq1.png)
     or ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq2.png),
@@ -111,41 +134,78 @@
     [5-1](#Fig1) shows the schematic of various approaches for using a function to
     represent ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq10.png)
     or ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq11.png).
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 与在表格中表示值不同，它们现在是通过函数 ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq1.png)
+    或 ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq2.png)
+    来表示的，其中参数 *w* 是定义智能体遵循的策略 π(*a*| *s*) 的函数的参数。而 *s* 或 (*s*, *a*) 是状态或状态值函数的输入。参数
+    w 是深度学习神经网络的权重或定义策略的函数的可调参数。强化学习算法使用各种学习方法来调整 w 的值以获得智能体的期望行为，首先是策略 π(*a*| *s*)，这反过来又导致状态值函数
+    ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq3.png)
+    或状态动作值函数 ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq4.png)。您选择参数数量
+    ∣*w*∣，这比状态数量 ∣*s*∣ 或状态动作对数量 (|*s*| × |*a*|) 要小得多。这种方法的后果是状态动作值的表示具有泛化性。当您根据某个特定状态
+    *s* 或状态动作对 (*s*, *a*) 的更新方程更新权重向量 *w* 时，它不仅更新了该特定 *s* 或 (*s*, *a*) 的值，而且还更新了接近原始
+    *s* 或 (*s*, *a*) 的许多其他状态或状态动作的值，即已经进行更新的状态或状态动作对。这取决于函数的几何形状。*s* 附近的状态的其他值也会受到这种更新的影响，如前所述。您正在用一个比状态数量更多的函数来近似值。具体来说，您不是直接更新
+    *v*(*s*) 或 *q*(*s*, *a*)，而是现在更新函数的参数集 *w*，这反过来又影响了值估计 ![$$ \hat{v}\left(s;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq5.png) 或 ![$$
+    \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq6.png)。当然，像以前一样，您使用
+    MC 或 TD 方法执行 *w* 更新。函数逼近有各种方法。您可以提供状态向量（表示状态的变量的值，如位置、速度、位置等）并得到 ![$$ \hat{v}\left(s;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq7.png)，或者您可以提供状态和动作向量并得到
+    ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq8.png)
+    作为输出。当动作是离散的且来自小集合时，一种非常占主导地位的方法是提供状态向量 *s* 并得到 ∣*A*∣ 个 ![$$ \hat{q}\left(s,a;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq9.png)，每个可能的动作一个（∣*A*∣
+    表示可能动作的数量）。图 [5-1](#Fig1) 展示了使用函数表示 ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq10.png)
+    或 ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq11.png)
+    的各种方法的示意图。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig1_HTML.jpg)'
+  id: totrans-12
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig1_HTML.jpg)'
 - en: A diagram depicts three blocks labeled W and following inputs and outputs. Left.
     Input is s and output is v hat of s, w. Middle. Inputs are s and a and output
     is q hat of s, a, and w. Right. The input is s and the outputs are q hat of s,
     a 1, w up to q hat of s, a m, w.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个图展示了三个标记为W的块及其输入和输出。左侧。输入是s，输出是s和w的v^h。中间。输入是s和a，输出是s、a和w的q^h。右侧。输入是s，输出是s、a
+    1、w到s、a m、w的q^h。
 - en: Figure 5-1
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-1
 - en: Ways to represent ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq12.png)
     or ![$$ \hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq13.png)using
     the function approximation approach. The first and last ones are the most common
     ones used in this chapter
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用函数逼近方法表示![公式](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq12.png)或![公式](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq13.png)的方法。本章中最常用的是第一个和最后一个。
 - en: There are various approaches to building such functional approximators, but
     this chapter explores two common approaches—linear approximators using tiling
     and nonlinear approximators using neural networks.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 建立这样的功能逼近器有多种方法，但本章探讨了两种常见的方法——使用瓦片技术的线性逼近器和使用神经网络的非线性逼近器。
 - en: However, before getting into this, I need to revisit theoretical foundations
     to see what operations are required to make *w* move such that you can successively
     reduce the error between the target values and the current estimates of state
     or state-action values, *v*(*s*) or *q*(*s*, *a*).
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在深入探讨这个问题之前，我需要回顾一下理论基础，看看需要哪些操作才能使*w*移动，从而可以逐步减少目标值和当前状态或状态-动作值估计之间的误差，即*v*(s)或*q*(s,
+    a)。
 - en: Theory of Approximation
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 逼近理论
 - en: Function approximation is a topic studied extensively in the field of supervised
     learning, wherein based on training data you build a generalization of the underlying
     model. Most of the theory from supervised learning can be applied to reinforcement
@@ -165,29 +225,45 @@
     of the target values. The agent is trying to find optimal actions, such as *v*(*s*)
     or *q*(*s*, *a*). The targets in the learning algorithm change. Therefore, the
     targets are not fixed or stationary during the learning.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数逼近是监督学习领域广泛研究的一个主题，其中基于训练数据，你构建了底层模型的泛化。监督学习的大部分理论都可以应用于具有函数逼近的强化学习。然而，具有函数逼近的强化学习提出了新的问题，例如如何自举以及它对非平稳性的影响。在监督学习中，当算法在学习时，生成训练数据的问题/模型不会改变。然而，当涉及到具有函数逼近的强化学习时，目标（在监督学习中标记为*输出*）的形成方式，会导致非平稳性，你需要想出新的方法来处理它。我所说的*非平稳性*是指你不知道*v*(s)或*q*(s,
+    a)的实际目标值。你使用MC或TD方法形成估计，然后使用这些估计作为“目标”。随着你改进目标值的估计，你使用修订后的估计作为新的目标。在监督学习中，情况不同——目标在训练期间给出并固定。学习算法对目标没有影响。在强化学习中，你没有实际的目标，你使用目标值的估计。智能体试图找到最优动作，如*v*(s)或*q*(s,
+    a)。学习算法中的目标会变化。因此，目标在学习过程中不是固定或平稳的。
 - en: Let’s revisit the update equations for MC (Equation [4-2](502835_2_En_4_Chapter.xhtml#Equ2))
     and TD (Equation [4-5](502835_2_En_4_Chapter.xhtml#Equ5)). I have modified the
     equations to make both MC and TD use the same notations of subscript *t* for the
     current time and *t* + 1 for the next instant. Both equations carry out the same
     update to move *V*[*t*](*s*) closer to its target, which is *G*[*t*](*s*) in the
     case of the MC update and *R*[*t*] + 1 + *γ* · *V*[*t*](*s*^′) for the TD(0) update.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们回顾一下MC（方程[4-2](502835_2_En_4_Chapter.xhtml#Equ2)）和TD（方程[4-5](502835_2_En_4_Chapter.xhtml#Equ5)）的更新方程。我已经修改了方程，使得MC和TD都使用相同的下标
+    *t* 表示当前时间，*t* + 1 表示下一个瞬间。这两个方程都执行相同的更新，将 *V*[*t*](*s*) 接近其目标，在MC更新中是 *G*[*t*](*s*)，在TD(0)更新中是
+    *R*[*t*] + 1 + *γ* · *V*[*t*](*s*^′)。
 - en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha\ \left[{G}_t(s)-{V}_t(s)\right] $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ2.png)'
+  id: totrans-21
   prefs: []
   type: TYPE_IMG
+  zh: '![V_{t+1}(s)=V_t(s)+\alpha\ \left[{G}_t(s)-{V}_t(s)\right]](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ2.png)'
 - en: (5-2)
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-2)
 - en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha \left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime}\right)-{V}_t(s)\right]
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ3.png)'
+  id: totrans-23
   prefs: []
   type: TYPE_IMG
+  zh: '![V_{t+1}(s)=V_t(s)+\alpha \left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime}\right)-{V}_t(s)\right]](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ3.png)'
 - en: (5-3)
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-3)
 - en: 'This is similar to what you do in supervised learning, especially in linear
     least square regression. You have the output values/targets *y*(*t*) and you have
     the input features *x*(*t*), together called *training data*. You can choose a
@@ -196,15 +272,22 @@
     data is used to minimize the error between what the model is predicting and the
     actual output values from the training set. This is done by minimizing a loss
     function as follows:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 这与你在监督学习中所做的类似，特别是在线性最小二乘回归中。你有了输出值/目标 *y*(*t*) 和输入特征 *x*(*t*)，统称为*训练数据*。你可以选择一个模型
+    *Model*[*w*][*x*(*t*)]，如多项式线性模型、决策树或支持向量，甚至其他非线性模型如神经网络。训练数据用于最小化模型预测值与训练集的实际输出值之间的误差。这是通过最小化以下损失函数来实现的：
 - en: '![$$ J(w)={\left[y(t)-\hat{y}\left(t;w\right)\right]}^2;\mathrm{where}\ \hat{y}\left(t;w\right)={Model}_w\left[x(t)\right]
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ4.png)'
+  id: totrans-26
   prefs: []
   type: TYPE_IMG
+  zh: '![J(w)={\left[y(t)-\hat{y}\left(t;w\right)\right]}^2;\mathrm{where}\ \hat{y}\left(t;w\right)={Model}_w\left[x(t)\right]](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ4.png)'
 - en: (5-4)
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-4)
 - en: 'When *J*(*w*) is a differentiable function, which is the case in this book,
     you can use gradient descent to tweak the weights/parameters *w* of the model
     to minimize the error/loss function *J*(*w*). Usually, the update is carried out
@@ -212,18 +295,27 @@
     further. The model with weights *w* has now learned the underlying mapping from
     input *x*(*t*) to output *y*(*t*). The way the delta update to the weights is
     carried out is given in the following equations:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 当 *J*(*w*) 是一个可微函数，正如本书中的情况，你可以使用梯度下降来调整模型的权重/参数 *w* 以最小化误差/损失函数 *J*(*w*)。通常，更新操作会使用相同的训练数据多次批量执行，直到损失不再进一步减少。权重为
+    *w* 的模型现在已经学会了从输入 *x*(*t*) 到输出 *y*(*t*) 的底层映射。权重更新的方式如下所示：
 - en: Gradient of *J*(*w*) wrt *w*  ∶ =∇[*w*]*J*(*w*)
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '*J*(*w*) 关于 *w* 的梯度：=∇[*w*]*J*(*w*)'
 - en: 'For the loss function given in Equation [5-4](#Equ4), this becomes:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于方程[5-4](#Equ4)中给出的损失函数，这变成了：
 - en: '![$$ {\nabla}_wJ(w)=-2\cdotp \left[y(t)-\hat{y}\left(t;w\right)\right]\cdotp
     {\nabla}_w\hat{y}\left(t;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equb.png)'
+  id: totrans-31
   prefs: []
   type: TYPE_IMG
+  zh: '![∇_wJ(w)=-2\cdotp \left[y(t)-\hat{y}\left(t;w\right)\right]\cdotp ∇_w\hat{y}\left(t;w\right)](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equb.png)'
 - en: If you remember your calculus, you will remember that ∇[*w*]*J*(*w*) is a vector
     in weight space—that is, it has ∣*w*∣ components. The direction of this vector
     is more important than the actual values of the components. The direction of ∇[*w*]*J*(*w*)
@@ -233,62 +325,91 @@
     much as possible. You can achieve this by moving *w* parameters in the negative
     direction of ∇[*w*]*J*(*w*). This will give you a new set of *w* parameters such
     that the value of *J*(*w*) is lowered.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你记得你的微积分，你会记得 ∇[*w*]*J*(*w*) 是权重空间中的一个向量——也就是说，它有 ∣*w*∣ 个分量。这个向量的方向比分量的实际值更重要。∇[*w*]*J*(*w*)
+    的方向是 ∣*w*∣ 空间中的方向，这导致 *J*(*w*) 随 *w* 变化的最大变化率。由于 *J*(*w*) 是平方损失——即实际值和预测值之间的差异，你希望尽可能减少
+    *J*(*w*)，即错误。你可以通过将 *w* 参数移动到 ∇[*w*]*J*(*w*) 的负方向来实现这一点。这将给你一组新的 *w* 参数，使得 *J*(*w*)
+    的值降低。
 - en: '![$$ {w}_{t+1}={w}_t-\alpha {\nabla}_wJ(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ5.png)'
+  id: totrans-33
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t-\alpha {\nabla}_wJ(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ5.png)'
 - en: (5-5)
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-5)
 - en: The weights move in the direction that minimize the loss—that is, the difference
     between the actual and predicted output values.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 权重移动的方向是使损失最小化——即实际输出值和预测输出值之间的差异。
 - en: 'Moving on, let’s spend some time talking about the various approaches to function
     approximation. The most common approaches are as follows:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们花些时间来讨论函数逼近的各种方法。最常见的方法如下：
 - en: 'Linear combination of features. You combine the features (such as speed, velocity,
     position, etc.) weighted by vector *w* and use the computed value as the state
     value. Common approaches are as follows:'
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 特征的线性组合。你将特征（如速度、速度、位置等）通过向量 *w* 加权组合，并使用计算出的值作为状态值。常见的方法如下：
 - en: Polynomials
+  id: totrans-38
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 多项式
 - en: Fourier basis functions
+  id: totrans-39
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 傅里叶基函数
 - en: Radial basis functions
+  id: totrans-40
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 径向基函数
 - en: Coarse coding
+  id: totrans-41
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 粗编码
 - en: Tile coding
+  id: totrans-42
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 瓦片编码
 - en: Nonlinear but differentiable approaches, with neural networks being the most
     popular and currently trending one.
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 非线性但可微的方法，其中神经网络是最受欢迎且目前趋势的方法。
 - en: Nonparametric, memory-based approaches.
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 非参数、基于记忆的方法。
 - en: This book mostly talks about deep learning–based neural network approaches that
     suit unstructured inputs, such as images captured by the agent’s vision system
     or freeform text using natural language processing (NLP). Later parts of this
@@ -302,12 +423,17 @@
     not mean that they lack power of effectiveness. Depending on the problem at hand,
     the linear approximation approach may be the right way to go; it’s effective,
     fast, and has convergence guarantees.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 本书主要讨论适用于非结构化输入的基于深度学习的神经网络方法，例如由智能体的视觉系统捕获的图像或使用自然语言处理（NLP）的自由格式文本。本章的后期部分和下一章将致力于使用基于深度学习的函数逼近，你将看到许多使用
+    PyTorch 的完整代码示例的变体。但我们先不要跑题。让我们首先检查一些常见的线性逼近方法，如粗编码和瓦片编码。由于本书的重点是强化学习中深度学习的使用，我没有花太多时间在其他各种线性逼近方法上。此外，仅仅因为我没有花时间在所有线性方法上，并不意味着它们缺乏有效性和力量。根据手头的问题，线性逼近方法可能是正确的选择；它有效、快速，并且有收敛保证。
 - en: Coarse Coding
+  id: totrans-46
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 粗编码
 - en: Let’s revisit at the mountain car problem discussed in Figure [2-2](502835_2_En_2_Chapter.xhtml#Fig2).
     The car has a two-dimensional state, a position, and a velocity. Suppose you divide
     the two-dimensional state space into overlapping circles with each circle representing
@@ -317,18 +443,24 @@
     then you have converted a two-dimensional continuous state space into a p-dimensional
     state space, where each dimension can be 0 or 1\. In other words, each dimension
     can belong to {0,1}.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们回顾一下图[2-2](502835_2_En_2_Chapter.xhtml#Fig2)中讨论的山地车问题。汽车有两个维度的状态，一个位置和一个速度。假设你将二维状态空间划分为重叠的圆，每个圆代表一个特征。如果状态*S*位于一个圆内，那么该特征存在，其值为1；否则，该特征不存在，其值为0。特征的数量是圆的数量。假设你有*p*个圆，那么你将一个二维连续状态空间转换成了一个p维状态空间，其中每个维度可以是0或1。换句话说，每个维度可以属于{0,1}。
 - en: Note
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '{0,1} represents the set of possible values—0 or 1\. (0,1)—with regular brackets
     representing the range of values—that is, any value from 0 to 1 with 0 and 1 excluded.
     [0,1) represents the range of values between 0 to 1 plus the value on left—that
     is, 0 is included in the range and the value 1 on the right side of the range
     is excluded.'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '{0,1}代表可能的值的集合——0或1。（0,1）——用常规括号表示值的范围——即从0到1的任何值，不包括0和1。[0,1)代表0到1之间的值以及左侧的值——即0包含在范围内，而范围右侧的值1被排除。'
 - en: All those features represented by circles in which the state *S* lies will be
     “on” or equal to 1\. Figure [5-2](#Fig2) shows an example. Two states are shown
     in the diagram, and depending on the circles that these points lie inside, the
@@ -337,23 +469,33 @@
     they are packed together. If the circles are replaced by ellipses, the generalization
     will be more in the direction of the elongation. You could also choose shapes
     other than circles to control the amount of generalization.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有的特征，由圆表示且状态*S*位于其中，都将被“开启”或等于1。图[5-2](#Fig2)展示了示例。图中显示了两个状态，根据这些点所在的圆，相应的特征将被开启，而其他特征将被关闭。泛化将取决于圆的大小以及它们紧密排列的程度。如果用椭圆代替圆，泛化将更多地朝向拉伸方向。你也可以选择除圆以外的其他形状来控制泛化的程度。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig2_HTML.jpg)'
+  id: totrans-51
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig2_HTML.jpg)'
 - en: A Venn diagram of 4 overlapped circles represents the coarse coding in two dimensions.
     The center overlapped area of all the circles is S, and the other 2 labeled circles
     are S 1, and S 2.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 四个重叠的圆的维恩图代表了二维的粗编码。所有圆的中心重叠区域是S，其他两个标记的圆是S1和S2。
 - en: Figure 5-2
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-2
 - en: Coarse coding in two dimensions using circles. The generalization depends on
     the size of circles as well as the density with which the circles are placed together
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用圆在二维中进行粗编码。泛化取决于圆的大小以及圆排列的密度
 - en: Now consider the case with large, densely packed circles. A large circle makes
     the initial generalization wide where two faraway states are connected because
     they fall inside at least one common circle. However, the density (i.e., number
@@ -365,87 +507,125 @@
     to control the generalization appropriate for the problem/domain in question,
     controlling generalization with the size of the shape and granularity with the
     density of the shapes.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在考虑大而密集排列的圆的情况。一个大圆使得初始泛化范围很广，因为两个远离的状态通过至少一个共同的圆连接在一起。然而，密度（即圆的数量）允许你控制细粒度泛化。通过拥有许多圆，你确保即使相邻的状态之间至少有一个特征在两个状态之间是不同的。即使每个单独的圆很大，这一点也会成立。通过进行不同圆的大小和数量配置的实验，你可以微调圆的大小和数量，以控制适合问题/域的泛化，通过形状的大小控制泛化，通过形状的密度控制粒度。
 - en: Tile Encoding
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 瓦片编码
 - en: Tile encoding is a form of coarse coding that can be programmatically planned.
     It works well over multidimensional space, making it much more useful than generic
     coarse coding.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 瓷砖编码是一种可以程序化规划的粗编码形式。它在多维空间中表现良好，使其比通用的粗编码更有用。
 - en: Let’s consider a two-dimensional space like the mountain car I just talked about.
     You divide the space into nonoverlapping grids covering the whole space. Each
     such division is called *tiling*, as shown in the left diagram of Figure [5-3](#Fig3).
     The *tiles* are square here and, depending on the location of state *S* on this
     2*D* space, only one tile is 1, while all other tiles are 0.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们考虑一个类似于我刚才提到的山车问题的二维空间。你将空间划分为非重叠的网格，覆盖整个空间。这样的每个划分称为*填充*，如图[5-3](#Fig3)的左侧图示所示。这里的*瓷砖*是正方形的，并且根据状态*S*在这个2*D*空间中的位置，只有一个瓷砖是1，而所有其他瓷砖都是0。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig4_HTML.jpg)'
+  id: totrans-59
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig4_HTML.jpg)'
 - en: A node diagram. Node s t leads to node a t through policy. Nodes s t and a t
     lead to node s t plus 1 that further leads to nodes a t plus 1 and s t plus 2\.
     Node a t plus 1 leads to node s t plus 2\. A dashed line labeled transition is
     drawn between nodes s t plus 1 and a t and s t plus 1 and s t.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个节点图。节点s t通过策略导致节点a t。节点s t和a t导致节点s t+1，该节点进一步导致节点a t+1和s t+2。节点a t+1导致节点s
+    t+2。在节点s t+1和a t以及s t+1和s t之间画了一条标记为转移的虚线。
 - en: Figure 5-4
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-4
 - en: Policy and transition dynamics under Markov assumptions
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 在马尔可夫假设下的策略和转移动力学
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig3_HTML.jpg)'
+  id: totrans-63
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig3_HTML.jpg)'
 - en: A 4 by 4 grid with a highlighted dot at the bottom right of a cell in the third
     column and second row. On the right, multiple shaded, overlapped 4 by 4 grids
     are represented with a highlighted cell in the third column and second row containing
     a dot.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个4×4的网格，在第三列第二行的单元格底部右方有一个高亮的点。在右侧，多个阴影重叠的4×4网格用第三列第二行含有点的单元格表示。
 - en: Figure 5-3
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-3
 - en: Tile coding. You have 4×4=16 tiles in a single tiling, as shown in the left
     figure. And you have four tilings overlapping each other, as shown in four different
     colors in the right figure. A state (green color dot) lights up a single tile
     from each tiling. The generalization is controlled by the number of tiles in a
     single tiling as well as the total number of tilings
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 瓷砖编码。在一个单独的填充中，你有4×4=16个瓷砖，如图左侧所示。并且你有四个相互重叠的填充，如图右侧不同颜色所示。一个状态（绿色圆点）点亮了每个填充中的一个瓷砖。泛化程度由单个填充中的瓷砖数量以及总的填充数量控制。
 - en: You then have a number of such *tiling* offset from each other. Suppose you
     use *n* tilings; then for a state, only one tile from each tiling will be on.
     In other words, if there are *n* tilings, then exactly *n* features will be 1,
     a single feature from each of the *n* tilings. Figure [5-3](#Fig3) shows an example.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，你会有许多这样的*填充*彼此偏移。假设你使用*n*个填充；那么对于一个状态，每个填充中只有一个瓷砖是开启的。换句话说，如果有*n*个填充，那么恰好有*n*个特征是1，每个*n*个填充中的一个特征。图[5-3](#Fig3)展示了示例。
 - en: Note that if the learning rate of step size were *α*(alpha) in Equations [5-1](#Equ1)
     and [5-2](#Equ2), you would now replace it with ![$$ \frac{\alpha }{n} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq14.png)
     where *n* is the number of tilings. This makes the algorithm scale free of the
     number of tilings. As both coarse coding and tile encoding use binary features,
     digital computers can speed up computations.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，如果步骤大小的学习率在方程[5-1](#Equ1)和[5-2](#Equ2)中是*α*(alpha)，你现在应该将其替换为![\( \frac{\alpha
+    }{n} \)](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq14.png)，其中*n*是填充的数量。这使得算法与填充的数量无关。由于粗编码和瓷砖编码都使用二进制特征，数字计算机可以加速计算。
 - en: 'The nature of the generalization now depends on the following factors:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在泛化的性质取决于以下因素：
 - en: The number of tiles in a single tiling (the left figure in Figure [5-3](#Fig3)).
+  id: totrans-70
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 单个填充中的瓷砖数量（图[5-3](#Fig3)中的左侧图示）。
 - en: The number of tilings (the right figure in Figure [5-3](#Fig3) showing four
     tilings in four different colors).
+  id: totrans-71
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 图中填充的数量（图[5-3](#Fig3)中的右侧图示，展示了四种不同颜色的四种填充）。
 - en: The nature of offset, whether uniform and symmetric or asymmetric.
+  id: totrans-72
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 偏移的性质，无论是均匀对称还是非对称。
 - en: There are some general strategies to determine the previous numbers. Consider
     the situation where each tile in a single tiling is a square of width *w*. For
     a continuous space of *k* dimensions, it will be a *k*-dimensional square with
@@ -458,18 +638,27 @@
     upcoming example uses a library to help you divide the two-dimensional mountain
     car state space into appropriate tilings. You will provide the 2D state vector,
     and the library will give you back the active tiles vector.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 有一些一般策略可以确定前面的数字。考虑这种情况，一个单层铺砖中的每个砖块都是一个宽度为 *w* 的正方形。对于 *k* 维的连续空间，它将是一个 *k*
+    维的正方形，每边宽度为 *w*。假设你有 *n* 个铺砖，因此铺砖需要在所有维度上相互偏移一个距离 ![$$ \frac{w}{n} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq15.png)。这被称为*位移向量*。第一个启发式方法是选择
+    *n* 使得 *n* = 2^(*i*) ≥ 4*k*。每个方向的位移是位移向量 ![$$ \frac{w}{n} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq16.png)
+    的奇数倍（1, 3, 5, 7, ……，2*k* - 1）。接下来的例子将使用一个库来帮助你将二维的山地车状态空间划分为适当的铺砖。你将提供2D状态向量，库将返回活动砖块向量。
 - en: Challenges in Approximation
+  id: totrans-74
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 近似挑战
 - en: While I leverage the knowledge of supervised learning–based methods like gradient
     descent explained earlier, you have to keep two things in mind that make gradient-based
     methods harder to work in reinforcement learning as compared to the supervised
     learning.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我利用前面解释的基于监督学习的方法（如梯度下降）的知识时，你必须牢记两点，这使得基于梯度的方法在强化学习中的工作比在监督学习中更困难。
 - en: First, in supervised learning, the training data is held constant. The data
     is generated from the model, which does not change during the data generation
     process. It is a ground truth that is given to you. You are building a function
@@ -487,8 +676,11 @@
     the *y*(*t*). As you explore, learn more, and adjust the policy, the target *y*(*t*)
     for a given specific state changes, which is not the case in supervised learning.
     This is known as the problem of *nonstationary targets*.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，在监督学习中，训练数据保持不变。数据由模型生成，在数据生成过程中不会发生变化。这是一个给予你的真实情况。你正在构建一个函数，其参数通过使用训练数据来学习输入到输出的映射来识别。提供给训练算法的数据是学习过程/算法之外的。它以任何方式都不依赖于算法。它被作为常数给出，并且独立于学习算法。不幸的是，在强化学习中，尤其是在无模型设置中，情况并非如此。用于生成训练样本的数据基于智能体遵循的策略，并且它并不是底层模型的完整图景。当你探索环境时，你会学到更多并调整策略。这种策略的变化会导致探索新的状态和动作，这反过来又为下一次迭代的下一步生成了一组新的训练数据。你可以使用基于MC的观察实际轨迹的方法，或者根据TD进行自举，以形成一个目标值
+    *y*(t) 的估计。随着你的探索、学习和调整策略，给定特定状态的目标值 *y*(t) 会发生变化，这在监督学习中是不存在的。这被称为*非平稳目标*问题。
 - en: Second, supervised learning is based on the theoretical premise of samples being
     uncorrelated to each other, mathematically known as i.i.d. (for “independent identically
     distributed”) data. All the algorithms for regression, classification, trees,
@@ -503,21 +695,31 @@
     *s*[*t*] and action *a*[*t*] you take. There is no dependence on the past—that
     is, either actions or states from time step *t* − 1 or before. The relationship
     can be expressed by way of a dependency graph, as shown in Figure [5-4](#Fig4).
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 其次，监督学习基于样本之间相互独立的理论前提，在数学上称为 i.i.d.（“独立同分布”）数据。所有回归、分类、树和支持向量机的算法都是基于这个 i.i.d.
+    假设。然而，在强化学习中，你看到的数据取决于代理生成数据时遵循的策略。在给定的一幕中，你看到的州取决于代理在那个时刻遵循的策略。在后续时间步中到来的状态取决于代理之前采取的行动（决策）。换句话说，数据是*相关的*。你看到的下一个状态
+    *s*[*t* + 1] 依赖于当前状态 *s*[*t*] 和代理在该状态下采取的行动 *a*[*t*]。请注意，这假设马尔可夫属性（未来的状态 *s*[*t* + 1]）只依赖于当前状态
+    *s*[*t*] 和你采取的行动 *a*[*t*]。没有对过去的依赖——也就是说，时间步 *t* − 1 或更早的行动或状态。这种关系可以通过依赖图来表示，如图
+    [5-4](#Fig4) 所示。
 - en: This temporal dependence on data in RL means that you cannot shuffle the data
     in the case of RL and that each data point, unlike with supervised learning, cannot
     be used in isolation. The whole trajectory of data points from the beginning of
     an episode to the end must be used together.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 在强化学习（RL）中，数据的时间依赖性意味着你无法像在监督学习（supervised learning）中那样对数据进行洗牌，并且每个数据点都不能单独使用。从一幕开始到结束的整个数据点轨迹必须一起使用。
 - en: These two issues make function approximation harder in an RL setup. As you go
     along, you will see the various approaches that have been taken to address these
     challenges. These approaches do not always come with theoretical guarantees—rather
     with practical hacks and ways that have proven useful and do carry some intuitive
     reasoning.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 这两个问题使得在强化学习设置中函数逼近更加困难。随着你的深入，你会看到已经采取的各种方法来应对这些挑战。这些方法并不总是带有理论保证——而是带有实用的技巧和已经证明有用的方法，并且确实包含一些直观的推理。
 - en: With a broad understanding of the approach, it is time now to start with the
     usual course of first looking at value *prediction/estimate* to learn a function
     that can represent the value functions *v*(*s*) or state-action value functions
@@ -527,16 +729,23 @@
     in the previous chapter—alternating between predicting/estimating the state-action
     values and using a greedy policy to control/identify the best action. And you
     keep iterating in this loop until some convergence is observed.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 在对方法有广泛理解之后，现在是时候开始通常的课程了，首先查看价值*预测/估计*来学习一个可以表示价值函数 *v*(*s*) 或状态-动作价值函数 *q*(*s*,
+    *a*) 的函数。然后，你将查看*控制*方面——即优化代理应遵循的策略 π(*a*| *s*) 的过程。它将遵循与上一章中方法相同的模式——在预测/估计状态-动作值和使用贪婪策略来控制/识别最佳行动之间交替。并且你将在这个循环中迭代，直到观察到收敛。
 - en: 'Incremental Prediction: MC, TD, TD(***λ***)'
+  id: totrans-81
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 增量预测：MC，TD，TD(***λ***)
 - en: This section looks at the prediction problem,—that is, how to estimate the state
     values using function approximation.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节探讨预测问题——即如何使用函数逼近估计状态值。
 - en: 'Following along, you will now attempt to extend the supervised training process
     of tuning a model using training data consisting of inputs and targets. This is
     done to function approximation under RL using the loss function in Equation [5-4](#Equ4)
@@ -546,30 +755,49 @@
     operations, which are trying to minimize the error between the actual target *V*[π](*s*)
     and the current estimate *V*[*t*](*s*). You can represent the loss function as
     follows:'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 沿着这个思路，你现在将尝试扩展监督训练过程，使用由输入和目标组成的训练数据来调整模型。这是在强化学习下使用方程 [5-4](#Equ4) 中的损失函数和权重更新来进行函数逼近，如方程
+    [5-5](#Equ5) 所示。如果你比较方程 [5-4](#Equ4) 中的损失函数和方程 [5-2](#Equ2) 和 [5-3](#Equ3) 中的
+    MC/TD 更新，你可以通过将 MC 和 TD 更新视为操作来建立平行关系，这些操作试图最小化实际目标 *V*[π](*s*) 和当前估计 *V*[*t*](*s*)
+    之间的误差。你可以将损失函数表示如下：
 - en: '![$$ J(w)={E}_{\uppi}{\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}^2 $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ6.png)'
+  id: totrans-84
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ J(w)={E}_{\uppi}{\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}^2 $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ6.png)'
 - en: (5-6)
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-6)
 - en: 'This is similar to the loss function for supervised learning, as shown in Equation
     [5-4](#Equ4). Following the same derivation as in Equation [5-5](#Equ5) and using
     stochastic gradient descent (i.e., replacing expectation with update in each sample),
     you can write the update equation for weight vector *w* as follows:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 这与监督学习的损失函数类似，如方程 [5-4](#Equ4) 所示。遵循与方程 [5-5](#Equ5) 相同的推导过程，并使用随机梯度下降（即在每个样本中用更新替换期望），可以写出权重向量
+    *w* 的更新方程如下：
 - en: '![$$ {w}_{t+1}={w}_t-\alpha .{\nabla}_w\ J(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equc.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t-\alpha .{\nabla}_w\ J(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equc.png)'
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{V}_{\pi }(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\
     {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ7.png)'
+  id: totrans-88
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{V}_{\pi }(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\
+    {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ7.png)'
 - en: (5-7)
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-7)
 - en: Here, *w* represents the weight vector of the model—that is, the tunable parameters
     of the model that are progressively improved to fit the model to the state values
     observed for a given policy. However, unlike supervised learning, you do not have
@@ -578,28 +806,46 @@
     the estimate/target under TD(0) is *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′). Accordingly,
     the updates under MC and TD(0) with functional approximation can be written as
     follows.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，*w* 代表模型的权重向量——即模型的可调参数，这些参数会逐步改进以适应给定策略观察到的状态值。然而，与监督学习不同，你并没有实际的/目标输出值
+    *V*[π](*s*)；相反，你使用这些目标的估计值。在 MC 中，*V*[π](*s*) 的估计/目标是 *G*[*t*](*s*)，而在 TD(0) 中，估计/目标是
+    *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′)。因此，MC 和 TD(0) 下的更新可以写成如下形式。
 - en: 'MC update:'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: MC 更新：
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\
     {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ8.png)'
+  id: totrans-92
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\
+    {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ8.png)'
 - en: (5-8)
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-8)
 - en: 'TD(0) update:'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: TD(0) 更新：
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma \bullet {V}_t\left({s}^{\prime
     };w\right)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ9.png)'
+  id: totrans-95
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma \bullet {V}_t\left({s}^{\prime
+    };w\right)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ9.png)'
 - en: (5-9)
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-9)
 - en: 'A similar set of equations can be written for q-values. You will see that in
     the next section. This is along the same lines of what you did for the MC and
     TD control sections in the previous chapter; first you use state action values
@@ -610,73 +856,118 @@
     the state value ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq17.png)
     can be expressed as a dot product of state vector *x*(*s*) and weight vector *w*,
     each with vector component dimension index represented as *i*:'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以为q值编写一组类似的方程。你将在下一节看到这一点。这与你在上一章的MC和TD控制部分所做的工作类似；首先，你在无模型的世界中使用状态动作值来构建当前策略下状态动作值的准确估计，然后使用贪婪更新来找到值，在每个单独的状态中最大化动作。回到权重更新方程的推导，让我们首先考虑线性近似设置，其中状态值
+    ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq17.png)
+    可以表示为状态向量 *x*(*s*) 和权重向量 *w* 的点积，每个向量的分量维度索引表示为 *i*：
 - en: '![$$ \hat{v}\left(s;w\right)=x{(s)}^T\cdotp w=\sum \limits_i{x}_i(s)\cdotp
     {w}_i $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ10.png)'
+  id: totrans-98
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{v}\left(s;w\right)=x{(s)}^T\cdotp w=\sum \limits_i{x}_i(s)\cdotp
+    {w}_i $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ10.png)'
 - en: (5-10)
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-10)
 - en: 'In the previous expression, the gradient of ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq18.png)
     with respect to *w* will be the state vector *x*(*s*)—that is:'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前面的表达式中，关于 *w* 的 ![$$ \hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq18.png)
+    的梯度将是状态向量 *x*(*s*)——即：
 - en: '![$$ {\nabla}_w{V}_t\left(s;w\right)=x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ11.png)'
+  id: totrans-101
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {\nabla}_w{V}_t\left(s;w\right)=x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ11.png)'
 - en: (5-11)
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-11)
 - en: 'Combining Equation [5-11](#Equ11) with Equation [5-7](#Equ7) gives the following:'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 将方程[5-11](#Equ11)与方程[5-7](#Equ7)结合给出以下结果：
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{V}_{\pi }(s)-{V}_t\left(s;w\right)\right].x(s)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ12.png)'
+  id: totrans-104
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t+\alpha .[V_{\pi }(s)-V_t\left(s;w\right)].x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ12.png)'
 - en: (5-12)
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-12)
 - en: As discussed earlier, you do not know the true state value *V*[π](*s*), and
     hence you use an estimate *G*[*t*](*s*) in the MC approach and an estimate *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′)
     in the TD(0) approach. This gives you the weight update rules for MC and TD in
     the linear approximation case as follows.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，你不知道真正的状态值 *V*[π](*s*)，因此你在蒙特卡洛方法中使用估计 *G*[t](*s*)，在TD(0)方法中使用估计 *R*[t+1]
+    + *γ* · *V*[t](*s*^′)。这给出了线性近似情况下MC和TD的权重更新规则如下。
 - en: 'MC update:'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: MC更新：
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{V}_t\left(s;w\right)\right].x(s)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ13.png)'
+  id: totrans-108
   prefs: []
   type: TYPE_IMG
+  zh: '![w_{t+1}=w_t+α.[G_t(s)-V_t(s;w)].x(s)](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ13.png)'
 - en: (5-13)
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-13)
 - en: 'TD(0) update:'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: TD(0)更新：
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma \ast {V}_t\left({s}^{\prime
     };w\right)-{V}_t\left(s;w\right)\right].x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ14.png)'
+  id: totrans-111
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t+\alpha .[R_{t+1}+\gamma \ast V_t\left({s}^{\prime };w\right)-V_t\left(s;w\right)].x(s)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ14.png)'
 - en: (5-14)
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-14)
 - en: 'In simple terms, the update to weights—that is, the second term on the right
     side of Equation [5-14](#Equ14) can be expressed as follows:'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 简而言之，权重的更新——即方程[5-14](#Equ14)右侧的第二项——可以表示如下：
 - en: Update = learning rate x prediction error x feature value
+  id: totrans-114
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 更新 = 学习率 x 预测误差 x 特征值
 - en: Where learning rate is α, prediction error is denoted as *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′;
     *w*) − *V*[*t*](*s*; *w*) and feature value is *x*(*s*).
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中学习率是α，预测误差表示为 *R*[t+1] + *γ* · *V*[t](*s*^′; *w*) − *V*[t](*s*; *w*)，特征值是
+    *x*(*s*)。
 - en: 'Let’s tie this back to the table-based approach for the discrete states that
     you saw in the previous chapter. The table lookup—that is, using state or state-action
     values as an index to look into a table or a dictionary to get the values—is a
@@ -687,57 +978,85 @@
     equal to 0\. Depending on the state the agent is in, the corresponding element
     would be 1\. Therefore, the number of elements in the column vector (*p*) is equal
     to the number of states the agent can exit in. This is as shown here:'
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将其与之前章节中看到的基于表的离散状态方法联系起来。查找表，即使用状态或状态-动作值作为索引查找表或字典以获取值，是线性方法的一种特殊情况。考虑到*x*(s)的每个分量要么是1要么是0，并且只有一个可以具有值为1，其余特征为0。*x*^(*table*)(*s*)是一个大小为p的列向量，其中在任何时刻只有一个元素可以具有值为1，其余元素等于0。根据代理所处的状态，相应的元素将是1。因此，列向量中的元素数量(*p*)等于代理可以退出的状态数量。这如图所示：
 - en: '![$$ {x}^{table}(s)=\left(\genfrac{}{}{0pt}{}{1\left(s={s}_1\right)}{\begin{array}{c}..\\
     {}..\\ {}1\left(s={s}_p\right)\end{array}}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equd.png)'
+  id: totrans-117
   prefs: []
   type: TYPE_IMG
+  zh: '![x^table(s)=(1(s=s1), 1(s=s2), ..., 1(s=sp))](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equd.png)'
 - en: The weight vector comprises the values of state v(s) for each *s* = *s*[1],
     *s*[2], …*s*[*p*].
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 权重向量包含了每个状态v(s)的值，对于每个s = s[1], s[2], … s[p]。
 - en: '![$$ w=\left(\genfrac{}{}{0pt}{}{w_1}{\begin{array}{c}..\\ {}..\\ {}{w}_p\end{array}}\right)=\left(\genfrac{}{}{0pt}{}{v\left({s}_1\right)}{\begin{array}{c}..\\
     {}..\\ {}v\left({s}_1\right)\end{array}}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Eque.png)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![w=（w1, w2, ..., wp）=（v(s1), v(s2), ..., v(sp)）](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Eque.png)'
 - en: 'Using these expressions in Equation [5-10](#Equ10), you get the following:'
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用这些表达式在方程[5-10](#Equ10)中，你得到以下结果：
 - en: '![$$ \hat{v}\left(s={s}_k;w\right)=x{(s)}^T.w=v\left({s}_k\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equf.png)'
+  id: totrans-121
   prefs: []
   type: TYPE_IMG
+  zh: '![^v(s=s_k;w)=x(s)^T.w=v(s_k)](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equf.png)'
 - en: You can see that the value of state *s* = *s*[*k*] can be expressed as a dot
     product of the state vector *x*(*s*) and the weight vector *w*. If you substitute
     this expression back into Equation [5-13](#Equ13) for the MC update or into Equation
     [5-14](#Equ14) for the TD(0) update, you get the familiar update rules derived
     directly for discrete state situation in Chapter [4](502835_2_En_4_Chapter.xhtml).
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以看到状态s = s[*k*]的值可以表示为状态向量*x*(s)和权重向量*w*的点积。如果你将这个表达式代入MC更新方程[5-13](#Equ13)或TD(0)更新方程[5-14](#Equ14)，你将得到在第四章直接为离散状态情况推导出的熟悉的更新规则。
 - en: 'Here is the MC update:'
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是MC更新：
 - en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha .\left[{G}_t(s)-{V}_t(s)\right],\kern0.5em
     s\ \epsilon\ {s}_1,{s}_1,\dots, {s}_p $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ15.png)'
+  id: totrans-124
   prefs: []
   type: TYPE_IMG
+  zh: '![V_{t+1}(s)=V_t(s)+α.[G_t(s)-V_t(s)], s∈s1, s1, ..., sp](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ15.png)'
 - en: (5-15)
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-15)
 - en: 'Here is the TD(0) update:'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是TD(0)更新：
 - en: '![$$ {V}_{t+1}(s)={V}_t(s)+\alpha .\left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime}\right)-{V}_t(s)\right],\kern0.5em
     s\ \epsilon\ {s}_1,{s}_1,\dots, {s}_p $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ16.png)'
+  id: totrans-127
   prefs: []
   type: TYPE_IMG
+  zh: '![V_{t+1}(s)=V_t(s)+α.[R_{t+1}+γ.V_t(s'')-V_t(s)], s∈s1, s1, ..., sp](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ16.png)'
 - en: (5-16)
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-16)
 - en: The previous derivation was to tie back the table lookup back as a special case
     of a more general linear function approximation.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前的推导是为了将查找表作为更一般线性函数逼近的特殊情况重新联系起来。
 - en: One more point to note that I glossed over while deriving the update equations
     were the details of the target estimates *G*[*t*](*s*) in MC and *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′)
     in TD(0). These estimates are not some constant fixed value. These are also dependent
@@ -745,18 +1064,28 @@
     on the value of next state *V*[*t*](*s*^′) in the case of TD(0). As an example,
     let’s revisit Equation [5-6](#Equ6) and replace *V*[π](*s*) with the TD target
     and then take the gradient.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 在推导更新方程时，我略过的一点是 MC 中的目标估计 *G*[*t*](*s*) 和 TD(0) 中的 *R*[*t* + 1] + *γ* · *V*[*t*](*s*^′)
+    的细节。这些估计不是某个固定的常数值。它们也依赖于策略——对于 MC，直接依赖于样本回放 *G*[*t*](*s*) 和 TD(0) 中下一个状态 *V*[*t*](*s*^′)
+    的值。作为一个例子，让我们回顾方程 [5-6](#Equ6)，并用 TD 目标替换 *V*[π](*s*)，然后取梯度。
 - en: '![$$ J(w)={\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}^2 $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equg.png)'
+  id: totrans-131
   prefs: []
   type: TYPE_IMG
+  zh: '![J(w)={\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}^2](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equg.png)'
 - en: 'Replacing *V*[π](*s*) with the value of target based on the model , you have:'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 将 *V*[π](*s*) 替换为基于模型的预期目标值，你得到：
 - en: '![$$ J(w)={\left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime };w\right)-{V}_t\left(s;w\right)\right]}^2
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equh.png)'
+  id: totrans-133
   prefs: []
   type: TYPE_IMG
+  zh: '![J(w)={\left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime };w\right)-{V}_t\left(s;w\right)\right]}^2](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equh.png)'
 - en: If you take the derivative of *J*(*w*) with respect to *w*, you will actually
     get two terms, one due to the derivative of *V*[*t*](*s*^′; *w*), the next state
     value, and another term due to the derivative of *V*[*t*](*s*; *w*), the current
@@ -768,8 +1097,14 @@
     of the current state *V*[*t*](*s*; *w*) toward its target. Taking the second contribution
     term ∇*V*[*t*](*s*^′; *w*) means that you are trying to move the value of the
     next state *S* = *s*^′ toward the value of the current state *S* = *s*.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你对 *J*(*w*) 关于 *w* 求导，实际上你会得到两个项，一个是因为 *V*[*t*](*s*^′; *w*) 的导数，下一个状态值，另一个是因为
+    *V*[*t*](*s*; *w*) 的导数，当前状态值。这种同时考虑梯度贡献 ∇*V*[*t*](*s*^′; *w*) 和 ∇*V*[*t*](*s*;
+    *w*) 的方法会导致目标值的变化，并且已被证明会降低学习的速度。首先，原因是你想让目标值保持不变，因此你需要忽略 ∇*V*[*t*](*s*^′; *w*)
+    的贡献。其次，从概念上讲，使用梯度下降，你试图将当前状态 *V*[*t*](*s*; *w*) 的值拉向其目标值。取第二个贡献项 ∇*V*[*t*](*s*^′;
+    *w*) 意味着你试图将下一个状态 *S* = *s*^′ 的值移动到当前状态 *S* = *s* 的值。
 - en: In summary, you take only the derivative of the current state value *V*[*t*](*s*;
     *w*) and ignore the derivative of the next state value *V*[*t*](*s*^′; *w*). The
     approach makes the value estimation look similar to the approach used with supervised
@@ -777,8 +1112,11 @@
     descent method used in Equations [5-8](#Equ8) and [5-9](#Equ9) are also called
     *semi-gradient* methods. It is because you are taking gradient for the current
     state and ignoring any update in weights due to the gradient of the next state.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 总结来说，你只对当前状态值 *V*[*t*](*s*; *w*) 求导，并忽略下一个状态值 *V*[*t*](*s*^′; *w*) 的导数。这种方法使得值估计看起来类似于使用具有固定目标值的监督学习方法。这也是为什么有时在方程
+    [5-8](#Equ8) 和 [5-9](#Equ9) 中使用的梯度下降方法也被称为 *半梯度* 方法的原因。这是因为你在对当前状态求梯度，而忽略由于下一个状态的梯度引起的任何权重更新。
 - en: As I touched on earlier, the convergence of algorithms is not guaranteed anymore,
     unlike the guarantee you had in the tabular setup due to contraction theorem.
     However, most of the algorithms with some careful considerations do converge in
@@ -788,81 +1126,124 @@
     aspects of learning. This book is a practical one, with just enough theory to
     understand the background and appreciate the nuances of algorithms. The core focus
     is on coding these algorithms in deep learning libraries.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如我之前提到的，算法的收敛性不再有保证，这与由于收缩定理在表格设置中你拥有的保证不同。然而，大多数经过仔细考虑的算法在实践中确实收敛。表 [5-1](#Tab1)
+    展示了各种预测/估计算法的收敛性。我不会对这些收敛性质进行详细解释。这样的讨论更适合专注于学习理论方面的书籍。这本书是一本实用的书，其中包含足够的理论来理解背景并欣赏算法的细微差别。核心重点是使用深度学习库来编写这些算法。
 - en: Table 5-1
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 表 5-1
 - en: Convergence of Prediction/Estimation Algorithms
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 预测/估计算法的收敛性
 - en: '| Policy Type | Algorithm | Table Lookup | Linear | Nonlinear |'
+  id: totrans-139
   prefs: []
   type: TYPE_TB
+  zh: '| 政策类型 | 算法 | 表查找 | 线性 | 非线性 |'
 - en: '| --- | --- | --- | --- | --- |'
+  id: totrans-140
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- |'
 - en: '| On-policy | MCTD(0)TD(λ) | YYY | YYY | YNN |'
+  id: totrans-141
   prefs: []
   type: TYPE_TB
+  zh: '| 在策略 | MCTD(0)TD(λ) | YYY | YYY | YNN |'
 - en: '| Off-policy | MCTD(0)TD(λ) | YYY | YNN | YNN |'
+  id: totrans-142
   prefs: []
   type: TYPE_TB
+  zh: '| 离策略 | MCTD(0)TD(λ) | YYY | YNN | YNN |'
 - en: In a later section, you will see how the combination of bootstrapping (e.g.,
     TD), function approximation and off-policy, all present together, can impact stability
     adversely unless careful consideration is given to the learning process.
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 在后面的章节中，你将看到如何将自助（例如，TD）、函数逼近和离策略的组合同时呈现，如果不仔细考虑学习过程，可能会对稳定性产生不利影响。
 - en: The next section looks at control problems, which define how to optimize a policy
     with a function approximation.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一节将探讨控制问题，这些问题定义了如何通过函数逼近来优化策略。
 - en: Incremental Control
+  id: totrans-145
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 增量控制
 - en: This section moves from state value prediction to that of control—that is, finding
     the optimal policy. This chapter follows a similar approach as in the previous
     chapter. You start with function approximation to estimate the q-values. The q-value
     is represented by a model with weight/parameters *w*.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节从状态值预测转向控制，即寻找最优策略。本章遵循与上一章类似的方法。你从函数逼近开始来估计q值。q值由一个具有权重/参数 *w* 的模型表示。
 - en: '![$$ \hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ17.png)'
+  id: totrans-147
   prefs: []
   type: TYPE_IMG
+  zh: '![公式 $${\hat{q}\left(s,a;w\right)\approx {q}_{\pi}\left(s,a\right)}$$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ17.png)'
 - en: (5-17)
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-17)
 - en: As before, you form a loss function between the target and current value. This
     is being done so that, based on the sample of q-values, you can tweak the parameters
     for the model to estimate the q-values.
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，你会在目标值和当前值之间形成一个损失函数。这样做是为了根据q值的样本，调整模型的参数来估计q值。
 - en: '![$$ J(w)={E}_{\pi}\left[{\left({q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right)}^2\right]
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ18.png)'
+  id: totrans-150
   prefs: []
   type: TYPE_IMG
+  zh: '![公式 $${J(w)={E}_{\pi}\left[{\left({q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right)}^2\right]}$$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ18.png)'
 - en: (5-18)
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-18)
 - en: In order to make fit better, you need to reduce the loss function in Equation
     [5-18](#Equ18). You can achieve that by doing gradient descent on weight *w* so
     that loss is reduced iteratively.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了更好地拟合，你需要减少方程 [5-18](#Equ18) 中的损失函数。你可以通过在权重 *w* 上进行梯度下降来实现这一点，从而迭代地减少损失。
 - en: '![$$ {w}_{t+1}={w}_t-\kern0.5em \alpha .{\nabla}_wJ(w) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equi.png)'
+  id: totrans-153
   prefs: []
   type: TYPE_IMG
+  zh: '![公式 $${w}_{t+1}={w}_t-\kern0.5em \alpha .{\nabla}_wJ(w)$$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equi.png)'
 - en: where,
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中，
 - en: '![$$ {\nabla}_wJ(w)=\left[{q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(s,a;w\right)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ19.png)'
+  id: totrans-155
   prefs: []
   type: TYPE_IMG
+  zh: '![公式 $${\nabla}_wJ(w)=\left[{q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(s,a;w\right)$$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ19.png)'
 - en: (5-19)
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-19)
 - en: Like before, in the case of a linear model where ![$$ \hat{q}\left(s,a;w\right)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq19.png) is represented
     as a linear equation ![$$ \hat{q}\left(s,a;w\right)=x{\left(s,a\right)}^T.w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq20.png),
@@ -870,39 +1251,48 @@
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq21.png), in a
     linear case, as shown previously, will become ![$$ {\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right)=\mathrm{x}\left(\mathrm{s},\mathrm{a}\right)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq22.png).
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
 - en: There is one more change you need to make to Equation [5-19](#Equ19) like you
     did in the previous section. You do not know the true q-value *q*[π](*s*, *a*).
     Like before, you replace it with the estimates using either MC or TD, giving you
     a set of weight update equations.
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
 - en: 'MC update:'
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{q}_t\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ20.png)'
+  id: totrans-160
   prefs: []
   type: TYPE_IMG
 - en: (5-20)
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
 - en: 'TD(0) update:'
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
 - en: '![$$ {w}_{t+1}={w}_t+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp {q}_t\left({s}^{''},{a}^{''};w\right)\hbox{--}
     {q}_t\left(s,a;w\right)\right]\cdotp {\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ21.png)'
+  id: totrans-163
   prefs: []
   type: TYPE_IMG
 - en: (5-21)
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
 - en: These equations allow you to carry out q-value estimation/prediction. This is
     the *evaluation* step of generalized policy iteration, where you carry out multiple
     rounds of gradient descents to improve on the q-value estimates for a given policy
     and get them close to the actual target values.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
 - en: '*Evaluation* is followed by greedy policy maximization to improve the policy.
@@ -911,24 +1301,30 @@
     which indicates that while converging you do not need to go all the way. You could
     carry out a few gradient steps and then do a policy update with greedy maximization,
     followed again with another cycle of gradient steps and a greedy policy update.'
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig5_HTML.jpg)'
+  id: totrans-167
   prefs: []
   type: TYPE_IMG
 - en: A diagram depicts a decreasing line labeled pi = epsilon minus greedy and an
     increasing line labeled q w = q pi. They meet at a point labeled q w nearly equal
     to q asterisks. A zig zag line made of arrow is drawn inside the lines. The starting
     point of the zig zag line is labeled initial w.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
 - en: Figure 5-5
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
 - en: Generalized policy iteration with function approximation
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
 - en: '**Semi-gradient** ***n*****-step SARSA Control**'
+  id: totrans-171
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -948,43 +1344,65 @@
     carrying out the policy update. Note that you use *ϵ*-greedy policy, as you are
     in an on-policy setup and you need exploration to make sure that you do enough
     exploration of the state space.
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 在查看理论推导之后，现在是时候将本章的所有学习应用到训练一个智能体上了。只需一点更多的理论——实现SARS-A控制的实际算法伪代码。如果您还记得上一章，SARS-A是一个在线策略算法。您将使用n步回报来提高估计的方差，正如您在上一章中看到的。由于您将实现方程[5-20](#Equ20)，这个算法将被称为“半梯度n步SARS-A控制”。图[5-6](#Fig6)显示了算法的伪代码。与标准SARS-A设置一样，您使用*ϵ*-贪婪策略来采样环境并收集状态、动作、奖励、下一个状态和下一个动作的元组(*s*[*t*],
+    *a*[*t*], *r*[*t* + 1], *s*[*t* + 1], *a*[*t* + 1])，然后使用这些观察结果来形成n步回报。接下来是使用方程[5-20](#Equ20)的梯度步骤来迈出一步并改进q值的估计。随着q值的提高，您使用这些q值通过*ϵ*-贪婪策略运行下一个周期，您隐式地执行策略更新。请注意，您使用*ϵ*-贪婪策略，因为您处于在线策略设置中，您需要探索以确保您对状态空间进行了足够的探索。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig6_HTML.jpg)'
+  id: totrans-173
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig6_HTML.jpg)'
 - en: An algorithm of semi gradient n step S A R S A for episodic control consists
     of 25 lines of code. It starts with the input of a differentiable function q hat
     left parentheses a, a semicolon w right closing parentheses colon S within mod
     multiplied A within mod multiplied by R d leads to R.
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 半梯度n步SARS-A算法用于周期性控制，由25行代码组成。它从输入一个可微函数q hat左括号a，分号w右括号闭括号冒号S在模乘A在模乘由R d导致R开始。
 - en: Figure 5-6
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-6
 - en: n-step semi-gradient SARSA for episodic control
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 周期性控制的n步半梯度SARS-A
 - en: The *w* update uses Equation [5-20](#Equ20) with the target being *G*, the *n*-step
     return.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: '*w*更新使用方程[5-20](#Equ20)，目标为*G*，n步回报。'
 - en: 'You will now see how to apply this to mountain car environment, which has continuous
     state space. You will be using tile encoding studied earlier in this chapter to
     build a function approximator to the state values. Tile encoding is a binary feature
     approximator. In the setup:'
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在您将看到如何将此应用于具有连续状态空间的mountain car环境。您将使用本章前面研究过的tile编码来构建状态值的函数逼近器。Tile编码是一种二进制特征逼近器。在设置中：
 - en: '![$$ \hat{q}\left(S,A;w\right)=x{\left(S,A\right)}^T.w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equj.png)'
+  id: totrans-179
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \hat{q}\left(S,A;w\right)=x{\left(S,A\right)}^T.w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equj.png)'
 - en: where *x*(*S*, *A*) is the tile encoded feature vector.
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 *x*(*S*, *A*) 是tile编码的特征向量。
 - en: Accordingly, ![$$ \nabla \hat{q}\left({S}_{\uptau},{A}_{\uptau};w\right)=x\left(S,A\right)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq23.png)
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，![$$ \nabla \hat{q}\left({S}_{\uptau},{A}_{\uptau};w\right)=x\left(S,A\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq23.png)
 - en: In this example of tile encoding, you use the implementation of tile coding
     by Rich Sutton, which you can explore in the Python script file `tiles3.py`. This
     is an implementation of grid-style tile codings, based originally on the UNH CMAC
@@ -994,24 +1412,36 @@
     (the lower wrap value is always 0). The float variables are gridded at unit intervals,
     so generalization will be by approximately one in each direction, and any scaling
     will have to be done externally before calling tiles.
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个瓦片编码的例子中，你使用 Rich Sutton 的瓦片编码实现，你可以在 Python 脚本文件 `tiles3.py` 中探索它。这是一个基于
+    UNH CMAC 代码的网格式瓦片编码实现，最初基于 UNH CMAC 代码，^([1](#Fn1)) 但现在已经发生了很大的变化。你提供了一个名为“`tiles`”的函数，它将浮点数和整数变量映射到瓦片列表，以及第二个名为“`tiles-wrap`”的函数，它执行相同的操作，同时将一些浮点数包装到提供的宽度（包装的较低值始终为
+    0）。浮点变量以单位间隔进行网格化，因此泛化将在每个方向上大约为 1，任何缩放都必须在调用 tiles 之前外部完成。
 - en: '`Num-tilings` should be a power of 2, for example, 16\. To make the offsetting
     work properly, it should also be greater than or equal to four times the number
     of floats. The first argument is either an index hash table of a given size (created
     by `make-iht(size)`), an integer “`size`” (range of the indices from 0), or nil
     (for testing, indicating that the tile coordinates are to be returned without
     being converted to indices).'
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Num-tilings` 应该是 2 的幂，例如，16。为了使偏移正确工作，它还应该大于或等于浮点数的四倍。第一个参数是一个给定大小的索引哈希表（由
+    `make-iht(size)` 创建），一个整数“`size`”（索引的范围从 0），或者 nil（用于测试，表示瓦片坐标将返回而不转换为索引）。'
 - en: You use the `tiles3.py` to build the `QEstimator` class, as shown in Listing
     [5-1](#PC1). The `QEstimator` class holds the weights and tiles the observation
     space. The complete code is given in the Python notebook called `5.a-n-step-SARSA.ipynb`.
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 你使用 `tiles3.py` 构建了 `QEstimator` 类，如列表 [5-1](#PC1) 所示。`QEstimator` 类持有权重并将观察空间瓦片化。完整的代码在名为
+    `5.a-n-step-SARSA.ipynb` 的 Python 笔记本中给出。
 - en: '[PRE0]'
+  id: totrans-185
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: As shown in Listing [5-2](#PC2), the `get_active_features` function takes as
     input continuous two-dimensional values of *S* and the discrete input action *A*
     to return the tile-encoded `active_feature` *x*(*S*, *A*)—that is, binary tiling
@@ -1020,62 +1450,97 @@
     w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq24.png). It
     internally calls `get_active_features` to first get features and carries out a
     dot product with the weight vector.
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 如列表 [5-2](#PC2) 所示，`get_active_features` 函数接受 *S* 和离散输入动作 *A* 的连续二维值作为输入，以返回瓦片编码的
+    `active_feature` *x*(*S*, *A*)——即对于给定的 (*S*, *A*) 激活的二进制瓦片特征。`q_predict` 函数也接受
+    (*S*, *A*) 作为输入，并返回估计值 ![$$ \hat{q}\left(S,A;w\right)=x{\left(S,A\right)}^T\cdotp
+    w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq24.png)。它内部调用
+    `get_active_features` 以首先获取特征，并与权重向量执行点积。
 - en: '[PRE1]'
+  id: totrans-187
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: The weight update equation shown toward the end of the algorithm in Figure [5-6](#Fig6)
     is what the `q_update` function carries out. The `get_eps_greedy_action` functions
     carries out action selection using ε-greedy ![$$ \hat{q}\left({S}_0,\kern0.5em
     \bullet; w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq25.png).
     Listing [5-3](#PC3) shows the code.
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [5-6](#Fig6) 算法末尾显示的权重更新方程是 `q_update` 函数执行的内容。`get_eps_greedy_action` 函数执行使用
+    ε-greedy ![$$ \hat{q}\left({S}_0,\kern0.5em \bullet; w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq25.png)
+    的动作选择。列表 [5-3](#PC3) 显示了代码。
 - en: '[PRE2]'
+  id: totrans-189
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: The main training algorithm of the SARSA agent, as shown in Figure [5-6](#Fig6),
     is implemented in the function `sarsa_n`, calling functions from `QEstimator`
     as required. Listing [5-4](#PC4) contains the code. The implementation is straightforward
     Python code following the pseudocode of Figure [5-6](#Fig6).
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: SARSA 代理的主要训练算法，如图 [5-6](#Fig6) 所示，在 `sarsa_n` 函数中实现，根据需要调用 `QEstimator` 中的函数。列表
+    [5-4](#PC4) 包含了代码。实现是遵循图 [5-6](#Fig6) 伪代码的简单 Python 代码。
 - en: '[PRE3]'
+  id: totrans-191
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Similar to many examples in the previous chapter, there is also a helper function
     called `plot_rewards` that plots the per-episode returns and records a video of
     the trained agent.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 与前一章中的许多示例类似，还有一个名为 `plot_rewards` 的辅助函数，它绘制每集的回报并记录训练代理的视频。
 - en: Figure [5-7](#Fig7) shows the result of running this algorithm to train the
     mountain car. Within 50 episodes, the agent reaches a steady state, and it reaches
     the goal of hitting the flag on the right side of the valley in about 110 time
     steps.
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 图[5-7](#Fig7)显示了运行此算法训练山车的结果。在50个集数内，智能体达到稳定状态，并在大约110个时间步内达到目标，即在山谷右侧击中旗帜。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig7_HTML.jpg)'
+  id: totrans-194
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig7_HTML.jpg)'
 - en: A line graph of return per episode versus episode number. It plots a line for
     the semigrad n step S A R S A of lambda, which starts at (0, negative 500), rises
     upward, sharply fluctuates, and ends at (1000, negative 105). Values are estimated.
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 每一集的回报与集数之间的折线图。它绘制了λ的半梯度SARSA的线，从(0, -500)开始，向上攀升，急剧波动，最终到达(1000, -105)。数值是估算的。
 - en: Figure 5-7
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-7
 - en: n-step semi-gradient SARSA with MountainCar
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有MountainCar的n步半梯度SARSA
 - en: This completes the n-step semi-gradient SARSA example.
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
+  zh: 这完成了n步半梯度SARSA的示例。
 - en: Semi-gradient SARSA(λ) Control
+  id: totrans-199
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 半梯度SARSA(λ)控制
 - en: 'This section looks at the semi-gradient SARSA(*λ*) algorithm with eligibility
     traces. As you saw in the previous chapter, in the MC update using the full episode
     return—that is λ = 1, TD(0) uses one step next state estimate to form the target—that
@@ -1100,175 +1565,260 @@
     the detailed derivations of the update rules. You can refer to the book titled
     *Reinforcement Learning: An Introduction*^([2](#Fn2)) for a detailed explanation
     of the concepts and mathematical derivations.'
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节探讨了具有资格痕迹的半梯度SARSA(λ)算法。正如你在上一章中看到的，在MC更新中使用完整集的回报——即λ=1，TD(0)使用一步后续状态估计来形成目标——即λ=0。n步使用从n步后的回报以及n步后状态q值估计来形成目标估计，这介于完整集的MC和TD(0)的一步之间。你如何决定n的值？资格痕迹通过添加所有可能的n值的所有奖励，使用从一步更新到完整集回报的全谱。这些回报的权重由λ的值控制，其值可以从0到1变化。换句话说，SARSA(λ)进一步泛化了n步SARSA。当状态或状态-动作值由具有线性函数近似的二进制特征表示（如具有图块编码的山车的情况）时，你得到图[5-8](#Fig8)中的算法。此算法引入了一个与权重向量具有相同数量的组件的资格痕迹概念。*权重向量*是跨越许多集的长时记忆，用于从所有示例中泛化。*资格痕迹*是短时记忆，持续时间小于集的长度。它通过影响权重在学习过程中提供帮助。考虑一个在图中向上倾斜的波形模式。权重向量就像向上整体趋势的斜率，资格痕迹就像从波的一个峰值到另一个峰值的局部邻域波动，在该局部区域内上下波动。我不会深入探讨更新规则的详细推导。你可以参考名为《强化学习：导论》的书籍^([2](#Fn2))，以获得概念和数学推导的详细解释。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig8_HTML.jpg)'
+  id: totrans-201
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig8_HTML.jpg)'
 - en: An algorithm of semi gradient S A R S A lambda for episodic control consists
     of 29 lines of code. It starts with a tile function F of s comma a giving the
     active tile indices of i for a given state and action s comma a.
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于时序控制的半梯度SARSA(λ)算法由29行代码组成。它从一个函数F(s, a)开始，该函数给出给定状态和动作s, a的活跃图块索引i。
 - en: Figure 5-8
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-8
 - en: Semi-gradient SARSA(*λ*) for episodic control when features are binary and the
     value function is a linear combination of the feature vector and the weight vector
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 当特征是二进制且值函数是特征向量和权重向量的线性组合时，用于时序控制的半梯度 SARSA(*λ*)
 - en: As in the previous subsection, you will run this algorithm on the mountain car
     environment. The `5.b-lambda-sarsa.ipynb` notebook contains the full code. Listing
     [5-5](#PC5) gives the code for the implementation of eligibility trace update
     as shown in Figure [5-8](#Fig8). Accumulating trace adds one to the previous trace
     for active tiles, while replacing trace makes the trace for index *i* as one for
     active tile index *i*.
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前一小节所述，你将在山车环境中运行此算法。`5.b-lambda-sarsa.ipynb` 笔记本包含完整的代码。列表 [5-5](#PC5) 给出了如图
+    [5-8](#Fig8) 所示的资格迹更新的代码实现。累积迹为活动图块增加一个，而替换迹使索引 *i* 的迹对于活动图块索引 *i* 为一。
 - en: '[PRE4]'
+  id: totrans-206
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: The `QEstimator` class from n-step SARSA is modified to store the trace values
     and to use the trace in the weight `q_update` update function, as shown in Listing
     [5-6](#PC6).
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 从 n 步 SARSA 中修改的 `QEstimator` 类用于存储迹值，并在 `q_update` 权重更新函数中使用迹，如图 [5-6](#PC6)
+    所示。
 - en: '[PRE5]'
+  id: totrans-208
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The `sarsa_lambda` function implements the overall learning algorithm given
     in Figure [5-8](#Fig8). It is a straight implementation of the pseudocode from
     that figure. Listing [5-7](#PC7) shows the code.
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: '`sarsa_lambda` 函数实现了图 [5-8](#Fig8) 中给出的整体学习算法。它是该图中伪代码的直接实现。列表 [5-7](#PC7)
+    展示了代码。'
 - en: '[PRE6]'
+  id: totrans-210
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: You also have a function to run the trained agent through some episodes and
     record the behavior. Once you have trained the agent and generated the animation,
     you can run the MP4 file and see the strategy that the agent follows to reach
     the goal.
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: 你还有一个函数来运行训练好的智能体通过一些集数并记录其行为。一旦你训练了智能体并生成了动画，你可以运行 MP4 文件并看到智能体遵循的策略以到达目标。
 - en: Figure [5-9](#Fig9) shows the result of running the SARSA(λ) algorithm to train
     the mountain car. You can see that the results are similar to those in Figure
     [5-7](#Fig7). This is too small a problem, but for larger problems, eligibility
     trace–driven algorithms will show better and faster convergence.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [5-9](#Fig9) 展示了运行 SARSA(λ) 算法训练山车环境的结果。你可以看到结果与图 [5-7](#Fig7) 中的结果相似。这是一个太小的问题，但对于更大的问题，基于资格迹的算法将显示出更好的和更快的收敛性。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig9_HTML.jpg)'
+  id: totrans-213
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig9_HTML.jpg)'
 - en: A line graph of return per episode versus episode number. It plots a line for
     the semi grad S A R S A of lambda, which starts at (0, negative 500), rises upward,
     sharply fluctuates, and ends at (1000, negative 220). Values are estimated.
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 每一集回报与集数的关系线图。它绘制了半梯度 SARSA 的 lambda 线，从 (0, 负 500) 开始，向上上升，急剧波动，并在 (1000, 负
+    220) 结束。值是估计的。
 - en: Figure 5-9
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 5-9
 - en: Semi-gradient SARSA(*λ*) with the mountain car
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有山车环境的半梯度 SARSA(*λ*)
 - en: This concludes the example of running SARSA(λ) on mountain car environment.
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就结束了在山车环境中运行 SARSA(λ) 的示例。
 - en: Convergence in Functional Approximation
+  id: totrans-218
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 函数逼近中的收敛性
 - en: Let’s start exploring convergence by looking at an example. As shown in Figure
     [5-10](#Fig10), let’s consider a two-state transition as part of some MDP. Let’s
     assume you will use function approximation with the value of the first state being
     *w* and the value of the second state being 2*w*. Note that *w* is a single number
     and not a vector.
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从查看一个示例开始探索收敛性。如图 [5-10](#Fig10) 所示，让我们考虑一个两状态转移作为某个马尔可夫决策过程（MDP）的一部分。假设你将使用函数逼近，其中第一个状态的价值为
+    *w*，第二个状态的价值为 2*w*。请注意，*w* 是一个单独的数字，而不是一个向量。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig10_HTML.jpg)'
+  id: totrans-220
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig10_HTML.jpg)'
 - en: A diagram represents a circle for w, which leads to a circle of 2 w for a two
     step transition under functional approximation.
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个表示 w 的圆圈图，在函数逼近下，对于两步转移，导致 2*w* 的圆圈。
 - en: Figure 5-10
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 5-10
 - en: Two-step transition under functional approximation
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数逼近下的两步转移
 - en: Assume that *w* = 10 and the agent transitions from the first state to the second
     state—that is, from the state with the value 10 to the state with the value 20\.
     This example also assumes that the transition from the first state to the second
     state is the only possible transition in the first state, and the reward for this
     transition is zero every time. Let the learning rate be *α* = 0.1.
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设 *w* = 10，并且智能体从第一个状态转移到第二个状态——即从价值为 10 的状态转移到价值为 20 的状态。这个例子还假设从第一个状态到第二个状态的转移是第一个状态中唯一可能的转移，并且每次转移的奖励为零。设学习率
+    *α* = 0.1。
 - en: Let’s now apply Equation [5-14](#Equ14) to the first state in Figure [5-10](#Fig10).
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们将方程 [5-14](#Equ14) 应用到图 [5-10](#Fig10) 中的第一个状态。
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma .{V}_t\left({s}^{\prime
     };w\right)-{V}_t\left(s;w\right)\right].x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equk.png)'
+  id: totrans-226
   prefs: []
   type: TYPE_IMG
+  zh: '![权重更新方程](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equk.png)'
 - en: 'Now substitute the values. Substitute *α* = 0.1, which is what you have assumed,
     *R*[*t* + 1] = 0 which is also the assumption. The state values are given in Figure
     [5-10](#Fig10)—next state *V*[*t*](*s*^′; *w*) = 2*w*[*t*], current state value
     *V*[*t*](*s*; *w*) = *w*[*t*]. The state feature vector is one dimensional and
     has a value of 1—that is, *x*(*s*) = ∇[*w*]*V*[*t*](*s*; *w*) = 1\. With all these
     substitutions, you get:'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在代入数值。代入 *α* = 0.1，这是你假设的，*R*[*t* + 1] = 0，这也是假设。状态价值在图 [5-10](#Fig10) 中给出——下一个状态
+    *V*[*t*](*s*^′; *w*) = 2*w*[*t*]，当前状态价值 *V*[*t*](*s*; *w*) = *w*[*t*]。状态特征向量是一维的，其值为
+    1——即 *x*(*s*) = ∇[*w*]*V*[*t*](*s*; *w*) = 1。所有这些替换后，你得到：
 - en: '![$$ {w}_{t+1}={w}_t+0.1\cdotp \left[0+\gamma \cdotp 2\ {w}_t-{w}_t\right].1
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equl.png)'
+  id: totrans-228
   prefs: []
   type: TYPE_IMG
+  zh: '![权重更新方程](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equl.png)'
 - en: 'For example:'
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如：
 - en: '![$$ {w}_{t+1}={w}_t+0.1\cdotp {\mathrm{w}}_{\mathrm{t}}\cdotp \left(2\upgamma
     -1\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equm.png)'
+  id: totrans-230
   prefs: []
   type: TYPE_IMG
+  zh: '![状态转移方程](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equm.png)'
 - en: 'Now assume that γ is close to 1, and the current weight *w*[*t*] is 10\. The
     updated weight will look like this:'
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在假设 γ 接近 1，当前权重 *w*[*t*] 是 10。更新的权重将如下所示：
 - en: '![$$ {w}_{t+1}=10+0.1\cdotp 10\cdotp \left(2-1\right)=11 $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equn.png)'
+  id: totrans-232
   prefs: []
   type: TYPE_IMG
+  zh: '![权重更新方程](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equn.png)'
 - en: Actually, as long as (2γ − 1) > 0, every update will lead to the divergence
     of weight *w*. It goes to show that function approximation can cause divergence.
     This is because of the value generalization where updating the value of a given
     state also updates the value of nearby or related states. There are three angles
     to the instability issue as listed.
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: 实际上，只要 (2γ - 1) > 0，每次更新都会导致权重 *w* 的发散。这表明函数逼近可能导致发散。这是因为值泛化，即更新给定状态的价值也会更新附近或相关状态的价值。不稳定问题可以从以下三个方面来考虑。
 - en: '*Function approximation*: A way to generalize for a very large state space
     using a model with the number of parameters smaller than the total number of possible
     states.'
+  id: totrans-234
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*函数逼近*：使用参数数量小于可能状态总数量的模型来对非常大的状态空间进行泛化的方法。'
 - en: '*Bootstrapping*: Forming target values using estimates of state values, for
     example, in TD(0) the target being the estimate *R*[*t* + 1] + γ · *V*[*t*](*s*^′;
     *w*)'
+  id: totrans-235
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*自举法*：使用状态价值的估计来形成目标值，例如，在 TD(0) 中，目标值是估计 *R*[*t* + 1] + γ · *V*[*t*](*s*^′;
+    *w*)。'
 - en: '*Off-policy learning*: Training the agent using a behavior policy but learning
     a different optimal policy.'
+  id: totrans-236
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*离策略学习*：使用行为策略训练智能体，但学习不同的最优策略。'
 - en: The presence of these three components together significantly increases the
     chances of divergence even in a simple prediction/estimation scenario. The control
     and optimization problems are even more complex to analyze. It has also been shown
     that instability can be avoided as long as all three are not present together.
     That begs the question, could you drop any of the three and assess the impact
     of such a drop?
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: 这三个组件同时存在显著增加了在简单预测/估计场景中发散的可能性。控制和优化问题分析起来更加复杂。也已经证明，只要这三个组件不同时存在，就可以避免不稳定性。这引发了一个问题，你是否可以去掉这三个中的任何一个，并评估这种去掉的影响？
 - en: Function approximation, especially using neural networks, has made RL practical
     for large real-world problems. Other alternatives are not practical. Bootstrapping
     has made the process sample efficient. The alternative of forming targets by watching
@@ -1281,15 +1831,18 @@
     and tweaking—such as use of replay buffers, learning rates, and ideas like double
     Q-learning. Chapters [6](502835_2_En_6_Chapter.xhtml) and [7](502835_2_En_7_Chapter.xhtml)
     discuss some of these practical tweaks in the context of DQN.
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
 - en: While training, it is important to periodically evaluate the agent and plot
     the curve of the return per episode. If it shows wild fluctuations, it is an indication
     that training is unstable. Remember that it will almost never be a smooth curve,
     but it should also not be wildly fluctuating.
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
 - en: Gradient Temporal Difference Learning
+  id: totrans-240
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1300,6 +1853,7 @@
     *w*. The real Bellman error is *R*[*t* + 1] + γ · *V*[*t*](*s*^′; *w*) − *V*[*t*](*s*;
     *w*), and the derivative of it ideally should have had gradient terms for both
     *V*[*t*](*s*^′; *w*) and *V*[*t*](*s*; *w*).
+  id: totrans-241
   prefs: []
   type: TYPE_NORMAL
 - en: There is a variation of this known as *gradient temporal difference learning*
@@ -1309,61 +1863,81 @@
     can be modified as shown in Table [5-2](#Tab2). I do not go into the mathematical
     proof of it in this book because the focus of the book is on the practical implementations
     of the algorithms.
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
 - en: Table 5-2
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
 - en: Convergence of Prediction/Estimation Algorithms
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
 - en: '| Policy Type | Algorithm | Table Lookup | Linear | Nonlinear |'
+  id: totrans-245
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- | --- | --- |'
+  id: totrans-246
   prefs: []
   type: TYPE_TB
 - en: '| On-policy | MCTD(0)TD(λ)Gradient TD | YYYY | YYYY | YNNY |'
+  id: totrans-247
   prefs: []
   type: TYPE_TB
 - en: '| Off-policy | MCTD(0)TD(λ)Gradient TD | YYYY | YNNY | YNNY |'
+  id: totrans-248
   prefs: []
   type: TYPE_TB
 - en: Continuing further, Table [5-3](#Tab3) lists the convergence of control algorithms.
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
 - en: Table 5-3
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
 - en: Convergence of Control Algorithms
+  id: totrans-251
   prefs: []
   type: TYPE_NORMAL
 - en: '| Algorithm | Table Lookup | Linear | Nonlinear |'
+  id: totrans-252
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- | --- |'
+  id: totrans-253
   prefs: []
   type: TYPE_TB
 - en: '| MC control | Y | (Y) | N |'
+  id: totrans-254
   prefs: []
   type: TYPE_TB
 - en: '| On Policy TD (SARSA) | Y | (Y) | N |'
+  id: totrans-255
   prefs: []
   type: TYPE_TB
 - en: '| Off policy Q-Learning | Y | N | N |'
+  id: totrans-256
   prefs: []
   type: TYPE_TB
 - en: '| Gradient Q-Learning | Y | Y | N |'
+  id: totrans-257
   prefs: []
   type: TYPE_TB
 - en: (Y) fluctuates around the near-optimal value function. The guarantee of convergence
     is off in all nonlinear cases.
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: (Y) 围绕近最优值函数波动。在所有非线性情况下，收敛的保证都不成立。
 - en: Batch Methods (DQN)
+  id: totrans-259
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 批量方法（DQN）
 - en: 'Up to now, the chapter has been focusing on algorithms that were incremental—that
     is, you sampled transition and then using the values you updated the weight vector
     *w* with the help of stochastic gradient descent. But this approach is not sample
@@ -1376,54 +1950,82 @@
     reinforcement methods, I take you through the use of batch methods specifically
     with Deep Q Networks, which are the deep neural network version of the off-policy
     Q-learning.'
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，本章一直关注增量算法——也就是说，你采样转换，然后使用这些值在随机梯度下降的帮助下更新权重向量 *w*。但是这种方法并不高效。你只用了一次就丢弃了一个样本。然而，使用非线性函数逼近，特别是使用神经网络，你需要多次遍历网络才能使网络权重收敛到真实值。此外，在许多现实场景中，如机器人技术，你需要从两个方面提高样本效率：神经网络收敛速度慢，因此需要多次遍历，以及在实际生活中生成样本非常缓慢。在本节关于批量强化方法中，我将向您介绍使用批量方法，特别是与深度Q网络（Deep
+    Q Networks）的结合，这是离策略Q学习的深度神经网络版本。
 - en: 'Like before, you estimate the state value using function approximation as shown
     in Equation [5-1](#Equ1): ![$$ \hat{v}\left(s,w\right)\approx {v}_{\pi }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq26.png).'
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，你使用函数逼近估计状态值，如方程 [5-1](#Equ1) 所示：![$$ \hat{v}\left(s,w\right)\approx {v}_{\pi
+    }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq26.png)。
 - en: Consider that you somehow know the actual state value *v*[π](*s*), and you are
     trying to learn the weight vector *w* to arrive at a good estimate ![$$ \hat{v}\left(s,w\right)\approx
     {v}_{\pi }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq27.png).
     You collect a batch of experiences.
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑到你以某种方式知道实际状态值 *v*[π](*s*)，你正在尝试学习权重向量 *w* 以达到良好的估计 ![$$ \hat{v}\left(s,w\right)\approx
+    {v}_{\pi }(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq27.png)。你收集一批经验。
 - en: '![$$ D=\left\{&lt;{s}_1,{v}_1^{\pi }&gt;,&lt;{s}_2,{v}_2^{\pi }&gt;,\dots .,&lt;{s}_T,{v}_T^{\pi
     }&gt;\right\} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equo.png)'
+  id: totrans-263
   prefs: []
   type: TYPE_IMG
+  zh: '![经验集](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equo.png)'
 - en: You then form a least squares loss as the average of the difference between
     the true value and the estimate and then carry out gradient descent to minimize
     error. You use a mini-batch gradient descent to take a sample of past experiences
     and use that to move the weight vector using a learning rate α.
+  id: totrans-264
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，你将最小二乘损失作为真实值与估计值之间差异的平均值，然后执行梯度下降以最小化误差。你使用小批量梯度下降来采样过去的经验，并使用学习率 α 移动权重向量。
 - en: '![$$ LS(w)={E}_D\left[{\left({v}_{\pi }(s)-\hat{v}\left(s;w\right)\right)}^2\right]
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equp.png)'
+  id: totrans-265
   prefs: []
   type: TYPE_IMG
+  zh: '![损失函数](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equp.png)'
 - en: 'Then approximate the expectation as the mean of the samples:'
+  id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后近似期望为样本的平均值：
 - en: '![$$ LS(w)=\frac{1}{N}\sum \limits_{i=1}^N{\left({v}_{\pi}\left({s}_i\right)-\hat{v}\left({s}_i;w\right)\right)}^2
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ22.png)'
+  id: totrans-267
   prefs: []
   type: TYPE_IMG
+  zh: '![损失函数](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ22.png)'
 - en: (5-22)
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-22)
 - en: Taking gradient of *LS*(*w*) with respect to *w* and using the negative gradient
     to adjust *w*, you get the weight update Equation [5-23](#Equ23). Note that it
     is similar to Equation [5-7](#Equ7)
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 对 *LS*(*w*) 关于 *w* 求梯度，并使用负梯度来调整 *w*，你得到权重更新方程 [5-23](#Equ23)。请注意，它与方程 [5-7](#Equ7)
+    类似。
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{v}_{\pi}\left({s}_i\right)-\hat{v}\left({s}_i;w\right)\right].{\nabla}_w\
     \hat{v}\left({s}_i;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ23.png)'
+  id: totrans-270
   prefs: []
   type: TYPE_IMG
+  zh: '![状态转移方程](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ23.png)'
 - en: (5-23)
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-23)
 - en: As before, you can move from state values *v*(*s*; *w*) to state-action values
     *q*(*s*, *a*; *w*) and carry out a similar update with q-values. To remind the
     readers once more, the purpose of moving from state values to state-action values
@@ -1432,15 +2034,23 @@
     state, do so for all states and then again carry out the estimation/prediction
     of q-values followed by optimal action selection. Keep repeating these until some
     kind of convergence of policy and q-values.
+  id: totrans-272
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，您可以从状态值 *v*(*s*; *w*) 移动到状态-动作值 *q*(*s*, *a*; *w*)，并对 q 值进行类似的更新。为了再次提醒读者，从状态值移动到状态-动作值的目的在于能够找到给定状态的最优策略。由于您拥有该状态下所有可能动作的
+    q 值，您可以选择该状态下的最优动作，对所有状态都这样做，然后再次进行 q 值的估计/预测以及最优动作的选择。重复这些操作，直到策略和 q 值达到某种收敛。
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{q}_{\pi}\left({s}_i,{a}_i\right)-\hat{q}\left({s}_i,{a}_i;w\right)\right].{\nabla}_w\
     \hat{q}\left({s}_i,{a}_i;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ24.png)'
+  id: totrans-273
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{q}_{\pi}\left({s}_i,{a}_i\right)-\hat{q}\left({s}_i,{a}_i;w\right)\right].{\nabla}_w\
+    \hat{q}\left({s}_i,{a}_i;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ24.png)'
 - en: (5-24)
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-24)
 - en: 'If you remember from past derivations, you do not know the true value functions,
     *v*[π](*s*[*i*]) or *q*[π](*s*[*i*], *a*[*i*]). As before, you replace the true
     values with the estimates using either the MC or TD approach. Let’s now look at
@@ -1452,12 +2062,22 @@
     w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq28.png)
     for all actions *a*^′ possible in the state *s*^′ to form the target. This is
     shown here:'
+  id: totrans-275
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您还记得过去的推导，您不知道真正的值函数，*v*[π](*s*[*i*]) 或 *q*[π](*s*[*i*], *a*[*i*])。和以前一样，您使用
+    MC 或 TD 方法用估计值替换真实值。现在让我们看看这种方法的变体，称为 DQN，这是在第 [4](502835_2_En_4_Chapter.xhtml)
+    章节中展示的 Q-learning 的深度学习版本。在 DQN 中，一个离策略算法，您采样当前状态 *s*，根据当前行为策略采取一步 *a*，并使用当前 q
+    值的 ϵ-greedy 策略。您观察到奖励 *r* 和下一个状态 *s*^′。您使用 ![$$ \underset{a^{\prime }}{\max}\hat{q}\left({s}^{'},\bullet;
+    w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq28.png)
+    来形成目标，该目标在状态 *s*^′ 中对所有可能的动作 *a*^′ 进行了最大化。这在此处展示：
 - en: '![$$ {q}_{\uppi}\left({s}_i,{a}_i\right)={r}_i+\underset{a''}{\max}\hat{q}\left({s}_i^{\prime
     },{a}_i^{\prime };{w}_t^{-}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equq.png)'
+  id: totrans-276
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {q}_{\uppi}\left({s}_i,{a}_i\right)={r}_i+\underset{a''}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };{w}_t^{-}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equq.png)'
 - en: 'Here you have used a different weight vector ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq29.png)
     to calculate the estimate of the target. Essentially, you have two networks, one
     called *online* with weights *w*, which is being updated as per Equation [5-24](#Equ24),
@@ -1468,17 +2088,29 @@
     that the subscript *i* denotes the sample in the mini-batch and *t* denotes the
     index at which weights are updated. The final update equation with all this put
     together can be written as follows:'
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，您使用了一个不同的权重向量 ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq29.png)
+    来计算目标估计。本质上，您有两个网络，一个称为 *在线* 网络带有权重 *w*，它根据方程 [5-24](#Equ24) 进行更新，另一个类似的网络称为 *目标网络*，但带有名为
+    *w*^− 的权重副本。权重向量 *w*^− 的更新频率较低，例如，在在线网络权重 *w* 更新后的每 100 次更新。这种方法使目标网络保持不变，并允许您使用监督学习的机制。此外，请注意，下标
+    *i* 表示迷你批次的样本，而 *t* 表示权重更新的索引。将所有这些放在一起，最终的更新方程可以写成以下形式：
 - en: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{r}_i+\gamma
     {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime
     };{w_t}^{-}\right)-\hat{q}\left({s}_i,{a}_i;{w}_t\right)\right].{\nabla}_{w_t}\
     \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ25.png)'
+  id: totrans-278
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{r}_i+\gamma
+    {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime
+    };{w_t}^{-}\right)-\hat{q}\left({s}_i,{a}_i;{w}_t\right)\right].{\nabla}_{w_t}\
+    \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ25.png)'
 - en: (5-25)
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-25)
 - en: This equation looks very daunting. Let’s unpack it. The expression ![$$ {r}_i+\gamma\
     {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime
     };{w_t}^{-}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq30.png)
@@ -1493,20 +2125,34 @@
     using learning rate α. To collect the samples, you run the agent through the environment
     using the *ε*-greedy policy and collect experiences in a buffer called replay
     buffer *D*.
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个方程看起来非常令人畏惧。让我们来分解它。表达式 ![$$ {r}_i+\gamma\ {\mathit{\max}}_{a_i^{\prime }}\overset{\sim
+    }{q}\left({s}_i^{\prime },{a}_i^{\prime };{w_t}^{-}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq30.png)
+    是 *q*(*s*[*i*], *a*[*i*]) 的目标值，并且使用具有权重 ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq31.png)
+    的不同神经网络形成。当前的q值估计由 ![$$ \hat{q}\left({s}_i,{a}_i;{w}_t\right), $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq32.png)
+    给出，这是使用权重 *w*[*t*] 的网络完成的。你通过从当前估计中减去目标并乘以当前估计的梯度来计算误差——即 ![$$ {\nabla}_{w_t}\
+    \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq33.png)。然后，将这个误差平均到所有的
+    *N* 个样本上，并使用学习率 α 添加到当前的权重 *w*[*t*] 上。为了收集样本，你使用 *ε*-贪婪策略运行智能体通过环境，并在称为重放缓冲区 *D*
+    的缓冲区中收集经验。
 - en: You also update target network weights ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq34.png)
     once in a while (say after every 100 batch updates of *w*[*t*]). You use the updated
     q-values with ϵ-exploration to add more experiences to the replay buffer and carry
     out the whole cycle once again. This in essence is the DQN approach. There is
     a lot more to say about this in the next chapter, which is completely devoted
     to DQN and its variants. For now, I leave the topic here and move on.
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: 你也会偶尔更新目标网络权重 ![$$ {w}_t^{-} $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq34.png)（比如说在每次
+    *w*[*t*] 的100个批量更新之后）。你使用更新的q值和 ϵ-探索来向重放缓冲区添加更多经验，并再次完成整个周期。这本质上就是DQN方法。关于这一点，下一章将有更多内容，它完全致力于DQN及其变体。现在，我将这个话题留在这里，继续前进。
 - en: Linear Least Squares Method
+  id: totrans-282
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 线性最小二乘法
 - en: Experience replay as used in the batch method finds the least square solution,
     minimizing the error between the target as estimated using TD or MC and the current
     value function estimate. However, it takes many iterations to converge. However,
@@ -1515,57 +2161,88 @@
     and ![$$ \hat{q}\left(s,a;w\right)=x{\left(s,a\right)}^Tw $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq36.png)
     for control, you can find the least square solution directly. Let’s look at the
     prediction first.
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: 批量方法中使用的经验回放找到最小二乘解，最小化使用TD或MC估计的目标值与当前价值函数估计之间的误差。然而，它需要许多迭代才能收敛。然而，如果你使用线性函数逼近价值函数
+    ![$$ \hat{v}\left(s;w\right)=x{(s)}^Tw $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq35.png)
+    进行预测和 ![$$ \hat{q}\left(s,a;w\right)=x{\left(s,a\right)}^Tw $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq36.png)
+    进行控制，你可以直接找到最小二乘解。我们先来看预测部分。
 - en: 'Start with Equation [5-22](#Equ22) and substituting ![$$ \hat{v}\left(s;w\right)=x{(s)}^Tw
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq37.png), you
     get this:'
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: 从方程 [5-22](#Equ22) 开始，并代入 ![$$ \hat{v}\left(s;w\right)=x{(s)}^Tw $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq37.png)，你得到这个：
 - en: '![$$ LS(w)=\frac{1}{N}\sum \limits_{i=1}^N{\left({v}_{\pi}\left({s}_i\right)-x{\left({s}_i\right)}^T.w\right)}^2
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equr.png)'
+  id: totrans-285
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equr.png)'
 - en: 'Taking gradient of *LS*(*w*) with respect to *w* and setting it to zero, you
     get the following:'
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
+  zh: 对LS(*w*)关于 *w* 求梯度并将其设为零，得到以下结果：
 - en: '![$$ \sum \limits_{i=1}^Nx\left({s}_i\right)\ {v}_{\pi}\left({s}_i\right)=\sum
     \limits_{i=1}^Nx\left({s}_i\right).x{\left({s}_i\right)}^T\ w $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equs.png)'
+  id: totrans-287
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equs.png)'
 - en: 'Solving for *w* gives the following:'
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: 求解 *w* 得到以下结果：
 - en: '![$$ w={\left(\sum \limits_{i=1}^Nx\left({s}_i\right).x{\left({s}_i\right)}^T\
     \right)}^{-1}\sum \limits_{i=1}^Nx\left({s}_i\right)\ {v}_{\pi}\left({s}_i\right)
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ26.png)'
+  id: totrans-289
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ26.png)'
 - en: (5-26)
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: (5-26)
 - en: The previous solution involves the inversion of a *NxN* matrix that requires
     *O*(*N*³) computations. However, using Shermann-Morrison, you can solve this in
     *O*(*N*²) time. As before, you do not know the true value *v*[π](*s*[*i*]). You
     replace the true value with its estimate using MC, TD(0), or TD(*λ*) estimates
     giving you linear least square MC (LSMC), LSTD, or LSTD(*λ*) prediction algorithms.
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前的解涉及到一个 *NxN* 矩阵的求逆，需要 *O*(*N*³) 次计算。然而，使用Sherman-Morrison，你可以在 *O*(*N*²)
+    时间内解决这个问题。和之前一样，你不知道真正的值 *v*[π](*s*[*i*])。你用MC、TD(0)或TD(*λ*)的估计值来代替真实值，从而得到线性最小二乘MC（LSMC）、LSTD或LSTD(*λ*)预测算法。
 - en: 'LSMC: *v*[*π*](*s*[*i*]) ≈ *G*[*i*]'
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: 'LSMC: *v*[*π*](*s*[*i*]) ≈ *G*[*i*]'
 - en: 'LSTD: ![$$ {v}_{\pi}\left({s}_i\right)\approx R+\gamma\ \hat{v}\left({s}_i^{\prime
     };w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq38.png)'
+  id: totrans-293
   prefs: []
   type: TYPE_NORMAL
+  zh: 'LSTD: ![$$ {v}_{\pi}\left({s}_i\right)\approx R+\gamma\ \hat{v}\left({s}_i^{\prime
+    };w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq38.png)'
 - en: 'LSTD(λ): *v*[*π*](*s*[*i*]) ≈ *G*[*i*]^(*λ*)'
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: 'LSTD(λ): *v*[*π*](*s*[*i*]) ≈ *G*[*i*]^(*λ*)'
 - en: All these prediction algorithms have good convergence both for off-policy and
     on-policy.
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有这些预测算法在离策略和在线策略下都具有良好的收敛性。
 - en: Moving ahead, you extend the analysis to control using the q-value linear function
     approximation and GPI where the previous approach is used for the q-value prediction,
     followed by the greedy q-value maximization in the policy improvement step. This
@@ -1573,36 +2250,54 @@
     these cycles of prediction followed by improvement until the policy converges—that
     is, until the weights converge. The final result of linear least square Q-learning
     (LSPI) is shown here, without going through the derivation.
+  id: totrans-296
   prefs: []
   type: TYPE_NORMAL
+  zh: 在接下来的分析中，你将分析扩展到使用q值线性函数近似和GPI进行控制，其中之前的方法用于q值预测，然后在策略改进步骤中进行贪婪q值最大化。这被称为*线性最小二乘策略迭代*（LSPI）。你将迭代这些预测和改进的周期，直到策略收敛——也就是说，直到权重收敛。线性最小二乘Q学习（LSPI）的最终结果在此处展示，省略了推导过程。
 - en: 'Here is the prediction step:'
+  id: totrans-297
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是预测步骤：
 - en: '![$$ w={\left(\sum \limits_{i=1}^N\;x\left({s}_i,{a}_i\right).{\left(x\left({s}_i,{a}_i\right)+\gamma
     \kern0.33em x\left({s}_i^{\prime },\pi \left({s}_i^{\prime}\right)\right)\right)}^T\kern0.33em
     \right)}^{-1}\sum \limits_{i=1}^N\;x\left({s}_i,{a}_i\right)\kern0.33em {r}_i
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equt.png)'
+  id: totrans-298
   prefs: []
   type: TYPE_IMG
+  zh: '![公式](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equt.png)'
 - en: where (*i*) is the *i*^(*th*) sample (![$$ {s}_i,{a}_i,{r}_i,{s}_i^{\prime }
     $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq39.png)) from
     experience replay *D* and ![$$ \uppi \left({s}_i^{\prime}\right)=\arg \underset{a^{'}}{\max}\hat{q}\left({s}_i^{\prime
     },{a}_i^{\prime };w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq40.png)
     —that is, the action with maximum q-value in state *s*^′.
+  id: totrans-299
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 (*i*) 是第 *i* 个样本 (![经验回放](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq39.png))
+    来自经验回放 *D*，以及 ![$$ \uppi \left({s}_i^{\prime}\right)=\arg \underset{a^{'}}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq40.png)
+    ——即状态 *s*^′ 中的最大q值动作。
 - en: 'And here is the control step:'
+  id: totrans-300
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是控制步骤：
 - en: '![$$ \uppi \left({s}_i^{\prime}\right)=\arg \underset{a''}{\max}\hat{q}\left({s}_i^{\prime
     },{a}_i^{\prime };{w}^{\mathrm{updated}}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equu.png)'
+  id: totrans-301
   prefs: []
   type: TYPE_IMG
+  zh: '![$$ \uppi \left({s}_i^{\prime}\right)=\arg \underset{a''}{\max}\hat{q}\left({s}_i^{\prime
+    },{a}_i^{\prime };{w}^{\mathrm{updated}}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equu.png)'
 - en: In the control step, for each state *s*, you change the policy that maximizes
     the q-value after the weight update *w* carried out in the previous prediction
     step.
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 在控制步骤中，对于每个状态 *s*，你改变在之前的预测步骤中进行的权重更新 *w* 后最大化 q 值的策略。
 - en: As you move farther into the book, the function approximation of either state
     values *v*(*s*), state-action values *q*(*s*, *a*) and policy π(*s*| *a*) will
     be based on some kind of neural network model. The training of these is governed
@@ -1612,12 +2307,18 @@
     is dominating at the moment. For completeness’ sake, I do cover TensorFlow variants
     occasionally. To prepare you, the next section is a quick introduction to these
     underlying deep learning frameworks.
+  id: totrans-303
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着你进一步阅读本书，状态值 *v*(*s*)、状态动作值 *q*(*s*, *a*) 和策略 π(*s*| *a*) 的函数逼近将基于某种神经网络模型。这些模型的训练由使用深度学习框架如
+    PyTorch、TensorFlow 或 JAX 来管理。在本版书中，我主要关注 PyTorch，自从本书的第一版以来，它已经获得了显著的吸引力。PyTorch
+    及其相关的库生态系统目前占据主导地位。为了完整性，我偶尔也会涵盖 TensorFlow 变体。为了让你做好准备，下一节是对这些底层深度学习框架的快速介绍。
 - en: Deep Learning Libraries
+  id: totrans-304
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 深度学习库
 - en: Previous sections in the chapter showed that, to use the function approximation
     approach, you need to have an efficient way to calculate the derivatives of state-value
     function ![$$ {\nabla}_w\hat{v}\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq41.png)
@@ -1628,57 +2329,85 @@
     carry out vector/matrix computations in an efficient manner. Further, these are
     highly optimized to handle tensors (arrays with more than two dimensions), both
     using CPU and GPUs.
+  id: totrans-305
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章前面的部分展示了，为了使用函数逼近方法，你需要有一种有效的方式来计算状态值函数 ![$$ {\nabla}_w\hat{v}\left(s;w\right)
+    $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq41.png) 或动作值函数
+    ![$$ {\nabla}_w\hat{q}\left(s,a;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_IEq42.png)
+    的导数。如果你使用神经网络，你将使用反向传播来计算网络每一层的这些导数。这就是像 PyTorch 和 TensorFlow 这样的库发挥作用的地方。与 NumPy
+    库类似，它们也以高效的方式执行向量/矩阵计算。此外，这些库高度优化以处理张量（超过两个维度的数组），既使用 CPU 也使用 GPU。
 - en: In neural networks, you need to be able to back-propagate to calculate the gradients
     of error with respect to the weights of layers at all levels. Both these libraries
     are highly abstracted and optimized to handle this for you behind the scenes.
     You just need to build the forward computation, taking input through all the computations
     to give the final output. The libraries keep track of the computation graph and
     allow you to carry out the gradient update to weights with just one function call.
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 在神经网络中，你需要能够反向传播以计算所有层权重相对于误差的梯度。这两个库都高度抽象并优化，以在幕后为你处理这些操作。你只需要构建正向计算，通过所有计算输入以给出最终输出。这些库会跟踪计算图，并允许你通过一个函数调用进行权重梯度的更新。
 - en: This section takes you through the popular frameworks such as PyTorch, PyTorch
     Lightning, and TensorFlow. It is introductory level coverage. If you are familiar
     with these libraries, you can skip this section. Also, if you are interested in
     diving deep into the topic, you’d do well to take up further studies after getting
     the basic introduction. You can refer to the resources on the Internet for more
     details.
+  id: totrans-307
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节将带您了解流行的框架，如 PyTorch、PyTorch Lightning 和 TensorFlow。这是入门级别的覆盖。如果你熟悉这些库，你可以跳过这一节。此外，如果你对深入研究这个主题感兴趣，在获得基本介绍后，你最好进行进一步的学习。你可以参考互联网上的资源以获取更多详细信息。
 - en: PyTorch
+  id: totrans-308
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PyTorch
 - en: PyTorch is a framework that allows manipulation of tensors using constructs
     like NumPy. In addition, it has modules to allow auto differentiation to carry
     out back-propagation, which forms the backbone of training a neural network.
+  id: totrans-309
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 是一个框架，允许使用类似 NumPy 的构造操作张量。此外，它还包含模块，允许自动微分执行反向传播，这是训练神经网络的核心。
 - en: What Are Neural Networks
+  id: totrans-310
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 什么是神经网络
 - en: Deep learning is based on artificial neural networks, which are made up of neurons.
     A neuron takes inputs, calculates the weighted sum, and then passes the sum through
     some kind of nonlinear function *f*(*h*) (called the activation function), as
     shown in Figure [5-11](#Fig11).
+  id: totrans-311
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度学习基于人工神经网络，神经网络由神经元组成。神经元接收输入，计算加权求和，然后将求和通过某种非线性函数 *f*(*h*)（称为激活函数）传递，如图
+    [5-11](#Fig11) 所示。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig11_HTML.jpg)'
+  id: totrans-312
   prefs: []
   type: TYPE_IMG
+  zh: '![神经网络图](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig11_HTML.jpg)'
 - en: A neural network diagram. 3 input nodes of x 1, x 2, and 1 lead to a node of
     summation through w 1, w 2, and b. The node for summation leads to a mode of h,
     followed by a node of f of h, and ends with an output of y.
+  id: totrans-313
   prefs: []
   type: TYPE_NORMAL
+  zh: 神经网络图。输入层有 x 1、x 2 和 1 三个节点，通过 w 1、w 2 和 b 连接到求和节点。求和节点连接到 h 模式，然后是 h 的 f 节点，最后输出
+    y。
 - en: Figure 5-11
+  id: totrans-314
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 5-11
 - en: A neuron in a neural network
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
+  zh: 神经网络中的神经元
 - en: The training in deep learning refers to finding the weight vector [*w*[1], *w*[2],
     *b*] using back-propagation. Of course, the neural network model is composed of
     billions of such neurons grouped into layers and many such layers are stacked
@@ -1687,34 +2416,52 @@
     Neural Networks), and in last few years to the transformers architecture. The
     world of large language models (LLMs) is dominated by transformers at its core
     and comprises tens and hundreds of billions of weight parameters.
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度学习中的训练是指使用反向传播找到权重向量 [*w*[1], *w*[2], *b*]。当然，神经网络模型由数十亿个这样的神经元组成，这些神经元被分组到层中，并且许多这样的层堆叠在一起。神经网络层的排列有许多种类，产生了如
+    CNN（卷积神经网络）、RNN（循环神经网络）等架构。在最近几年，transformers 架构也应运而生。大型语言模型（LLMs）的核心由 transformers
+    控制，并包含数十亿甚至数百亿个权重参数。
 - en: A basic level architecture is comprised of simple layers, with all neurons from
     the previous layers connected to all the neurons of the current layer. This formation
     is called a *linear dense layer architecture*, as shown in Figure [5-12](#Fig12).
+  id: totrans-317
   prefs: []
   type: TYPE_NORMAL
+  zh: 基础级别的架构由简单的层组成，前一层中的所有神经元都与当前层的所有神经元相连。这种结构被称为 *线性密集层架构*，如图 [5-12](#Fig12) 所示。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig12_HTML.jpg)'
+  id: totrans-318
   prefs: []
   type: TYPE_IMG
+  zh: '![基础架构图](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig12_HTML.jpg)'
 - en: A diagram of a neural network. 16 numbers of nodes in the input layer pass through
     different layers and render an output node in the hidden layer.
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
+  zh: 神经网络图。输入层有 16 个节点，通过不同层传递，并在隐藏层生成一个输出节点。
 - en: Figure 5-12
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 5-12
 - en: A simple, fully connected neural network
+  id: totrans-321
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个简单的全连接神经网络
 - en: You can take the MNIST image dataset and train a PyTorch model to predict the
     digit based on the grayscale image that’s 24x24 pixels. Accordingly, the input
     layer will have 768 inputs translating to flattened 24x24 image. The output will
     have ten units, which will produce the probability that input image is a “1” or
     “2” and so on. The complete code of end-to-end PyTorch training is given in the
     Python notebook called `5.c-Intro-to-pytorch.ipynb`.
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用 MNIST 图像数据集，并训练一个 PyTorch 模型来根据 24x24 像素的灰度图像预测数字。因此，输入层将有 768 个输入，对应于展平的
+    24x24 图像。输出将有十个单元，这将产生输入图像是“1”或“2”等的概率。完整的端到端 PyTorch 训练代码在名为 `5.c-Intro-to-pytorch.ipynb`
+    的 Python 笔记本中给出。
 - en: Several hidden layers take 768 dimensional inputs to the first 192 units and
     then to the 128 units, with the final output layer taking 128 units to 10 units.
     You create the model in PyTorch by extending the PyTorch `Model` class and implementing
@@ -1727,11 +2474,15 @@
     the help of a `softmax` function. The `predict` function is just for convenience.
     It is not required. The only two things that are required are defining the layers
     of the network in `init` and implementing the `forward` function.
+  id: totrans-323
   prefs: []
   type: TYPE_NORMAL
+  zh: 几个隐藏层将768维的输入传递到前192个单元，然后传递到128个单元，最终输出层将128个单元传递到10个单元。你通过扩展PyTorch的`Model`类并实现前向方法来创建PyTorch模型，该方法接受输入图像向量和输出一个十维输出向量。列表[5-8](#PC8)展示了在PyTorch中创建此网络的代码。`__init__`函数使用PyTorch提供的`Linear`层模块定义网络的层。`forward`函数实现了输入张量通过网络的流动，输出十维输出向量。它返回原始分数，该分数在`predict`函数中通过`softmax`函数的帮助转换为概率。`predict`函数只是为了方便，不是必需的。所需做的只有两件事：在`init`中定义网络的层，并实现`forward`函数。
 - en: '[PRE7]'
+  id: totrans-324
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: You load the `MNIST` dataset and prepare `dataloaders` to supply images in batches
     to the training code, as shown in Listing [5-9](#PC9). It consists of use of three
     high-level functions—`transforms` transforms the images and does things like normalization
@@ -1740,15 +2491,21 @@
     to the rest of the code in batches. These are highly optimized functions with
     many parameters to tweak the behavior based on the specific need. You can read
     more about these in the PyTorch documentation.
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 你加载`MNIST`数据集并准备`dataloaders`，以便将图像按批次提供给训练代码，如列表[5-9](#PC9)所示。它包括使用三个高级函数——`transforms`将图像转换为PyTorch张量并进行归一化等操作，`datasets`在本地下载数据集并将其包装到`DataLoader`中，该`DataLoader`按批次向代码的其余部分提供图像。这些函数高度优化，具有许多参数，可以根据特定需求调整行为。你可以在PyTorch文档中了解更多关于这些函数的信息。
 - en: '[PRE8]'
+  id: totrans-326
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Training with Back-Propagation
+  id: totrans-327
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 使用反向传播进行训练
 - en: After having defined the model and prepared the data, the next step is to train
     the model. This involves first defining the optimizer that will be used to keep
     track of gradients during back-propagation and the code to adjust the weights
@@ -1760,71 +2517,102 @@
     the training code, in which you go over the training data in batches, calculate
     the loss function value, and use the optimizer to do a back-propagation, adjusting
     the weights.
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: 在定义模型和准备数据之后，下一步是训练模型。这包括首先定义用于在反向传播过程中跟踪梯度的优化器以及调整神经网络权重的代码。Adam是一个非常流行的优化器，它具有先进的自适应能力，可以调整随着训练进展的训练步长α。还有许多其他的优化器。优化器设计是独立的一个研究领域。你还需要定义一个损失函数，这是网络训练的一部分。列表[5-10](#PC10)展示了这些步骤的代码。然后是训练代码，其中你按批次遍历训练数据，计算损失函数值，并使用优化器进行反向传播，调整权重。
 - en: '[PRE9]'
+  id: totrans-329
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Once the model is trained, you can pass a new image and observe the probability
     distribution of the model’s prediction. I created a custom function called `view_classification`
     for the same. To pass images through the network and observe the outcome, you
     need a short three-line code, as shown in Listing [5-11](#PC11).
+  id: totrans-330
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦模型训练完成，你可以传递一个新的图像并观察模型预测的概率分布。我为此创建了一个名为`view_classification`的自定义函数。要通过网络传递图像并观察结果，你需要一段简短的三个代码行，如列表[5-11](#PC11)所示。
 - en: '[PRE10]'
+  id: totrans-331
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The output of passing an image of 4 is shown in Figure [5-13](#Fig13).
+  id: totrans-332
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过传递4的图像输出的结果如图[5-13](#Fig13)所示。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig13_HTML.jpg)'
+  id: totrans-333
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig13_HTML.jpg)'
 - en: A processed simulation image of number 4 and a horizontal bar chart labeled
     probability. The highest value of 0.90 is obtained by the bar at 4\. Values are
     estimated.
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
+  zh: 数字4的处理模拟图像和标注为概率的水平条形图。条形图在4的位置获得了最高的0.90值。数值是估算的。
 - en: Figure 5-13
+  id: totrans-335
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-13
 - en: Prediction of trained model on input image of the “4” digit
+  id: totrans-336
   prefs: []
   type: TYPE_NORMAL
+  zh: 在输入图像为“4”数字的已训练模型上的预测
 - en: In summary, the steps involved are 1) designing the model based on the problem
     and keeping specific input size and output size in mind; 2) preparing the training
     data; 3) defining the loss function and optimizer and finally; 4) the training
     code to train the model. You will be following these steps in increasing complex
     ways depending on the need of the agent learning algorithm in question.
+  id: totrans-337
   prefs: []
   type: TYPE_NORMAL
+  zh: '总结来说，涉及的步骤包括：1）根据问题和考虑特定的输入大小和输出大小来设计模型；2）准备训练数据；3）定义损失函数和优化器；最后；4）训练模型的代码。你将根据所讨论的代理学习算法的需求，以递增复杂的方式遵循这些步骤。 '
 - en: PyTorch Lightning
+  id: totrans-338
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PyTorch Lightning
 - en: PyTorch Lightning is a library written to speed up model development and training
     in PyTorch. PyTorch Lightning is the deep learning framework with “batteries included”
     for professional AI researchers and machine learning engineers who need maximal
     flexibility while super-charging performance at scale.
+  id: totrans-339
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch Lightning是一个编写来加速PyTorch中模型开发和训练的库。PyTorch Lightning是一个为需要最大灵活性和在规模上超级提升性能的专业AI研究人员和机器学习工程师提供的“包含电池”的深度学习框架。
 - en: Lightning organizes PyTorch code to remove boilerplate code and unlock scalability.
     While doing so, it still offers full flexibility to try any idea without the boilerplate.
     It helps you focus on the core parts of your model training and provides you with
     a standard way to organize your code.
+  id: totrans-340
   prefs: []
   type: TYPE_NORMAL
+  zh: Lightning组织PyTorch代码以移除样板代码并解锁可扩展性。在这样做的同时，它仍然提供了尝试任何想法的完全灵活性，而不需要样板代码。它帮助你专注于模型训练的核心部分，并提供了一种组织代码的标准方式。
 - en: Most of the code will remain the same as you saw in the raw PyTorch notebook.
     The code to prepare data loaders is the same as before. You first create a network
     model in PyTorch like before. Just for variety, I have used another shorter version
     to create the neural network, this time using the `nn.Sequential` class from PyTorch,
     as shown in Listing [5-12](#PC12). The complete code for end-to-end training using
     PyTorch Lightning is given in the `5.d-Intro-to-pytorch-lighning.ipynb` notebook.
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
+  zh: 大部分代码将与你在原始PyTorch笔记本中看到的一样。准备数据加载器的代码与之前相同。你首先在PyTorch中创建一个网络模型，就像之前一样。为了多样化，我使用了另一个更短的版本来创建神经网络，这次使用了PyTorch的`nn.Sequential`类，如列表[5-12](#PC12)所示。使用PyTorch
+    Lightning进行端到端训练的完整代码在`5.d-Intro-to-pytorch-lighning.ipynb`笔记本中给出。
 - en: '[PRE11]'
+  id: totrans-342
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: When using PyTorch Lightning, you create a lightning model by extending the
     `pl.LightningModule` and implementing specific functions. This removes the need
     for the long boilerplate code you have for training when using pure PyTorch without
@@ -1841,120 +2629,175 @@
     during model performance evaluation. The last function you define is `configure_optimizers`
     to define the optimizer that will be used during back-propagation of gradients
     during the training phase.
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
+  zh: 当使用PyTorch Lightning时，您通过扩展`pl.LightningModule`并实现特定函数来创建一个lightning模型。这消除了在使用不带Lightning的纯PyTorch进行训练时需要的大量样板代码的需求。在这种情况下，如图表[5-13](#PC13)所示，您创建了一个名为`MNISTClassifier`的`LightningModule`。在`__init__`函数中，您初始化了列表[5-12](#PC12)中定义的模型。接下来，您定义了`training_step`函数，该函数接收一批输入训练数据，将其通过模型传递，并计算需要最小化的损失。此函数必须返回损失，该损失将由优化器在反向传播期间用于计算梯度。然后您使用`self.log`来记录结果，这底层使用TensorBoard进行记录。您还可以选择将日志数据前向传递到“weights
+    and biases”或其他类似的日志和实验服务。接下来，您实现一个`test_step`，它主要模仿`training_step`，生成您在模型性能评估期间想要跟踪的指标。您定义的最后一个函数是`configure_optimizers`，用于定义在训练阶段反向传播梯度期间将使用的优化器。
 - en: '[PRE12]'
+  id: totrans-344
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: With PyTorch Lightning, once the Lightning module is defined, it requires one
     line of code to run the training code. There is no need to load data in a loop
     and run the backward step manually in the code. Listing [5-14](#PC14) shows the
     training code you need to execute to train the model. You just need to define
     a `trainer` and call the `fit` method on it by passing the `PyTorchLightning`
     module defined earlier and the `dataloaders` to it.
+  id: totrans-345
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用PyTorch Lightning，一旦定义了Lightning模块，只需一行代码即可运行训练代码。无需在代码中循环加载数据并手动运行反向步骤。列表[5-14](#PC14)显示了您需要执行的训练代码以训练模型。您只需定义一个`trainer`，并通过传递之前定义的`PyTorchLightning`模块和`dataloaders`来调用其`fit`方法。
 - en: '[PRE13]'
+  id: totrans-346
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: The prediction code using the trained model remains the same as in PyTorch.
     Figure [5-14](#Fig14) shows the performance of the trained model for one sample
     of input.
+  id: totrans-347
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用训练好的模型进行预测的代码与PyTorch中相同。图[5-14](#Fig14)显示了训练模型对一个输入样本的性能。
 - en: '![](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig14_HTML.jpg)'
+  id: totrans-348
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/502835_2_En_5_Chapter/502835_2_En_5_Fig14_HTML.jpg)'
 - en: A processed simulation image of number 5 and a horizontal bar chart labeled
     probability. The highest value of 0.90 is obtained by the bar at 5\. Values are
     estimated.
+  id: totrans-349
   prefs: []
   type: TYPE_NORMAL
+  zh: 数字5的加工模拟图像和标注为概率的水平条形图。条形图在5的位置获得了最高的0.90值。数值是估算的。
 - en: Figure 5-14
+  id: totrans-350
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-14
 - en: Prediction of a trained model on input image of a“5” digit
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
+  zh: 对一个“5”数字输入图像的训练模型预测
 - en: As you can see, the use of PyTorch Lightning helps reduce the boilerplate code
     overhead.
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: 如您所见，使用PyTorch Lightning有助于减少样板代码的开销。
 - en: TensorFlow
+  id: totrans-353
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: TensorFlow
 - en: TensorFlow also largely follows the same pattern as PyTorch. It has its own
     set of data loaders, model building patterns, loss and optimizer definitions,
     and training loops. I’ll do a quick dive. The end-to-end training using TensorFlow
     is given in the `5.e-Intro-to-tensorflow.ipynb` notebook. Listing [5-15](#PC15)
     shows the code for downloading and creating the MNIST dataset under TensorFlow.
+  id: totrans-354
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorFlow在很大程度上遵循与PyTorch相同的模式。它有一套自己的数据加载器、模型构建模式、损失和优化器定义以及训练循环。我将快速介绍。TensorFlow的端到端训练可以在`5.e-Intro-to-tensorflow.ipynb`笔记本中找到。列表[5-15](#PC15)显示了在TensorFlow下下载和创建MNIST数据集的代码。
 - en: '[PRE14]'
+  id: totrans-355
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: As with PyTorch, you define the neural network model using the `tf.keras.model.Sequential`
     class, as shown in Listing [5-16](#PC16). It also gives the code for remaining
     steps—that is, defining the loss function as well as tying the model with the
     optimizer and loss function using the `model.compile` function call. Finally,
     like PyTorch Lightning, you use `model.fit` to train the model using the training
     data.
+  id: totrans-356
   prefs: []
   type: TYPE_NORMAL
+  zh: 与 PyTorch 类似，你使用 `tf.keras.model.Sequential` 类定义神经网络模型，如列表 [5-16](#PC16) 所示。它还提供了剩余步骤的代码——即定义损失函数以及使用
+    `model.compile` 函数调用将模型与优化器和损失函数绑定。最后，像 PyTorch Lightning 一样，你使用 `model.fit` 来使用训练数据训练模型。
 - en: '[PRE15]'
+  id: totrans-357
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: The code to evaluate the output of the trained model on a sample image is shown
     in Listing [5-17](#PC17). It is largely the same as what you saw in the case of
     PyTorch.
+  id: totrans-358
   prefs: []
   type: TYPE_NORMAL
+  zh: 评估训练模型在样本图像上输出的代码显示在列表 [5-17](#PC17) 中。它与你在 PyTorch 的情况中看到的大致相同。
 - en: '[PRE16]'
+  id: totrans-359
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Like PyTorch or PyTorch Lightning, the model’s accuracy is very high after training.
     The probability distribution of the model’s output in a sample image mimics the
     kind of values you see in Figures [5-13](#Fig13) and [5-14](#Fig14).
+  id: totrans-360
   prefs: []
   type: TYPE_NORMAL
+  zh: 与 PyTorch 或 PyTorch Lightning 类似，模型在训练后准确性非常高。模型在样本图像中的输出概率分布模仿你在图 [5-13](#Fig13)
+    和 [5-14](#Fig14) 中看到的值。
 - en: This completes the introduction of the popular three frameworks. There are many
     more that are emerging, such as JAX, FastAI, Glueon from AWS, Microsoft, and so
     on. I will stick to PyTorch most of the time and may occasionally show some sample
     code using TensorFlow.
+  id: totrans-361
   prefs: []
   type: TYPE_NORMAL
+  zh: 这完成了对流行三个框架的介绍。还有许多正在出现的框架，例如 JAX、FastAI、AWS、Microsoft 的 Glueon 等等。我大部分时间会坚持使用
+    PyTorch，偶尔也会展示一些使用 TensorFlow 的示例代码。
 - en: Summary
+  id: totrans-362
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 摘要
 - en: In this chapter, the primary focus was to look at the use of function approximation
     for very large or continuous state spaces that cannot be handled using the approach
     of table-based learning that you saw in previous chapters.
+  id: totrans-363
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，主要关注的是查看函数逼近在非常大或连续的状态空间中的应用，这些状态空间无法使用你在前几章中看到的基于表的学习方法来处理。
 - en: The chapter talked about what it means to carry out optimization with function
     approximation. I also showed how the concepts of training in supervised learning,
     training a model to produce values close to targets, can be applied in reinforcement
     learning. The chapter emphasized the need for the proper handling due to moving
     targets and the sample interdependence that is present in RL.
+  id: totrans-364
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章讨论了使用函数逼近进行优化意味着什么。我还展示了监督学习中的训练概念，即训练模型产生接近目标的值，如何在强化学习中应用。本章强调了由于移动目标和强化学习（RL）中存在的样本相互依赖性，需要适当处理。
 - en: You then looked at various strategies of functional approximation, including
     linear and nonlinear ones. I also demonstrated that table-based methods are just
     special cases of linear approximation. This was followed by a detailed discussion
     of incremental methods for prediction and control. You saw these being applied
     to the mountain car for build training agents using *n*-step SARSA and SARSA(*λ*).
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，你看到了各种函数逼近策略，包括线性和非线性。我还演示了基于表的方 法只是线性逼近的特殊情况。随后，对预测和控制增量方法进行了详细讨论。你看到了这些方法被应用于山车，用于构建使用
+    *n*-步 SARSA 和 SARSA(*λ*) 的训练代理。
 - en: Next, the chapter talked about batch methods in general and explored the complete
     derivation of the update rule for DQN, a popular algorithm from the family of
     batch methods. You then looked at linear least squares methods for prediction
     and control. Along the way, I kept highlighting the convergence issues in general
     as well as convergence in the specific methods being discussed.
+  id: totrans-366
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，本章讨论了批量方法的一般情况，并探讨了批量方法家族中流行的 DQN（深度Q网络）算法的更新规则的完整推导。然后，你看到了用于预测和控制的最小二乘法。在这个过程中，我一直在强调一般收敛问题以及所讨论的具体方法的收敛性。
 - en: I concluded the chapter with a brief introduction to deep learning frameworks
     like PyTorch, PyTorch Lightning, and TensorFlow.
+  id: totrans-367
   prefs: []
   type: TYPE_NORMAL
+  zh: 我以对 PyTorch、PyTorch Lightning 和 TensorFlow 等深度学习框架的简要介绍结束了这一章。
