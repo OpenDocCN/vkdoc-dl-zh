@@ -1,11 +1,15 @@
 - en: 5. Making a game with PoseNet, a pose estimator model
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 5. 使用 PoseNet 制作游戏，姿态估计模型
 - en: Time for a fun application! Are you ready to pose? I hope so, because in this
     exercise your movements are the test dataset.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 是时候制作一个有趣的应用了！你准备好摆姿势了吗？我希望如此，因为在这个练习中，你的动作是测试数据集。
 - en: In this chapter, you will implement a game that features the model known as
     **PoseNet**. PoseNet is a neural network capable of doing real-time human pose
     estimation in images and videos. In this context, estimating a pose refers to
@@ -13,37 +17,54 @@
     a frame. For example, Figure [5-1](#Fig1) is a screenshot from the app, and on
     the canvas located at the center, you can see a skeleton overlay showing the parts
     of the body identified by the algorithm.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，你将实现一个具有**PoseNet**模型的游戏功能。PoseNet 是一种能够在图像和视频中实时进行人体姿态估计的神经网络。在这个上下文中，估计姿态是指识别一个人体关节和其他部分在画面中出现的任务。例如，图
+    [5-1](#Fig1) 是应用程序的截图，在位于中心的画布上，你可以看到算法识别的身体部位骨骼叠加。
 - en: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig1_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig1_HTML.jpg)'
+  id: totrans-3
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig1_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig1_HTML.jpg)'
 - en: Figure 5-1
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 5-1
 - en: A screenshot of the game. I’m not very good at it
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 游戏的截图。我不是很擅长这个
 - en: With PoseNet, we will introduce the book’s first pre-trained and built-in model.
     So, since we do not have to train it, our work reduces to understanding the algorithm’s
     output and building the game around it.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 PoseNet，我们将介绍本书的第一个预训练和内置模型。因此，由于我们不需要训练它，我们的工作就减少到理解算法的输出并围绕它构建游戏。
 - en: The application you will create is a game where the user has to show to PoseNet,
     through the device’s webcam, a series of body parts before time runs out. If PoseNet
     identifies the part, the user gets one point. Otherwise, it gets a strike.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 你将要创建的应用是一款游戏，用户需要在时间耗尽之前，通过设备的摄像头向 PoseNet 展示一系列身体部位。如果 PoseNet 识别出该部位，用户得一分。否则，则扣一分。
 - en: What is PoseNet?
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 什么是 PoseNet？
 - en: PoseNet is a convolutional neural network model for estimating human poses.
     These poses are made from a group of 17 different and predefined body parts, known
     as **keypoints**. These are both eyes, ears, shoulders, elbows, wrists, hips,
     knees, ankles, and the nose.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: PoseNet 是一种用于估计人体姿态的卷积神经网络模型。这些姿态由 17 个不同且预定义的身体部位组成，被称为**关键点**。这些部位包括双眼、耳朵、肩膀、肘部、手腕、臀部、膝盖、脚踝和鼻子。
 - en: 'The model has two methods of decoding the poses: *single-person pose estimator*
     and *multiple-person pose estimator*. The single pose estimator is faster and
     requires fewer resources. But its disadvantage is that if multiple subjects are
@@ -53,42 +74,62 @@
     estimator handles this problem. This method can recognize if the poses come from
     different bodies, at the cost of being slower than the single pose estimator (Oved,
     2018). For this game, we will use the single pose detector.'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 该模型有两种解码姿态的方法：*单人姿态估计器*和*多人姿态估计器*。单人姿态估计器速度更快，所需资源更少。但其缺点是，如果画面中存在多个主体，模型可能会从所有主体中估计姿态。例如，在视频中存在两个人的情况下，算法可能会从主体
+    A 检测到左眼，从主体 B 检测到右眼。多人姿态估计器可以处理这个问题。这种方法可以识别姿态是否来自不同的身体，但代价是比单人姿态估计器慢（Oved，2018）。对于这个游戏，我们将使用单人姿态检测器。
 - en: 'Estimating a pose with PoseNet involves two key steps: computing **heatmaps**
     and **offset vectors**. The heatmaps are three-dimensional tensors of size RESOLUTION
     x RESOLUTION x 17 (the algorithm automatically squares the image), where the number
     17 represents the keypoints. Each of the heatmaps’ values is the confidence or
     probability that the corresponding keypoint is present at that location. Figure
     [5-2](#Fig2) presents a simplified example of the “right knee” keypoint heatmap.'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 PoseNet 估计姿态涉及两个关键步骤：计算**热图**和**偏移向量**。热图是大小为 RESOLUTION x RESOLUTION x 17
+    的三维张量（算法自动将图像平方），其中数字 17 代表关键点。热图中的每个值都是对应关键点在该位置存在的置信度或概率。图 [5-2](#Fig2) 展示了“右膝”关键点热图的简化示例。
 - en: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig2_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig2_HTML.jpg)'
+  id: totrans-12
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig2_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig2_HTML.jpg)'
 - en: Figure 5-2
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 5-2
 - en: A “right knee” heatmap
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: “右膝”热图
 - en: In the second step, PoseNet calculates a set of offset vectors that measure
     the distance between the pixel and the keypoint location, producing, and I quote
     one of the papers behind the model, “a more precise estimating of the corresponding
     keypoint location” (Papandreou et al., 2017). After creating these tensors, the
     network aggregates them to produce highly localized activation maps that pinpoint
     the position of the keypoints (Figure [5-3](#Fig3)).
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在第二步中，PoseNet计算一组偏移向量，这些向量测量像素与关键点位置之间的距离，并产生，正如模型背后的论文之一所引用的，“更精确地估计对应的关键点位置”（Papandreou等人，2017）。在创建这些张量之后，网络将它们聚合起来，产生高度局部化的激活图，精确地定位关键点的位置（图[5-3](#Fig3))。
 - en: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig3_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig3_HTML.jpg)'
+  id: totrans-16
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig3_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig3_HTML.jpg)'
 - en: Figure 5-3
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5-3
 - en: The “right knee” offset vectors
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: “右膝”偏移向量
 - en: 'PoseNet comes in two flavors: the **MobileNet** and **ResNet** variants. The
     one we will use is the MobileNet-based variant. MobileNet (Howard et al., 2017)
     is a CNN architecture that sacrifices accuracy in favor of speed and size, making
@@ -96,22 +137,30 @@
     more about MobileNet in Chapter [8](494424_1_En_8_Chapter.xhtml). The second variation
     is based on ResNet (He et al., 2015), a more accurate albeit slower and larger
     architecture.'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: PoseNet有两种版本：**MobileNet**和**ResNet**变体。我们将使用基于MobileNet的变体。MobileNet（Howard等人，2017）是一种CNN架构，它牺牲了准确性以换取速度和大小，使其非常适合对时间敏感的使用案例，如游戏。我们将在第[8](494424_1_En_8_Chapter.xhtml)章中重新审视并了解更多关于MobileNet的内容。第二种变体基于ResNet（He等人，2015），这是一种更准确但速度较慢、体积较大的架构。
 - en: The COCO dataset
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: COCO数据集
 - en: The PoseNet model was trained on the **Common Objects in Context** or COCO keypoints
     (Lin et al., 2014) dataset. This dataset, created for the COCO Keypoint Detection
     Task competition, has more than 200,000 images with over 250,000 instances of
     people performing everyday tasks in uncontrolled conditions.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: PoseNet模型是在**上下文中的常见物体**或COCO关键点（Lin等人，2014）数据集上训练的。这个数据集是为COCO关键点检测任务竞赛创建的，包含超过200,000张图片，以及超过250,000个在不受控制条件下执行日常任务的实例。
 - en: Building the game
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建游戏
 - en: The game you are about to create is a movement game where the user has to perform
     the pose presented on screen. For example, if the game says “leftHip,” display
     your left hip on the webcam (please be careful). But you have to be fast and strike
@@ -121,127 +170,184 @@
     having less time to pose and triggering the “inverse” mode, a game mode where
     the user gets a strike if the prompted keypoint is present in the frame. So, if
     you see “~nose” on the screen, hide the nose from the camera.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 你即将创建的游戏是一款动作游戏，玩家需要在屏幕上执行显示的姿势。例如，如果游戏提示“左髋”，请在网络摄像头（请小心）上展示你的左髋。但你必须迅速，并在规定时间内完成姿势。否则，你将受到一次扣分，就像每个经典视频游戏一样，你只有三次机会。另一方面，如果你做得很好，像舞者一样掌控这些姿势，游戏难度会加大。难度加大意味着你有更少的时间来完成姿势，并触发“反向”模式，这是一种游戏模式，如果提示的关键点在帧中存在，用户将受到一次扣分。所以，如果你在屏幕上看到“~nose”，请从摄像头中隐藏鼻子。
 - en: Since we are using a pre-trained model and making a game, this exercise will
     differ from the others. You will start by setting up the camera, followed by loading
     and integrating the model and writing the gameplay loop. Unlike the earlier examples,
     there’s no data pre-processing, training, and visualization tasks involved.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们使用的是预训练模型并制作游戏，这个练习将与其他练习有所不同。你将首先设置摄像头，然后加载和集成模型，并编写游戏循环。与早期示例不同，这里不涉及数据预处理、训练和可视化任务。
 - en: Structuring the UI
+  id: totrans-25
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: UI结构化
 - en: The game UI is very simple (Figure [5-1](#Fig1)). It has a canvas presenting
     the webcam video with the keypoints and “skeleton” placed on top of the feed.
     Above the video is a button to start the game and another one to stop it. Under
     them are the game’s score and strikes. On the sides of the canvas are the keypoint
     to pose and the timer. At the bottom is a label that notifies if the pose is correct
     or wrong.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 游戏UI非常简单（图[5-1](#Fig1)）。它有一个画布，展示带有关键点和“骨骼”的网络摄像头视频。视频上方有一个开始游戏的按钮和另一个停止游戏的按钮。它们下面是游戏的得分和扣分。画布两侧是姿势的关键点和计时器。底部有一个标签，通知姿势是否正确或错误。
 - en: 'Now to code it. As usual, create a new directory in your location of choice,
     and start a web server at the same place. Next, open the code editor and create
     a file named *index.html* and *style.css*. At the top of the file, use a `<head>`
     tag to import TensorFlow.js, PoseNet, and the CSS file:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在开始编写代码。像往常一样，在你的选择位置创建一个新的目录，并在同一位置启动一个网络服务器。接下来，打开代码编辑器，创建一个名为 *index.html*
+    和 *style.css* 的文件。在文件顶部，使用 `<head>` 标签导入 TensorFlow.js、PoseNet 和 CSS 文件：
 - en: 'After `<head>`, add the `<body>` tag. Inside this node, write a title for the
     app and a `<div>` with `id` attribute `game-container` for the game UI. As stated
     earlier, the game UI has a set of buttons that you will create programmatically
     inside a `<div>` with `id` attribute `buttons-menu`. Below it, define another
     `<div>` used to display the game’s score and strikes:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 `<head>` 标签之后，添加 `<body>` 标签。在这个节点内部，为应用编写一个标题，并创建一个具有 `id` 属性 `game-container`
+    的 `<div>` 用于游戏用户界面。如前所述，游戏用户界面包含一组按钮，你将在具有 `id` 属性 `buttons-menu` 的 `<div>` 中程序化地创建这些按钮。在其下方，定义另一个
+    `<div>`，用于显示游戏的得分和击打次数：
 - en: '[PRE0]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Under the last `<div>`, create another one. This one has the “pose to match”
     string, the timer, the `<video>` tag used to retrieve the webcam feed, and the
     canvas that displays the video and the keypoints:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 在最后一个 `<div>` 下方，创建另一个 `<div>`。这个 `<div>` 包含“匹配姿势”字符串、计时器、用于检索网络摄像头流的 `<video>`
+    标签以及显示视频和关键点的画布：
 - en: '[PRE1]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: After the `<div>`, add two `<scripts>` to load *index.js* and *draw.js*, a script
     with functions that draw the keypoints and skeleton over the canvas. The *draw.js*
     script (which I slightly changed) comes from the PoseNet example in the official
     TensorFlow.js repository:^([1](#Fn1))
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 `<div>` 之后，添加两个 `<script>` 标签以加载 *index.js* 和 *draw.js*，这是一个包含绘制关键点和骨骼的函数的脚本。*draw.js*
+    脚本（我稍作修改）来自官方 TensorFlow.js 存储库中的 PoseNet 示例:^([1](#Fn1))
 - en: 'To end this section, copy the following CSS code (for centering and positioning
     the elements) in *style.css*:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了结束本节，将以下 CSS 代码（用于居中和定位元素）复制到 *style.css* 文件中：
 - en: '[PRE2]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Setting up the camera
+  id: totrans-35
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 设置摄像头
 - en: 'Create the *index.js* file. On the first line, add the variable `SIZE` (the
     size of the canvas width and height) and set its value to 500\. Following this,
     create the new function `setupCamera()`:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建 *index.js* 文件。在第一行，添加变量 `SIZE`（画布宽度和高度的尺寸）并将其值设置为 500。接下来，创建新的函数 `setupCamera()`：
 - en: '[PRE3]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The first lines of `setupCamera()` get the video element and set its size. It
     uses `MediaDevices.getUserMedia``()` ^([2](#Fn2)) to produce a Promise whose intended
     value is a `MediaStream` (the video). We will get the value using a `then` statement.
     In it, use a callback to set the webcam stream to the video element. This method
     triggers the pop-up that requests permission to access the video (accept!).
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '`setupCamera()` 函数的前几行获取视频元素并设置其大小。它使用 `MediaDevices.getUserMedia()` 函数 ^([2](#Fn2))
+    生成一个 Promise，其预期值是一个 `MediaStream`（视频）。我们将使用 `then` 语句获取该值。在其中，使用回调将网络摄像头流设置到视频元素。此方法会触发请求权限访问视频的弹出窗口（接受！）。'
 - en: 'There is a second function you will need, `loadVideo()`. The function calls
     `setupCamera()` and uses its method `play()` to play the video:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 你还需要第二个函数 `loadVideo()`。该函数调用 `setupCamera()` 并使用其 `play()` 方法播放视频：
 - en: '[PRE4]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Now, let’s draw and present the video on the canvas. So, create a new function,
     `detect()`, that takes the `video` as an argument. In the function, get the canvas
     element and its context and set the size. Within the function, add a second one
     (yes, inside), and name it `getPose()`. Later, you will add here the code responsible
     for performing the predictions. For now, let’s focus on drawing the video on the
     canvas.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们在画布上绘制并展示视频。因此，创建一个新的函数 `detect()`，它接受 `video` 作为参数。在函数中，获取画布元素及其上下文并设置大小。在函数内部，添加第二个（是的，在内部），并命名为
+    `getPose()`。稍后，你将在这里添加执行预测的代码。现在，让我们专注于在画布上绘制视频。
 - en: Instead of drawing the video feed as it is, we will use `ctx.scale()` and `ctx.translate()`
     to flip it, so it looks more natural to us. After preparing the context, use `requestAnimationFrame()`
     , a JavaScript function that, in this circumstance, is used to produce the next
     frame of the video. Now, close `getPose()`, and call it from the next line (while
     still in `detect()`).
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们不会像平常一样绘制视频流，而是使用 `ctx.scale()` 和 `ctx.translate()` 来翻转它，使其对我们来说看起来更自然。在准备上下文后，使用
+    `requestAnimationFrame()`，这是一个 JavaScript 函数，在这种情况下，用于生成视频的下一帧。现在，关闭 `getPose()`
+    函数，并在下一行（仍在 `detect()` 函数中）调用它。
 - en: '[PRE5]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Before moving on to the exciting part of the game, take a small pause to check
     that everything is running as expected. So, create an `init()` function , and
     call `loadVideo()`, and `detect()` from it. Next, call `init()`:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: With the web server running, go to the browser and start the app. Right away,
     a pop-up shows up, asking for permission to access the camera. After accepting,
     the webcam feed will appear in the middle of the app.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: Loading and testing the model
+  id: totrans-47
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: The app is running, and you can see yourself on the canvas. Good. So, as the
     next step, you will load the model and do a quick test to check out how it works
     and to understand better the prediction object it returns.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
 - en: 'Back at the code editor, create a new file and name it *draw.js*. This file
@@ -249,52 +355,71 @@
     Before getting to the functions, declare a variable `COLOR` and set it to “red”
     (or any other color) to paint every line and dot with red. Then create a function
     that draws the points; call it `drawPoint()` :'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE7]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: You might realize that some context methods are those we saw in Chapter [5](494424_1_En_5_Chapter.xhtml).
     The only exception is `ctx.arc()`, one that draws circles.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
 - en: 'After `drawPoint()`, create `drawSegment()`, a function that draws the lines
     between keypoints:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE8]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Next comes `drawSkeleton()` alongside its helper function `toTuple()`. `drawSkeleton()`
     uses PoseNet’s `getAdjacentKeyPoints()` method to get the points near the keypoints
     and `drawSegment()` to draw the lines:'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE9]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'Last, you will need `drawKeypoints()` to draw the keypoints. Note that this
     function and `drawSkeleton()` check if the confidence of the detected keypoints
     is above a certain threshold. If not, the method will not return the prediction:'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE10]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'With the drawing functions defined, we have what we need to predict the keypoints
     and show them. So, head back to *index.js* and import *draw.js*:'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE11]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Now go to `init()`. Right after the line where you called `loadVideo()`, use
     the following to load the model (make sure you declare `model`):'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE12]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: PoseNet’s `load()` method takes as an argument a configuration object that tunes
     several aspects of the model. The most important one is `architecture`, and here
     you specify whether you want to use MobileNet or ResNet. A second attribute, `outputStride`,
@@ -306,6 +431,7 @@
     the value, the larger the size of the layers, meaning more accuracy, but at the
     cost of speed—the possible values are 0.50, 0.75, 1.0, or 1.01\. That is for the
     model! Now return to `getPose()`.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
 - en: 'At the very beginning of `getPose()` (before the lines you previously wrote),
@@ -316,29 +442,46 @@
     inferred by the model, which is the pose the game uses to assess if the user performed
     what the game instructed. Also, create a const `MIN_CONFIDENCE` and set it to
     0.3:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 `getPose()` 的开头（在你之前写的行之前），使用 `video` 和一个将 `flipHorizontal` 设置为 `true` 的配置对象作为参数调用
+    `model.estimateSinglePose()`（记住我们正在使用单姿势估计器）。此属性水平镜像姿势。然后在文件顶部声明变量 `lastPose`。此变量保存模型推断出的最后一个姿势，这是游戏用来评估用户是否执行了游戏指令的姿势。此外，创建一个常量
+    `MIN_CONFIDENCE` 并将其设置为 0.3：
 - en: '[PRE13]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'Again, back to `getPose()`, set to `lastPose` the returned value from `estimateSinglePose()`.
     Then, after all the methods involving `ctx`, but before `requestAnimationFrame()`,
     call `drawKeypoints()` and `drawSkeleton`. `getPose()` should now look like this:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 再次回到 `getPose()`，将 `estimateSinglePose()` 返回的值设置为 `lastPose`。然后，在涉及 `ctx` 的所有方法之后，但在
+    `requestAnimationFrame()` 之前，调用 `drawKeypoints()` 和 `drawSkeleton`。`getPose()`
+    现在应该看起来像这样：
 - en: '[PRE14]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Just in case, make sure that `getPose()` is within the `detect()` function .
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 只以防万一，确保 `getPose()` 在 `detect()` 函数内。
 - en: Now return to the app and reload it. As before, you should see the webcam feed
     in the center of the page, but now it has the keypoints and skeleton detected
     by PoseNet. Move around a bit so you can get the feel of the detections. If the
     stream seems slow, tweak the parameter `outputStride`. Conversely, if the image
     shows no lag at all, try a smaller value to increase the model’s accuracy.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在回到应用并重新加载它。和之前一样，你应该在页面中心看到网络摄像头的视频流，但现在它有了 PoseNet 检测到的关键点和骨架。四处移动一下，以便你能感受到检测的效果。如果流看起来很慢，调整参数
+    `outputStride`。相反，如果图像没有任何延迟，尝试一个更小的值以提高模型的准确性。
 - en: 'Before proceeding with the next and final part of the tutorial, let’s quickly
     review the model’s output. A PoseNet prediction (Figure [5-4](#Fig4)) is an object
     `pose` made of two attributes: `score` and `keypoints`. The second one, `keypoints`,
@@ -346,21 +489,33 @@
     These elements contain an object with the keypoint confidence score, the name
     of the part, and its location. The first attribute of the prediction, `score`,
     is the mean of the keypoints’ confidences.'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 在继续教程的下一部分和最后一部分之前，让我们快速回顾一下模型的输出。PoseNet 预测（图 [5-4](#Fig4)）是一个由两个属性组成的对象 `pose`：`score`
+    和 `keypoints`。第二个属性 `keypoints` 对应于长度为 17 的数组，其中每个元素都是关键点之一。这些元素包含一个对象，包含关键点置信度分数、部分的名称及其位置。预测的第一个属性
+    `score` 是关键点置信度的平均值。
 - en: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig4_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig4_HTML.jpg)'
+  id: totrans-70
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig4_HTML.jpg](../images/494424_1_En_5_Chapter/494424_1_En_5_Fig4_HTML.jpg)'
 - en: Figure 5-4
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 5-4
 - en: A PoseNet prediction object
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: PoseNet 预测对象
 - en: Creating the gameplay loop
+  id: totrans-73
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 创建游戏循环
 - en: Take off your machine learning developer hat and put on the video game developer
     one because, in this part of the exercise, you will build the gameplay loop. As
     mentioned in the introduction, the game’s goal is making you do a random pose
@@ -368,65 +523,95 @@
     a specific score, the time to pose decreases, and the “inverse” mode activates.
     While in this mode, the user may have to hide, not show, the instructed keypoint.
     Let’s go.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 摘下你的机器学习开发者帽子，戴上视频游戏开发者帽子，因为在这个练习的部分，你将构建游戏循环。正如介绍中提到的，游戏的目标是在时间耗尽前做出一个随机的姿势。为了让游戏更具挑战性和趣味性，在达到特定分数后，姿势的时间会减少，并且激活“逆”模式。在这个模式下，用户可能需要隐藏而不是显示指令中的关键点。让我们开始吧。
 - en: 'Back at the global variables section, declare the following ones:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 回到全局变量部分，声明以下变量：
 - en: '[PRE15]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Then create a function named `initGame()`. Here, you will initialize the `score`
     and `strike` variables, get the game’s first pose using `nextPose()` (defined
     soon), and display the pose to do on the game interface:'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后创建一个名为 `initGame()` 的函数。在这里，你将初始化 `score` 和 `strike` 变量，使用 `nextPose()`（稍后定义）获取游戏的第一姿势，并在游戏界面上显示要做的姿势：
 - en: '[PRE16]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'Next, define another function, `nextPose()` , which returns two values (in
     a list): a random keypoint from `keypointsList` and a flag to specify whether
     this round applies the inverse rule if the mode is active. Note that if the inverse
     mode is on, there is only a 33% chance of applying its effect:'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，定义另一个函数，`nextPose()`，它返回两个值（在一个列表中）：`keypointsList`中的一个随机关键点和一个标志，用于指定如果模式处于活动状态，则这一轮是否应用逆规则。请注意，如果逆模式开启，只有33%的机会应用其效果：
 - en: '[PRE17]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'The next function is `verifyPose()`. As the name indicates, this one checks
     if the performed pose is correct. It iterates over the keypoints of `lastPose`
     while checking if the confidence of the instructed keypoint is greater than the
     threshold. If `true`, the function returns `true`. On the contrary, if the user
     shows the keypoint while inverse mode is on, then `verifyPose()` returns `false`:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一个函数是`verifyPose()`。正如其名所示，这个函数检查执行的动作是否正确。它遍历`lastPose`中的关键点，同时检查指示的关键点的置信度是否大于阈值。如果是`true`，则函数返回`true`。相反，如果用户在逆模式开启时显示关键点，则`verifyPose()`返回`false`：
 - en: '[PRE18]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'Then comes `adjustRules()`. This function changes the game mode according to
     the current score. With the default values, if the game score is 3, `timeToPose`
     changes to 2, meaning that the user now has two seconds to pose. Likewise, if
     the score is 5, the inverse mode gets activated:'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后是`adjustRules()`。这个函数根据当前分数更改游戏模式。使用默认值，如果游戏分数是3，`timeToPose`将变为2，这意味着用户现在有2秒钟来做出动作。同样，如果分数是5，逆模式将被激活：
 - en: '[PRE19]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: 'Next is `updateState()`, responsible for increasing the user’s score (if `result`
     is true) and the strikes (if `result` is false) and culminating the game if the
     user’s strikes reach `MAX_STRIKES`. If this happens, the game resets. Moreover,
     `updateState()` presents on screen the outcome of the round:'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来是`updateState()`，负责在`result`为`true`时增加用户的分数，在`result`为`false`时增加打击次数，并在用户的打击次数达到`MAX_STRIKES`时结束游戏。如果发生这种情况，游戏将重置。此外，`updateState()`在屏幕上显示这一轮的结果：
 - en: '[PRE20]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'Now comes the important function, `initGameLoop()` :'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在是重要的函数，`initGameLoop()`：
 - en: '[PRE21]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: The function starts by setting `timeToPose` to `timeLeft`, followed by calling
     `initGame()`. Then comes `setInterval()`, a JavaScript function that executes
     a callback function at specified intervals (expressed in milliseconds)—ours executes
@@ -434,55 +619,79 @@
     function every `timeToPose` seconds since that is the allocated time. But we want
     to present a timer on the screen so that the user can see the remaining seconds.
     Hence, the UI needs to update every second.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数首先将`timeToPose`设置为`timeLeft`，然后调用`initGame()`。接着是`setInterval()`，这是一个JavaScript函数，在指定的间隔（以毫秒为单位）执行回调函数——我们的函数每秒执行一次。让我解释一下原因。一个明显的替代方案是每`timeToPose`秒调用函数，因为那是分配的时间。但我们在屏幕上想要展示一个计时器，以便用户可以看到剩余的秒数。因此，UI需要每秒更新一次。
 - en: The callback first checks if `timeLeft` (to pose) is less than zero. If it is,
     it resets the timer, calls `verifyPose()`, and updates the game state according
     to the pose outcome. Then, it calls `nextPose()` to compute the next round’s pose
     and presents the keypoint name on the UI. Then, it updates the UI to reflect the
     current value of `timeLeft`, followed by subtracting one from the variable.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 回调首先检查`timeLeft`（动作时间）是否小于零。如果是，则重置计时器，调用`verifyPose()`，并根据动作结果更新游戏状态。然后，它调用`nextPose()`来计算下一轮的动作，并在UI上显示关键点名称。然后，它更新UI以反映`timeLeft`的当前值，随后从变量中减去一。
 - en: 'Similar to how we initialized the game, we need the means to reset it. The
     following function, `resetGame()`, takes care of that. It clears out the text
     fields and stops the interval:'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 与我们初始化游戏的方式类似，我们需要重置游戏的方法。下面的函数`resetGame()`负责这个任务。它清空文本字段并停止间隔：
 - en: '[PRE22]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'To end the exercise, we need to create the two buttons that start and stop
     the game; “Start” calls `initGameLoop()` and “Stop,” `resetGame()`:'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了结束练习，我们需要创建两个按钮来开始和停止游戏；“开始”调用`initGameLoop()`，“停止”调用`resetGame()`：
 - en: '[PRE23]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'Finally, return to `init()` and call `prepareButtons()` between `posenet.load()`
     and `detect()`:'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，回到`init()`并调用`prepareButtons()`，在`posenet.load()`和`detect()`之间：
 - en: '[PRE24]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Testing the game
+  id: totrans-97
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 测试游戏
 - en: Time to play! If you go to the app, you will see the two buttons, “start” and
     “stop.” Click “start.” But hurry! Remember, you only have five seconds to present
     the keypoint. After five correct poses, the time countdown will start at 2 seconds,
     followed by activating the “inverse” mode once the score reaches 5.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 是时候开始游戏了！如果你打开应用，你会看到两个按钮，“开始”和“停止”。点击“开始”。但要注意！记住，你只有五秒钟的时间来展示关键点。在完成五个正确姿势后，倒计时将开始，当分数达到5时，将激活“反向”模式。
 - en: Enjoy the game! If you manage to get a high score, let me know. I would like
     to see it. :)
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 享受游戏吧！如果你设法得到高分，告诉我。我想看看。 :)
 - en: Recap
+  id: totrans-100
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 回顾
 - en: Well, that was entertaining. What did you think? In this chapter, we presented
     an example of a game that involves a machine learning model as part of its gameplay.
     Our game, titled *Pose for the Net*, is a movement game where the goal is to match
@@ -491,32 +700,46 @@
     meant that we did not have to go through the process of training it or defining
     it. None of that. The only thing we needed was one line of code to integrate it
     into our app.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 好吧，那很有趣。你觉得呢？在本章中，我们展示了一个涉及机器学习模型作为其游戏玩法一部分的游戏示例。我们的游戏，名为*为网络摆姿势*，是一款动作游戏，目标是匹配它展示的姿势。模型，PoseNet，是一个姿态估计器，也是TensorFlow.js提供的许多预训练模型之一。作为一个预训练模型，这意味着我们不需要经历训练它或定义它的过程。都不是。我们唯一需要的是一行代码来将其集成到我们的应用中。
 - en: Exercises
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 练习
 - en: Extend the app so that it supports the multiple poses estimator and two players
     using the method `estimateMultiplePoses()`.
+  id: totrans-103
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 扩展应用，使其支持使用`estimateMultiplePoses()`方法的多姿势估计器和两名玩家。
 - en: Replace the model with ResNet.
+  id: totrans-104
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将模型替换为ResNet。
 - en: Tweak the parameters and compare the trade-off between speed and accuracy.
+  id: totrans-105
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 调整参数，并比较速度和准确度之间的权衡。
 - en: Fit a k-means model to cluster the coordinates of the keypoints.
+  id: totrans-106
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将k-means模型拟合到关键点的坐标进行聚类。
 - en: PoseNet is a versatile model that fits many use cases. So, now it is your turn
     to build something new. If you need ideas, you could start with tracking keypoint
     or using a combination of them to track more complicated poses like a sitting
     or a sleeping position.
+  id: totrans-107
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: PoseNet是一个多功能的模型，适用于许多用例。所以，现在轮到你来构建一些新东西了。如果你需要灵感，可以从跟踪关键点或使用它们的组合来跟踪更复杂的姿势开始，比如坐着或睡觉的姿势。
