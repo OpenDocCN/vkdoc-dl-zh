@@ -1,22 +1,29 @@
 - en: 2. Pretraining Strategies and Transfer Learning
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 2. 预训练策略和迁移学习
 - en: '*Steal from anywhere that resonates with inspiration or fuels your imagination…
     And don’t bother concealing your thievery – celebrate if you feel like it. In
     any case, remember what* Jean-Luc Godard *said: “It’s not where you take things
     from – it’s where you take them to.”*'
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '*从任何能激发灵感或激发你想象力的地方偷取……并且不要担心隐藏你的盗窃行为——如果你愿意，就庆祝吧。无论如何，记住让-吕克·戈达尔说过的话：“重要的不是你从哪里拿东西，而是你把它们带到哪里。”*'
 - en: ''
+  id: totrans-2
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: —Jim Jarmusch, American film director^([1](#Fn1))
+  id: totrans-3
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: ——吉姆·贾木许，美国电影导演^([1](#Fn1))
 - en: Obtaining a good deep neural network for most modern datasets is a difficult
     task. Optimizers need to traverse extraordinarily high-dimensional, jagged loss
     landscapes and differentiate between good and mediocre solutions using a limited
@@ -24,22 +31,30 @@
     relatively well-studied problem types directly training the neural network on
     the data right after initialization – it’s simply too difficult to get good results
     feasibly by training directly from scratch.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于大多数现代数据集，获得一个好的深度神经网络是一个困难的任务。优化器需要穿越极其高维、崎岖的损失景观，并使用有限的工具区分好的和一般化的解决方案。因此，你很少看到现代深度学习设计直接在初始化后的数据上训练神经网络来解决相对研究较深的问题类型——直接从头开始训练以获得好的结果在现实中是过于困难的。
 - en: Part of the analytical creativity embedded within deep learning design, then,
     is a need to turn this difficult task – modeling a complex phenomenon with a deep
     neural network – into a more approachable and efficient process.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度学习设计内嵌的部分分析创造力，因此，需要将这个困难的任务——使用深度神经网络模拟复杂现象——转变为更易于接近和更高效的过程。
 - en: 'In this chapter, we’ll discuss pretraining strategies and transfer learning:
     in essence, creatively stealing from knowledge contained in the dataset and in
     the weights of other models for to solve problems.'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，我们将讨论预训练策略和迁移学习：本质上，创造性地从数据集和其他模型的权重中获取知识来解决问题。
 - en: Developing Creative Training Structures
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 开发创意训练结构
 - en: A model’s *training structure* consists of the general “flow” with which it
     is trained – the dataset(s) it is trained on, the order of the entities it is
     trained on, how those datasets are derived, etc. Here, we are assuming the standard
@@ -51,128 +66,188 @@
     perform other tasks, those auxiliary tasks are performed with the intent of helping
     the model succeed at the ultimate task. This distinction in terminology will prove
     to be helpful later.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型的 *训练结构* 由其训练的“流程”组成——它训练的数据集、它训练的实体的顺序、这些数据集是如何得到的等。在这里，我们假设标准的监督学习模式，其中模型被呈现一个包含输入数据（*x*——模型所接受的）和标签（*y*——对应于模型应该输出的）的数据集（图
+    [2-1](#Fig1)）。模型的 *最终任务* 是接受输入数据并输出正确的标签；这个数据集是 *任务数据集*。尽管我们可能在其他数据集上训练模型以执行其他任务，但这些辅助任务都是出于帮助模型在最终任务上取得成功的目的。这种术语上的区分将在以后证明是有帮助的。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig1_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig1_HTML.jpg)'
+  id: totrans-9
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig1_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig1_HTML.jpg)'
 - en: Figure 2-1
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-1
 - en: Task dataset structure
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 任务数据集结构
 - en: The simplest training structure is the initialize-train-complete flow that was
     discussed in Chapter [1](516104_1_En_1_Chapter.xhtml) (Figure [2-2](#Fig2)). The
     model begins training right after initialization, being fed the input data and
     predicting the labels. After training, we select a final model, which can just
     be the model after it has completed training or something like restoring the weights
     of the best performing model (something like Keras’ `ModelCheckpoint` callback).
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 最简单的训练结构是第 [1](516104_1_En_1_Chapter.xhtml) 章中讨论的初始化-训练-完成流程（图 [2-2](#Fig2)）。模型在初始化后立即开始训练，输入数据并预测标签。训练完成后，我们选择一个最终模型，这可以是训练完成后的模型，或者像恢复表现最佳模型的权重（类似于
+    Keras 的 `ModelCheckpoint` 回调）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig2_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig2_HTML.jpg)'
+  id: totrans-13
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig2_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig2_HTML.jpg)'
 - en: Figure 2-2
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-2
 - en: Simple training structure of initialization and training
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化和训练的简单训练结构
 - en: Let’s see how we can alter this simple training structure to improve training
     performance more easily.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看如何修改这个简单的训练结构，以便更容易地提高训练性能。
 - en: The Power of Pretraining
+  id: totrans-17
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练的力量
 - en: The “pre” in “pretraining” indicates that it refers to a process that occurs
     *before* the formal training of the model on the dataset (Figure [2-3](#Fig3)).
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: “预”在“预训练”中的含义是指它指的是在数据集上对模型进行正式训练之前发生的过程（图[2-3](#Fig3)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig3_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig3_HTML.jpg)'
+  id: totrans-19
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig3_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig3_HTML.jpg)'
 - en: Figure 2-3
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-3
 - en: Training structure representation of pretraining
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练的训练结构表示
 - en: Given that we want pretraining to benefit training, pretraining should orient
     the model in a way that makes training “easier.” With the pretraining step, the
     model’s performance should be better than without pretraining. If pretraining
     makes model performance worse, you should reevaluate your methods of pretraining.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们希望预训练对训练有益，预训练应该以使训练“更容易”的方式进行模型导向。在预训练步骤中，模型的性能应该比没有预训练时更好。如果预训练使模型性能变差，你应该重新评估你的预训练方法。
 - en: In pretraining, a model must be trained to perform a task different from its
     ultimate task of predicting the label based on the input data. This pretraining
     task ideally presents important “context” and skills for the ultimate task such
     that the model can attain better performance on that ultimate task.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 在预训练中，模型必须被训练以执行与其最终任务（根据输入数据预测标签）不同的任务。这个预训练任务理想地提供了对最终任务重要的“上下文”和技能，从而使模型能够在最终任务上获得更好的性能。
 - en: 'Before we discuss the specific pretraining methods, we need to gain an intuitive
     understanding of what the vague terms “easier” and “better performance” mean;
     this will allow us to better understand how to use and design pretraining strategies.
     Pretraining is often discussed in relation to two of its primary advantages:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们讨论具体的预训练方法之前，我们需要对模糊术语“更容易”和“更好的性能”有一个直观的理解；这将使我们更好地理解如何使用和设计预训练策略。预训练通常与它的两个主要优势相关讨论：
 - en: '*Time*: Pretraining can decrease the time needed for the neural network to
     converge to some solution.'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*时间*：预训练可以减少神经网络收敛到某个解所需的时间。'
 - en: '*Better metric score*: The model attains a metric score higher/lower (depending
     on the metric) than it would have without pretraining. For instance, it attains
     a lower cross-entropy score or a higher accuracy.'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*更好的度量分数*：模型获得的度量分数比没有预训练时更高/更低（取决于度量标准）。例如，它获得了更低的交叉熵分数或更高的准确率。'
 - en: 'While these are two dominant attributes of pretraining, they are the result
     of an underlying phenomenon: conceptually, the process of pretraining brings the
     optimizer “closer” to the true solution in the loss landscape.'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然这些都是预训练的两个主要属性，但它们是潜在现象的结果：从概念上讲，预训练的过程将优化器“更接近”损失景观中的真实解。
 - en: 'Consider the following loss landscape: it is the objective of the neural network
     optimizer to find the set of parameters such that the corresponding loss is minimized.
     This landscape has several features common in most modern loss landscapes: it
     has several local minima but only one global minimum and sloping, jagged fluctuations
     (Figure [2-4](#Fig4)).'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑以下损失景观：神经网络优化器的目标是找到一组参数，使得相应的损失最小化。这个景观具有大多数现代损失景观的共同特征：它有几个局部最小值，但只有一个全局最小值，并且有倾斜、锯齿状的波动（图[2-4](#Fig4)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig4_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig4_HTML.jpg)'
+  id: totrans-29
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig4_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig4_HTML.jpg)'
 - en: Figure 2-4
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-4
 - en: Sample loss landscape with global minima marked
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 标记全局最小值的样本损失景观
 - en: A model without pretraining may initialize and follow the following path. Since
     the first minima it encounters is more or less shallow, say the optimization algorithm
     overcomes it and discovers the next minima. Since this minima resides in a deeper
     pit and the optimizer has travelled a long distance, it will likely judge this
     to be the global optimum and converge at that location (Figure [2-5](#Fig5)).
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 没有预训练的模型可能初始化并遵循以下路径。由于它遇到的第一个最小值或多或少是浅的，比如说优化算法克服了它并发现了下一个最小值。由于这个最小值位于一个更深的地方，并且优化器已经走了很长的距离，它可能会判断这是全局最优解，并在该位置收敛（图[2-5](#Fig5)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig5_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig5_HTML.jpg)'
+  id: totrans-33
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig5_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig5_HTML.jpg)'
 - en: Figure 2-5
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-5
 - en: Example optimizer movement without pretraining
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 无预训练的优化器移动示例
 - en: With pretraining, however, we’re able to get the model “closer” to the true
     global minimum of the loss landscape such that it converges to a more optimal
     solution faster, because it already begins from a place “close” to the global
     optimum. Correspondingly, we can use a less risky or erratically behaving optimizer
     because it begins from a convenient position (Figure [2-6](#Fig6)).
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，通过预训练，我们能够使模型“更接近”损失景观的真实全局最小值，从而使它更快地收敛到一个更优的解，因为它已经从一个“接近”全局最优的位置开始。相应地，我们可以使用一个风险更低或行为更稳定的优化器，因为它从一个方便的位置开始（见图[2-6](#Fig6)）。
 - en: Keep in mind that pretraining does not necessarily bring the model “closer”
     to the optimum in the literal sense of distance but rather that it becomes more
     convenient or “easier” for the model to find the optimum than if it hadn’t undergone
@@ -183,24 +258,34 @@
     the loss landscape, the optimizer’s behavior, and a host of other factors. For
     simplicity, though, thinking of “closer” in terms of “how easy it would be to
     navigate to the global optimum” suffices.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 请记住，预训练并不一定在字面上使模型“更接近”最优解的距离，而是使模型找到最优解比没有经过预训练时更加方便或“容易”。一个接近全局最优但有几个非常深的局部最小值和非常高的局部最大值的优化器，比一个距离更远但路径更平滑且更容易下降的优化器更难到达全局最优。究竟“接近”意味着什么取决于损失景观的形状、优化器的行为以及许多其他因素。不过，为了简单起见，将“接近”理解为“导航到全局最优解有多容易”就足够了。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig6_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig6_HTML.jpg)'
+  id: totrans-38
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig6_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig6_HTML.jpg)'
 - en: Figure 2-6
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-6
 - en: Example optimizer movement with pretraining
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练的优化器移动示例
 - en: Note that the actual loss landscape for the pretraining task is different from
     that of the loss landscape of the ultimate task (as is displayed in Figure [2-6](#Fig6)).
     It is not that pretraining operates within the loss landscape of the ultimate
     task and moves the model to a convenient position – that is just training on the
     task dataset, not pretraining.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，预训练任务的损失景观与最终任务的损失景观是不同的（如图[2-6](#Fig6)所示）。并不是预训练在最终任务的损失景观内操作并将模型移动到方便的位置——那只是对任务数据集的训练，而不是预训练。
 - en: Rather, in pretraining, we rely upon a similarity between the loss landscapes
     of the pretraining task and the ultimate task the model aims to perform. Therefore,
     a model that succeeds at the pretraining task should be at a generally successful
@@ -210,8 +295,10 @@
     Because the two often cannot be compared quantitatively for technical reasons,
     it is up to you to decide the necessity and performance boost of pretraining in
     a particular context.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 相反，在预训练中，我们依赖于预训练任务的损失景观与模型旨在执行的任务的损失景观之间的相似性。因此，在预训练任务中取得成功的模型应该在最终任务的损失景观中处于一个一般成功的位置，从那里它可以进一步改进。这也意味着，如果你认为预训练数据集和任务数据集的损失景观非常“不同”，那么预训练可能没有帮助。因为技术原因，这两个通常无法进行定量比较，因此，在特定情况下，预训练的必要性和性能提升取决于你自己的决定。
 - en: This visual depiction is intended to be more a conceptual method of understanding
     what pretraining intends to do to aid your designing and usage of pretraining
     strategies. It is, of course, not entirely representative of the high-dimensional
@@ -221,8 +308,11 @@
     no local minima, as presented in Figure [2-6](#Fig6). Nevertheless, we can use
     this conceptual framework to justify and explicate the two key observed benefits
     of pretraining – speed and better metric scores.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种视觉描述旨在更多地作为一种理解预训练意图的概念方法，以帮助您设计和使用预训练策略。当然，它并不完全代表现代神经网络优化器操作的高维空间或转移学习损失景观形状和操作的技术细节。例如，预训练不太可能将模型带到优化器遇到没有局部最小值的位置，如图
+    [2-6](#Fig6) 所示。尽管如此，我们可以使用这个概念框架来证明和解释预训练的两个关键观察到的益处——速度和更好的度量分数。
 - en: '*Speed*: Pretraining brings the model “closer” to a solution that the optimizer
     would be “satisfied with” (could converge to), because it’s already done much
     of the work. Moreover, most modern optimization strategies involve a decreasing
@@ -233,47 +323,65 @@
     minima. On the other hand, if a pretrained model begins already near the true
     solution, its learning rate begins “fresh” and undecayed; it can quickly overcome
     local minima that lie between it and the true solution.'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*速度*：预训练使模型“更接近”一个优化器会“满意”的解（可能收敛到），因为它已经完成了大部分工作。此外，大多数现代优化策略都涉及学习率的递减。没有预训练优势的神经网络需要走得更远（可能在距离上，也可能在克服局部最小值或最大值等障碍上）才能接近真实解。到那时，其学习率可能会显著下降，它可能无法摆脱局部最小值。另一方面，如果一个预训练模型一开始就接近真实解，其学习率开始时“清新”且未衰减；它可以快速克服位于其与真实解之间的局部最小值。'
 - en: '*Better metric scores*: Pretraining reduces the quantity of obstacles between
     a model and the true solution. Thus, the model is more likely to converge to the
     true solution. Moreover, as discussed prior, the optimizer’s learning rate is
     more “fresh” near the true solution than an optimizer without pretraining and
     thus is less susceptible to being vulnerable to minor obstacles that may have
     tricked the optimizer without pretraining.'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*更好的度量分数*：预训练减少了模型与真实解之间的障碍数量。因此，模型更有可能收敛到真实解。此外，如前所述，优化器在真实解附近的 学习率比没有预训练的优化器“更清新”，因此对可能欺骗没有预训练的优化器的微小障碍更不敏感。'
 - en: 'Next, we’ll build upon this conceptual model to discuss the intuition behind
     two pretraining methods: transfer learning and self-supervised learning.'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将在此基础上讨论两种预训练方法的直觉：转移学习和自监督学习。
 - en: Transfer Learning Intuition
+  id: totrans-47
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 转移学习直觉
 - en: Transfer learning is premised upon the idea that knowledge gained from solving
     one problem can be used, or transferred, in solving another problem. Usually,
     the knowledge derived from a more general problem is used to aid a model’s ability
     to address a more specific problem.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 转移学习基于这样的观点，即从解决一个问题的知识可以用于或转移到解决另一个问题。通常，从更一般的问题中得出的知识用于帮助模型解决更具体的问题。
 - en: 'Consider two datasets: a general dataset and a task dataset. The general dataset
     is designated for pretraining, whereas it is the model’s ultimate purpose to perform
     well on the task dataset (Figure [2-7](#Fig7)).'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑两个数据集：一个通用数据集和一个任务数据集。通用数据集用于预训练，而模型最终的目的是在任务数据集上表现良好（图 [2-7](#Fig7)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig7_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig7_HTML.jpg)'
+  id: totrans-50
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig7_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig7_HTML.jpg)'
 - en: Figure 2-7
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-7
 - en: General dataset and task dataset visual representations. GD = general dataset,
     TD = task dataset
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 通用数据集和任务数据集的可视表示。GD = 通用数据集，TD = 任务数据集
 - en: In transfer learning, an initialized model is first trained on the general dataset
     to provide context and skills required to succeed on the task dataset. After the
     model is pretrained on the general dataset, it is then trained on the task dataset.
@@ -281,17 +389,26 @@
     are retained from the end of pretraining to the beginning of pretraining, the
     model has already acquired important skills and representations for pretraining
     that it can use when training on the general dataset.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 在迁移学习中，首先在通用数据集上对一个初始化的模型进行训练，以提供在任务数据集上成功所需的上下文和技能。在模型在通用数据集上预训练后，它随后在任务数据集上进行训练。这种训练结构在图
+    [2-8](#Fig8) 中进行了可视化。由于权重从预训练的末尾保留到预训练的开始，模型已经获得了在通用数据集上训练时可以使用的重要技能和表示。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig8_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig8_HTML.jpg)'
+  id: totrans-54
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig8_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig8_HTML.jpg)'
 - en: Figure 2-8
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-8
 - en: Training structure visual representation of transfer learning
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 转移学习的训练结构可视化表示
 - en: Usually, the pretraining component of transfer learning is not done in house
     (by yourself). Selecting an appropriate general dataset and conceptualizing, implementing,
     and training a model to perform well on that general dataset is a significant
@@ -300,130 +417,181 @@
     and PyTorch and other sources, like pypi libraries, online code forums, and hosting
     sites. Each of these pretrained models is trained on some general dataset and
     is available for you to use.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，迁移学习的预训练部分不是在内部（由你自己）完成的。选择一个合适的一般数据集，并构思、实现和训练一个模型以在该通用数据集上表现良好，这是一项大量工作，而且并非必要。大多数深度学习框架（如图
+    [2-9](#Fig9) 中的 Keras/TensorFlow 和 PyTorch）以及其他来源，如 pypi 库、在线代码论坛和托管站点，都提供了预训练模型的存储库。每个预训练模型都是在某个通用数据集上训练的，可供你使用。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig9_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig9_HTML.jpg)'
+  id: totrans-58
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig9_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig9_HTML.jpg)'
 - en: Figure 2-9
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-9
 - en: Pretrained models in a model repository. GD = general dataset. GD1, GD2, …,
     GDX indicate several different general datasets upon which several pretrained
     models are correspondingly trained. Note that in practice the relationship between
     general datasets and pretrained models is one to many (many pretrained models
     with different architectures are trained on the same general dataset)
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型存储库中的预训练模型。GD = 通用数据集。GD1、GD2、…、GDX 表示在多个不同的通用数据集上进行了相应训练的几个不同的通用数据集。请注意，在实际操作中，通用数据集与预训练模型之间的关系是一对多（许多具有不同架构的预训练模型在同一个通用数据集上进行了训练）。
 - en: You can then choose one of the already pretrained models and begin training
     them on your specific task dataset (Figure [2-10](#Fig10)).
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，你可以选择一个已经预训练的模型，并开始在特定的任务数据集上对其进行训练（图 [2-10](#Fig10)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig10_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig10_HTML.jpg)'
+  id: totrans-62
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig10_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig10_HTML.jpg)'
 - en: Figure 2-10
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-10
 - en: Using models from a pretrained model repository to directly begin training on
     the task dataset
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用预训练模型存储库中的模型直接开始任务数据集上的训练
 - en: The number of problems with which this set of pretrained models could be used
     vastly outnumbers the number of pretrained models in the repository. This is fine,
     though, because we can expect each pretrained model to be capable of being applied
     to a wide array of problem types, since each model is expected to possess a form
     of “general knowledge.”
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 这套预训练模型可用于解决的问题数量远远超过了存储库中预训练模型的数量。然而，这并没问题，因为我们预期每个预训练模型都能够应用于广泛的多种问题类型，因为每个模型都应具备某种形式的“通用知识”。
 - en: For instance, let’s say that we want to train a model to classify images of
     dogs and cats (Figure [2-11](#Fig11)). We decide we want to use transfer learning
     and choose a general dataset of all sorts of real-life items and objects, like
     a parrot, an airplane, a car, a tomato, a fish, etc. For the purposes of this
     example, let’s say that images of dogs and cats are not present in the general
     dataset.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，假设我们想要训练一个模型来分类狗和猫的图像（图 [2-11](#Fig11)）。我们决定使用迁移学习，并选择一个包含各种真实物品和对象的通用数据集，如鹦鹉、飞机、汽车、番茄、鱼等。为了本例的目的，让我们假设狗和猫的图像不在通用数据集中。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig11_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig11_HTML.jpg)'
+  id: totrans-67
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig11_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig11_HTML.jpg)'
 - en: Figure 2-11
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-11
 - en: Example task dataset and general dataset
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例任务数据集和通用数据集
 - en: There may seem to be little connection between the general dataset and the task
     dataset. However, if we distance ourselves from instinctive human topic-based
     thinking – “this is a car, that is a dog; they belong to different categories
     (i.e., transportation and animals)” – we can see many similarities.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 通用数据集和任务数据集之间可能看起来没有多少联系。然而，如果我们摆脱基于本能的人类基于主题的思考——“这是一辆车，那是一只狗；它们属于不同的类别（即交通和动物）”——我们可以看到许多相似之处。
 - en: '*There are many edges*: Edges define the shapes of the airplane, car, and fish;
     likewise, they are important in defining the shape of a dog or cat’s head.'
+  id: totrans-71
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*有很多边缘*：边缘定义了飞机、汽车和鱼的形状；同样，它们在定义狗或猫的头部形状时也很重要。'
 - en: '*Light is important*: Since both datasets are two-dimensional representations
     of three-dimensional objects, light is important because it helps determine the
     shape and contour of the object.'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*光很重要*：由于这两个数据集都是三维物体的二维表示，因此光很重要，因为它有助于确定物体的形状和轮廓。'
 - en: '*Texture matters*: Real-life objects often have similar shapes but are differentiated
     by the texture of their surface. Likewise, this seems to be important toward differentiating
     between images of dogs and cats.'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*纹理很重要*：现实生活中的物体通常形状相似，但通过其表面的纹理来区分。同样，这似乎对于区分狗和猫的图像也很重要。'
 - en: A model that succeeds on the general dataset must have already adapted to and
     accounted for these features of the general dataset. In a sense, it “understands”
     how to “interpret” edges, the dynamics of light, texture, and other important
     qualities. All that is necessary afterward is to adapt those learned skills and
     representations toward a similar but more specific task.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个在通用数据集上取得成功的模型必须已经适应并考虑了通用数据集的这些特征。从某种意义上说，它“理解”了如何“解释”边缘、光的动态、纹理和其他重要品质。之后所有必要的只是将这些学到的技能和表征适应到类似但更具体的工作任务中。
 - en: You may ask, “why not approach task dataset directly? Why develop these auxiliary
     skills when the model could have developed those skills more specifically and
     directly for the task dataset?” Indeed, in some cases transfer learning is not
     a suitable choice. However, in most sufficiently difficult tasks, pretraining
     via transfer learning helps to set up the foundation for learning that would be
     difficult for the model to build by itself.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可能会问：“为什么不直接处理任务数据集？为什么在模型能够为任务数据集更具体和直接地发展这些技能时，还要开发这些辅助技能？”确实，在某些情况下，迁移学习不是一个合适的选择。然而，在大多数足够困难的任务中，通过迁移学习进行预训练有助于为模型自己难以构建的学习打下基础。
 - en: 'Imagine you are teaching a young child how to add two-digit numbers only through
     repeated examples. You have two general possible teaching strategies:'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 想象你正在通过重复的例子教一个小孩如何加两位数。你有两种一般的教学策略：
 - en: Teach the child directly to add two-digit numbers by repeatedly showing them
     examples (e.g., 23+49=72).
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通过反复展示例子（例如，23+49=72）直接教孩子加两位数。
 - en: First, teach the child how to add one-digit numbers by repeatedly showing them
     examples (e.g., 3+9=12, 2+6=8). Then, teach the child to add two-digit numbers
     by repeatedly showing them examples (e.g., 23+49=72).
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 首先，通过反复展示例子（例如，3+9=12，2+6=8）来教孩子如何加一位数。然后，通过反复展示例子（例如，23+49=72）来教孩子如何加两位数。
 - en: The latter is more likely to be a successful strategy, because the average length
     of the jump from knowing nothing about addition to adding one-digit numbers to
     adding two-digit numbers is much smaller than the average length of the jump from
     knowing nothing about addition to adding two-digit numbers. Transfer learning
     should operate by this same intuition of teaching the model a general task such
     that a more specific, ultimate task becomes easier to approach.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 后者更有可能是一个成功的策略，因为从对加法一无所知到加一位数再到加两位数的平均跳跃长度，比从对加法一无所知到加两位数的平均跳跃长度要小得多。迁移学习应该通过这种教学模型的通用任务的直觉来运作，从而使更具体、最终的任务更容易接近。
 - en: Self-Supervised Learning Intuition
+  id: totrans-80
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 自监督学习直觉
 - en: Self-supervised learning follows the logic of pretraining – some sort of pretraining
     task is performed before training the model on the task dataset to orient it toward
     better attaining representations and skills needed to perform well on the ultimate
     task.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 自监督学习遵循预训练的逻辑——在将模型在任务数据集上训练之前，先执行某种预训练任务，以使其更好地获得完成任务所需的表示和技能。
 - en: The difference between self-supervised learning and transfer learning is that
     in transfer learning, the pretraining dataset is different from the task dataset,
     whereas in self-supervised learning, the pretraining dataset is constructed from
@@ -431,11 +599,16 @@
     build the complete transfer learning training structure, only one is technically
     needed to build the complete self-supervised learning training structure (Figure
     [2-12](#Fig12)).
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 自监督学习和迁移学习之间的区别在于，在迁移学习中，预训练数据集与任务数据集不同，而在自监督学习中，预训练数据集是从任务数据集的输入数据中构建的。因此，虽然您需要两个数据集来构建完整的迁移学习训练结构，但技术上只需要一个数据集来构建完整的自监督学习训练结构（图
+    [2-12](#Fig12)）。
 - en: Note
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Here, we are using a unique definition of what a “different” dataset constitutes.
     If dataset A can be derived completely from dataset B (for instance, by flipping
     the images or changing image color), for the purposes of this concept, the two
@@ -446,37 +619,52 @@
     constitutes “difference” here is the informational content of the dataset, not
     the individual specific training instances. This allows us to distinguish transfer
     learning and self-supervised learning.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们使用一个独特的定义来界定“不同的”数据集构成。如果数据集 A 可以完全从数据集 B 中派生出来（例如，通过翻转图像或改变图像颜色），为了这个概念的目的，这两个数据集不算不同，尽管在技术层面上，一个数据集中存在无法在另一个数据集中找到的训练实例。另一方面，如果数据集
+    A 不能完全从数据集 B 中派生出来（例如，从 CelebA 中派生 ImageNet），那么这两个数据集就是不同的。这里构成“不同”的主要焦点是数据集的信息内容，而不是单个特定的训练实例。这使我们能够区分迁移学习和自监督学习。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig12_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig12_HTML.jpg)'
+  id: totrans-85
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig12_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig12_HTML.jpg)'
 - en: Figure 2-12
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-12
 - en: Self-supervised learning datasets. ATD = altered task dataset
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 自监督学习数据集。ATD = 改变的任务数据集
 - en: It’s important to note that the altered task dataset is generally derived only
     from the input data of the task dataset. For instance, if a model’s task is to
     identify whether an image is of a dog or a cat, the altered task dataset could
     only be built upon the images (the input data of the task dataset), not the labels
     (the labels of the task dataset).
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 重要的是要注意，改变的任务数据集通常仅从任务数据集的输入数据中派生。例如，如果模型的任务是识别图像是狗还是猫，那么改变的任务数据集只能基于图像（任务数据集的输入数据）构建，而不能基于标签（任务数据集的标签）。
 - en: 'Designing altered task datasets is a fascinating demonstration of the creativity
     embedded within successful deep learning solutions. There are many examples of
     ways you can construct labels from the task dataset to form an altered task dataset:'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 设计改变的任务数据集是成功深度学习解决方案中嵌入的创造力的一个迷人展示。有许多例子说明您可以从任务数据集中构建标签以形成改变的任务数据集：
 - en: 'Add noise to some of your data and none to others. Train the model to classify
     to which data instances noise was added (this is a binary classification problem:
     noise/no noise). This can help the model better separate noise and data, allowing
     it to develop an underlying representation of what key features of the data should
     look like.'
+  id: totrans-90
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对部分数据添加噪声，对其他数据不添加。训练模型以分类哪些数据实例添加了噪声（这是一个二元分类问题：噪声/无噪声）。这可以帮助模型更好地分离噪声和数据，使其能够发展出对数据关键特征外观的潜在表示。
 - en: Add varying degrees of noise to all instances in the dataset. Train the model
     classify the degree of noise (this is a regression problem). For instance, if
     you varied the standard deviation of Gaussian noise, the model would predict the
@@ -484,9 +672,11 @@
     to what extent it exists. While this is a more difficult pretraining task, the
     model would be encouraged to develop sophisticated representations of key features
     and structures of the data.
+  id: totrans-91
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 向数据集中的所有实例添加不同级别的噪声。训练模型对噪声程度进行分类（这是一个回归问题）。例如，如果您改变了高斯噪声的标准差，模型会预测标准差。这不仅帮助模型检测是否存在噪声，还检测噪声存在的程度。虽然这是一个更困难的预训练任务，但模型会被鼓励发展对数据的关键特征和结构的复杂表示。
 - en: Assume there is a dataset of colored images and color is important to the model’s
     ultimate task. Convert the images to grayscale and train the model to construct
     a colorized image from the corresponding grayscale one (this is an image-to-image
@@ -494,9 +684,11 @@
     and the labels are the colorized images. With this self-supervised pretraining
     exercise, the model gains an understanding of what color certain objects should
     be.
+  id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 假设有一个彩色图像数据集，颜色对模型的最终任务很重要。将图像转换为灰度并训练模型从相应的灰度图像构建彩色图像（这是一个图像到图像的任务）。在这种情况下，修改后的任务数据集输入数据是灰度图像，标签是彩色图像。通过这种自监督预训练练习，模型能够理解某些物体应该是什么颜色。
 - en: Assume there is a model that needs to perform the NLP (Natural Language Processing)
     task of text classification. Take the text samples (input data for the task dataset)
     and randomly hide one of the words. Train the model to predict what the hidden
@@ -505,36 +697,51 @@
     in relation to each other bidirectionally – it needs to take advantage of information
     both before and after the hidden word. This method of self-supervised learning
     is commonly used in modern NLP architectures.
+  id: totrans-93
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 假设有一个模型需要执行NLP（自然语言处理）任务中的文本分类。取文本样本（任务数据集的输入数据）并随机隐藏其中一个单词。训练模型预测隐藏的单词是什么。例如，当给出“it’s
+    raining ____ and dogs.”时，模型会预测“cats”。这使模型能够理解单词如何相互双向作用——它需要利用隐藏单词前后信息。这种自监督学习方法在现代NLP架构中常用。
 - en: In each of these examples, none of the task dataset’s labels are needed – only
     the input data, or the *x*, of the task dataset is used in constructing these
     supervised datasets. You, as the deep learning engineer, can make some change
     to the task dataset input data and construct labels from that change.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这些示例中，不需要使用任务数据集的任何标签——仅使用任务数据集的输入数据，或*x*，来构建这些监督数据集。作为深度学习工程师，您可以修改任务数据集的输入数据，并从这些变化中构建标签。
 - en: Once the altered task dataset has been derived from the input data of the task
     dataset, it can be used in the pretraining training structure (Figure [2-13](#Fig13)).
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦从任务数据集的输入数据中导出了修改后的任务数据集，它就可以用于预训练训练结构（图[2-13](#Fig13)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig13_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig13_HTML.jpg)'
+  id: totrans-96
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig13_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig13_HTML.jpg)'
 - en: Figure 2-13
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-13
 - en: Self-supervised learning training structure
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 自监督学习训练结构
 - en: Note that in self-supervised learning (and pretraining in general), attaining
     a high performance metric is not the ultimate goal. In fact, if a model performs
     too well on the pretraining task, it may be that the pretraining task was too
     easy and hence did not support the growth of valuable skills and representations
     of data for formal training. On the other hand, if the model performs very poorly,
     the pretraining task may be too difficult.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，在自监督学习（以及一般预训练中），达到高性能指标并不是最终目标。事实上，如果一个模型在预训练任务上表现得太好，可能是因为预训练任务过于简单，因此没有支持有价值技能和数据表示的增长。另一方面，如果模型表现非常糟糕，预训练任务可能过于困难。
 - en: 'It should be noted that self-supervised learning is technically unsupervised
     learning because we are extracting insights from the input data without any knowledge
     of the labels. However, self-supervised learning is a more commonly used and appropriate
@@ -543,8 +750,10 @@
     K-means in that while the data generation (constructing altered task dataset)
     is technically unsupervised, the learning procedure (gradient updates, etc.) is
     supervised.'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 应该注意的是，自监督学习在技术上是无监督学习，因为我们从输入数据中提取见解，而不了解标签。然而，自监督学习是一个更常用且合适的术语：这种操作无疑具有监督特征，这使其与传统无监督机器学习算法（如K-means）区分开来，因为在数据生成（构建修改后的任务数据集）技术上是无监督的，而学习过程（梯度更新等）是监督的。
 - en: Self-supervised learning is also valuable because it allows us to capture valuable
     information without needing labels. Datamation estimates that the amount of unstructured
     data is increasing by 55% to 65% every year,^([2](#Fn2)) and the International
@@ -555,59 +764,77 @@
     However, the logic of self-supervised learning allows us to find hidden structures
     in unstructured data without labels and to exploit that knowledge to solve supervised
     problems.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 自监督学习同样很有价值，因为它允许我们在不需要标签的情况下捕捉到有价值的信息。数据资产管理公司Datamation估计，每年非结构化数据量增加55%至65%^([2](#Fn2))，国际数据公司（International
+    Data Corporation）预测到2025年将有80%的数据是非结构化的.^([3](#Fn3)) 非结构化数据是指无法轻易适应标准数据库模型的数据。因此，非结构化数据的一个辅助特征是，很少有相应的标签来训练大规模的深度学习模型。然而，自监督学习的逻辑允许我们在没有标签的情况下发现非结构化数据中的隐藏结构，并利用这些知识来解决监督问题。
 - en: For this reason, self-supervised learning is especially valuable for training
     on small datasets, in which there are few labels. Pretraining via self-supervised
     learning can allow the model to derive important insights it may not have obtained
     with only the traditional training structure.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，自监督学习对于在小型数据集上进行训练特别有价值，在这些数据集中标签很少。通过自监督学习进行预训练可以使模型得出它可能仅通过传统的训练结构而没有获得的重要见解。
 - en: Unlike transfer learning, there is no repository of self-supervised pretrained
     models, because in self-supervised learning, the pretraining task must be designed
     based on the task dataset. However, altering task datasets for self-supervised
     learning is generally not difficult if you have a good grasp of programming and
     data flows (see Chapter [1](516104_1_En_1_Chapter.xhtml)).
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 与迁移学习不同，没有自监督预训练模型的存储库，因为在自监督学习中，预训练任务必须基于任务数据集来设计。然而，如果你对编程和数据流有很好的掌握，为自监督学习修改任务数据集通常并不困难（参见第[1](516104_1_En_1_Chapter.xhtml)章）。
 - en: 'Yann LeCun provided an analog for self-supervised learning in how humans and
     animals learn at a 2020 AAAI (Association for the Advancement of Artificial Intelligence)
     conference:'
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: Yann LeCun在2020年AAAI（人工智能协会）会议上，用人类和动物学习的方式为自监督学习提供了一个类比：
 - en: '*Self-supervised learning … is basically learning to fill in the blanks. Basically,
     it’s the idea of learning to represent the world before learning a task. This
     is what babies and animals do. We run about the world, we learn how it works before
     we learn any task. Once we have good representations of the world, learning a
     task requires few trials and few samples.*'
+  id: totrans-105
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '*自监督学习…基本上是学习填补空白。基本上，它是学习在执行任务之前先表示世界。这正是婴儿和动物所做的事情。我们在世界中奔跑，在我们学习任何任务之前，我们先学习它的工作方式。一旦我们对世界的表示很好，学习一个任务就需要很少的尝试和样本。*'
 - en: ''
+  id: totrans-106
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: —Yann LeCun, Chief AI Scientist at Facebook, speaking at AAAI 20^([4](#Fn4))
+  id: totrans-107
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: —Yann LeCun，Facebook首席人工智能科学家，在AAAI 20上发表演讲^([4](#Fn4))
 - en: Transfer learning and self-supervised learning both fall under the general strategy
     of pretraining and are similar in that the model engages in some supervised task
     before it is trained on the task dataset. However, the two pretraining methods
     are different not only in terms of technicalities (i.e., “different” datasets
     vs. “same” datasets) as discussed prior but also as a matter of outcome and what
     knowledge is developed.
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 迁移学习和自监督学习都属于预训练的一般策略，并且相似之处在于模型在训练任务数据集之前参与了一些监督任务。然而，这两种预训练方法不仅在技术细节（即“不同”数据集与“相同”数据集）上有所不同，如之前所讨论的，而且在结果和所发展的知识方面也有所不同。
 - en: Transfer learning tends to develop “prediction *skills*.” That is, the weights
     from transfer learning are derived from the general dataset, which usually comes
     from a significantly different context than the task dataset (topic/content-wise).
     Much of the value of transfer learning is in the predictive skills it develops
     – learning how to recognize edges, to look for texture, to process color, etc.
     rather than actual knowledge of the content or topic of the dataset.
+  id: totrans-109
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 迁移学习倾向于发展“预测技能”。也就是说，迁移学习的权重是从通用数据集中推导出来的，通常来自与任务数据集（在主题/内容方面）显著不同的上下文。迁移学习的很大一部分价值在于它所发展的预测技能——学习如何识别边缘、寻找纹理、处理颜色等，而不是数据集的内容或主题的实际知识。
 - en: Self-supervised learning tends to develop “world-representing knowledge.” It
     builds the fundamental representations of the “world,” or context, that the model
     will need to understand to perform well on the task dataset. The actual skill
@@ -616,16 +843,20 @@
     gaining an understanding of the data “world.” Self-supervised learning allows
     for the model to get a glimpse into building fundamental representations and “feeling
     around” for the dataset’s content and topics.
+  id: totrans-110
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 自监督学习倾向于发展“世界表示知识”。它构建了模型在任务数据集上表现良好所需的基本“世界”或上下文表示。实际上预测——例如——是否向训练实例添加了噪声的技能可能并不那么有用，但获得这种技能的过程需要理解数据“世界”。自监督学习允许模型对构建基本表示和“探索”数据集的内容和主题有所了解。
 - en: Of course, this is not to suggest that transfer learning does not develop world-representing
     knowledge or that self-supervised learning does not develop important skills.
     Rather, these are the root-level “spirits” or “characters” of transfer learning
     and self-supervised learning that can be used to guide intuition and what to expect
     from either method.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，这并不是说迁移学习不发展世界表示知识，或者自监督学习不发展重要技能。相反，这些是迁移学习和自监督学习的根本“精神”或“性格”，可以用来指导直觉和预期从这两种方法中能得到什么。
 - en: You may notice that we have been exploring these concepts through relatively
     fluid and artistic descriptors and ideas – “extracting insights,” “developing
     representations,” “world-representing.” While a textbook may attempt to formulate
@@ -634,50 +865,70 @@
     depth of neural network behavior. Having an intuitive grasp of how neural networks
     function and “learn” – even if it is not mathematically rigorous – is valuable
     toward successful and efficient design.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可能会注意到，我们一直在通过相对流畅和艺术化的描述和想法来探索这些概念——“提取洞察力”、“发展表示”、“世界表示”。虽然教科书可能试图用方程和数学关系来表述这些想法，但事实是，即使是最新型的深度学习知识也无法完全解释和理解神经网络行为的深度。对神经网络如何运作和“学习”有直观的理解——即使它不是数学上严谨的——对于成功和高效的设计也是很有价值的。
 - en: Next, we will explore practical concepts in pretraining to understand how to
     manipulate neural network architectures for the implementation of transfer learning
     and self-supervised learning.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将探讨预训练中的实际概念，以了解如何操纵神经网络架构以实现迁移学习和自监督学习的实施。
 - en: Transfer Learning Practical Theory
+  id: totrans-114
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 迁移学习实用理论
 - en: Previously, we discussed conceptual frameworks to gain an intuitive understanding
     for what transfer learning is, what it does, and how it operates. However, because
     there are many “hidden” considerations when implementing transfer learning, in
     this section we will explore the more practical aspect of theory – concepts and
     ideas to aid your implementation of transfer learning.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前，我们讨论了概念框架，以获得对迁移学习直观的理解，包括它做什么，以及它是如何运作的。然而，由于在实施迁移学习时存在许多“隐藏”的考虑因素，在本节中，我们将探讨理论的更实际方面——概念和思想，以帮助您实施迁移学习。
 - en: The purpose of this section is not to provide specific code or discuss examples
     (that will be left to the next section), but instead to provide an introduction
     to important concepts for implementing pretraining, like the structure of pretrained
     models and how pretrained models are organized in Keras.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节的目的不是提供特定的代码或讨论示例（这些将在下一节中留出），而是提供实现预训练的重要概念介绍，如预训练模型的结构以及预训练模型在Keras中的组织方式。
 - en: Transfer Learning Models and Model Structure
+  id: totrans-117
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 迁移学习模型和模型结构
 - en: 'There are several important pretrained models and datasets to know. In this
     section, we will primarily be exploring image-based models, although you can apply
     much of the logic to other contexts. Image-based pretrained models generally follow
     a standard structure, consisting of two key steps: feature extraction and feature
     interpretation (Figure [2-14](#Fig14)).'
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 有几个重要的预训练模型和数据集需要了解。在本节中，我们将主要探索基于图像的模型，尽管您可以将许多逻辑应用于其他上下文。基于图像的预训练模型通常遵循一个标准结构，包括两个关键步骤：特征提取和特征解释（图[2-14](#Fig14)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig14_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig14_HTML.jpg)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig14_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig14_HTML.jpg)'
 - en: Figure 2-14
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-14
 - en: Conceptual components of an image-based pretrained model
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 图像预训练模型的概念组件
 - en: Feature extraction serves the purpose of assembling information into meaningful
     observations, like identifying and amplifying (or reducing) the presence of certain
     edges, shapes, or color patterns. A well-tuned feature extraction component is
@@ -685,62 +936,84 @@
     For instance, if the problem is to classify various grayscale images of shapes,
     the feature extraction component must be highly capable at detecting and amplifying
     the shape of edges.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 特征提取的作用是将信息组装成有意义的观察，例如识别和增强（或减少）某些边缘、形状或颜色模式的存在。一个调优良好的特征提取组件能够识别和增强与问题相关的特征。例如，如果问题是分类各种形状的灰度图像，特征提取组件必须非常擅长检测和增强边缘的形状。
 - en: Feature interpretation interprets the compiled extracted features to make a
     final judgment about the image. It takes in extracted information regarding the
     features of the image and can perform comparisons and other complex analyses across
     various regions of the image. A well-tuned feature interpretation component is
     able to effectively aggregate and make sense of extracted features in relation
     to the target output.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 特征解释通过解释编译后的提取特征来对图像做出最终判断。它接受有关图像特征的提取信息，并能够在图像的各个区域执行比较和其他复杂分析。一个调优良好的特征解释组件能够有效地聚合并理解提取特征与目标输出之间的关系。
 - en: In practice, the roles of “feature extraction” and “feature interpretation”
     are played by convolutional and fully connected components (Figure [2-15](#Fig15)).
     The convolutional component generally consists of layers like convolutions, pooling,
     and other image-based feature extraction layers. The fully connected component
     generally consists of fully connected or dense (in Keras terminology) layers.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实践中，“特征提取”和“特征解释”的角色由卷积和全连接组件（图[2-15](#Fig15)）扮演。卷积组件通常包括卷积、池化和其他基于图像的特征提取层。全连接组件通常包括全连接或密集（在Keras术语中）层。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig15_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig15_HTML.jpg)'
+  id: totrans-125
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig15_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig15_HTML.jpg)'
 - en: Figure 2-15
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-15
 - en: The practical components of an image-based pretrained model
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 图像预训练模型的实际组件
 - en: The raw input is passed into the convolutional component for feature extraction.
+  id: totrans-128
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 原始输入被传递到卷积组件以进行特征提取。
 - en: The convolutional component of the pretrained model takes in the raw input and
     performs convolutions, pooling, and other image-processing layers to extract features
     from the image. It then passes the extracted features into the flattening component.
+  id: totrans-129
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 预训练模型的卷积组件接收原始输入并执行卷积、池化和其他图像处理层以提取图像特征。然后，它将提取的特征传递给展平组件。
 - en: The flattening component takes in the two-dimensional (spatially, not counting
     color depth), since the convolutional component performs operations that take
     in and output data of image form. Flattening converts the two-dimensional extracted
     features into one-dimensional data so that the fully connected layer can operate
     upon the features.
+  id: totrans-130
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 展平组件接收二维（空间上，不计颜色深度），因为卷积组件执行的操作接收和输出图像形式的数据。展平将二维提取的特征转换为单维数据，以便完全连接层可以对这些特征进行操作。
 - en: The fully connected component, also known as the “top” or the “head” of the
     neural network, takes in the one-dimensional flattened data containing the information
     from the extracted features. After interpreting the extracted features through
     a series of fully connected layers (and other corresponding layers, like activations,
     dropout, etc.), the fully connected layer outputs the output of the neural network.
+  id: totrans-131
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 完全连接组件，也称为神经网络的“顶部”或“头部”，接收包含从提取的特征中获取的信息的一维展平数据。通过一系列完全连接层（以及其他相应的层，如激活、dropout等）解释提取的特征后，完全连接层输出神经网络的输出。
 - en: We’ll talk more about certain architectures in depth in later chapters, but
     here we’ll do a very quick overview of important models.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将在后面的章节中深入讨论某些架构，但在这里我们将对重要的模型进行非常快速的概述。
 - en: In Keras, pretrained models are arranged into modules from which that model
     and related functions can be found within `keras.applications.module_name`. For
     instance, if you wanted to find the pretrained model and processing functions
@@ -748,38 +1021,54 @@
     In addition to the pretrained model object, these modules often contain processing
     functions to apply to your data or the model output. We will see how these processing
     functions work in relation to the model soon.
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Keras中，预训练模型被组织成模块，可以在`keras.applications.module_name`中找到该模型和相关函数。例如，如果您想找到与InceptionV3模型相关的预训练模型和预处理函数，您可以在`keras.applications.inception_v3`中找到它。除了预训练模型对象外，这些模块通常还包含应用于您的数据或模型输出的处理函数。我们将在稍后看到这些处理函数是如何与模型相关的。
 - en: The ImageNet Dataset
+  id: totrans-134
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: ImageNet数据集
 - en: ImageNet is one of the most important datasets in image recognition. Professor
     Fei-Fei Li began working on ImageNet at Princeton in early 2007\. Throughout the
     development of neural network applications in the image domain, ImageNet has been
     a core dataset upon which new methods and designs were conceived, tested, and
     reinvented.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: ImageNet是图像识别中最重要数据集之一。李飞飞教授于2007年初在普林斯顿开始研究ImageNet。在整个神经网络在图像领域的应用发展中，ImageNet一直是新方法和设计构思、测试和重新发明的核心数据集。
 - en: The ImageNet dataset is structurally organized according to the WordNet hierarchy,
     in which objects are arranged in hierarchical relation to each other (Figure [2-16](#Fig16)).
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: ImageNet数据集根据WordNet层次结构组织，其中对象以相互之间的层次关系排列（图[2-16](#Fig16)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig16_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig16_HTML.jpg)'
+  id: totrans-137
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig16_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig16_HTML.jpg)'
 - en: Figure 2-16
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-16
 - en: Hypothetical example branch of WordNet hierarchy organization
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设的WordNet层次结构组织示例分支
 - en: Each “meaningful concept” in ImageNet is referred to as a “synonym set” or a
     “synset.” Each “synset” can be described by multiple words or series of words.
     ImageNet contains over 100,000 synsets; each synset contains an average of 1000
     images. Across 22,000 objects, ImageNet contains over 14 million images.
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: ImageNet中的每个“有意义的概念”被称为“同义词集”或“synset”。每个“synset”可以用多个单词或一系列单词来描述。ImageNet包含超过10万个synset；每个synset平均包含1000张图片。在22,000个对象中，ImageNet包含超过1400万张图片。
 - en: '*The ImageNet project was inspired by two important needs in computer vision
     research. The first was the need to establish a clear North Star problem in computer
     vision… Second, there was a critical need for more data to enable more generalizable
@@ -788,135 +1077,195 @@
     to design more and more sophisticated algorithms to index, retrieve, organize
     and annotate multimedia data. But good research requires good resources…The convergence
     of these two intellectual reasons motivated us to build ImageNet.*'
+  id: totrans-141
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '*ImageNet 项目受到计算机视觉研究中两个重要需求的启发。第一个需求是在计算机视觉中建立一个清晰的北极星问题……第二个需求是迫切需要更多的数据来使机器学习方法更具普遍性。自从数字时代的诞生和可用的网络规模数据交换以来，这些领域的学者们一直在努力设计越来越复杂的算法来索引、检索、组织和注释多媒体数据。但好的研究需要好的资源……这两个智力原因的交汇促使我们构建
+    ImageNet。*'
 - en: ''
+  id: totrans-142
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: —ImageNet Research Team^([5](#Fn5))
+  id: totrans-143
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: —ImageNet 研究团队^([5](#Fn5))
 - en: The ImageNet Large Scale Visual Recognition Challenge ran from 2010 to 2017
     and was instrumental to the development of image-processing deep learning work.
     Hence, many of the pretrained models available in Keras/TensorFlow and other deep
     learning frameworks are pretrained on the ImageNet dataset. Models pretrained
     on the ImageNet dataset have developed skills to recognize edges, textures, and
     other attributes of images of three-dimensional spaces and objects .
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: ImageNet 大规模视觉识别挑战赛从 2010 年持续到 2017 年，对图像处理深度学习工作的开发起到了关键作用。因此，Keras/TensorFlow
+    和其他深度学习框架中可用的许多预训练模型都是在 ImageNet 数据集上预训练的。在 ImageNet 数据集上预训练的模型已经发展出了识别三维空间和物体图像的边缘、纹理和其他属性的能力。
 - en: ResNet
+  id: totrans-145
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: ResNet
 - en: The ResNet architectures , or residual neural networks, were introduced in 2015\.
     ResNet won first place in the 2015 ImageNet challenge, obtaining a 3.57% error
     on the test dataset. The ResNet uses residual connections, or skip connections,
     which are connections between layers that skip over at least one intermediate
     layer. We’ll explore these sorts of designs and strategies in neural network architectures
     in later chapters.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: ResNet 架构，或残差神经网络，于 2015 年被提出。ResNet 在 2015 年 ImageNet 挑战中获得第一名，在测试数据集上实现了 3.57%
+    的错误率。ResNet 使用残差连接，或跳过连接，这些是跳过至少一个中间层的层间连接。我们将在后面的章节中探讨这些设计类型和策略在神经网络架构中的应用。
 - en: 'Keras/TensorFlow offers several different versions of the ResNet architecture:
     ResNet50, ResNet101, ResNet152, ResNet50V2, ResNet101V2, and ResNet152V2\. The
     number after the “ResNet” (e.g., the “50” in “ResNet50”) indicates the number
     of layers in it. Thus, ResNet152V2 has more layers than ResNet101V2.'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: Keras/TensorFlow 提供了 ResNet 架构的几个不同版本：ResNet50、ResNet101、ResNet152、ResNet50V2、ResNet101V2
+    和 ResNet152V2。在“ResNet”之后（例如，“ResNet50”中的“50”）表示该架构中的层数。因此，ResNet152V2 的层数比 ResNet101V2
+    多。
 - en: 'ResNet also comes in two versions, with two (very general) key differences:'
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: ResNet 也有两个版本，两个（非常普遍）的关键区别：
 - en: ResNetV1 adds more nonlinearities than ResNetV2\. The V2 architecture thus allows
     for a more direct and clear path for data flow throughout the network.
+  id: totrans-149
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ResNetV1 比 ResNetV2 添加了更多的非线性。因此，V2 架构允许在整个网络中为数据流提供更直接和清晰的路径。
 - en: ResNetV1 passes the data through a convolutional layer before batch normalization
     and an activation layer, whereas ResNetV2 passes data through the batch normalization
     and activation layers before the convolutional layer (reversed).
+  id: totrans-150
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ResNetV1 在批量归一化和激活层之前通过卷积层传递数据，而 ResNetV2 在卷积层之前通过批量归一化和激活层传递数据（反转）。
 - en: 'You can find Keras ResNet model architectures in corresponding modules within
     `keras.applications`:'
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在 `keras.applications` 中的相应模块中找到 Keras ResNet 模型架构：
 - en: 'ResNet50: `keras.applications.resnet50.ResNet50()`'
+  id: totrans-152
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'ResNet50: `keras.applications.resnet50.ResNet50()`'
 - en: 'ResNet101: `keras.applications.resnet.ResNet101()`'
+  id: totrans-153
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'ResNet101: `keras.applications.resnet.ResNet101()`'
 - en: 'ResNet152: `keras.applications.resnet50.ResNet152()`'
+  id: totrans-154
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'ResNet152: `keras.applications.resnet50.ResNet152()`'
 - en: 'ResNet50V2: `keras.applications.resnet_v2.ResNet50V2()`'
+  id: totrans-155
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'ResNet50V2: `keras.applications.resnet_v2.ResNet50V2()`'
 - en: 'ResNet101V2: `keras.applications.resnet_v2.ResNet101V2()`'
+  id: totrans-156
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'ResNet101V2: `keras.applications.resnet_v2.ResNet101V2()`'
 - en: 'ResNet152V2: `keras.applications.resnet_v2.ResNet152V2()`'
+  id: totrans-157
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'ResNet152V2: `keras.applications.resnet_v2.ResNet152V2()`'
 - en: We will explore how to use the architecture given the model object later .
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将在稍后探讨如何使用给定的模型对象来探索该架构。
 - en: InceptionV3
+  id: totrans-159
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: InceptionV3
 - en: The 2015 InceptionV3 model is a popular model from the Inception family of models,
     using a module/cell-based structure in which certain sets of layers are repeated.
     Inception networks are more computationally efficient by reducing the number of
     parameters necessary and limiting the memory and resources needed to be consumed.
     InceptionV3 was designed primarily with a focus on minimizing computational cost,
     whereas ResNet focuses on maximizing accuracy.
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 2015年的InceptionV3模型是Inception系列模型中的一种流行模型，它使用基于模块/单元的结构，其中某些层的集合被重复使用。Inception网络通过减少必要的参数数量和限制所需的内存和资源消耗，从而提高了计算效率。InceptionV3的设计主要侧重于最小化计算成本，而ResNet则侧重于最大化准确性。
 - en: You can find the InceptionV3 model architecture at `keras.applications.inception_v3.InceptionV3()`.
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在`keras.applications.inception_v3.InceptionV3()`中找到InceptionV3模型架构。
 - en: Inspired by the high performance of ResNet, the Inception-ResNet architecture
     uses a hybrid module by incorporating residuals. Correspondingly, Inception-ResNet
     generally has a low computational cost with high performance.
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 受ResNet高性能的启发，Inception-ResNet架构通过结合残差引入了混合模块。相应地，Inception-ResNet通常具有低计算成本和高性能。
 - en: You can find the Inception-ResNetV2 architecture at `keras.applications.inception_resnet_v2.InceptionVResNet2()`.
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在`keras.applications.inception_resnet_v2.InceptionVResNet2()`中找到Inception-ResNetV2架构。
 - en: For more specific and technical discussion on residual connections, cell-based
     structures, and the InceptionV3 architecture, see Chapter [6](516104_1_En_6_Chapter.xhtml).
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于残差连接、基于单元的结构和InceptionV3架构的更具体和技术的讨论，请参阅第[6](516104_1_En_6_Chapter.xhtml)章。
 - en: MobileNet
+  id: totrans-165
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: MobileNet
 - en: The 2017 MobileNet models are designed to perform well on mobile phone deep
     learning applications. MobileNets use depth-wise separable convolutions, which
     are convolutions that apply not only spatially but also depth-wise. MobileNet
     has more parameters than Inception but less than ResNet; correspondingly, MobileNet
     has been generally observed to perform worse than ResNet but better than Inception.
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 2017年的MobileNet模型旨在在移动手机深度学习应用中表现出色。MobileNets使用深度可分离卷积，这是一种不仅空间上应用，而且在深度上也应用的卷积。MobileNet的参数数量比Inception多，但比ResNet少；相应地，MobileNet通常观察到在性能上比ResNet差，但比Inception好。
 - en: Note
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When we compare models (e.g., “MobileNet vs. ResNet”), keep in mind that we
     are referring to the complete family of architectures. Most models have architectures
     of different versions and depths. When comparing model families, we are referring
     to architectures of comparable versions and layers.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们比较模型（例如，“MobileNet与ResNet”）时，请记住我们指的是完整的架构系列。大多数模型都有不同版本和深度的架构。当比较模型系列时，我们指的是可比版本和层的架构。
 - en: Keras/TensorFlow offers four versions of MobileNet, MobileNetV1, MobileNetV2,
     MobileNetV3Small, and MobileNetV3Large. MobileNetV2, like MobileNetV1, uses depth-wise
     separable convolutions but also introduces linear bottlenecks and shortcut connections
@@ -926,40 +1275,56 @@
     designated for low-resource and high-resource consumption scenarios, derived from
     Neural Architecture Search algorithms (we will discuss Neural Architecture Search
     and other methods in later chapters).
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: Keras/TensorFlow提供了四种MobileNet版本，包括MobileNetV1、MobileNetV2、MobileNetV3Small和MobileNetV3Large。MobileNetV2与MobileNetV1类似，使用深度可分离卷积，但还引入了瓶颈之间的线性瓶颈和快捷连接。MobileNetV2可以有效地提取用于目标检测和分割的特征，并且通常比MobileNetV1更快地达到相同的性能。MobileNetV3Small和MobileNetV3Large是针对低资源和高资源消耗场景设计的MobileNet架构，它们源自神经架构搜索算法（我们将在后续章节中讨论神经架构搜索和其他方法）。
 - en: 'You can find Keras ResNet model architectures in corresponding modules within
     `keras.applications`:'
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在`keras.applications`中的相应模块中找到Keras ResNet模型架构：
 - en: 'MobileNetV1: `keras.applications.mobilenet.MobileNet()`'
+  id: totrans-171
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'MobileNetV1: `keras.applications.mobilenet.MobileNet()`'
 - en: 'MobileNetV2: `keras.applications.mobilenet_v2.MobileNetV2()`'
+  id: totrans-172
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'MobileNetV2: `keras.applications.mobilenet_v2.MobileNetV2()`'
 - en: 'MobileNetV3Small: `keras.applications.MobileNetV3Small()`'
+  id: totrans-173
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'MobileNetV3Small: `keras.applications.MobileNetV3Small()`'
 - en: 'MobileNetV3Large: `keras.applications.MobileNetV3Large()`'
+  id: totrans-174
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'MobileNetV3Large: `keras.applications.MobileNetV3Large()`'
 - en: EfficientNet
+  id: totrans-175
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: EfficientNet
 - en: Deep convolutional neural networks have continually been growing larger in an
     attempt to be more powerful. Exactly how this enlargement is performed, however,
     has varied. Some approaches increase the resolution of the image by increasing
     the number of pixels in the image handled by the network. Others increase the
     depth of the network by adding more layers or the width by increasing the number
     of nodes in each layer.
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度卷积神经网络一直在不断增大，试图变得更强大。然而，这种增大的具体执行方式却各不相同。一些方法通过增加网络处理的图像中的像素数量来提高图像的分辨率。其他方法通过增加更多层或增加每层的节点数量来增加网络的深度或宽度。
 - en: The 2019 EfficientNet family of models is a new approach for neural network
     enlargement via compound scaling, in which the resolution, depth, and width of
     the network are equally scaled. By using this scaling method upon a small, base
@@ -968,56 +1333,85 @@
     increases. The EfficientNet family of models is both powerful and efficient, both
     computationally and time-wise. Compound scaling allows EfficientNet to improve
     upon the performance of models like MobileNet and ResNet on the ImageNet dataset.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 2019 年的 EfficientNet 模型系列是通过复合缩放来扩大神经网络的新方法，其中网络的分辨率、深度和宽度都进行了等比例缩放。通过在名为 EfficientNetB0
+    的小型基础模型上使用这种缩放方法，生成了七个复合缩放架构，分别命名为 EfficientNetB1、EfficientNetB2、…、EfficientNetB7，随着缩放幅度的增加。EfficientNet
+    模型系列在计算和时间上都既强大又高效。复合缩放使得 EfficientNet 能够在 ImageNet 数据集上优于 MobileNet 和 ResNet
+    等模型的性能。
 - en: 'You can find the Keras implementation of EfficientNet model architectures in
     the corresponding module within `keras.applications`:'
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在 `keras.applications` 中相应模块中找到 EfficientNet 模型架构的 Keras 实现：
 - en: 'EfficientNetB0: `keras.applications.efficientnet.EfficientNetB0()`'
+  id: totrans-179
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'EfficientNetB0: `keras.applications.efficientnet.EfficientNetB0()`'
 - en: 'EfficientNetB1: `keras.applications.efficientnet.EfficientNetB1()`'
+  id: totrans-180
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'EfficientNetB1: `keras.applications.efficientnet.EfficientNetB1()`'
 - en: 'EfficientNetB2: `keras.applications.efficientnet.EfficientNetB2()`'
+  id: totrans-181
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'EfficientNetB2: `keras.applications.efficientnet.EfficientNetB2()`'
 - en: …
+  id: totrans-182
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: …
 - en: 'EfficientNetB6: `keras.applications.efficientnet.EfficientNetB6()`'
+  id: totrans-183
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'EfficientNetB6: `keras.applications.efficientnet.EfficientNetB6()`'
 - en: 'EfficientNetB7: `keras.applications.efficientnet.EfficientNetB7()`'
+  id: totrans-184
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'EfficientNetB7: `keras.applications.efficientnet.EfficientNetB7()`'
 - en: Find a more specific and technical discussion of EfficientNet in a Chapter [6](516104_1_En_6_Chapter.xhtml)
     case study .
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 在第 [6](516104_1_En_6_Chapter.xhtml) 章的案例研究中可以找到对 EfficientNet 的更具体和技术的讨论。
 - en: Other Models
+  id: totrans-186
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 其他模型
 - en: 'Keras/TensorFlow offers a host of other pretrained models in `keras.applications`.
     To view them, refer to the TensorFlow documentation, which not only provides information
     on usage, parameters, and methods but also includes the links to each pretrained
     model’s corresponding paper: [`www.tensorflow.org/api_docs/python/tf/keras/applications`](http://www.tensorflow.org/api_docs/python/tf/keras/applications).
     Later in this chapter, we will also cover how to convert PyTorch models into Keras/TensorFlow
     models to take advantage of PyTorch’s library of pretrained models.'
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
+  zh: Keras/TensorFlow 在 `keras.applications` 中提供了一系列其他预训练模型。要查看它们，请参考 TensorFlow
+    文档，它不仅提供了使用、参数和方法的信息，还包括每个预训练模型对应论文的链接：[`www.tensorflow.org/api_docs/python/tf/keras/applications`](http://www.tensorflow.org/api_docs/python/tf/keras/applications)。在本章的后面部分，我们还将介绍如何将
+    PyTorch 模型转换为 Keras/TensorFlow 模型，以利用 PyTorch 的预训练模型库。
 - en: Changing Pretrained Model Architectures
+  id: totrans-188
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 更改预训练模型架构
 - en: To change pretrained model architectures , usually only the pretrained model’s
     convolutional component is transferred. Recall that transfer learning is primarily
     concerned with transferring the skills learned from one general dataset for application
@@ -1025,67 +1419,91 @@
     dataset, while a model operating on the task dataset would still benefit from
     the feature-extracting skills transferred via transfer learning, it would need
     to develop its own interpretations.
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 要更改预训练模型架构，通常只需转移预训练模型的卷积组件。回想一下，迁移学习主要关注将从一个通用数据集学到的技能转移到特定任务数据集的应用。由于任务数据集与通用数据集不同，尽管在任务数据集上运行的模型仍将从迁移学习转移的特征提取技能中受益，但它还需要发展自己的解释。
 - en: As a conceptual analogy, imagine you are an art student trained in the analysis
     of Impressionist-era works – the art of Monet, Renoir, Matisse, and so on. If
     now you were to approach a contemporary work by the likes of Picasso and Pollock,
     you would want to
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为一种概念上的类比，想象你是一名受过印象派时期作品分析训练的艺术学生——莫奈、雷诺阿、马蒂斯等人的艺术。如果你现在要接近毕加索和波洛克等人的当代作品，你将想要
 - en: '*…retain the feature-extracting skills*: The fundamental feature extraction
     capabilities that you learned as an art student are important to developing and
     organizing meaningful and astute observations that can be used for interpretation.
     Without understanding how to look at and take away observations of art (without
     actually interpreting them), there are no observations to serve as the basis of
     interpretation.'
+  id: totrans-191
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*…保留特征提取技能*：你作为艺术学生学到的基本特征提取能力对于发展和组织有意义的、敏锐的观察至关重要，这些观察可以用于解释。如果不理解如何观察和提取艺术作品的观察（实际上不进行解释），就没有观察可以作为解释的基础。'
 - en: '*…but develop a fresh set of interpretations*: Now that you have kept your
     feature extraction skills and have developed a set of observations (the extracted
     features), it wouldn’t in most contexts make sense to analyze the contemporary
     work through Impressionist interpretations. Rather, this new data calls for a
     fresh set of interpretations suited toward the context of contemporary art.'
+  id: totrans-192
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*…但发展一套新的解释方法*：既然你已经保持了你的特征提取技能并发展了一套观察（提取出的特征），在大多数情况下，通过印象派解释来分析当代作品似乎并不合理。相反，这种新的数据需要一套适合当代艺术背景的新解释方法。'
 - en: Thus, while the skills for extracting features are valuable and can be transferred
     almost universally across most generally similar problems, often the interpretations
     of said features vary widely enough that the most successful strategy is to build
     a custom fully connected component, instead of transferring it (Figure [2-17](#Fig17)).
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，虽然提取特征的技能很有价值，并且几乎可以无差别地转移到大多数类似的问题上，但通常这些特征的解释差异很大，因此最成功的策略是构建一个定制的全连接组件，而不是迁移它（见图[2-17](#Fig17)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig17_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig17_HTML.jpg)'
+  id: totrans-194
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig17_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig17_HTML.jpg)'
 - en: Figure 2-17
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-17
 - en: The process of transferring weights from a pretrained model to a custom model.
     PM = pretrained model, CM = custom model. “Updated” indicates that the corresponding
     component is being trained/updated in retraining
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 从预训练模型到定制模型迁移权重的过程。PM = 预训练模型，CM = 定制模型。“更新”表示相应的组件正在重新训练/更新。
 - en: However, in some occasions the problem set may be similar enough that the fully
     connected layer weights may also be transferred (Figure [2-18](#Fig18)). This
     method requires no architecture manipulation of the pretrained model, since all
     the weights from the pretrained model are being transferred. To use this method,
     simply instantiate the pretrained model and train it on the task dataset without
     any architecture manipulation.
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在某些情况下，问题集可能足够相似，以至于全连接层的权重也可以被迁移（见图[2-18](#Fig18)）。这种方法不需要对预训练模型进行架构操作，因为所有来自预训练模型的权重都被迁移了。要使用这种方法，只需实例化预训练模型，并在任务数据集上对其进行训练，而不进行任何架构操作。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig18_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig18_HTML.jpg)'
+  id: totrans-198
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig18_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig18_HTML.jpg)'
 - en: Figure 2-18
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-18
 - en: An alternative process of transferring weights from a pretrained model to a
     custom model in which both the pretrained model’s convolutional and FC components
     are transferred
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 从预训练模型到定制模型迁移权重的替代过程，其中预训练模型的卷积和FC组件都被迁移
 - en: 'Another alternative is to keep the pretrained model’s fully connected component
     and to add more custom layers afterward (Figure [2-19](#Fig19)). Think back to
     the art student analogy: you’re starting from the interpretative perspective of
@@ -1096,43 +1514,62 @@
     be significantly deepened (more layers added), which can pose problems for updating
     weights, time, and model performance. Under certain conditions, though, it can
     be the optimal strategy.'
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一种选择是保留预训练模型的完全连接组件，并在之后添加更多自定义层（见图 [2-19](#Fig19)）。回想一下艺术生的类比：你从训练中获得的印象派风格的解释性视角开始，但同时也发展了新的解释
+    *方式* 来应对新的问题类型。然而，这种方法通常不如仅转移卷积组件中的权重常用，因为为了有效，神经网络必须显著加深（添加更多层），这可能会对更新权重、时间和模型性能造成问题。但在某些条件下，它可能是最佳策略。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig19_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig19_HTML.jpg)'
+  id: totrans-202
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig19_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig19_HTML.jpg)'
 - en: Figure 2-19
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-19
 - en: An alternative process of transferring weights from a pretrained model to a
     custom model in which both the pretrained model’s convolutional and FC components
     are transferred, and new fully connected layers are added to the custom model
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 从预训练模型转移到自定义模型的一种替代过程，其中预训练模型的卷积和 FC 组件都被转移，并在自定义模型中添加新的完全连接层
 - en: Although we will only explore the first method through examples, all can be
     implemented through tools covered in Chapter [1](516104_1_En_1_Chapter.xhtml),
     like the Functional API. Models can be treated like functional layers, expressed
     as functions of an input. See Chapter [3](516104_1_En_3_Chapter.xhtml) for more
     complex exploration into neural network architecture manipulation.
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管我们将通过示例仅探索第一种方法，但所有方法都可以通过第 [1](516104_1_En_1_Chapter.xhtml) 章中介绍的工具来实现，例如功能
+    API。模型可以被当作功能层来处理，表示为输入的函数。参见第 [3](516104_1_En_3_Chapter.xhtml) 章以了解更多关于神经网络架构操作的复杂探索。
 - en: Neural Network “Top” Inclusivity
+  id: totrans-206
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 神经网络“顶部”包含性
 - en: All Keras/TensorFlow pretrained models have an important parameter, named `include_top`,
     which allows us to easily implement the first method of changing pretrained model
     architectures for training.
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有 Keras/TensorFlow 预训练模型都有一个重要的参数，名为 `include_top`，它允许我们轻松实现更改预训练模型架构以进行训练的第一种方法。
 - en: Recall that the fully connected component of an image-based neural network architecture
     is often referred to as its “top.” Thus, if the `include_top` parameter is set
     to `True`, the fully connected component will be retained in the instantiated
     pretrained model object. On the other hand, if the `include_top` parameter is
     set to `False`, the fully connected component will not be retained and the instantiated
     pretrained model object will contain only the input and convolutional components.
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: 回想一下，基于图像的神经网络架构的完全连接组件通常被称为其“顶部”。因此，如果将 `include_top` 参数设置为 `True`，实例化的预训练模型对象将保留完全连接组件。另一方面，如果将
+    `include_top` 参数设置为 `False`，则不会保留完全连接组件，实例化的预训练模型对象将只包含输入和卷积组件。
 - en: It’s important to realize that when there is no top, the input image shape is
     more or less arbitrary (see Note) because convolutional layers do not rely upon
     an absolute shape. A convolutional layer can act on an image of almost any shape
@@ -1141,11 +1578,16 @@
     act upon inputs of a certain shape. Thus, if the `include_top` parameter is set
     to `True`, you are also limited in the shape of your input data to whatever the
     shape of the data the model was pretrained on.
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: 重要的是要意识到，当没有顶部时，输入图像的形状或多或少是任意的（见注意），因为卷积层不依赖于绝对形状。一个卷积层可以作用于几乎任何形状的图像（见注意中对“几乎”的限定），因为它只是简单地“滑动”过滤器在图像上。另一方面，完全连接组件中的密集层只能作用于特定形状的输入。因此，如果将
+    `include_top` 参数设置为 `True`，你的输入数据形状也将受到限制，只能与模型预训练的数据形状相匹配。
 - en: Note
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The input image shape is not completely arbitrary. If the image shape is too
     small, the image may not be large enough for the whole depth of the network to
     be able to be valid, since filters rely on a minimum image size. One cannot perform
@@ -1154,8 +1596,10 @@
     is too small to perform convolutions on. This is likely the culprit if you are
     using a model architecture with a small input size that throws an error when defining
     the architecture.
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入图像的形状并非完全任意。如果图像形状太小，图像可能不足以让整个网络的深度都有效，因为过滤器依赖于最小图像尺寸。在一个16x16像素的图像上无法执行大小为(3,3)的十个卷积操作，因为在序列的中间，特征图已经被大大减小，变得太小以至于无法进行卷积。如果你使用的是具有小输入尺寸的模型架构，在定义架构时抛出错误，这很可能是罪魁祸首。
 - en: It should also be noted that the fact that the absence of a top means the input
     size is somewhat arbitrary does not mean that you should be too extreme with how
     much you change the input shape of your image. Say, a model was trained on 512x512
@@ -1166,12 +1610,16 @@
     in the original model were developed on more high-resolution pixel images. In
     short, make use of the relatively arbitrariness of image sizes with no top, but
     also take your freedom in image size with a grain of salt.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 还应注意的是，没有顶部意味着输入尺寸是某种程度上的任意性，这并不意味着你应该过于极端地改变你图像的输入形状。比如说，一个模型是在512x512像素的图像上训练的，而你使用了迁移学习，提取了该模型的卷积组件（及其权重）。如果你要在32x32像素的图像上训练该模型（可能需要图像缩放），尽管从技术上讲是有效的，但迁移的权重几乎毫无用处，因为原始模型中的技能是在更高分辨率的像素图像上开发的。简而言之，利用没有顶部的图像尺寸的相对任意性，但也要对你的图像尺寸的自由度持保留态度。
 - en: Layer Freezing
+  id: totrans-213
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 层冻结
 - en: Layer freezing is a useful tool for the implementation of transfer learning.
     When a layer is “frozen,” its weights are fixed and it cannot be trained. The
     purpose of transfer learning is to utilize important skills the pretrained model
@@ -1184,25 +1632,35 @@
     the convolutional component to be updated in accordance with the developed interpretations
     in the fully connected component. Be aware that too much fine-tuning can lead
     to overfitting.
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 层冻结是实现迁移学习的一个有用工具。当一个层被“冻结”时，其权重是固定的，它不能被训练。迁移学习的目的是利用预训练模型已经开发的重要技能。因此，通常冻结预训练模型的卷积组件，只训练定制的全连接组件（图[2-20](#Fig20)）。这样，卷积组件中学习并存储的特征提取技能保持不变，但解释性的全连接组件被训练以最佳地解释提取的特征。之后，有时整个网络也会进行微调。这允许卷积组件根据全连接组件中发展的解释进行更新。请注意，过多的微调可能导致过拟合。
 - en: Think of layer freezing in relation to the art student analogy. Initially, you
     want to utilize the feature-extracting skills you developed in your art training
     and to construct new interpretations of contemporary art corresponding to the
     extracted features. However, after you have constructed new interpretations for
     the particular problem, you may find it helpful to go back and slightly update
     your feature-extracting skills to better service your new interpretative capabilities.
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 将层冻结与艺术学生类比联系起来思考。最初，你希望利用你在艺术训练中发展的特征提取技能，并构建与提取的特征相对应的新当代艺术解释。然而，在你为特定问题构建了新的解释之后，你可能发现回过头来稍微更新你的特征提取技能以更好地服务于你的新解释能力是有帮助的。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig20_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig20_HTML.jpg)'
+  id: totrans-216
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig20_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig20_HTML.jpg)'
 - en: Figure 2-20
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-20
 - en: A multistep layer freezing process
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 多步骤层冻结过程
 - en: On a practical level, layer freezing is immensely helpful for practical success.
     Although it can be easy to build massive neural networks and call `.fit()` with
     increasing computational power, it remains true that it is not easy to optimize
@@ -1211,233 +1669,327 @@
     one segment of its architectures at a time and allows you to better use the weights
     gained from pretraining by restricting how much the neural network can deviate
     from the learned pretrained weights .
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实际层面，层冻结对于实际成功非常有帮助。尽管随着计算能力的增强，构建大规模神经网络并调用`.fit()`变得容易，但仍然很难通过暴力优化数亿（甚至数十亿）个参数并实现良好的性能。层冻结允许神经网络一次专注于优化其架构的一部分，并通过限制神经网络可以偏离学习到的预训练权重的程度，更好地利用从预训练中获得的权重。
 - en: Implementing Transfer Learning
+  id: totrans-220
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 实现迁移学习
 - en: 'In this section, we will discuss three examples of implementing transfer learning
     with Keras/TensorFlow:'
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论使用Keras/TensorFlow实现迁移学习的三个示例：
 - en: '*No architecture or weight changes*: An exercise in using (ImageNet) pretrained
     models for their original purpose – to predict what object is in an image. Also
     helpful for dealing with reshaping inputs and using encoding and decoding functions
     associated with the pretrained model module'
+  id: totrans-222
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '*无架构或权重更改*：这是一个使用（ImageNet）预训练模型实现其原始目的的练习——预测图像中的物体。这也有助于处理输入重塑和使用与预训练模型模块相关的编码和解码函数'
 - en: '*Transfer learning without layer freezing*: Using the standard procedure of
     transferring the weights from the convolutional component and building a custom
     fully connected component, without layer freezing. Helpful for manipulating model
     architectures both using the Functional API and using the `include_top` parameter'
+  id: totrans-223
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '*无层冻结的迁移学习*：使用从卷积组件中转移权重并构建自定义全连接组件的标准程序，不进行层冻结。这对于使用功能API和使用`include_top`参数来操作模型架构都很有帮助。'
 - en: '*Transfer learning with layer freezing*: Using the standard procedure of transferring
     the weights from the convolutional component and building a custom fully connected
     component, with layer freezing'
+  id: totrans-224
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '*有层冻结的迁移学习*：使用从卷积组件中转移权重并构建自定义全连接组件的标准程序，进行层冻结'
 - en: We’ll also discuss how to take advantage of PyTorch’s pretrained model library
     by converting them into Keras/TensorFlow models.
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还将讨论如何通过将它们转换为Keras/TensorFlow模型来利用PyTorch的预训练模型库。
 - en: 'General Implementation Structure: A Template'
+  id: totrans-226
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 一般实现结构：一个模板
 - en: 'Before we build a transfer learning model, let’s first compile the topics and
     methods discussed before to lay out a template for the general implementation
     structure of transfer learning:'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们构建迁移学习模型之前，让我们首先编译之前讨论的主题和方法，为迁移学习的一般实现结构制定一个模板：
 - en: Choose an appropriate model from the Keras/TensorFlow repository of pretrained
     models or from another source, like a pypi library offering an implementation
     of a pretrained model or PyTorch.
+  id: totrans-228
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从Keras/TensorFlow的预训练模型存储库或另一个来源（如提供预训练模型实现的pypi库或PyTorch）中选择一个合适的模型。
 - en: Instantiate the model with the desired architectural settings (include or do
     not include top).
+  id: totrans-229
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用所需的架构设置实例化模型（包括或不包括顶层）。
 - en: Set up the model’s input and output flows such that it matches with the data.
     This may require using a reshaping layer, using an input layer, adding a fully
     connected component such that the extracted features are interpreted and outputted,
     some other mechanism, or some combination.
+  id: totrans-230
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 设置模型输入和输出流，使其与数据匹配。这可能需要使用重塑层，使用输入层，添加一个全连接组件，以便提取的特征被解释并输出，或其他机制，或某些组合。
 - en: Freeze layers, as necessary.
+  id: totrans-231
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 根据需要冻结层。
 - en: Compile and fit.
+  id: totrans-232
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 编译和拟合。
 - en: Change which layers are frozen if necessary, and compile and fit again.
+  id: totrans-233
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如有必要，更改冻结的层，然后重新编译和拟合。
 - en: It should be also noted that although in this context we are discussing image-based
     pretrained models, as transfer learning began its extensive development in the
     domain of images, the logic of a feature-extracting segment and an interpretative
     segment can be applied to other problem domains as well.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 应该注意的是，尽管在这个上下文中我们讨论的是基于图像的预训练模型，因为迁移学习在图像领域开始广泛发展，但特征提取段和解释段的逻辑也可以应用于其他问题领域。
 - en: No Architecture or Weight Changes
+  id: totrans-235
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 无架构或权重更改
 - en: If we make no changes to the architecture, we cannot adjust the input or the
     output of the pretrained model. Therefore, if we want to make no changes to the
     architecture, we must use the pretrained model for its original purpose.
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们不更改架构，我们无法调整预训练模型的输入或输出。因此，如果我们不想更改架构，我们必须使用预训练模型进行其原始用途。
 - en: The InceptionV3 model was trained on the ImageNet dataset. Thus, it takes an
     image of size `(299,299,3)` and returns an output vector with the probability
     the image belongs to one of 1000 classes.
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: InceptionV3模型是在ImageNet数据集上训练的。因此，它接受大小为`(299,299,3)`的图像，并返回一个输出向量，表示图像属于1000个类别中的一个的概率。
 - en: Let’s begin by loading an example image to demonstrate how InceptionV3 would
     function (Listing [2-1](#PC1)). We will use `requests` to read a URL, `PIL` to
     read the corresponding image (Figure [2-21](#Fig21)), and `numpy` to convert the
     image into an array.
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从加载一个示例图像开始，以演示InceptionV3将如何工作（列表[2-1](#PC1)）。我们将使用`requests`读取URL，使用`PIL`读取相应的图像（图[2-21](#Fig21)），并使用`numpy`将图像转换为数组。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig21_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig21_HTML.jpg)'
+  id: totrans-239
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig21_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig21_HTML.jpg)'
 - en: Figure 2-21
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-21
 - en: Sample image to be classified by a model architecture trained on the ImageNet
     dataset
+  id: totrans-241
   prefs: []
   type: TYPE_NORMAL
+  zh: 样本图像，将由在ImageNet数据集上训练的模型架构进行分类
 - en: '[PRE0]'
+  id: totrans-242
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Let’s begin by importing necessary layers, applications, and functions (Listing
     [2-2](#PC2)):'
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从导入必要的层、应用程序和函数开始（列表[2-2](#PC2)）：
 - en: The `keras.layers.Input` layer defines the input size and is required for constructing
     a neural network (or in some other form, like the `input_shape` parameter).
+  id: totrans-244
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.layers.Input` 层定义了输入大小，对于构建神经网络（或以其他形式，如`input_shape`参数）是必需的。'
 - en: The `keras.layers.experimental.preprocessing.Resizing` layer resizes an image
     to a new shape. We can use this to reshape an image of any size to the shape `(299,299,3)`
     such that it is in the proper input shape for InceptionV3.
+  id: totrans-245
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.layers.experimental.preprocessing.Resizing`层将图像调整到新的形状。我们可以使用它将任何大小的图像调整为形状`(299,299,3)`，这样它就符合InceptionV3的正确输入形状。'
 - en: The `keras.applications.inception_v3.InceptionV3` model is the core InceptionV3
     model that can be used and manipulated in relation to the other layers.
+  id: totrans-246
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.applications.inception_v3.InceptionV3` 模型是核心的InceptionV3模型，可以用于并操作与其他层相关联。'
 - en: The `keras.applications.inception_v3.preprocess_input` preprocesses data to
     be in the same format InceptionV3 was trained on. If the inputs are not preprocessed,
     the pretrained weights may not be suited toward the unprocessed inputs and yield
     inaccurate results.
+  id: totrans-247
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.applications.inception_v3.preprocess_input` 对数据进行预处理，使其与InceptionV3训练时的格式相同。如果输入没有进行预处理，预训练的权重可能不适合未经处理的输入，并产生不准确的结果。'
 - en: '[PRE1]'
+  id: totrans-248
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: We can use these layers to set up a series of data input and preprocessing (Listing
     [2-3](#PC3)). First, the `Input` layer takes in data with a shape of `(None, None,
     3)`; `None` indicates that the exact value for that dimension is not exactly specified.
     This allows us to pass images of any size into the neural network input. The `Resizing`
     layer reshapes the input image to the proper shape for InceptionV3\. The third
     layer preprocesses the resized data into InceptionV3 format.
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用这些层来设置一系列数据输入和预处理（列表[2-3](#PC3)）。首先，`Input`层接受形状为`(None, None, 3)`的数据；`None`表示该维度的确切值没有确切指定。这允许我们将任何大小的图像传递到神经网络输入。`Resizing`层将输入图像调整为InceptionV3所需的正确形状。第三层将调整大小后的数据预处理为InceptionV3格式。
 - en: '[PRE2]'
+  id: totrans-250
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'The output of `preprocess_layer` (the result of the resized, preprocessed input
     data) is passed as the input to the `InceptionV3` model. Note that we are making
     no changes to the model architecture or weights, so we set `inlucde_top=True`
     and `weights=''imagenet''`. We can treat the model as a layer that takes in the
     output of a previous layer and can be passed as an input to the following layer:
     Inceptionv3 = InceptionV3(include_top=True, weights="imagenet")(preprocess_layer).'
+  id: totrans-251
   prefs: []
   type: TYPE_NORMAL
+  zh: '`preprocess_layer` 的输出（调整大小并预处理后的输入数据的结果）被传递到`InceptionV3`模型中。请注意，我们没有更改模型架构或权重，因此我们设置`include_top=True`和`weights=''imagenet''`。我们可以将模型视为一个接受前一层输出的层，并将其作为输入传递给下一层：Inceptionv3
+    = InceptionV3(include_top=True, weights="imagenet")(preprocess_layer)。'
 - en: Note that you can set weights to `None` to just use the model architectures,
     without the pretrained weights. Although this doesn’t quite count as transfer
     learning, you may want to use this when the task dataset is so different from
     the pretraining dataset that any pretrained weights wouldn’t be of much benefit,
     but want to take advantage of some architecture’s characteristics, like efficiency
     or power.
+  id: totrans-252
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，你可以将权重设置为`None`，仅使用模型架构，而不使用预训练权重。虽然这并不完全算作迁移学习，但当任务数据集与预训练数据集差异很大，任何预训练权重都不会带来很大好处，但想利用某些架构的特性时，你可能想使用这种方法，比如效率或性能。
 - en: 'We can create a model out of this set of layers using `keras.models.Model`
     (note that the pretrained model is treated like a layer and thus is considered
     an `outputs` layer): model = keras.models.Model(inputs=input_layer, outputs=Inceptionv3).'
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用`keras.models.Model`从这组层创建一个模型（请注意，预训练模型被当作一个层处理，因此被视为一个`outputs`层）：`model
+    = keras.models.Model(inputs=input_layer, outputs=Inceptionv3)`。
 - en: Now that the model has been created, we can use it to make predictions (Listing
     [2-4](#PC4)). We will use the `decode_predictions` function to help us parse the
     outputs of the InceptionV3 model, which in its raw form is a list of numbers.
     The model predictions for the image (stored in the variable `im`) can be passed
     into `decode_predictions` to obtain interpretable results.
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在模型已经创建，我们可以用它来进行预测（见列表[2-4](#PC4)）。我们将使用`decode_predictions`函数来帮助我们解析InceptionV3模型的输出，其原始形式是一个数字列表。将存储在变量`im`中的图像预测传递给`decode_predictions`可以获得可解释的结果。
 - en: '[PRE3]'
+  id: totrans-255
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Note that the model expects four-dimensional data – for example, data with shape
     `(100,299,299,3)`, indicating that it consists of 100 299x299 pixel RGB colored
     images. Even though we are submitting an individual image for prediction, it still
     needs to be four-dimensional. An easy way to accomplish this is to wrap it as
     an element in another array with `np.array([im])`.
+  id: totrans-256
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，模型期望的是四维数据——例如，形状为`(100,299,299,3)`的数据，表示它由100个299x299像素的RGB彩色图像组成。即使我们提交单个图像进行预测，它仍然需要是四维的。通过使用`np.array([im])`将图像作为另一个数组中的元素来包装是一种简单的方法。
 - en: Each element of the results of decoded predictions is in the format `(class
     name, class description, probability)`. The results of the decoded predictions
     show that InceptionV3 has correctly identified the object of the image – a lion,
     with 91% confidence (Listing [2-5](#PC5)).
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: 解码预测的结果中的每个元素都采用`(class name, class description, probability)`的格式。解码预测的结果显示，InceptionV3已经正确识别了图像中的对象——一只狮子，置信度为91%（见列表[2-5](#PC5)）。
 - en: '[PRE4]'
+  id: totrans-258
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: A similar process can be applied to other pretrained models available via Keras.
     Most Keras pretrained models have associated `preprocess_input` and `decode_predictions`
     functions.
+  id: totrans-259
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以将类似的过程应用于通过Keras提供的其他预训练模型。大多数Keras预训练模型都有相关的`preprocess_input`和`decode_predictions`函数。
 - en: Transfer Learning Without Layer Freezing
+  id: totrans-260
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 无层冻结的迁移学习
 - en: If we want to adapt the pretrained model for our own task dataset, we need to
     make some minimal architecture changes such that the input and the output can
     accommodate our dataset. This follows a very similar structure to the previous
     application of no architecture or weight changes.
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们想要将预训练模型适应我们自己的任务数据集，我们需要进行一些最小的架构更改，以便输入和输出可以容纳我们的数据集。这遵循与之前不进行架构或权重更改的应用非常相似的结构。
 - en: 'Let’s begin by importing necessary layers and models (Listing [2-6](#PC6)):'
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从导入必要的层和模型开始（见列表[2-6](#PC6)）：
 - en: The `keras.layers.Input` layer defines the input shape.
+  id: totrans-263
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.layers.Input`层定义了输入形状。'
 - en: The `keras.layers.Dense` layer provides the neural network’s “interpretative”
     or “predictive” power.
+  id: totrans-264
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.layers.Dense`层提供了神经网络的“解释性”或“预测性”能力。'
 - en: The `keras.layers.GlobalAveragePooling2D` layer “collapses” image data into
     the average of its elements. For instance, image data with shape `(a, b, c, d)`
     will have shape `(a, d)` afterward, where `(b, c, d)` is the shape of each image
@@ -1446,135 +1998,205 @@
     unlike the Global Average Pooling layer, retains all the elements of multidimensional
     data and converts them into one-dimensional data by stacking them end to end.
     Thus, image data with shape `(a, b, c, d)` will have shape `(a, b*c*d)`.
+  id: totrans-265
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.layers.GlobalAveragePooling2D` 层将图像数据“折叠”为其元素的平均值。例如，形状为 `(a, b, c,
+    d)` 的图像数据在之后将具有形状 `(a, d)`，其中 `(b, c, d)` 是每个图像元素的形状，并且有 `a` 个训练实例。全局平均池化的替代方案是原始的展平层。展平层（`keras.layers.Flatten()`），与全局平均池化层不同，保留了多维数据的所有元素，并通过将它们首尾相连转换为单维数据。因此，形状为
+    `(a, b, c, d)` 的图像数据将具有形状 `(a, b*c*d)`。'
 - en: The `keras.applications.inception_v3.InceptionV3` model provides the architecture
     and pretrained weights for the InceptionV3 model.
+  id: totrans-266
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keras.applications.inception_v3.InceptionV3` 模型为 InceptionV3 模型提供了架构和预训练权重。'
 - en: '[PRE5]'
+  id: totrans-267
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Let’s begin by defining the input layer and the InceptionV3 model it feeds into
     (Listing [2-7](#PC7)).
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从定义输入层和它所馈入的 InceptionV3 模型开始（列表 [2-7](#PC7)）。
 - en: '[PRE6]'
+  id: totrans-269
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Note that we are keeping the ImageNet weights, but we do not include the top.
     While we want to keep the feature extraction skills in the convolutional layers,
     because we are appropriating the pretrained model for our own purposes, we don’t
     need the weights for the interpretative fully connected component.
+  id: totrans-270
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，我们保留了 ImageNet 权重，但不包括顶层。虽然我们希望保留卷积层中的特征提取技能，因为我们正在将预训练模型用于自己的目的，所以我们不需要用于解释性全连接组件的权重。
 - en: Because we are not keeping the top of the neural network, the output of the
     truncated InceptionV3 model is an image. The Global Average Pooling model allows
     us to compress the data out of image form (this is the flattening component).
     Afterward, we can place two more dense layers to “interpret” the extracted features
     and one more to form the output layer (Listing [2-8](#PC8)).
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们不在保留神经网络的上层，截断的 InceptionV3 模型的输出是一个图像。全局平均池化模型允许我们将数据从图像形式压缩出来（这是展平组件）。之后，我们可以放置两个额外的密集层来“解释”提取的特征，以及一个额外的层来形成输出层（列表
+    [2-8](#PC8)）。
 - en: '[PRE7]'
+  id: totrans-272
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: We can form a model as such (Listing [2-9](#PC9)).
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以形成这样的模型（列表 [2-9](#PC9)）。
 - en: '[PRE8]'
+  id: totrans-274
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Visualizing the model shows the shape of the data over time (Figure [2-22](#Fig22))
     with keras.utils.plot_model(model, show_shapes=True). The visualization also demonstrates
     that the InceptionV3 model is treated very much like a standard layer.
+  id: totrans-275
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过 keras.utils.plot_model(model, show_shapes=True) 可视化模型，显示了数据随时间变化的形状（图 [2-22](#Fig22)）。可视化还表明，InceptionV3
+    模型被处理得非常像标准层。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig22_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig22_HTML.jpg)'
+  id: totrans-276
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig22_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig22_HTML.jpg)'
 - en: Figure 2-22
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-22
 - en: Diagram of an example model architecture using transfer learning
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用迁移学习示例模型架构的图示
 - en: The model can be correspondingly compiled and trained. It should be noted that
     usually the fully connected component is much longer and complex to account for
     the complex nature of modern deep learning datasets.
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型可以相应地编译和训练。需要注意的是，通常全连接组件要长得多且复杂，以适应现代深度学习数据集的复杂性质。
 - en: Transfer Learning with Layer Freezing
+  id: totrans-280
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用层冻结进行迁移学习
 - en: In order to freeze a layer, set `layer_obj.trainable=False`.
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了冻结一个层，设置 `layer_obj.trainable=False`。
 - en: We need to first instantiate the layer to set the `trainable` attribute to `False`
     (Listing [2-10](#PC10)).
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要首先实例化层，将 `trainable` 属性设置为 `False`（列表 [2-10](#PC10)）。
 - en: '[PRE9]'
+  id: totrans-283
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: We can then use this pretrained model object as a standard layer in conjunction
     with other layers using the syntax of the Functional API (Listing [2-11](#PC11)).
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们可以使用这个预训练模型对象作为标准层，与其他层一起使用 Functional API 的语法（列表 [2-11](#PC11)）。
 - en: '[PRE10]'
+  id: totrans-285
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: After building the remainder of the model and aggregating the layers into a
     model with `keras.models.Model`, you can call `model.summary()` to get a rundown
     of the model’s parameters (Listing [2-12](#PC12)). Note that most of the parameters
     are trainable. A small quantity of non-trainable parameters are built into the
     model’s architecture.
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
+  zh: 在构建模型的其余部分并将层聚合到使用 `keras.models.Model` 的模型中之后，你可以调用 `model.summary()` 来获取模型参数的概述（列表
+    [2-12](#PC12)）。请注意，大多数参数都是可训练的。一小部分不可训练的参数是构建在模型架构中的。
 - en: '[PRE11]'
+  id: totrans-287
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: You can now call `inception_model.trainable = False` to freeze the layer. By
     re-aggregating the layers into a new model and calling `model.summary()`, you
     can see the results of layer freezing (Listing [2-13](#PC13)). Because most of
     the parameters in the complete model were transferred weights from the pretrained
     model, after layer freezing, most of the parameters are non-trainable.
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: 你现在可以调用 `inception_model.trainable = False` 来冻结层。通过将层重新聚合到一个新模型中并调用 `model.summary()`，你可以看到层冻结的结果（见列表
+    [2-13](#PC13)）。由于完整模型中的大多数参数都是来自预训练模型的迁移权重，层冻结后，大多数参数都是不可训练的。
 - en: '[PRE12]'
+  id: totrans-289
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Calling `model.summary()` is a good way to double-check if layer freezing worked
     or not. When several forms and series of neural network manipulations are being
     performed, it can be difficult to keep track and separate different forms of functions
     and instantiated objects.
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: 调用 `model.summary()` 是检查层冻结是否成功的好方法。当进行多种形式和系列的神经网络操作时，很难跟踪和区分不同的函数形式和实例化对象。
 - en: You can unfreeze with `inception_model.trainable = True` and continue fitting
     again for fine-tuning.
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以使用 `inception_model.trainable = True` 来解冻，并继续进行微调。
 - en: You can also freeze individual layers with a similar method or by aggregating
     layers together into models and unfreezing groups of layers.
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: 你也可以使用类似的方法或通过将层聚合到模型中并解冻层组来冻结单个层。
 - en: Accessing PyTorch Models
+  id: totrans-293
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 访问 PyTorch 模型
 - en: Keras/TensorFlow offers a large selection of pretrained models, and platforms
     like the model zoo ([`https://modelzoo.co/`](https://modelzoo.co/)) or pypi libraries
     offer a wide range of pretrained models and/or architectures in Keras/TensorFlow.
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: Keras/TensorFlow 提供了大量的预训练模型，平台如模型库 ([https://modelzoo.co/](https://modelzoo.co/))
+    或 pypi 库提供了广泛的预训练模型和/或架构。
 - en: PyTorch , a major alternative framework to Keras/TensorFlow, offers a larger
     selection of pretrained models. If a PyTorch pretrained model is not already implemented
     in Keras/TensorFlow, there’s a simple method to convert PyTorch models into Keras
     model objects so you can work with the model using familiar methods and steps.
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch，作为 Keras/TensorFlow 的重要替代框架，提供了更多预训练模型的选择。如果一个 PyTorch 预训练模型尚未在 Keras/TensorFlow
+    中实现，有一个简单的方法可以将 PyTorch 模型转换为 Keras 模型对象，这样你就可以使用熟悉的方法和步骤来处理模型。
 - en: PyTorch and Keras/TensorFlow, as well as most other frameworks, are built upon
     the Open Neural Network Exchange (ONNX), an AI ecosystem that establishes standards
     for representing various AI algorithms. ONNX was formulated with the purpose of
@@ -1582,82 +2204,128 @@
     Correspondingly, to convert a model from PyTorch to Keras/TensorFlow, the PyTorch
     model is first converted into ONNX format and then from ONNX format to the Keras/TensorFlow
     framework (Figure [2-23](#Fig23)).
+  id: totrans-296
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 和 Keras/TensorFlow，以及大多数其他框架，都是建立在 Open Neural Network Exchange (ONNX)
+    之上的，这是一个建立各种 AI 算法表示标准的 AI 生态系统。ONNX 的制定目的是通过在框架之间转换算法表示来鼓励创新。相应地，要将模型从 PyTorch
+    转换为 Keras/TensorFlow，首先将 PyTorch 模型转换为 ONNX 格式，然后从 ONNX 格式转换为 Keras/TensorFlow
+    框架（见图 [2-23](#Fig23)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig23_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig23_HTML.jpg)'
+  id: totrans-297
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig23_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig23_HTML.jpg)'
 - en: Figure 2-23
+  id: totrans-298
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-23
 - en: Diagram converting a PyTorch model to a Keras/TensorFlow model
+  id: totrans-299
   prefs: []
   type: TYPE_NORMAL
+  zh: 将 PyTorch 模型转换为 Keras/TensorFlow 模型的图示
 - en: Let’s start by installing PyTorch with `pip install torch`. It can be imported
     as `import torch`.
+  id: totrans-300
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从使用 `pip install torch` 安装 PyTorch 开始。它可以导入为 `import torch`。
 - en: You can find a list of PyTorch image-based pretrained models at [`https://pytorch.org/vision/stable/models.html`](https://pytorch.org/vision/stable/models.html)
     (note that you can access other non-image-based pretrained models as well). These
     image-based pretrained models can be accessed at `torchvision.models.model_name`.
     You can install TorchVision via pip with `pip install torchvision`.
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在 [https://pytorch.org/vision/stable/models.html](https://pytorch.org/vision/stable/models.html)
+    找到 PyTorch 基于图像的预训练模型列表（注意，你也可以访问其他非图像的预训练模型）。这些基于图像的预训练模型可以通过 `torchvision.models.model_name`
+    访问。你可以使用 pip 安装 TorchVision：`pip install torchvision`。
 - en: For the purposes of this example, we will convert the PyTorch implementation
     of the SqueezeNet model into Keras. The 2016 SqueezeNet model focuses on retaining
     model performance while decreasing computational cost, notably by using 1x1 convolutions
     to reduce the number of parameters. The first step is to instantiate the PyTorch
     model (Listing [2-14](#PC14)).
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本例中，我们将把 SqueezeNet 模型的 PyTorch 实现转换为 Keras。2016 年的 SqueezeNet 模型专注于在降低计算成本的同时保持模型性能，特别是通过使用
+    1x1 卷积来减少参数数量。第一步是实例化 PyTorch 模型（列表 [2-14](#PC14)）。
 - en: '[PRE13]'
+  id: totrans-303
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Now that we have instantiated the PyTorch model, we can convert it into a Keras
     model using the `pytorch2keras` model, which can be installed via pip with `pip
     install pytorch2keras`.
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经实例化了 PyTorch 模型，我们可以使用 `pytorch2keras` 模型将其转换为 Keras 模型，该模型可以通过 pip 安装：`pip
+    install pytorch2keras`。
 - en: Let’s begin by importing the `pytorch_to_keras` function (Listing [2-15](#PC15)).
+  id: totrans-305
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从导入 `pytorch_to_keras` 函数（列表 [2-15](#PC15)）开始。
 - en: '[PRE14]'
+  id: totrans-306
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'The `pytorch_to_keras` function takes in three arguments: the PyTorch model,
     the input tensor, and the shape of the input tensor (Listing [2-16](#PC16)).'
+  id: totrans-307
   prefs: []
   type: TYPE_NORMAL
+  zh: '`pytorch_to_keras` 函数接受三个参数：PyTorch 模型、输入张量以及输入张量的形状（列表 [2-16](#PC16)）。'
 - en: '[PRE15]'
+  id: totrans-308
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: The `input_np` variable defines the shape of the input in channels-first format,
     where the “depth” of the image is listed as the first element of the shape. The
     `torch.FloatTensor` and `torch.autograd.Variable` functions convert the shape
     of the numpy array into valid tensor format.
+  id: totrans-309
   prefs: []
   type: TYPE_NORMAL
+  zh: '`input_np` 变量定义了输入的形状，以通道优先格式列出，其中图像的“深度”被列为形状的第一个元素。`torch.FloatTensor` 和
+    `torch.autograd.Variable` 函数将 numpy 数组的形状转换为有效的张量格式。'
 - en: The resulting Keras model can be visualized to double-check that the architecture
     has been transferred correctly and then compiled and fitted.
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的 Keras 模型可以可视化以确认架构已正确转换，然后编译和拟合。
 - en: 'Note that not all PyTorch architectures can be converted into Keras/TensorFlow
     if some layer or operation is not supported for export by ONNX. See a list of
     transferable layers on the `pytorch2keras` GitHub: [`https://github.com/gmalivenko/pytorch2keras`](https://github.com/gmalivenko/pytorch2keras)
     .'
+  id: totrans-311
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意，并非所有 PyTorch 架构都可以转换为 Keras/TensorFlow，如果某些层或操作不支持由 ONNX 导出。请参阅 `pytorch2keras`
+    GitHub 上的可转移层列表：[`https://github.com/gmalivenko/pytorch2keras`](https://github.com/gmalivenko/pytorch2keras)。
 - en: Implementing Simple Self-Supervised Learning
+  id: totrans-312
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 实现简单自监督学习
 - en: In this section, we will discuss the implementation of rudimentary level of
     self-supervised learning. You will find that many deep learning concepts are intertwined,
     and thus we need to wait until Chapter [3](516104_1_En_3_Chapter.xhtml) because
     we first need to have a strong grasp of what autoencoders are before we understand
     their effective use in pretraining.
+  id: totrans-313
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论自监督学习基本层次的实现。你会发现许多深度学习概念是相互交织的，因此我们需要等待直到第 [3](516104_1_En_3_Chapter.xhtml)
+    章，因为在我们理解它们在预训练中的有效使用之前，我们首先需要深入了解什么是自编码器。
 - en: In more complex forms of self-supervised learning, modifications to the architecture
     are performed after the pretraining task often by adding more layers, usually
     to get the output into the desired shape to train on the task dataset or to add
@@ -1665,20 +2333,26 @@
     will design our self-supervised pretraining strategy such that no architectural
     changes need to be made after pretraining and before formal training on the task
     dataset.
+  id: totrans-314
   prefs: []
   type: TYPE_NORMAL
+  zh: 在更复杂的自监督学习形式中，架构的修改通常在预训练任务之后进行，通常是通过添加更多层来实现的，通常是为了将输出调整到所需的形状以便在任务数据集上训练，或者为了增加更多的处理能力。在自监督学习的简单应用中，我们将设计我们的自监督预训练策略，以便在预训练和正式在任务数据集上训练之前不需要进行架构更改。
 - en: In order to design a self-supervised pretraining strategy that does not require
     any architecture changes, we need to focus primarily on the input and the output.
     If the shapes of the pretraining task’s *x* and *y* match that of the ultimate
     task’s, then there is no need to alter the architecture to accommodate it.
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了设计一个不需要任何架构更改的自监督预训练策略，我们需要主要关注输入和输出。如果预训练任务的 *x* 和 *y* 的形状与最终任务的形状相匹配，那么就没有必要更改架构来适应它。
 - en: 'Consider the task of classifying the gender of a person in an image. Here,
     we have *x* = image and *y* = 1-dimensional vector (one value: 0 or 1, indicating
     gender). Thus, our self-supervised pretraining task should similarly require the
     model to take in an image and output one value.'
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑到对图像中的人进行性别分类的任务。在这里，我们有*x* = 图像和*y* = 一维向量（一个值：0或1，表示性别）。因此，我们的自监督预训练任务应该同样要求模型接收一个图像并输出一个值。
 - en: For this example, the self-supervised pretraining task will be to identify the
     degree of noise. For each training example, we will add Gaussian noise with a
     certain standard deviation, σ. The objective of the model for pretraining is to
@@ -1692,8 +2366,10 @@
     relationships between the color of pixels between images would be valuable. Moreover,
     it moves the model closer toward being able to be robust to small perturbations
     and noise.
+  id: totrans-317
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于这个例子，自监督预训练任务将是识别噪声的程度。对于每个训练示例，我们将添加具有特定标准差σ的高斯噪声。预训练模型的目的是根据噪声图像预测噪声程度σ。为了执行这样的任务，模型需要识别哪些模型特征算作噪声，哪些不算，因此它致力于发现和表示面部中的基本结构和模式。添加高斯噪声会改变图像的颜色，而不是某些特征的位置；然而，由于颜色决定了阴影、边缘和其他定义女性和男性面部一般外观的特征的存在，因此对图像像素之间颜色之间常见关系的良好理解将非常有价值。此外，它使模型更接近能够对小的扰动和噪声具有鲁棒性。
 - en: Fundamentally, at a rudimentary level without architecture changes, building
     self-supervised learning pretraining strategies is concerned primarily with data.
     We can build two datasets – augmented task dataset used for pretraining and a
@@ -1702,23 +2378,31 @@
     model will have developed representations of the “world” it is about to enter
     and can approach the ultimate task more aware and with more complex understandings
     than if it had not undergone pretraining.
+  id: totrans-318
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本质上，在基本层面上，不改变架构，构建自监督学习预训练策略主要关注数据。我们可以构建两个数据集——用于预训练的增强任务数据集和用于正式训练的任务数据集——并按照这个顺序在这两个数据集上拟合模型。在训练了增强任务数据集之后，理想情况下，模型将已经发展出关于它即将进入的“世界”的表示，并且比没有经过预训练的情况下，对最终任务有更多的意识和更复杂的理解。
 - en: To construct the augmented task dataset, we will use the `.map` method of loading
     images from directories into the efficient TensorFlow dataset format (see Chapter
     [1](516104_1_En_1_Chapter.xhtml)). For brevity, here we will provide only the
     function to be mapped in constructing the altered dataset.
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了构建增强任务数据集，我们将使用加载图像到高效的TensorFlow数据集格式的`.map`方法（见第[1](516104_1_En_1_Chapter.xhtml)章）。为了简洁起见，这里我们将只提供构建修改后的数据集时需要映射的函数。
 - en: Let us first define a function, `parse_file`, which takes in the path of a file
     and uses TensorFlow input/output and image operations to read the image and convert
     it into proper format (Listing [2-17](#PC17)). The function returns a tensor containing
     the information from the image, upon which we can perform operations.
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们先定义一个函数，`parse_file`，它接收一个文件的路径，并使用TensorFlow输入/输出和图像操作来读取图像并将其转换为适当的格式（清单[2-17](#PC17)）。该函数返回包含图像信息的张量，我们可以在此基础上进行操作。
 - en: '[PRE16]'
+  id: totrans-321
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: The `alter_data` function will be the “ultimate function” used in `.map()` (Listing
     [2-18](#PC18)). First, we use the `parse_file` function to collect information
     from the image. Next, we will use TensorFlow’s `tf.random.uniform()` function
@@ -1730,31 +2414,48 @@
     now has noise applied to it) and the standard deviation (the label). The task
     dataset has been altered such that the pretrained task is to predict the degree
     of noise applied to the image.
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
+  zh: '`alter_data` 函数将是 `.map()` 中使用的“终极函数”（见列表 [2-18](#PC18)）。首先，我们使用 `parse_file`
+    函数从图像中收集信息。接下来，我们将使用 TensorFlow 的 `tf.random.uniform()` 函数从 0 到 0.5 的均匀分布中随机选择一个数字；这将作为应用高斯噪声的标准差。使用标准差和均值
+    0.0，我们将生成与图像相同形状的高斯噪声张量。可以通过将图像张量和噪声张量相加来将噪声应用于图像。最后，我们返回修改后的图像（现在已应用噪声）和标准差（标签）。任务数据集已被修改，使得预训练任务是预测应用于图像的噪声程度。'
 - en: '[PRE17]'
+  id: totrans-323
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: If you had a multidimensional output, you could also have the model predict
     changes to brightness, hue, etc. – features that are important to this task. TensorFlow
     offers a host of image processing and mathematical operations that you can use
     to alter data. It is best to stick to TensorFlow functions and objects when constructing
     functions to map to avoid errors or computational inefficiency.
+  id: totrans-324
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你有一个多维输出，模型也可以预测亮度、色调等变化——这些特征对于这个任务很重要。TensorFlow 提供了一系列图像处理和数学操作，你可以使用它们来修改数据。在构建映射到函数时，最好坚持使用
+    TensorFlow 函数和对象，以避免错误或计算效率低下。
 - en: We can see the visual results of our alteration (Figure [2-24](#Fig24)).
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以看到我们修改的视觉结果（见图 [2-24](#Fig24)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig24_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig24_HTML.jpg)'
+  id: totrans-326
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig24_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig24_HTML.jpg)'
 - en: Figure 2-24
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-24
 - en: Example images from the altered task dataset. The standard deviations of noise
     (labels) for images from left to right are 0.003, 0.186, and 0.304
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: 修改后的任务数据集的示例图像。从左到右的图像噪声（标签）标准差为 0.003、0.186 和 0.304。
 - en: You can then fit the model (after compiling and performing other necessary steps)
     on the two datasets (Listing [2-19](#PC19)). Note that the number of epochs the
     model uses fitting on the altered task dataset compared to the number of epochs
@@ -1771,11 +2472,15 @@
     to last as long. Getting a feel for the relationship between pretraining and formal
     training takes experience and time, but it’s good to experiment with your unique
     conditions and environment.
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，你可以在两个数据集上拟合模型（在编译和执行其他必要步骤之后）（见列表 [2-19](#PC19)）。请注意，模型在修改后的任务数据集上拟合所使用的周期数与在任务数据集上拟合所使用的周期数相比，根据任务的复杂性和修改后的任务数据集的设计以及其他因素（如可用的计算资源和数据集的大小）有显著差异。如果任务极其复杂，并且修改后的任务数据集提供了难以获得但有意义且深入的表示（例如，现代自然语言处理问题），那么在修改后的任务数据集上训练模型一段时间可能是有益的。另一方面，在像这个例子中分类图像中的人的性别这样的简单任务中，以及提供有意义的表示但不是表示任务数据集世界整体的部分的修改后的任务数据集中，预训练可能不需要持续很长时间。了解预训练和正式训练之间的关系需要经验和时间，但实验你独特的条件和环境是好的。
 - en: '[PRE18]'
+  id: totrans-330
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: It should also be noted that the altered task dataset and the task dataset in
     this case are different types of problems – the former is a regression problem
     (predicting a continuous value), whereas the latter is a classification problem
@@ -1794,22 +2499,30 @@
     using image-to-image pretraining tasks (e.g., colorization, denoising, resolution
     recovery) to pretrain a model to perform an image-to-vector or image-to-image
     task.
+  id: totrans-331
   prefs: []
   type: TYPE_NORMAL
+  zh: 应当注意的是，修改后的任务数据集和本例中的任务数据集是不同类型的问题——前者是一个回归问题（预测一个连续值），而后者是一个分类问题（对图像进行分类）。在这种情况下，这种差异并不是问题，因为两个数据集中的所有标签都位于0到1之间，这意味着一个具有sigmoid激活函数输出的标准模型可以在两者上运行。对于介于0和1之间的回归问题，二元交叉熵也是一个有效的损失函数，尽管如果您愿意，您可以在修改后的任务数据集上训练模型之前，使用正式的基于回归的损失函数（例如，MSE，Huber）来编译模型，然后在任务数据集上训练模型之前，使用二元交叉熵（或用于分类的其他损失函数）重新编译模型。在更高级的情况下，从修改后的任务数据集调整到任务数据集需要做出架构上的修改。您可以在本章的第二案例研究中找到这方面的例子，以及在第[3](516104_1_En_3_Chapter.xhtml)章关于自编码器的章节中。利用自编码器的工具，我们可以执行更复杂的预训练策略，例如使用图像到图像的预训练任务（例如，着色、去噪、分辨率恢复）来预训练一个模型以执行图像到向量或图像到图像的任务。
 - en: Case Studies
+  id: totrans-332
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 案例研究
 - en: These three case studies allow us to explore new ideas and recent research in
     transfer learning and self-supervised learning. Some ideas may be out of the scope
     of this book in terms of implementation but offer fresh perspectives and things
     to think about when designing your deep learning approaches.
+  id: totrans-333
   prefs: []
   type: TYPE_NORMAL
+  zh: 这三个案例研究使我们能够探索迁移学习和自监督学习的新思想和最新研究。一些想法在实施方面可能超出了本书的范围，但提供了新的视角，在设计您的深度学习方法时值得思考。
 - en: 'Transfer Learning Case Study: Adversarial Exploitation of Transfer Learning'
+  id: totrans-334
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 迁移学习案例研究：迁移学习的对抗利用
 - en: As deep learning models are increasingly deployed in common production, it is
     becoming more important to incorporate the findings from the rising field of adversarial
     learning into deep learning designs. Adversarial learning is concerned with how
@@ -1818,24 +2531,30 @@
     Vulnerabilities in deep learning can lead to dangerous outcomes – imagine, for
     instance, if malicious or accidental alterations to a traffic sign cause a self-driving
     car to suddenly accelerate or brake.
+  id: totrans-335
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着深度学习模型越来越多地部署到常见的生产环境中，将日益增长的对抗学习领域的发现纳入深度学习设计变得越来越重要。对抗学习关注的是如何利用深度学习模型的弱点，通常是通过进行人类肉眼难以察觉的小幅改动，但这些改动完全改变了模型的输出。深度学习中的漏洞可能导致危险的结果——例如，想象一下，如果对交通标志的恶意或意外更改导致自动驾驶汽车突然加速或刹车。
 - en: 'In a 2020 paper entitled “A Target-Agnostic Attack on Deep Models: Exploiting
     Security Vulnerabilities of Transfer Learning,” Shahbaz Rezaei and Xin Liu^([6](#Fn6))
     explore how adversarial learning can be applied to transfer learning. Because
     many modern applications of deep learning use transfer learning, a malicious hacker
     could analyze the architecture and weights of the pretrained model to exploit
     weaknesses in the deployed model.'
+  id: totrans-336
   prefs: []
   type: TYPE_NORMAL
+  zh: 在2020年的一篇论文《针对深度模型的非目标攻击：利用迁移学习的安全漏洞》中，Shahbaz Rezaei和Xin Liu^([6](#Fn6))探讨了如何将对抗学习应用于迁移学习。由于许多现代深度学习应用都使用迁移学习，恶意黑客可以分析预训练模型的架构和权重，以利用部署模型的弱点。
 - en: Rezaei and Liu show that a hacker, with knowledge only of the pretrained model
     used in the application model, can develop adversarial inputs leading to any desired
     outcome. Because the hacker does not need to know the weights or architecture
     of the application model or the data it was retrained on, the method of attack
     is *target agonistic*, which allows it to exploit wide swaths of deployed deep
     learning models that utilize publicly available pretrained models.
+  id: totrans-337
   prefs: []
   type: TYPE_NORMAL
+  zh: Rezaei 和 Liu 表明，黑客仅凭对应用模型中使用的预训练模型的知识，就可以开发出导致任何期望结果的对抗性输入。因为黑客不需要知道应用模型或其重新训练的数据的权重或架构，攻击方法是**目标非对抗性**的，这允许它利用大量部署的深度学习模型，这些模型使用了公开可用的预训练模型。
 - en: Consider the following model structure, which uses a simple form of transfer
     learning (Figure [2-25](#Fig25)). The input to the model is passed through the
     pretrained model (both convolutional and FC components). The outputs of the pretrained
@@ -1844,21 +2563,32 @@
     FC layer are labeled – for instance, the connection between the top node of the
     pretrained model’s output and the bottom node of the custom FC layer is 4\. For
     the purposes of simplicity, ignore the bias term in each node.
+  id: totrans-338
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑以下模型结构，它使用了一种简单的迁移学习形式（见图 [2-25](#Fig25)）。模型的输入通过预训练模型（包括卷积和全连接组件）传递。预训练模型的输出（一个三维向量）通过一个自定义（新添加）的全连接层，得到输出（一个二维向量）。全连接层的权重被标记出来——例如，预训练模型输出顶节点与自定义全连接层底节点之间的连接权重为
+    4。为了简化，忽略每个节点的偏置项。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig25_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig25_HTML.jpg)'
+  id: totrans-339
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig25_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig25_HTML.jpg)'
 - en: Figure 2-25
+  id: totrans-340
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-25
 - en: Example transfer learning model architecture with hacker visibility marked
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有黑客可见性标记的示例迁移学习模型架构
 - en: The hacker has access only to the pretrained model, not the custom FC layer
     and any operations that process the output of the pretrained model.
+  id: totrans-342
   prefs: []
   type: TYPE_NORMAL
+  zh: 黑客只能访问预训练模型，而不能访问自定义全连接层以及处理预训练模型输出的任何操作。
 - en: Say that the hacker wanted to construct an input that would trigger a certain
     output neuron, like the bottom neuron in the custom FC layer. The hacker can construct
     an input such that the top neuron output of the pretrained model is some very
@@ -1867,34 +2597,52 @@
     softmax activation function magnifies this difference, and the bottom output neuron
     of the complete model is the final decision of the model, as desired, as it has
     the largest associated value/probability (Figure [2-26](#Fig26)).
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设黑客想要构建一个输入，以触发特定的输出神经元，比如自定义全连接层底部的神经元。黑客可以构建一个输入，使得预训练模型的顶层神经元输出是一个非常大的数，而其他所有输出神经元都是
+    0。当乘以相应的权重时，完整模型的输出为 10 和 40；通过 softmax 激活函数放大这个差异，完整模型的底部输出神经元就是模型最终的决定，正如所期望的那样，因为它具有最大的关联值/概率（见图
+    [2-26](#Fig26)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig26_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig26_HTML.jpg)'
+  id: totrans-344
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig26_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig26_HTML.jpg)'
 - en: Figure 2-26
+  id: totrans-345
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-26
 - en: Example transfer learning model architecture with a pretrained model output
     neuron activated to trigger a specific output from the model
+  id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有预训练模型输出神经元激活的示例迁移学习模型架构，以触发模型的具体输出
 - en: Alternatively, if the hacker wanted to activate the top output neuron of the
     complete model, it could design an input such that the output neurons of the pretrained
     model were all zero except for the bottom one, which would be an arbitrarily large
     number (Figure [2-27](#Fig27)).
+  id: totrans-347
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，如果黑客想要激活完整模型的顶层输出神经元，它可以设计一个输入，使得预训练模型的输出神经元都为零，除了最底层的，它可以是任意大的数（见图 [2-27](#Fig27)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig27_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig27_HTML.jpg)'
+  id: totrans-348
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig27_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig27_HTML.jpg)'
 - en: Figure 2-27
+  id: totrans-349
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-27
 - en: Example transfer learning model architecture with a pretrained model output
     neuron activated to trigger a specific output from the model
+  id: totrans-350
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有预训练模型输出神经元激活的示例迁移学习模型架构，以触发模型的具体输出
 - en: However, because the hacker does not know the weights outside of the pretrained
     model in the custom FC layer, they can perform a brute-force search to attempt
     to force the model to output a certain result. In this search, the hacker aims
@@ -1904,8 +2652,10 @@
     each desired output, some node in the complete network’s output will be activated.
     The hacker simply records which one of the complete network’s output nodes is
     activated for each designed output of the pretrained model.
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，因为黑客不知道预训练模型之外的自定义全连接层中的权重，他们可以执行穷举搜索，试图迫使模型输出特定的结果。在这个搜索中，黑客的目标是构建一个输入，使得预训练模型的输出第一次是[*a*，0，…，0，0]，第二次是[0，*a*，…，0，0]，依此类推，直到最后一次，[0，0，…，0，*a*]，其中*a*是某个任意大的数。对于每个期望的输出，完整网络输出中的某个节点将被激活。黑客只需记录对于预训练模型的每个设计输出，完整网络输出节点中哪一个被激活。
 - en: It should be noted that for this strategy to be capable of activating every
     output node of the complete model, for each output node of the complete model,
     there must exist a connection from an output node of the pretrained model whose
@@ -1913,8 +2663,10 @@
     to any other output node in the complete model. This may not be true in more complex
     datasets, especially heavy multiclass problems, but in most networks, this strategy
     works to “force” the network to predict almost any desired result.
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: 应该注意的是，为了使这种策略能够激活完整模型的每个输出节点，对于完整模型的每个输出节点，必须存在一个从预训练模型输出节点（其权重大于从该预训练模型输出节点到完整模型中任何其他输出节点的连接）的连接。这在更复杂的数据集中可能不成立，特别是重多类问题，但在大多数网络中，这种策略可以“迫使”网络预测几乎任何期望的结果。
 - en: 'Because the problem has now been boiled down to finding the input to the model
     that will lead to a certain output of the pretrained component, the hacker can
     use methods like gradient descent to solve the following optimization problem:
@@ -1927,35 +2679,51 @@
     model is the desired output, constructing an adversarial image. Passing this adversarial
     image through a model that uses that pretrained model via transfer learning fools
     it, even though to the human eye no significant changes were made (Figure [2-28](#Fig28)).'
+  id: totrans-353
   prefs: []
   type: TYPE_NORMAL
+  zh: 因为问题现在已经被简化为找到会导致预训练组件产生特定输出的模型输入，黑客可以使用梯度下降等方法来解决以下优化问题：*调整输入图像的值，使得预训练模型的输出尽可能接近期望的输出（最小化预训练模型输出和期望输出之间的误差）*。在这种情况下，期望的输出是所有输出节点除了一个之外都是零，而那个非零节点是一个非常大的数。优化算法从一个标准的输入图像开始，对图像进行小的调整，使得预训练模型的输出是期望的输出，构建一个对抗图像。将这个对抗图像通过一个使用该预训练模型进行迁移学习的模型，即使对人类眼睛来说没有显著的变化，也能欺骗它（图
+    [2-28](#Fig28)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig28_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig28_HTML.jpg)'
+  id: totrans-354
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig28_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig28_HTML.jpg)'
 - en: Figure 2-28
+  id: totrans-355
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 2-28
 - en: 'Left: example input image to the optimization algorithm. Right: example adversarial
     image generated to produce a certain network output. (By Shahbaz Rezaei and Xin
     Liu.)'
+  id: totrans-356
   prefs: []
   type: TYPE_NORMAL
+  zh: 左：优化算法的示例输入图像。右：生成以产生特定网络输出的示例对抗图像。（由Shahbaz Rezaei和Xin Liu提供。）
 - en: Making small, specialized distortions to the original input image results in
     the model making different classifications between the first and second images.
     Moreover, this could be done without any knowledge of the complete networks’ weights
     or architectures – an impressive feat.
+  id: totrans-357
   prefs: []
   type: TYPE_NORMAL
+  zh: 对原始输入图像进行小的、专业的扭曲会导致模型在第一张和第二张图像之间做出不同的分类。此外，这可以在没有任何关于完整网络权重或架构的知识的情况下完成——这是一个令人印象深刻的成就。
 - en: As the number of target classes (of the complete neural network) increases,
     the performance of the attack method decreases – but it is still alarmingly high.
     Consider the attack’s performance on a neural network using the VGG face pretrained
     model on the University of Massachusetts Labeled Faces in the Wild (LFW) dataset
     (Table [2-1](#Tab1)).
+  id: totrans-358
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着目标类别（完整神经网络中的）数量的增加，攻击方法的性能下降——但仍然令人震惊。考虑在麻省大学 LFW 数据集上使用 VGG 面部预训练模型进行攻击的神经网络性能（见表
+    [2-1](#Tab1)）。
 - en: Table 2-1
+  id: totrans-359
   prefs: []
   type: TYPE_NORMAL
+  zh: 表 2-1
 - en: 'Metrics of attack performance for different numbers of target classes. Target
     classes: number of target classes/output nodes in the complete neural network.
     NABAC: number of attempts to break all classes, referring to the number of queries
@@ -1963,81 +2731,124 @@
     item from that class as another class). Effectiveness (x%): the ratio of adversarial
     inputs that trigger a target class with x% confidence to the total number of adversarial
     inputs. (By Shahbaz Rezaei and Xin Liu.)'
+  id: totrans-360
   prefs: []
   type: TYPE_NORMAL
+  zh: 不同目标类数量攻击性能的指标。目标类：完整神经网络中的目标类数量/输出节点。NABAC：尝试破解所有类别的次数，指攻击需要进行的查询次数以“破解”一个类别（迫使模型将来自该类别的项目错误分类为另一个类别）。有效性（x%）：触发目标类并具有
+    x% 置信度的对抗输入与对抗输入总数之比。（由 Shahbaz Rezaei 和 Xin Liu 提供。）
 - en: '| Target Classes | NABAC | Effectiveness (95%) | Effectiveness (99%) |'
+  id: totrans-361
   prefs: []
   type: TYPE_TB
+  zh: '| 目标类别 | NABAC | 有效性（95%） | 有效性（99%） |'
 - en: '| --- | --- | --- | --- |'
+  id: totrans-362
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- |'
 - en: '| 5 | 48.25 ± 42.5 | 91.68% ± 5.69 | 87.82% ± 6.98 |'
+  id: totrans-363
   prefs: []
   type: TYPE_TB
+  zh: '| 5 | 48.25 ± 42.5 | 91.68% ± 5.69 | 87.82% ± 6.98 |'
 - en: '| 10 | 149.97 ± 132.15 | 88.87% ± 2.46 | 83.07% ± 3.31 |'
+  id: totrans-364
   prefs: []
   type: TYPE_TB
+  zh: '| 10 | 149.97 ± 132.15 | 88.87% ± 2.46 | 83.07% ± 3.31 |'
 - en: '| 15 | 323.36 ± 253.56 | 87.79%± 2.42 | 82.08% ± 2.74 |'
+  id: totrans-365
   prefs: []
   type: TYPE_TB
+  zh: '| 15 | 323.36 ± 253.56 | 87.79% ± 2.42 | 82.08% ± 2.74 |'
 - en: '| 20 | 413 | 87.17% | 79.16% |'
+  id: totrans-366
   prefs: []
   type: TYPE_TB
+  zh: '| 20 | 413 | 87.17% | 79.16% |'
 - en: As the number of target classes increases, the attack needs to make more queries
     to break all classes, and its effectiveness decreases.
+  id: totrans-367
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着目标类数量的增加，攻击需要进行的查询次数以破解所有类别，其有效性降低。
 - en: In the simplified example, only one fully connected layer was added after the
     pretrained model. While this is one method of integrating the pretrained model
     into the model structure, often many more layers are added. As the number of layers
     added afterward increases, performance also decreases (Table [2-2](#Tab2)).
+  id: totrans-368
   prefs: []
   type: TYPE_NORMAL
+  zh: 在简化的例子中，在预训练模型之后只添加了一个全连接层。虽然这是将预训练模型集成到模型结构中的方法之一，但通常还会添加更多层。随着后续添加的层数增加，性能也会下降（见表
+    [2-2](#Tab2)）。
 - en: Table 2-2
+  id: totrans-369
   prefs: []
   type: TYPE_NORMAL
+  zh: 表 2-2
 - en: Metrics of attack performance for different numbers of layers. (By Shahbaz Rezaei
     and Xin Liu.)
+  id: totrans-370
   prefs: []
   type: TYPE_NORMAL
+  zh: 不同层数攻击性能的指标。（由 Shahbaz Rezaei 和 Xin Liu 提供。）
 - en: '| **# New Layers** | **NABAC** | **Effectiveness (95%)** | **Effectiveness
     (99%)** |'
+  id: totrans-371
   prefs: []
   type: TYPE_TB
+  zh: '| **# 新层** | **NABAC** | **有效性（95%）** | **有效性（99%）** |'
 - en: '| --- | --- | --- | --- |'
+  id: totrans-372
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- |'
 - en: '| 1 | 48.25 ± 42.5 | 91.68% ± 5.69 | 87.82% ± 6.98 |'
+  id: totrans-373
   prefs: []
   type: TYPE_TB
+  zh: '| 1 | 48.25 ± 42.5 | 91.68% ± 5.69 | 87.82% ± 6.98 |'
 - en: '| 2 | 51.87 ± 39.94 | 91.57% ± 4.87 | 86.45% ± 5.35 |'
+  id: totrans-374
   prefs: []
   type: TYPE_TB
+  zh: '| 2 | 51.87 ± 39.94 | 91.57% ± 4.87 | 86.45% ± 5.35 |'
 - en: '| 3 | 257.26 ± 387.16 | 89% ± 8.20 | 85.67% ± 8.88 |'
+  id: totrans-375
   prefs: []
   type: TYPE_TB
+  zh: '| 3 | 257.26 ± 387.16 | 89% ± 8.20 | 85.67% ± 8.88 |'
 - en: Nevertheless, the effectiveness is high, even as the number of target classes
     and new layers increases. This study is an interesting investigation into the
     implications of transfer learning for the deployment of models in real-world applications.
     It’s important to keep an eye toward deployment and the model’s role in the real
     world rather than in an airtight experimentation laboratory environment when designing
     deep learning approaches.
+  id: totrans-376
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管目标类别和新层数量增加，但有效性仍然很高。这项研究是对迁移学习在现实世界应用中部署模型的影响的有趣调查。在设计深度学习方法时，重要的是要关注部署以及模型在现实世界中的作用，而不仅仅是密封的实验环境。
 - en: This overview was a simplification of the study; to read more, you can find
     the paper at [`https://openreview.net/pdf?id=BylVcTNtDS`](https://openreview.net/pdf%253Fid%253DBylVcTNtDS).
+  id: totrans-377
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一篇研究的概述；要了解更多信息，您可以在[`https://openreview.net/pdf?id=BylVcTNtDS`](https://openreview.net/pdf%253Fid%253DBylVcTNtDS)找到论文。
 - en: 'Self-Supervised Learning Case Study: Predicting Rotations'
+  id: totrans-378
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 自监督学习案例研究：预测旋转
 - en: In “Unsupervised Representation Learning by Predicting Image Rotations,” Spyros
     Gidaris, Praveer Singh, and Nikos Komodakis^([7](#Fn7)) propose a simple self-supervised
     learning method that develops strong representations of the data and yields effective
     results.
+  id: totrans-379
   prefs: []
   type: TYPE_NORMAL
+  zh: 在“通过预测图像旋转进行无监督表示学习”一文中，Spyros Gidaris、Praveer Singh 和 Nikos Komodakis^([7](#Fn7))
+    提出了一种简单的自监督学习方法，该方法能够发展出强大的数据表示，并产生有效的结果。
 - en: Gidaris et al. propose a pretraining strategy in which images are randomly rotated
     by 0, 90, 180, or 270 degrees and the model predicts the angle by which the image
     was rotated. The core intuition behind the design of the rotation-based self-supervised
@@ -2046,8 +2857,10 @@
     applied to the image. A successful model, moreover, has a sense of the “natural
     orientation” of an object, and thus have gravity and other forces should act on
     objects in an image.
+  id: totrans-380
   prefs: []
   type: TYPE_NORMAL
+  zh: Gidaris等人提出了一种预训练策略，其中图像被随机旋转0度、90度、180度或270度，模型预测图像旋转的角度。旋转基于自监督学习预训练策略设计的核心直觉是，模型必须首先理解图像中描绘的模型的概念，以便识别对图像应用的旋转。此外，一个成功的模型对物体的“自然朝向”有感觉，因此重力和其他力应该作用于图像中的物体。
 - en: '*…it is essentially impossible for a ConvNet model to effectively perform the
     above rotation recognition task unless it has first learnt to recognize and detect
     classes of objects as well as their semantic parts in images. More specifically,
@@ -2055,98 +2868,144 @@
     learn to localize salient objects in the image, recognize their orientation and
     object type, and then relate the object orientation with the dominant orientation
     that each type of object tends to be depicted within the available images.*'
+  id: totrans-381
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '*…对于一个卷积神经网络模型来说，除非它首先学会了识别和检测图像中物体的类别及其语义部分，否则基本上不可能有效地执行上述旋转识别任务。更具体地说，为了成功预测图像的旋转，卷积神经网络模型必须学会在图像中定位显著物体，识别它们的朝向和物体类型，然后将物体朝向与每种类型物体在可用图像中倾向于被描绘的主导朝向联系起来。*'
 - en: ''
+  id: totrans-382
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: —Gidaris et al., “Unsupervised Representation Learning by Predicting Image Rotations”
+  id: totrans-383
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: —Gidaris等人，“通过预测图像旋转进行无监督表示学习”
 - en: With no access to the original, unrotated image, given an image rotated θ degrees
     (chosen from θ = 0°, 90°, 180°, 270°), the network must maximize the probability
     that the image is rotated θ degrees (Figure [2-29](#Fig29)).
+  id: totrans-384
   prefs: []
   type: TYPE_NORMAL
+  zh: 在没有访问原始未旋转图像的情况下，给定一个旋转了θ度（从θ = 0°，90°，180°，270°中选择）的图像，网络必须最大化图像旋转θ度的概率（图[2-29](#Fig29)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig29_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig29_HTML.jpg)'
+  id: totrans-385
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig29_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig29_HTML.jpg)'
 - en: Figure 2-29
+  id: totrans-386
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-29
 - en: The convolutional neural network’s prediction objectives under self-supervised
     learning by predicting rotations. (By Gidaris et al.)
+  id: totrans-387
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过预测旋转进行自监督学习的卷积神经网络预测目标。（由Gidaris等人提出。）
 - en: To visually see the difference in the learned representations for self-supervised
     learning as opposed to standard supervised learning (only training the model on
     the task dataset without constructing a pretraining task), Gidaris et al. visualize
     the attention maps from a model trained with a standard supervised procedure and
     another trained with a self-supervised procedure (Figure [2-30](#Fig30)).
+  id: totrans-388
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了直观地看到自监督学习与标准监督学习（仅在任务数据集上训练模型，而不构建预训练任务）所学习到的表示之间的差异，Gidaris等人可视化了使用标准监督程序训练的模型和采用自监督程序训练的模型的注意力图（图[2-30](#Fig30)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig30_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig30_HTML.jpg)'
+  id: totrans-389
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig30_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig30_HTML.jpg)'
 - en: Figure 2-30
+  id: totrans-390
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-30
 - en: Attention maps from various layers from a supervised model and a self-supervised
     model given three example input images. (By Gidaris et al.)
+  id: totrans-391
   prefs: []
   type: TYPE_NORMAL
+  zh: 来自监督模型和自监督模型在不同层级的注意力图，以及三个示例输入图像。（由Gidaris等人提出。）
 - en: The attention map of a convolutional layer can be found by computing the feature
     maps for that layer and aggregating them. You can visually see that the attention
     maps from the self-supervised model focus more on the high-level objects, like
     the eyes, nose, tails, and heads – in accordance with important features required
     to perform object recognition.
+  id: totrans-392
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过计算该层的特征图并汇总它们，可以找到卷积层的注意力图。你可以直观地看到，自监督模型的注意力图更多地关注高级物体，如眼睛、鼻子、尾巴和头部——这些是与执行物体识别所需的重要特征相符合的。
 - en: Note
+  id: totrans-393
   prefs: []
   type: TYPE_NORMAL
+  zh: 注
 - en: You can perform something similar by extracting features from a layer in the
     middle of a neural network in Keras by referring to individual layers (assuming
     each layer is associated with a variable you defined using the Functional API).
     Visualizing layer weights and features can be helpful to understanding the improvement
     in representation capabilities that self-supervised learning provides.
+  id: totrans-394
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过参考单个层（假设每个层都与您使用 Functional API 定义的变量相关联）从 Keras 神经网络中间层提取特征来执行类似操作。可视化层权重和特征有助于理解自监督学习提供的表示能力提升。
 - en: Interestingly, Gidaris et al. find that classifying 0°-90°-180°-270° rotations
     performs better than other rotations, like 0°-180° rotations, 90°-270° rotations,
     and 0°-45°-90°-135°-180°-225°-270°-315° (Table [2-3](#Tab3)). This result highlights
     the importance of experimenting with variations of self-supervised strategies
     to explore which ones perform the best for your particular problem and approach.
+  id: totrans-395
   prefs: []
   type: TYPE_NORMAL
+  zh: 有趣的是，Gidaris 等人发现，对 0°-90°-180°-270° 旋转进行分类比其他旋转（如 0°-180° 旋转、90°-270° 旋转、0°-45°-90°-135°-180°-225°-270°-315°）表现更好（见表
+    [2-3](#Tab3)）。这一结果突出了实验自监督策略变体的重要性，以探索哪些策略对您特定的问题和方法表现最佳。
 - en: Table 2-3
+  id: totrans-396
   prefs: []
   type: TYPE_NORMAL
+  zh: 表 2-3
 - en: Performance on CIFAR-10 classification for different rotations needed for prediction.
     (By Gidaris et al.)
+  id: totrans-397
   prefs: []
   type: TYPE_NORMAL
+  zh: 预测所需不同旋转的 CIFAR-10 分类性能。（由 Gidaris 等人提供。）
 - en: '| # Rotations | Rotations | CIFAR-10 Classification Accuracy |'
+  id: totrans-398
   prefs: []
   type: TYPE_TB
+  zh: '| # 旋转 | 旋转 | CIFAR-10 分类准确率 |'
 - en: '| --- | --- | --- |'
+  id: totrans-399
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- |'
 - en: '| 8 | 0°-45°-90°-135°-180°-225°-270°-315° | 88.51 |'
+  id: totrans-400
   prefs: []
   type: TYPE_TB
+  zh: '| 8 | 0°-45°-90°-135°-180°-225°-270°-315° | 88.51 |'
 - en: '| 4 | 0°-90°-180°-270° | **89.06** |'
+  id: totrans-401
   prefs: []
   type: TYPE_TB
+  zh: '| 4 | 0°-90°-180°-270° | **89.06** |'
 - en: '| 2 | 0°-180° | 87.46 |'
+  id: totrans-402
   prefs: []
   type: TYPE_TB
+  zh: '| 2 | 0°-180° | 87.46 |'
 - en: '| 2 | 90°-270° | 85.52 |'
+  id: totrans-403
   prefs: []
   type: TYPE_TB
+  zh: '| 2 | 90°-270° | 85.52 |'
 - en: We can implement self-supervised learning via predicting rotations relatively
     easily. We will use the CIFAR-10 dataset, which can be loaded directly from Keras
     datasets with (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data().
@@ -2156,11 +3015,18 @@
     through every data instance in x_train, randomly rotate it by 0, 90, 180, or 270
     degrees, and save the rotated image and corresponding label into a new list. The
     scipy library’s scipy.ndimage.rotate(img, deg) allows us to easily perform rotations.
+  id: totrans-404
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以通过相对容易地预测旋转来实现自监督学习。我们将使用 CIFAR-10 数据集，该数据集可以直接从 Keras 数据集加载，使用 (x_train,
+    y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()。加载数据后的第一步是生成自监督的修改任务数据，在这种情况下是预测图像旋转了多少度（列表
+    [2-20](#PC20)）。尽管有更高效的方法，但我们将简单地遍历 x_train 中的每个数据实例，随机将其旋转 0、90、180 或 270 度，并将旋转后的图像及其相应的标签保存到一个新列表中。scipy
+    库的 scipy.ndimage.rotate(img, deg) 允许我们轻松地进行旋转。
 - en: '[PRE19]'
+  id: totrans-405
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: We’ll use the EfficientNetB4 architecture (not using its weights) to predict
     which one of four rotations was applied (Listing [2-21](#PC21)). Note that the
     output of the EfficientNetB4 architecture is 100-dimensional, which is projected
@@ -2168,45 +3034,64 @@
     at first glance, may seem to simply define the number of output classes in the
     base EfficientNetB4 model to be 4\. We will see soon why this design instead is
     required for this sort of self-supervised learning operation.
+  id: totrans-406
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用 EfficientNetB4 架构（不使用其权重）来预测应用了哪四种旋转之一（列表 [2-21](#PC21)）。请注意，EfficientNetB4
+    架构的输出是 100 维的，通过最终层投影到四个期望的输出。乍一看，一个更有效的方法似乎只需简单地定义基础 EfficientNetB4 模型中的输出类别数量为
+    4。我们很快就会看到为什么这种设计对于这种自监督学习操作是必需的。
 - en: Additionally, we use input_tensor=inp rather than the input_shape=(a,b,c) and
     base_model(params)(inp) syntax discussed prior. If we were to use the latter method,
     the variable base would store a tensor (i.e., the output of the model) rather
     than the model itself. We need to be able to access the EfficientNet base model
     to transfer it into a new architecture after the self-supervised process has been
     completed.
+  id: totrans-407
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，我们使用 input_tensor=inp 而不是之前讨论的 input_shape=(a,b,c) 和 base_model(params)(inp)
+    语法。如果我们使用后者，变量 base 将存储一个张量（即模型的输出）而不是模型本身。我们需要能够在自监督过程完成后访问 EfficientNet 基础模型，并将其转移到新的架构中。
 - en: '[PRE20]'
+  id: totrans-408
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: The model can be compiled and fitted on the altered task dataset (Listing [2-22](#PC22)).
     In this case, because the dataset is so small (largely because of the small image
     resolution rather than the number of items in the dataset), passing numpy arrays
     suffices and no TensorFlow dataset conversions are needed.
+  id: totrans-409
   prefs: []
   type: TYPE_NORMAL
+  zh: 该模型可以在调整后的任务数据集上编译和拟合（见列表[2-22](#PC22)）。在这种情况下，由于数据集非常小（很大程度上是由于图像分辨率低而不是数据集中的项目数量），传递numpy数组就足够了，不需要TensorFlow数据集转换。
 - en: '[PRE21]'
+  id: totrans-410
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'After fitting on the altered task dataset, though, we run into a problem: the
     current model outputs only four values, since the altered task dataset had four
     unique labels, but the task dataset (i.e., the formal CIFAR-10) dataset has ten
     classes. This requires an architectural modification.'
+  id: totrans-411
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在调整后的任务数据集上进行拟合后，我们遇到了一个问题：当前模型只输出四个值，因为调整后的任务数据集有四个唯一的标签，但任务数据集（即正式的CIFAR-10数据集）有十个类别。这需要架构上的修改。
 - en: 'Herein lies the reason behind defining a specialized output layer for the altered
     task dataset and not specifying `classes=4` in the base EfficientNetB4 model when
     training on the altered task dataset: we can extract the base model and attach
     it to a new output layer with ten classes, as follows (Listing 23). Moreover,
     because we defined `base` to be a model rather than an output tensor, we can connect
     it via the input easily via `base(inp)`.'
+  id: totrans-412
   prefs: []
   type: TYPE_NORMAL
+  zh: 正是在这里，我们定义了专门用于调整后任务数据集的输出层，并且在训练调整后任务数据集时没有在基EfficientNetB4模型中指定`classes=4`的原因：我们可以提取基模型并将其附加到一个新的包含十个类别的输出层上，如下所示（见列表23）。此外，因为我们定义`base`为一个模型而不是输出张量，我们可以通过输入轻松地通过`base(inp)`连接它。
 - en: '[PRE22]'
+  id: totrans-413
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: If we instead had trained a base model with output four classes and attached
     another output layer with ten classes afterward, which is another technically
     available option (in that the code runs), performance would likely be poor due
@@ -2215,22 +3100,30 @@
     that are compiled and used to make decisions in the output layer. The base model
     still contains all the weights learned from self-supervised learning. The new
     model can then be compiled and trained on the task dataset.
+  id: totrans-414
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们用输出四个类别的基模型进行训练，然后在后面附加一个输出层，包含十个类别，这也是一种技术上可行的选择（因为代码可以运行），但由于四个类别的输出瓶颈，性能可能会很差。在这种情况下，不要将EfficientNet模型视为输出100个类别，而应将其视为输出100个特征，这些特征被编译并用于输出层中的决策。基模型仍然包含从自监督学习中学习到的所有权重。然后，新模型可以编译并在任务数据集上训练。
 - en: This self-supervised learning approach drastically improves the state-of-the-art
     results on unsupervised feature learning for a variety of object detection tasks,
     including ImageNet, PASCAL, and CIFAR-10.
+  id: totrans-415
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种自监督学习方法显著提高了各种目标检测任务（包括ImageNet、PASCAL和CIFAR-10）的无监督特征学习方面的最先进结果。
 - en: The work of Gidaris et al. points to the existence of simple yet effective approaches
     to apply self-supervised learning to boost deep learning model performance.
+  id: totrans-416
   prefs: []
   type: TYPE_NORMAL
+  zh: Gidaris等人的一项工作指出，存在简单而有效的方法将自监督学习应用于提升深度学习模型性能。
 - en: 'Self-Supervised Learning Case Study: Learning Image Context and Designing Nontrivial
     Pretraining Tasks'
+  id: totrans-417
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 自监督学习案例研究：学习图像上下文和设计非平凡预训练任务
 - en: Earlier , we discussed relatively simpler self-supervised learning examples,
     like adding noise to the task dataset and pretraining the model to predict the
     degree of noise. Other examples were simple conceptually (although perhaps difficult
@@ -2238,48 +3131,68 @@
     images. While sometimes simpler self-supervised strategies like predicting the
     degree of rotation are effective, in other occasions for a bigger performance
     boost, a more complex pretraining task needs to be used.
+  id: totrans-418
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前，我们讨论了相对简单的自监督学习示例，例如向任务数据集中添加噪声并预训练模型以预测噪声程度。其他示例在概念上可能很简单（尽管可能难以实现或完成），例如预训练模型以着色灰度图像。虽然有时像预测旋转程度这样的简单自监督策略是有效的，但在其他情况下，为了获得更大的性能提升，需要使用更复杂的预训练任务。
 - en: Carl Doersch, Abhinav Gupta, and Alexei A. Efros propose a complex, creative,
     and effective self-supervised learning pretraining task in their 2016 paper, “Unsupervised
     Visual Representation Learning by Context Prediction.”^([8](#Fn8)) Their design
     is a great case study of the implications and possibilities that need to be considered
     to design a successful self-supervised pretraining strategy.
+  id: totrans-419
   prefs: []
   type: TYPE_NORMAL
+  zh: Carl Doersch、Abhinav Gupta和Alexei A. Efros在他们2016年的论文“通过上下文预测的无监督视觉表示学习”（^([8](#Fn8)）中提出了一种复杂、创新且有效的自监督学习预训练任务。他们的设计是成功设计自监督预训练策略需要考虑的影响和可能性的绝佳案例研究。
 - en: In the context prediction pretraining task, the model must predict the relative
     location, or the context, of one patch to another (Figure [2-31](#Fig31)). Patches
     are small, square-shaped regions of the image. The model is fed a base patch (outlined
     in blue) and a neighboring patch selected from the eight regions around the base
     patch (outlined in dotted red) and trained to predict the location of the neighboring
     patch in relation to the base patch. In the example, the label would be “top left.”
+  id: totrans-420
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上下文预测预训练任务中，模型必须预测一个补丁相对于另一个补丁的相对位置或上下文（图[2-31](#Fig31)）。补丁是图像中的小、正方形区域。模型被输入一个基础补丁（用蓝色勾勒）和从基础补丁周围的八个区域中选择的一个相邻补丁（用虚线红色勾勒），并训练以预测相邻补丁相对于基础补丁的位置。在示例中，标签将是“左上角”。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig31_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig31_HTML.jpg)'
+  id: totrans-421
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig31_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig31_HTML.jpg)'
 - en: Figure 2-31
+  id: totrans-422
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-31
 - en: Example context and patch relationships
+  id: totrans-423
   prefs: []
   type: TYPE_NORMAL
+  zh: 上下文和补丁关系的示例
 - en: Each general direction that could describe the location of a neighboring patch
     relative to the base patch is associated with a number. Thus, the model takes
     in two images (the base patch and the neighboring patch) and outputs a vector
     indicating which region relative to the base patch the neighboring patch is most
     likely to be located (Figure [2-32](#Fig32)).
+  id: totrans-424
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个可以描述相邻补丁相对于基础补丁位置的通用方向都与一个数字相关联。因此，模型接受两个图像（基础补丁和相邻补丁）并输出一个向量，指示相邻补丁最有可能位于相对于基础补丁的哪个区域（图[2-32](#Fig32)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig32_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig32_HTML.jpg)'
+  id: totrans-425
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig32_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig32_HTML.jpg)'
 - en: Figure 2-32
+  id: totrans-426
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-32
 - en: Assigning numbers to neighbor patch directions
+  id: totrans-427
   prefs: []
   type: TYPE_NORMAL
+  zh: 为相邻补丁方向分配数字
 - en: To perform this pretraining task, Doersch et al. constructed a multi-input network
     that takes in two inputs, processes the images through a series of image-based
     layers in separate “branches,” merges the two branches, processes the merged results,
@@ -2287,37 +3200,55 @@
     Dotted lines in Figure [2-33](#Fig33) indicate shared weights, which means that
     the weights for the two layers are the same. We’ll discuss multi-input networks,
     branching, and weight sharing in later chapters.
+  id: totrans-428
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了执行这个预训练任务，Doersch等人构建了一个多输入网络，该网络接受两个输入，通过一系列基于图像的层在各自的“分支”中处理图像，合并两个分支，处理合并后的结果，并输出一个输入相对于另一个输入的位置（图[2-33](#Fig33)）。图[2-33](#Fig33)中的虚线表示共享权重，这意味着两个层的权重是相同的。我们将在后面的章节中讨论多输入网络、分支和权重共享。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig33_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig33_HTML.jpg)'
+  id: totrans-429
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig33_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig33_HTML.jpg)'
 - en: Figure 2-33
+  id: totrans-430
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-33
 - en: Two-input architecture used to perform the pretraining task
+  id: totrans-431
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于执行预训练任务的双输入架构
 - en: This pretraining task, at least in theory, requires a deep understanding of
     the core features of certain items and the high-level relationships between attributes
     of objects. This makes it difficult, even for humans. Try answering these two
     visual questions (Figure [2-34](#Fig34)).
+  id: totrans-432
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个预训练任务，至少在理论上，需要深刻理解某些物品的核心特征以及物体属性之间的高级关系。这使得即使是人类也难以做到。尝试回答这两个视觉问题（图[2-34](#Fig34)）。
 - en: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig34_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig34_HTML.jpg)'
+  id: totrans-433
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/516104_1_En_2_Chapter/516104_1_En_2_Fig34_HTML.jpg](../images/516104_1_En_2_Chapter/516104_1_En_2_Fig34_HTML.jpg)'
 - en: Figure 2-34
+  id: totrans-434
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2-34
 - en: Example “questions” with two patch pairs of inputs
+  id: totrans-435
   prefs: []
   type: TYPE_NORMAL
+  zh: 两个补丁对输入的“问题”示例
 - en: However, Doersch et al. found that the neural network was learning “trivial
     solutions” – that is, it was finding shortcuts and easy approaches to the pretraining
     task that were not related to the concepts Doersch et al. had hoped it would learn.
+  id: totrans-436
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，Doersch等人发现神经网络正在学习“简单解决方案”——也就是说，它正在找到与Doersch等人希望它学习的概念无关的预训练任务的捷径和简单方法。
 - en: For instance, low-level cues like boundary patterns or the continuation of textures
     across patches serve as trivial shortcuts that the neural network can exploit
     without learning the high-level relationships it would ideally learn. To address
@@ -2326,8 +3257,10 @@
     (These are shown visually in Figure [2-32](#Fig32).) With these modifications,
     the network could not reliably exploit trivial shortcuts like the continuation
     of textures and lines.
+  id: totrans-437
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，像边界模式或纹理在块之间的延续这样的低级线索，是神经网络可以不学习它理想中应该学习的高级关系而利用的简单捷径。为了解决这个问题，Doersch等人增加了块之间大约一半宽度的间隙，并为每个块位置添加了最多7像素的随机“抖动”。（这些修改在图[2-32](#Fig32)中有所展示。）通过这些修改，网络无法可靠地利用像纹理和线条延续这样的简单捷径。
 - en: 'However, another unexpected problem arose: a phenomenon called chromatic aberration,
     in which light rays pass through a lens focus at different points depending on
     their wavelength. Thus, in camera lenses that are affected by chromatic aberration,
@@ -2337,15 +3270,19 @@
     green and magenta (the color comprising the non-green color channels, red and
     blue). Finding the relative position given knowledge about the absolute location
     of two patches thus becomes a trivial task.'
+  id: totrans-438
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，另一个意想不到的问题出现了：一种称为色差的现象，其中光线穿过透镜时，根据其波长在不同的点上聚焦。因此，在受色差影响的相机镜头中，一种颜色——通常是绿色——相对于其他颜色通道（红色和蓝色）向图像中心“收缩”。因此，网络可以通过检测绿色和洋红色（由非绿色颜色通道红色和蓝色组成的颜色）之间的分离形状和位置来解析块的绝对位置。因此，在知道两个块的绝对位置的情况下，找到相对位置变得是一项简单任务。
 - en: To address this, Doersch et al. randomly dropped two of three color channels
     from each patch and replaced the dropped channels with Gaussian noise. This method
     prevents the neural network from exploiting information in the color channels
     and instead to focus on the general shapes and edges – the higher-level features
     – in its pretraining task.
+  id: totrans-439
   prefs: []
   type: TYPE_NORMAL
+  zh: '为了解决这个问题，Doersch等人从每个块中随机丢弃了两个颜色通道，并用高斯噪声替换了丢弃的通道。这种方法防止神经网络利用颜色通道中的信息，而是专注于其预训练任务中的更高级特征——形状和边缘。 '
 - en: By making modifications to the architecture, like only using one “branch” and
     adding more convolutional layers, Doersch et al. converted the two-image-to-vector
     architecture into an image-to-vector architecture. The authors tested this pretrained
@@ -2354,62 +3291,81 @@
     not included in the dataset (to their knowledge, and at the time of paper release).
     The authors found in other datasets that this context prediction task yielded
     a significant boost to model performance.
+  id: totrans-440
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过对架构进行修改，例如只使用一个“分支”并添加更多卷积层，Doersch等人将两个图像到向量的架构转换为图像到向量的架构。作者在PASCAL视觉对象类别（VOC）挑战赛上测试了这个预训练架构，并发现这种自监督学习策略是无需使用数据集中未包含的标签（据他们所知，在论文发布时）的最佳结果。作者在其他数据集中发现，这个上下文预测任务显著提高了模型性能。
 - en: This paper is both an example of a well-thought-out self-supervised learning
     pretraining task and of the process of modifying the pretraining task to accomplish
     the ultimate objective by discouraging trivial solutions. Self-supervised learning
     offers us a clever way to find, extract, and utilize rich insights and information
     without needing to search for costly labels and wandering outside of the dataset.
+  id: totrans-441
   prefs: []
   type: TYPE_NORMAL
+  zh: 这篇论文既是一个精心设计的自监督学习预训练任务的例子，也是通过阻止简单解决方案来修改预训练任务以实现最终目标的过程的例子。自监督学习为我们提供了一种巧妙的方法，可以在不搜索昂贵的标签和超出数据集范围的情况下找到、提取和利用丰富的见解和信息。
 - en: Key Points
+  id: totrans-442
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 关键点
 - en: 'In this chapter, we discussed the intuition and implementation behind pretraining,
     transfer learning, and self-supervised learning:'
+  id: totrans-443
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，我们讨论了预训练、迁移学习和自监督学习背后的直觉和实现：
 - en: Pretraining is a task that is performed before the formal training of a model
     and can orient the model toward better performing on its ultimate task.
+  id: totrans-444
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 预训练是在模型正式训练之前执行的任务，可以使模型朝着在最终任务上表现更好的方向。
 - en: 'Because pretraining moves the model into a more convenient location in the
     loss landscape, it can arrive at a better solution more quickly than a model without
     pretraining. Thus, pretraining generally has two key advantages that boost model
     performance: decreased time and better metric scores.'
+  id: totrans-445
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 由于预训练将模型移动到损失景观中更方便的位置，它比没有预训练的模型更快地到达更好的解决方案。因此，预训练通常有两个关键优势，可以提升模型性能：减少时间和更好的度量分数。
 - en: Transfer learning uses two separate datasets – a general dataset and a task
     dataset. The model is first trained on the general dataset, and then the learned
     weights and “skills” from the task are transferred to another model that is trained
     on the task dataset. Pretrained models are often kept in publicly available repositories
     and can be accessed and used in your own model.
+  id: totrans-446
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 迁移学习使用两个独立的数据库集——一个通用数据库集和一个任务数据库集。模型首先在通用数据库集上训练，然后将任务学习到的权重和“技能”转移到在任务数据库集上训练的另一个模型上。预训练模型通常保存在公开可用的存储库中，可以在自己的模型中访问和使用。
 - en: 'Image-based pretrained models generally consist of two components: a feature
     extraction component and a fully connected component (the “top”). You can (a)
     keep only the feature extraction component and build a custom FC component, (b)
     keep both the feature extraction component and the fully connected component only,
     or (c) keep both the feature extraction component and the FC component, but add
     more layers afterward.'
+  id: totrans-447
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 基于图像的预训练模型通常由两个组件组成：一个特征提取组件和一个全连接组件（“顶部”）。您可以选择以下操作：(a) 仅保留特征提取组件并构建自定义FC组件，(b)
+    保留特征提取组件和全连接组件，或者(c) 保留特征提取组件和FC组件，但之后添加更多层。
 - en: Layer freezing allows you to selectively train certain parts of a model using
     transfer learning to better take advantage of pretrained weights. Usually, weights
     from the pretrained model are frozen and the custom added layers are trained.
     After this step, sometimes the pretrained model is unfrozen and the entire network
     is trained to fine-tune on the data.
+  id: totrans-448
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 层冻结允许您通过迁移学习选择性地训练模型的一部分，以更好地利用预训练权重。通常，预训练模型的权重被冻结，而自定义添加的层被训练。在此步骤之后，有时预训练模型被解冻，整个网络被训练以在数据上进行微调。
 - en: Keras/TensorFlow has built in a repository of pretrained models organized into
     modules, in which each module contains the pretrained model(s) and associated
     functions (usually for encoding and decoding). Important pretrained models include
@@ -2417,44 +3373,56 @@
     family. Keras/TensorFlow models are pretrained on the ImageNet dataset. You can
     also convert PyTorch models into Keras/TensorFlow models to take advantage of
     PyTorch’s large repository of pretrained models.
+  id: totrans-449
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Keras/TensorFlow内置了一个预训练模型库，这些模型组织成模块，其中每个模块包含预训练模型和相关函数（通常用于编码和解码）。重要的预训练模型包括ResNet系列、InceptionV3模型、MobileNet系列和EfficientNet系列。Keras/TensorFlow模型在ImageNet数据集上进行了预训练。您还可以将PyTorch模型转换为Keras/TensorFlow模型，以利用PyTorch庞大的预训练模型库。
 - en: Self-supervised learning uses pretrains on an altered task dataset derived from
     input data of the task dataset. The *x* and *y* of the altered task dataset come
     completely from only the *x* of the task dataset, often by performing distortions
     or actions to generate labels. Self-supervised learning helps orient the model
     to representing and understanding the “world” of the dataset so it is prepared
     to understand the dynamics and core features of the task dataset.
+  id: totrans-450
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 自监督学习在从任务数据库集的输入数据派生出的修改后的任务数据集上进行预训练。修改后的任务数据集的*x*和*y*完全来自任务数据集的*x*，通常通过执行扭曲或操作来生成标签。自监督学习有助于使模型面向表示和理解数据集的“世界”，以便它准备好理解任务数据集的动态和核心特征。
 - en: Self-supervised learning is especially valuable for training on small datasets
     with few labels, or when there is an abundance of unlabeled data that otherwise
     would not have been used.
+  id: totrans-451
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 自监督学习对于在小型数据集上训练，标签很少，或者当有大量未标记数据而其他情况下不会使用时，特别有价值。
 - en: There are two key differences between transfer learning and self-supervised
     learning. Firstly, the pretraining dataset and the task dataset generally come
     from completely different sources in transfer learning, whereas in self-supervised
     learning, the pretraining dataset is derived from the input data of the task dataset.
     Secondly, transfer learning aims to develop “skills,” while self-supervised learning
     encourages “representations of the world.”
+  id: totrans-452
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 转移学习和自监督学习之间有两个关键区别。首先，在转移学习中，预训练数据集和任务数据集通常来自完全不同的来源，而在自监督学习中，预训练数据集是从任务数据集的输入数据中派生出来的。其次，转移学习的目标是开发“技能”，而自监督学习鼓励“世界的表示”。
 - en: Although we implemented relatively simple models and methods in this chapter,
     with these conceptual tools and the design intuition of what transfer learning
     and self-supervised learning are, you will be able to build many more complex
     training structures, like stacking pretrained models (“double transfer learning”)
     or designing innovative self-supervised pretraining methods.
+  id: totrans-453
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管我们在本章中实现了相对简单的模型和方法，但有了这些概念工具以及转移学习和自监督学习的设计直觉，你将能够构建更多更复杂的训练结构，例如堆叠预训练模型（“双重转移学习”）或设计创新的自监督预训练方法。
 - en: In the next chapter, we’ll expand upon our study of advanced neural network
     structures and manipulations with autoencoders, a versatile tool often used in
     developing successful training structures.
+  id: totrans-454
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下一章中，我们将扩展我们对高级神经网络结构和使用自动编码器进行操作的研究，自动编码器是一种常用于开发成功训练结构的通用工具。
