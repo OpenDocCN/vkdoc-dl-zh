@@ -1,345 +1,496 @@
 - en: 9. Convolutional and Variational Autoencoders
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 9. 卷积和变分自编码器
 - en: Autoencoders don’t typically work well with images unless they are very small.
     But convolutional and variational autoencoders works much better than a feedforward
     dense ones with large color images.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 自编码器通常不适用于图像，除非它们非常小。但卷积和变分自编码器与大型彩色图像相比，效果要好得多。
 - en: '**A** **variational autoencoder (VAE)** is a deep learning technique for learning
     latent representations. They apply learned latent space representations to draw
     images and interpolate between sentences. A VAE works by compressing the input
     into a latent space representation and then reconstructing the output from this
     representation. **Latent space** is a mathematical representation of compressed
     data.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**变分自编码器（VAE）**是一种深度学习技术，用于学习潜在表示。它们将学习的潜在空间表示应用于绘制图像和句子之间的插值。VAE通过将输入压缩到潜在空间表示，然后从该表示重建输出而工作。**潜在空间**是压缩数据的数学表示。'
 - en: A VAE tackles the problem of latent space irregularity by making the encoder
     return a Gaussian distribution over the latent space instead of a single point
     and adding regularization in the loss function over that returned distribution.
     In deep learning, data can be compressed to better manage computational resources.
     But the latent space must be spread over a Gaussian distribution to normalize
     it for model consumption.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: VAE通过使编码器返回潜在空间上的高斯分布而不是单个点，并在返回的分布上添加损失函数的正则化来解决潜在空间不规则性的问题。在深度学习中，数据可以压缩以更好地管理计算资源。但潜在空间必须分布在高斯分布上以进行归一化，以便模型使用。
 - en: A major advantage of a VAE is that it describes an observation (in latent space)
     in a Gaussian probabilistic manner to better simulate a natural phenomenon. So
     rather than building an encoder that outputs a single value to describe each latent
     state attribute, a VAE builds one to describe a probability distribution for each
     latent attribute. The result is a generated image of much higher quality.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: VAE的一个主要优点是它以高斯概率方式描述（在潜在空间中的）观察结果，以更好地模拟自然现象。因此，而不是构建一个输出单个值来描述每个潜在状态属性的编码器，VAE构建一个来描述每个潜在属性的概率分布。结果是生成的高质量图像。
 - en: 'Notebooks for chapters are located at the following URL:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 各章的笔记本位于以下URL：
 - en: '[`https://github.com/paperd/deep-learning-models`](https://github.com/paperd/deep-learning-models)'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '[deep-learning-models 仓库](https://github.com/paperd/deep-learning-models)'
 - en: We demonstrate convolutional and variational autoencoders with code examples.
     We begin with a convolutional autoencoder experiment. We continue with a VAE experiment.
     We end with a VAE with Tensorflow Probability (TFP) Layers experiment. The three
     experiments show their superiority over basic stacked autoencoders by producing
     much clearer renditions of the original images.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们通过代码示例演示卷积和变分自编码器。我们从一个卷积自编码器实验开始。我们继续进行VAE实验。我们以使用Tensorflow Probability
+    (TFP)层进行的VAE实验结束。这三个实验通过产生原始图像的更清晰的渲染来展示它们相对于基本堆叠自编码器的优越性。
 - en: Begin setting up the Colab ecosystem by importing the main TensorFlow library
     and instantiating the GPU.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过导入主TensorFlow库和实例化GPU来开始设置Colab生态系统。
 - en: Import the TensorFlow Library
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 导入TensorFlow库
 - en: 'Import the library and alias it as **tf**:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入库并将其别名为**tf**：
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Aliasing the TensorFlow library as tf is common practice.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 将TensorFlow库别名为tf是常见做法。
 - en: GPU Hardware Accelerator
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: GPU硬件加速器
 - en: 'For convenience, we include the steps to enable the GPU in a Colab notebook:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了方便起见，我们包括在Colab笔记本中启用GPU的步骤：
 - en: Click *Runtime* in the top-left menu.
+  id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在左上角菜单中点击*运行时*。
 - en: Click *Change runtime type* from the drop-down menu.
+  id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从下拉菜单中选择*更改运行时类型*。
 - en: Choose *GPU* from the *Hardware accelerator* drop-down menu.
+  id: totrans-17
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从*硬件加速器*下拉菜单中选择*GPU*。
 - en: Click *Save.*
+  id: totrans-18
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 点击*保存*。
 - en: 'Verify that the GPU is active:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 验证GPU是否处于活动状态：
 - en: '[PRE1]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: If ‘/device:GPU:0’ is displayed, the GPU is active. If ‘..’ is displayed, the
     regular CPU is active.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果显示“/device:GPU:0”，则GPU处于活动状态。如果显示“..”，则常规CPU处于活动状态。
 - en: Note
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If you get the error **NAME** **‘****TF****’** **IS NOT DEFINED**, re-execute
     the code to import the TensorFlow library!
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果出现错误**“NAME”** **“****TF****”** **“IS NOT DEFINED”**，请重新执行代码以导入TensorFlow库！
 - en: Convolutional Encoder Experiment
+  id: totrans-24
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 卷积编码器实验
 - en: A *convolutional autoencoder* is a variant of a convolutional neural network
     used for unsupervised learning of convolutional filters. Convolutional autoencoders
     minimize reconstruction errors by learning the optimal filters during image reconstruction.
     In the experiment, the convolutional autoencoder learns how to generate new images
     as facsimiles of the input features from a dataset.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
 - en: Load Data
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: We use the *horses_or_humans* dataset for this experiment. The horses_or_humans
     dataset contains 1,283 horse and human images.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
 - en: 'Load the dataset as a TFDS object for inspection:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Inspect Data
+  id: totrans-30
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Get metadata:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE3]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'Get labels and number of classes:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE4]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Display Examples
+  id: totrans-35
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Show some examples with the tfds API:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Display examples as a pandas dataframe:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Display an image manually:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE7]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Display a grid of examples manually as shown in Listing [9-1](#PC9).
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE8]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Create a set of images and labels. Plot the images and labels in a grid.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
 - en: Get Training Data
+  id: totrans-45
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'From the metadata, we know the data splits:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE9]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Since autoencoders are unsupervised models, we don’t need the labels.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
 - en: 'Get number of training and test elements:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE10]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Inspect Shapes
+  id: totrans-51
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Inspect train and test shapes:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE11]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Inspect image size:'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE12]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Since images are the same shape, we don’t have to resize them for training.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
 - en: Preprocess Image Data
+  id: totrans-57
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Scale images:'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE13]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'Inspect a vector from a training image before and after scaling:'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE14]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Create a Convolutional Autoencoder
+  id: totrans-62
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Clear and seed:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE15]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Get input shape:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE16]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'Import libraries:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE17]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Create an encoder as shown in Listing [9-2](#PC19).
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE18]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: The encoder is composed of convolutional layers and pooling layers. The encoder
     reduces the spatial dimensionality of the inputs (height and width) while increasing
     the depth (number of feature maps).
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
 - en: Create the decoder as shown in Listing [9-3](#PC20).
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE19]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: The decoder does the reverse of the encoder by upscaling images and reducing
     their depth back to their original dimensions. Conv2DTranspose layers are used
     for this purpose.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
 - en: 'Create the convolutional autoencoder:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE20]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Compile and Train
+  id: totrans-77
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Create a function for the accuracy metric:'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE21]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'Compile :'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE22]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'Train:'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE23]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Visualize Training Performance
+  id: totrans-84
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Create a visualization function as shown in Listing [9-4](#PC25).
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE24]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: 'Invoke the visualization function:'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE25]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Visualize Reconstructions
+  id: totrans-89
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Create a reconstruction visualization function as shown in Listing [9-5](#PC27).
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE26]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: The function generates reconstructions from image predictions.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
 - en: 'Create a function to show an image:'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE27]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'Show original and reconstructed images:'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE28]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Variational Autoencoder Experiment
+  id: totrans-97
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -348,12 +499,14 @@
     and ensure that the latent space effectively generates similar outputs when compared
     to training inputs. A VAE is very different from other autoencoders because it
     encodes input as a distribution over the latent space rather as a single point.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
 - en: Initially, input is encoded as a distribution over the latent space. A point
     from the latent space is then sampled from the distribution. The sampled point
     is decoded and reconstruction error is computed. Reconstruction error is then
     back-propagated through the network.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: In practice, encoded distributions are *normal,* so the encoder can be trained
@@ -362,51 +515,70 @@
     because latent space regularization can be expressed very naturally as Gaussian.
     Distributions returned by the encoder are enforced to be close to a standard normal
     distribution by the VAE model.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
 - en: For an excellent discussion of VAE modeling, peruse
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
 - en: '[`https://towardsdatascience.com/understanding-variational-autoencoders-vaes-f70510919f73`](https://towardsdatascience.com/understanding-variational-autoencoders-vaes-f70510919f73)'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
 - en: Load Data
+  id: totrans-103
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Load Fashion-MNIST train and test images as a single batch of NumPy arrays:'
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE29]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Inspect Data
+  id: totrans-106
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Get train and test tensor shapes:'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE30]'
+  id: totrans-108
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: 'Get input shape for the encoder:'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE31]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: Scale
+  id: totrans-111
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Scale feature images by dividing by the number of pixels in each image:'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE32]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Create a Custom Layer to Sample Codings
+  id: totrans-114
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -415,63 +587,85 @@
     same shape as γ from the normal distribution with mean of zero (μ=0) and standard
     deviation of 1 (σ=1), multiplies the random vector by exp(γ/2), adds μ, and returns
     the result.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
 - en: Create the sampling class as shown in Listing [9-6](#PC34).
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE33]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: Create the VAE Model
+  id: totrans-118
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Clear and seed:'
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE34]'
+  id: totrans-120
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: Create the encoder as shown in Listing [9-7](#PC36).
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE35]'
+  id: totrans-122
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: We use the Functional API because the model isn’t entirely sequential. The Dense
     layers output codings_mean μ and codings_log_var γ that both have the same inputs
     (i.e., the outputs of the second Dense layer). Both codings_mean and codings_log_var
     are then passed to the sampling layer. The variational_encoder has three outputs,
     namely, codings_mean, codings_log_var, and codings. But we only use the codings
     output.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
 - en: Create the decoder as shown in Listing [9-8](#PC37).
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE36]'
+  id: totrans-125
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: We could have used the Sequential API instead of the Functional API since it
     is really just a simple stack of layers. But we created the VAE decoder in this
     way to match the structure of the VAE encoder.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
 - en: 'Build the VAE model:'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE37]'
+  id: totrans-128
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: Ignore the first two outputs because we only need the codings.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
 - en: Compile and Train
+  id: totrans-130
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Add Latent Loss and Reconstruction Loss to the Model
+  id: totrans-131
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
@@ -480,6 +674,7 @@
     codings_mean²). Multiply this result by –0.5\. Compute reconstruction loss as
     mean loss over all instances in the batch divided by 784 to ensure appropriate
     scale. We divide by 784 because images are 28 × 28 pixels.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
 - en: As review, an autoencoder is a neural network that receives an image and reconstructs
@@ -487,6 +682,7 @@
     vector from the image. A *latent vector* is a compressed representation of the
     image. The latent vector is fed into a decoder, which reconstructs a facsimile
     of the input image from the latent vector.
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
 - en: A VAE also reconstructs a new image from the learned input features of an image.
@@ -494,6 +690,7 @@
     The decoder randomly draws latent vectors from the distribution created by the
     encoder to create new facsimile images. New images are better quality because
     they are based on random latent representations drawn from a Gaussian distribution.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
 - en: We restrict the VAE with latent loss. *Latent loss* measures the loss of the
@@ -506,103 +703,146 @@
     between input and facsimile output images). The latent loss only evaluates to
     zero (perfect) when the mean is 0 and the standard deviation is 1, which is unit
     Gaussian.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
 - en: Create the restricted VAE as shown in Listing [9-9](#PC39).
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE38]'
+  id: totrans-137
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: 'Compile:'
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE39]'
+  id: totrans-139
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: 'Train:'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE40]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: 'Visualize training performance:'
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE41]'
+  id: totrans-143
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: Visualize Reconstructions
+  id: totrans-144
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Inspect the shape of the test set:'
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE42]'
+  id: totrans-146
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: 'Remove the *1* dimension for plotting purposes:'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE43]'
+  id: totrans-148
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: 'Visualize:'
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE44]'
+  id: totrans-150
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: Generate New Images
+  id: totrans-151
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Create a plotting function as shown in Listing [9-10](#PC46).
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE45]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: Instead of generating reconstructions from image predictions, we create a random
     Gaussian set of codings and reconstruct images directly from the decoder.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
 - en: 'Generate a few random codings, decode them, and plot the resulting images:'
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE46]'
+  id: totrans-156
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: Create 12 random codings, decode them with the decoder, and plot them with the
     plotting function.
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
 - en: Perform semantic interpolation between the images as shown in Listing [9-11](#PC48).
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE47]'
+  id: totrans-159
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: With implicit models like a VAE, we interpolate between sampled points in latent
     space. We do so to match the distributional assumptions on the code vectors with
     the geometry of the interpolating paths. Otherwise, typical assumptions about
     the quality and semantics between coding points may not be justified.
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
 - en: 'Remove the *1* dimension for plotting purposes:'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE48]'
+  id: totrans-162
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: Visualize as shown in Listing [9-12](#PC50).
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE49]'
+  id: totrans-164
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: TFP Experiment
+  id: totrans-165
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -612,12 +852,14 @@
     probabilistic methods with deep networks, gradient-based inference using automatic
     differentiation, and scalability to large datasets and models with hardware acceleration
     (e.g., GPUs) and distributed computation.
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
 - en: TFP makes it easy to combine probabilistic models and deep learning on modern
     hardware (e.g., TPU, GPU). TFP is designed for data scientists, statisticians,
     ML researchers, and practitioners who want to encode domain knowledge to understand
     data and make predictions.
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
 - en: TFP includes a wide selection of probability distributions and bijectors. The
@@ -626,114 +868,156 @@
     a probability density. So they can be used to transform a distribution of tensors
     into another type of distribution. Simply, they turn one random outcome into another
     random outcome from a different distribution.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
 - en: Since TFP inherits the benefits of TensorFlow, we can build, fit, and deploy
     a model using a single language throughout the lifecycle of model exploration
     and production. TFP is open source and available on GitHub.
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
 - en: 'Load Fashion-MNIST data:'
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE50]'
+  id: totrans-171
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: 'Create a function to preprocess the data:'
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE51]'
+  id: totrans-173
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE51]'
 - en: Cast an image to float and scale. Continue by randomly casting image pixels
     to binary form as either *True* or *False* values. The tf.random.uniform API outputs
     random values from a uniform distribution. Notice that the function returns *image,
     image* rather than just image because Keras is intended for use with discriminative
     models with an *(example, label)* input format. Since the goal of a VAE is to
     recover the input x from x itself, the data pair is *(example, example)*.
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
 - en: 'Establish parameters for the input pipeline:'
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE52]'
+  id: totrans-176
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: 'Create the train set:'
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE53]'
+  id: totrans-178
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE53]'
 - en: 'Create the test set:'
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE54]'
+  id: totrans-180
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: 'Inspect a slice from an image from a batch:'
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE55]'
+  id: totrans-182
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE55]'
 - en: Notice that pixels are now either Boolean True or False!
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
 - en: 'Inspect the shape of a training batch:'
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE56]'
+  id: totrans-185
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: Create a TFP VAE Model
+  id: totrans-186
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Create a TFP independent Gaussian distribution with no learned parameters. Latent
     variable z (encoded_size) is assigned 16 dimensions. Assign the distribution to
     prior as shown in Listing [9-13](#PC58).
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE57]'
+  id: totrans-188
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: Notice that prior is independently normalized. A **prior** is an underlying
     assumption we have about the world. A common prior is that we assume a coin to
     be fair (50% heads and 50% tails). Common wisdom is that a prior is not always
     true, but most of the time it is true.
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
 - en: 'Get input shape and assign depth:'
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE58]'
+  id: totrans-191
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE58]'
 - en: Base depth is the base number of neurons.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
 - en: 'Assign aliases for convenience:'
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE59]'
+  id: totrans-194
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE59]'
 - en: TFP VAE Encoder
+  id: totrans-195
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
 - en: Create an encoder with a full-covariance Gaussian distribution with mean and
     covariance matrices parameterized by the output of a neural network. TFP Layers
     enable construction of this complex encoder in an easy format.
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
 - en: Create the encoder as shown in Listing [9-14](#PC61).
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE60]'
+  id: totrans-198
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE60]'
 - en: The encoder is a normal Keras sequential model with convolutions and dense layers.
     But the output is passed to a TFP Layer (MultivariateNormalTril()), which transparently
     splits the activations from the final Dense layer into the parts needed to specify
@@ -742,66 +1026,88 @@
     the correct number of activations. We also contribute a regularization term to
     the final loss to mitigate overfitting. Specifically, we add Kullback-Leibler
     (KL) divergence regularization between the encoder and the prior to the loss.
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
 - en: TFP VAE Decoder
+  id: totrans-200
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
 - en: Create the decoder as a pixel-independent Bernoulli distribution as shown in
     Listing [9-15](#PC62).
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE61]'
+  id: totrans-202
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE61]'
 - en: The form here is essentially the same as the encoder, but we use transposed
     convolutions to convert our latent representation of a 16-dimensional vector back
     into a 28 × 28 × 1 tensor. That final layer parameterizes the pixel-independent
     Bernoulli distribution.
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
 - en: Build the TFP VAE Model
+  id: totrans-204
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
 - en: 'Build the model:'
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE62]'
+  id: totrans-206
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE62]'
 - en: 'Check that inputs are as expected:'
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE63]'
+  id: totrans-208
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE63]'
 - en: Compile and Train
+  id: totrans-209
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Set a learning rate:'
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE64]'
+  id: totrans-211
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE64]'
 - en: We set this learning rate based on trial and error experimentation. Feel free
     to try different learning rates.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
 - en: 'Compile :'
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE65]'
+  id: totrans-214
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE65]'
 - en: Our model is just a Keras model where outputs are defined as the composition
     of the encoder and the decoder. Since the encoder already added the Kullback-Leibler
     (KL) divergence term to the loss, we only need to specify the reconstruction loss
     (the first term of the ELBO). KL divergence is a measure of how one probability
     distribution is different from a second one. It is also called relative entropy.
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
 - en: ELBO (Evidence Lower BOund) is a lower bound on log p(x) (or the log probability
@@ -814,36 +1120,50 @@
     is worse than if it generates z samples more typical of the prior value. Thus,
     the encoder should differ from the prior value only if the cost of doing so is
     outweighed by the benefit from the reconstruction term.
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
 - en: 'Train:'
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE66]'
+  id: totrans-218
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE66]'
 - en: Efficacy Test
+  id: totrans-219
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'Examine ten random digits:'
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE67]'
+  id: totrans-221
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE67]'
 - en: Create a function to display random images as shown in Listing [9-16](#PC69).
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE68]'
+  id: totrans-223
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE68]'
 - en: 'Visualize :'
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE69]'
+  id: totrans-225
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE69]'
 - en: The Python sample() method returns a particular-length list of items chosen
     from a sequence. It is used for random sampling without replacement. The Python
     mode() method applies to nominal (nonnumeric) data. Remember that we converted
@@ -851,14 +1171,21 @@
     tendency of numeric or nominal data. The Python mean() method calculates the arithmetic
     average of a given list of numbers. To get clearer reconstruction images, run
     the model for many more epochs (to reduce loss).
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: Python 的 sample() 方法返回一个从序列中选择的特定长度的项目列表。它用于随机抽样而不进行替换。Python 的 mode() 方法适用于名义（非数值）数据。记住，我们将像素图像数据转换为布尔值
+    True 或 False。它用于定位数值或名义数据的中心趋势。Python 的 mean() 方法计算给定数字列表的算术平均值。为了获得更清晰的重建图像，运行模型更多轮次（以减少损失）。
 - en: Summary
+  id: totrans-227
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 摘要
 - en: In this chapter, we demonstrated three state-of-the-art autoencoder experiments.
     Each of these autoencoders produced more realistic renderings of input images
     than basic stacked autoencoders.
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，我们展示了三个最先进的自编码器实验。这些自编码器中的每一个都比基本的堆叠自编码器产生了更逼真的输入图像渲染。
