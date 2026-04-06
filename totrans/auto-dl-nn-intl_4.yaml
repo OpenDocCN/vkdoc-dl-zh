@@ -3,6 +3,7 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 4. 多次尝试神经架构搜索
 - en: And now we come to the most exciting part of this book. As we noted at the end
     of the last chapter, HPO methods are pretty limited for automating the search
     for the optimal deep learning models, but **Neural Architecture Search** (**NAS**)
@@ -20,6 +21,7 @@
   id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来到了这本书最激动人心的部分。正如我们在上一章结尾所提到的，HPO方法在自动化搜索最优深度学习模型方面相当有限，但**神经架构搜索**（**NAS**）消除了这些限制。本章重点介绍NAS，这是自动深度学习中最有前景的领域之一。自动神经架构搜索在寻找合适的深度学习模型方面越来越重要。最近的研究已经证明了NAS的有效性，并发现了一些可以击败人工调整的模型。NAS是机器学习中的一个相对较新的学科。它于2018年形成为一个独立的学科。从那时起，它在自动化解决特定问题的神经网络架构构建方面取得了重大突破。最手动设计的神经网络架构很快就可以被自动架构搜索所取代，因此这个领域对于所有数据科学家来说都非常有前景。NAS产生了许多顶级计算机视觉架构。像NASNet、EfficientNet和MobileNet这样的架构是自动神经架构搜索的结果。
 - en: 'There are two types of NAS: ***Multi-trial*** and ***One-shot***. In Multi-trial
     NAS, a model evaluator evaluates each sampled model’s performance, and an Exploration
     Strategy samples models from defined Model Space, while One-shot NAS tries to
@@ -28,6 +30,7 @@
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: NAS有两种类型：***多次尝试***和***一次性***。在多次尝试NAS中，模型评估器评估每个采样模型的性能，探索策略从定义的模型空间中采样模型，而一次性NAS试图找到从模型空间派生出的超网络的最佳神经网络架构训练和探索。本章专门介绍多次尝试NAS。
 - en: 'This chapter is divided into two parts: ***Neural Architecture Search Using
     Retiarii (PyTorch)*** and ***Classic Neural Architecture Search (TensorFlow)***.
     ***Retiarii*** is a deep learning framework that supports the exploratory training
@@ -43,11 +46,14 @@
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 本章分为两部分：***使用Retiarii（PyTorch）进行神经架构搜索***和***经典神经架构搜索（TensorFlow）***。***Retiarii***是由NNI专家开发的神经网络模型空间上的探索性训练的深度学习框架。Retiarii是一种有利的途径，它允许对NAS进行结构和规划。不幸的是，NNI
+    `2.7`版本（本书中使用）仅实现了Retiarii方法用于PyTorch框架。在本章中不关注TensorFlow框架是不公平的，因此考虑了*经典神经架构搜索（TensorFlow）*部分中的NAS的经典方法。无论如何，NNI支持TensorFlow进行一次性NAS，我们将在下一章中探讨。因此，TensorFlow用户将能够充分利用NAS方法。
 - en: Neural Architecture As Data Flow Graph
   id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 神经架构作为数据流图
 - en: We will begin this chapter by defining how the NAS perceives the neural network
     architecture. Neural architecture is considered as a Data Flow Graph (DFG). DFG
     is a collection of nodes and connections between them. DFG displays the data transfer
@@ -56,18 +62,22 @@
   id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将本章从定义NAS如何感知神经网络架构开始。神经网络架构被视为数据流图（DFG）。DFG是一组节点及其之间的连接。DFG显示了从节点到节点的数据传输。每个节点都有其自己的类型和参数。图[4-1](#Fig1)演示了DFG的一个示例。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig1_HTML.png)'
   id: totrans-6
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig1_HTML.png)'
 - en: Figure 4-1
   id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-1
 - en: Data Flow Graph
   id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据流图
 - en: 'In Figure [4-1](#Fig1), we see the DFG, which contains different types of nodes
     with parameters. The architecture of each neural network can be represented as
     a Data Flow Graph. Indeed, in Figure [4-1](#Fig1), we can replace the rectangle
@@ -79,11 +89,15 @@
   id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 在图 [4-1](#Fig1) 中，我们看到包含不同类型节点及其参数的 DFG。每个神经网络的架构可以用数据流图表示。实际上，在图 [4-1](#Fig1)
+    中，我们可以用一个具有参数的卷积层替换矩形节点：`padding`、`stride`、`filter_size` 等。神经架构搜索探索者对 DFG 中每个节点的本质一无所知。主要任务是构建一个
+    DFG，由各种深度学习层组成，形成神经网络架构，并以最佳方式解决特定问题。
 - en: Neural Architecture Search Using Retiarii (PyTorch)
   id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用 Retiarii 进行神经架构搜索（PyTorch）
 - en: 'Retiarii is the framework developed by NNI experts, and it is the first framework
     that supports deep learning exploratory training. Exploratory training implies
     that different deep neural networks (DNNs) training results are shared. This approach
@@ -99,17 +113,23 @@
   id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: Retiarii 是由 NNI 专家开发的框架，它是第一个支持深度学习探索性训练的框架。探索性训练意味着不同的深度神经网络（DNN）训练结果会被共享。这种方法比较不同模型的训练，执行优化，并停止那些中间结果较差的模型。此外，Retiarii
+    提供了一个新的接口来指定用于探索的深度学习模型空间，以及一个接口来描述探索策略，该策略决定了实例化和训练模型的顺序，优先级排序模型训练，并停止某些模型的训练。Retiarii
+    识别实例化模型之间的相关性，并开发了一套跨模型优化，以提高整体探索性训练过程。您可以在以下文章中了解更多关于 Retiarii 框架的信息：[`www.usenix.org/system/files/osdi20-zhang_quanlu.pdf`](http://www.usenix.org/system/files/osdi20-zhang_quanlu.pdf)。
 - en: 'NNI version `2.7` has a PyTorch-only implementation of the Retiarii framework.
     In the next NNI releases, the TensorFlow implementation should be added. Please
     refer to the official documentation to check the actual state: [`https://nni.readthedocs.io/en/v2.7/nas/overview.html`](https://nni.readthedocs.io/en/v2.7/nas/overview.html).'
   id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: NNI 版本 `2.7` 对 Retiarii 框架提供了仅使用 PyTorch 的实现。在接下来的 NNI 版本中，应该会增加 TensorFlow
+    的实现。请参考官方文档以检查实际状态：[`https://nni.readthedocs.io/en/v2.7/nas/overview.html`](https://nni.readthedocs.io/en/v2.7/nas/overview.html)。
 - en: Introduction to NAS Using Retiarii
   id: totrans-13
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用 Retiarii 介绍 NAS
 - en: 'The best way to dive into NAS using Retiarii is to examine a simple example
     of finding the optimal DFG for a particular task. We will not go deep into the
     design of neural networks but will focus on a simple arithmetic problem. Suppose
@@ -117,6 +137,8 @@
   id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 Retiarii 深入研究神经架构搜索（NAS）的最佳方式是检查一个寻找特定任务最优数据流图（DFG）的简单示例。我们不会深入探讨神经网络的设计，而是将重点放在一个简单的算术问题上。假设我们有一些操作符链
+    *F*，它执行以下操作：
 - en: '[PRE0]'
   id: totrans-15
   prefs: []
@@ -126,6 +148,7 @@
   id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以用以下语句丰富链 *F*：
 - en: '[PRE1]'
   id: totrans-17
   prefs: []
@@ -136,28 +159,34 @@
   id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 该问题的模型空间可以如图 [4-2](#Fig2) 所示。我们需要找到一个 DFG，以最大化输出。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig2_HTML.png)'
   id: totrans-19
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig2_HTML.png)'
 - en: Figure 4-2
   id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-2
 - en: Data Flow Graph Model Space
   id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据流图模型空间
 - en: Of course, this is a trivial task, but it is well suited as an introductory
     example of using the Retiarii framework in NNI. Let’s move on to solving this
     problem. Listing [4-1](#PC3) defines the Model Space.
   id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，这是一个简单的任务，但它非常适合作为在 NNI 中使用 Retiarii 框架的入门示例。让我们继续解决这个问题。列表 [4-1](#PC3) 定义了模型空间。
 - en: 'We import common modules:'
   id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们导入常用模块：
 - en: '[PRE2]'
   id: totrans-24
   prefs: []
@@ -168,6 +197,7 @@
   id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: Retiarii 使用 `import nni.retiarii.nn.pytorch as nn` 来导入 PyTorch。使用此包中实现 NAS 的层非常重要。
 - en: '[PRE3]'
   id: totrans-26
   prefs: []
@@ -180,6 +210,8 @@
   id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们需要定义探索的模型空间。在 NAS 的上下文中，模型空间可以被视为 HPO 上下文中的搜索空间。模型空间由一个包含所有可能架构的类表示。每个这样的类都必须使用
+    `@model_wrapper` 进行注释。
 - en: '[PRE4]'
   id: totrans-28
   prefs: []
@@ -193,6 +225,8 @@
   id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 神经网络架构的不同变体由称为 *Mutators* 的特殊方法确定。Mutators 定义了模型不同变异或突变的规则。`LayerChoice` 突变器定义了不同的层选择。在下面的例子中，`LayerChoice`
+    从三个层中选择一个：`Tanh`、`Sigmoid` 和 `ReLU`：
 - en: '[PRE5]'
   id: totrans-30
   prefs: []
@@ -203,6 +237,7 @@
   id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一种突变类型是 `ValueChoice`。此突变器从列表中选择一个值：
 - en: '[PRE6]'
   id: totrans-32
   prefs: []
@@ -212,6 +247,7 @@
   id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们再次定义 `LayerChoice` 突变器：
 - en: '[PRE7]'
   id: totrans-34
   prefs: []
@@ -221,6 +257,7 @@
   id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们将所有操作符链接在一起，如图 [4-2](#Fig2) 所示：
 - en: '[PRE8]'
   id: totrans-36
   prefs: []
@@ -230,6 +267,7 @@
   id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们定义 `evaluate` 方法，该方法返回模型结果：
 - en: '[PRE9]'
   id: totrans-38
   prefs: []
@@ -239,6 +277,7 @@
   id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 评估模型：
 - en: '[PRE10]'
   id: totrans-40
   prefs: []
@@ -249,6 +288,7 @@
   id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 此代码用于模型架构可视化。我们将在稍后回到这项技术。
 - en: '[PRE11]'
   id: totrans-42
   prefs: []
@@ -258,6 +298,7 @@
   id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回结果：
 - en: '[PRE12]'
   id: totrans-44
   prefs: []
@@ -268,10 +309,12 @@
   id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦我们定义了模型空间及其实例评估，我们就可以使用代码启动实验，如清单 [4-2](#PC14) 所示。
 - en: 'Importing necessary modules:'
   id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入必要的模块：
 - en: '[PRE13]'
   id: totrans-47
   prefs: []
@@ -281,16 +324,19 @@
   id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动 Retiarii 实验的七个主要步骤：
 - en: 'We set the Model Space:'
   id: totrans-49
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们设置模型空间：
 - en: 'We define the Evaluator, which evaluates model instance:'
   id: totrans-50
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们定义评估器，它评估模型实例：
 - en: '[PRE14]'
   id: totrans-51
   prefs: []
@@ -301,6 +347,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 接下来，我们选择一个探索模型空间的搜索策略：
 - en: '[PRE15]'
   id: totrans-53
   prefs: []
@@ -312,6 +359,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们使用定义的模型空间、评估器和搜索策略初始化 Retiarii 实验：
 - en: '[PRE16]'
   id: totrans-55
   prefs: []
@@ -322,6 +370,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 设置实验配置：
 - en: '[PRE17]'
   id: totrans-57
   prefs: []
@@ -332,6 +381,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 启动实验：
 - en: '[PRE18]'
   id: totrans-59
   prefs: []
@@ -343,6 +393,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 返回最佳结果。在退出之前，我们可以在 WebUI 中分析实验的结果：
 - en: '[PRE19]'
   id: totrans-61
   prefs: []
@@ -358,23 +409,28 @@
   id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验完成后，我们可以通过检查最佳结果来分析“Trial jobs”面板。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig3_HTML.jpg)'
   id: totrans-64
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig3_HTML.jpg)'
 - en: Figure 4-3
   id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-3
 - en: Trial jobs panel
   id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: Trial jobs 面板
 - en: 'As shown in Figure [4-3](#Fig3), the best model returns 16\. And it has the
     following set of parameters:'
   id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 如图 [4-3](#Fig3) 所示，最佳模型返回 16。它具有以下参数集：
 - en: '[PRE21]'
   id: totrans-68
   prefs: []
@@ -385,54 +441,68 @@
   id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 前面的参数没有自我描述，因此我们可以使用可视化函数来渲染 DFG，如图 [4-4](#Fig4) 所示。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig4_HTML.jpg)'
   id: totrans-70
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig4_HTML.jpg)'
 - en: Figure 4-4
   id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-4
 - en: Visualization panel
   id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 可视化面板
 - en: NNI uses Netron to visualize trial models. Netron is a tiny viewer for neural
     networks, deep learning, and machine learning models. Clicking the `Netron` button,
     you’ll see the screen as shown in Figure [4-5](#Fig5).
   id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: NNI 使用 Netron 来可视化试验模型。Netron 是一个用于神经网络、深度学习和机器学习模型的微型查看器。点击 `Netron` 按钮，你会看到如图
+    [4-5](#Fig5) 所示的屏幕。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig5_HTML.jpg)'
   id: totrans-74
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig5_HTML.jpg)'
 - en: Figure 4-5
   id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-5
 - en: Netron model visualization
   id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: Netron 模型可视化
 - en: Now we can declare that we have found a solution to the problem of finding a
     model that maximizes the value of the chain of operators *F*. The Data Flow Graph
     of this model is shown in Figure [4-6](#Fig6).
   id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以声明我们已经找到了一个解决方案，即找到最大化操作符链 *F* 值的模型。该模型的 Data Flow Graph 如图 [4-6](#Fig6)
+    所示。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig6_HTML.png)'
   id: totrans-78
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig6_HTML.png)'
 - en: Figure 4-6
   id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-6
 - en: Best Data Flow Graph in Model Space
   id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型空间中的最佳数据流图
 - en: The purpose of this example was to demonstrate that the primary goal of a NAS
     approach is to find a DFG that maximizes (or minimizes) a black-box function.
     In the same way HPO methods are searching for parameters that maximize (or minimize)
@@ -441,11 +511,14 @@
   id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 本例的目的是证明 NAS 方法的主要目标是找到一个最大化（或最小化）黑盒函数的数据流图 (DFG)。同样，HPO 方法也在寻找最大化（或最小化）黑盒函数的参数。在介绍基本
+    NAS 技术之后，我们可以深入了解更多细节。
 - en: Retiarii Framework
   id: totrans-82
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Retiarii 框架
 - en: Retiarii framework is designed to separate the main logical entities of Neural
     Architecture Search. This makes the NAS procedure clear and elegant. Using the
     Retiarii framework, the researcher can only focus on particular aspects of the
@@ -453,31 +526,38 @@
   id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: Retiarii 框架旨在分离神经架构搜索的主要逻辑实体。这使得 NAS 流程清晰且优雅。使用 Retiarii 框架，研究人员可以只关注调查的特定方面。Retiarii
+    框架的主要组件包括
 - en: Base Model
   id: totrans-84
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 基础模型
 - en: Mutator
   id: totrans-85
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 变异器
 - en: Model Space
   id: totrans-86
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 模型空间
 - en: Evaluator
   id: totrans-87
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 评估器
 - en: Exploration Strategy
   id: totrans-88
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 探索策略
 - en: '*Base Model* is the primary skeleton of a neural network. Base Model is actually
     a simple deep learning model that solves some problem. Often the Base Model does
     not show good performance. But it has some primary neural architecture and training
@@ -485,103 +565,125 @@
   id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '*基础模型* 是神经网络的主要骨架。基础模型实际上是一个简单的深度学习模型，用于解决某些问题。通常，基础模型的表现并不出色。但它具有一些基本的神经网络架构和训练算法。'
 - en: '*Mutator* is a possible change that a Base Model can be subjected to. Mutator
     defines the transformation of the Base Model architecture into another one. Usually,
     many mutators are applied to Base Model.'
   id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: '*变异器* 是基模型可能遭受的可能变化。变异器定义了将基模型架构转换为另一个架构的转换。通常，许多变异器都应用于基模型。'
 - en: '*Model Space* is the set of all possible Base Model mutations. Each mutator
     generates several variants of neural network architectures. Applying all mutators
     to the Base Model defines the Model Space.'
   id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '*模型空间* 是所有可能的基模型变异的集合。每个变异器生成几种神经网络架构的变体。将所有变异器应用于基模型定义了模型空间。'
 - en: '*Evaluator* measures the performance of a sample from the Model Space. This
     is a typical algorithm for training and testing a neural network.'
   id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '*评估器* 测量模型空间中样本的性能。这是一个典型的训练和测试神经网络的算法。'
 - en: '*Exploration Strategy* defines the Model Space exploration algorithm. The main
     objective of the Exploration Strategy is to find the best model in the least number
     of trials.'
   id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: '*探索策略* 定义了模型空间的探索算法。探索策略的主要目标是找到在最少尝试次数中最佳模型。'
 - en: All these concepts are pretty familiar to us after studying Hyperparameter Optimization.
     Table [4-1](#Tab1) contains the main logical entities from NAS and HPO. As you
     can see, they mean almost the same thing.
   id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 在学习超参数优化之后，所有这些概念对我们来说都非常熟悉。表 [4-1](#Tab1) 包含了 NAS 和 HPO 的主要逻辑实体。如您所见，它们几乎意味着相同的东西。
 - en: Table 4-1
   id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 表 4-1
 - en: NAS and HPO logical entities
   id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: NAS 和 HPO 逻辑实体
 - en: '| NAS | HPO |'
   id: totrans-97
   prefs: []
   type: TYPE_TB
+  zh: '| 神经架构搜索 (NAS) | 超参数优化 (HPO) |'
 - en: '| --- | --- |'
   id: totrans-98
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| Base Model + Mutator | Search space type |'
   id: totrans-99
   prefs: []
   type: TYPE_TB
+  zh: '| 基础模型 + 变异器 | 搜索空间类型 |'
 - en: '| Model Space | Search space |'
   id: totrans-100
   prefs: []
   type: TYPE_TB
+  zh: '| 模型空间 | 搜索空间 |'
 - en: '| Evaluator | Trial |'
   id: totrans-101
   prefs: []
   type: TYPE_TB
+  zh: '| 评估器 | 尝试 |'
 - en: '| Exploration Strategy | Tuner |'
   id: totrans-102
   prefs: []
   type: TYPE_TB
+  zh: '| 探索策略 | 调优器 |'
 - en: Figure [4-7](#Fig7) illustrates the relationship of various components in the
     Retiarii framework.
   id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [4-7](#Fig7) 展示了 Retiarii 框架中各种组件之间的关系。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig7_HTML.png)'
   id: totrans-104
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig7_HTML.png)'
 - en: Figure 4-7
   id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-7
 - en: Retiarii framework
   id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: Retiarii 框架
 - en: Let’s go ahead and look at each of these components in detail.
   id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们逐一详细查看这些组件。
 - en: Base Model
   id: totrans-108
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 基础模型
 - en: The Base Model is a starting point from which all possible architecture modifications
     will be made. For example, the Base Model for NAS of the MNIST problem can be
     presented as it is shown in Listing [4-3](#PC23).
   id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 基础模型是从中做出所有可能的架构修改的起点。例如，MNIST 问题 NAS 的基模型可以表示为如列表 [4-3](#PC23) 所示。
 - en: 'Importing PyTorch modules:'
   id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入 PyTorch 模块：
 - en: '[PRE22]'
   id: totrans-111
   prefs: []
@@ -592,6 +694,7 @@
   id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 您必须使用 `nni.retiarii.nn.pytorch as nn` 模块来声明深度学习模型中的层：
 - en: '[PRE23]'
   id: totrans-113
   prefs: []
@@ -601,6 +704,7 @@
   id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 基础模型必须使用 `nni.retiarii.model_wrapper()` 进行注释：
 - en: '[PRE24]'
   id: totrans-115
   prefs: []
@@ -610,6 +714,7 @@
   id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们有用于数字识别问题的经典 LeNet 模型设计：
 - en: '[PRE25]'
   id: totrans-117
   prefs: []
@@ -619,22 +724,26 @@
   id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 基础模型设计中常见的错误包括：
 - en: Missing `@model_wrapper` annotation on Base Model
   id: totrans-119
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 基础模型缺少 `@model_wrapper` 注释
 - en: Using `import torch.nn as nn` instead of `nni.retiarii.nn.pytorch as nn` declaring
     layers
   id: totrans-120
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用`import torch.nn as nn`而不是`nni.retiarii.nn.pytorch as nn`声明层
 - en: Mutators
   id: totrans-121
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 变异器
 - en: 'Base Model is a single model. To create Model Space, we have to add Mutators
     to the Base Model. Each mutator provides a way to change the Base Model. All possible
     mutations applied to the Base Model form the Model Space. NNI provides the following
@@ -642,17 +751,20 @@
   id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 基础模型是一个单一模型。为了创建模型空间，我们必须向基础模型添加变异器。每个变异器提供了一种改变基础模型的方法。所有应用于基础模型的可能变异构成了模型空间。NNI提供了以下变异操作：`LayerChoice`、`ValueChoice`、`InputChoice`和`Repeat`。
 - en: LayerChoice
   id: totrans-123
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 层选择
 - en: '`LayerChoice` mutator forms the candidate layers for a layer placeholder. One
     of these layers is tried in the exploration process. `LayerChoice` mutator is
     applied to the Base Model the following way:'
   id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: '`LayerChoice`变异器为层占位符形成候选层。在探索过程中尝试这些层之一。`LayerChoice`变异器按以下方式应用于基础模型：'
 - en: '[PRE26]'
   id: totrans-125
   prefs: []
@@ -662,27 +774,33 @@
   id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: '`LayerChoice`将层变化添加到基础模型，如图[4-8](#Fig8)所示。'
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig8_HTML.png)'
   id: totrans-127
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig8_HTML.png)'
 - en: Figure 4-8
   id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-8
 - en: LayerChoice Mutator
   id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 层选择变异器
 - en: '`LayerChoice` is the most straightforward way to mutate the Base Model.'
   id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: '`LayerChoice`是变异基础模型最直接的方式。'
 - en: ValueChoice
   id: totrans-131
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: ValueChoice
 - en: '`ValueChoice` forms the list of single values to be tried as layer hyperparameters.
     `ValueChoice` can be used as layer hyperparameters only. It cannot be used as
     an arbitrary hyperparameter like `batch_size` or `learning_rate` in the evaluation
@@ -690,6 +808,7 @@
   id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ValueChoice`形成要尝试的单个值的列表，作为层超参数。`ValueChoice`只能用作层超参数。它不能用作评估过程中的任意超参数，如`batch_size`或`learning_rate`。`ValueChoice`变异器按以下方式应用于基础模型：'
 - en: '[PRE27]'
   id: totrans-133
   prefs: []
@@ -699,17 +818,20 @@
   id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 在HPO背景下，`ValueChoice`可以被视为层超参数。
 - en: InputChoice
   id: totrans-135
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: InputChoice
 - en: '`InputChoice` tries different connections. It takes several tensors and chooses
     `n_chosen` tensors from them. `InputChoice` mutator is applied to the Base Model
     the following way:'
   id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: '`InputChoice`尝试不同的连接。它从几个张量中选择`n_chosen`个张量。`InputChoice`变异器按以下方式应用于基础模型：'
 - en: '[PRE28]'
   id: totrans-137
   prefs: []
@@ -720,18 +842,22 @@
   id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: '`InputChoice`旨在寻找神经网络架构中最佳的数据流分支。图[4-9](#Fig9)说明了这一概念。'
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig9_HTML.png)'
   id: totrans-139
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig9_HTML.png)'
 - en: Figure 4-9
   id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-9
 - en: InputChoice Mutator
   id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: InputChoice变异器
 - en: 'If `InputChoice` picks more than one candidate tensors (i.e., `n_chosen` >
     1), then the reduction strategy is applied: `sum`, `mean`, `concat`. This is a
     very useful technique that allows to extract and merge several connections at
@@ -740,6 +866,7 @@
   id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`InputChoice`选择了多个候选张量（即`n_chosen` > 1），则应用缩减策略：`sum`、`mean`、`concat`。这是一种非常有用的技术，允许同时提取和合并多个连接。具有缩减的多候选`InputChoice`可以按以下方式应用：
 - en: '[PRE29]'
   id: totrans-143
   prefs: []
@@ -749,24 +876,29 @@
   id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述代码生成了图[4-10](#Fig10)中显示的搜索空间。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig10_HTML.png)'
   id: totrans-145
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig10_HTML.png)'
 - en: Figure 4-10
   id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-10
 - en: InputChoice Mutator for multiple candidates
   id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 多候选`InputChoice`变异器
 - en: '`InputChoice` Mutator for multiple candidates can choose the same tensor several
     times. It happens when other connections do not bring any helpful information
     to neural network performance.'
   id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 多候选`InputChoice`变异器可以选择相同的张量多次。这种情况发生在其他连接不会对神经网络性能带来任何有用的信息时。
 - en: 'Also, `InputChoice` allows adding skip connection technique to neural architecture.
     Skip connection is one of the core techniques in modern neural network design.
     It was first introduced in 2015 in “Deep Residual Learning for Image Recognition”
@@ -775,6 +907,7 @@
   id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，`InputChoice`允许将跳过连接技术添加到神经网络架构中。跳过连接是现代神经网络设计中的一种核心技术。它首次在2015年的“用于图像识别的深度残差学习”中提出（[`https://arxiv.org/pdf/1512.03385.pdf`](https://arxiv.org/pdf/1512.03385.pdf)）。跳过连接可以使用以下模式实现：
 - en: '[PRE30]'
   id: totrans-150
   prefs: []
@@ -785,24 +918,29 @@
   id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 在第一种情况下，模型将使用跳过连接技术，但在第二种情况下则不会。图 [4-11](#Fig11) 展示了跳过连接突变。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig11_HTML.png)'
   id: totrans-152
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig11_HTML.png)'
 - en: Figure 4-11
   id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-11
 - en: InputChoice. Skip connection mutation
   id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入选择. 跳过连接突变
 - en: 'Let’s examine the application of the `InputChoice` mutator using an arithmetic
     DFG as an example. Say we have *x* = 1 and three operator pipelines which consist
     of multiplication operators:'
   id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们通过一个算术 DFG 例子来检查 `InputChoice` 突变器的应用。假设我们有 *x* = 1 和三个由乘法运算符组成的操作管道：
 - en: '[PRE31]'
   id: totrans-156
   prefs: []
@@ -815,15 +953,19 @@
   id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 您需要选择两个管道，其总和最大。您可以多次选择相同的管道。这是一个相当简单的任务。直观上很清楚，最后一个管道的总和将给出最大值。让我们运行第三条管道：1
+    → 1 × 2 → 2 × 3 → 6 × 4 → 24；因此，我们可以获得的最大值是 `48`。
 - en: Now let’s obtain the same result using NNI and `InputChoice` Mutator using Listing
     [4-4](#PC33).
   id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们使用 NNI 和 `InputChoice` 突变器通过列表 [4-4](#PC33) 来获得相同的结果。
 - en: 'Importing common modules:'
   id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入常用模块：
 - en: '[PRE32]'
   id: totrans-160
   prefs: []
@@ -833,6 +975,7 @@
   id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入 `nni` 模块：
 - en: '[PRE33]'
   id: totrans-162
   prefs: []
@@ -843,6 +986,7 @@
   id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ProdBlock` 作为乘数运算符。它简单地通过某个值乘以张量：'
 - en: '[PRE34]'
   id: totrans-164
   prefs: []
@@ -852,6 +996,7 @@
   id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们定义模型空间：
 - en: '[PRE35]'
   id: totrans-166
   prefs: []
@@ -861,6 +1006,7 @@
   id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们声明乘数运算符
 - en: '[PRE36]'
   id: totrans-168
   prefs: []
@@ -870,6 +1016,7 @@
   id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 以及 `InputChoice` 突变器，它将选择最佳管道对：
 - en: '[PRE37]'
   id: totrans-170
   prefs: []
@@ -880,6 +1027,7 @@
   id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: '`forward` 动作执行三个不同的管道，而 `InputChoice` 突变器只尝试其中的两个：'
 - en: '[PRE38]'
   id: totrans-172
   prefs: []
@@ -889,6 +1037,7 @@
   id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一条管道：`x` → `(x × 2)`
 - en: '[PRE39]'
   id: totrans-174
   prefs: []
@@ -898,6 +1047,7 @@
   id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: '第二条管道：2: `x` → `(x × 2)` → `(x × 3)`'
 - en: '[PRE40]'
   id: totrans-176
   prefs: []
@@ -907,6 +1057,7 @@
   id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 第三条管道：`x` → `(x × 2)` → `(x × 3)` → `(x × 4)`
 - en: '[PRE41]'
   id: totrans-178
   prefs: []
@@ -916,6 +1067,7 @@
   id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是评估函数：
 - en: '[PRE42]'
   id: totrans-180
   prefs: []
@@ -925,6 +1077,7 @@
   id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以使用此脚本运行实验：
 - en: '[PRE43]'
   id: totrans-182
   prefs: []
@@ -934,24 +1087,30 @@
   id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在 WebUI 详细页面上分析结果：[`http://127.0.0.1:8080/detail`](http://127.0.0.1:8080/detail)。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig12_HTML.jpg)'
   id: totrans-184
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig12_HTML.jpg)'
 - en: Figure 4-12
   id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-12
 - en: InputChoice Experiment results
   id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入选择实验结果
 - en: 'In Figure [4-12](#Fig12), we see 3² = 9 trials. The best trial shows 48 and
     has the following parameters: `{ "model_1_0": 2, "model_1_1": 2 }`, which means
     that the best result is achieved with the last pipelines.'
   id: totrans-187
   prefs: []
   type: TYPE_NORMAL
+  zh: '在图 [4-12](#Fig12) 中，我们看到 3² = 9 个试验。最佳试验显示 48，并具有以下参数：`{ "model_1_0": 2, "model_1_1":
+    2 }`，这意味着最佳结果是通过最后一个管道获得的。'
 - en: '[PRE44]'
   id: totrans-188
   prefs: []
@@ -962,11 +1121,13 @@
   id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 这样的简单例子有助于更好地理解突变器在真实 NAS 之前是如何工作的。
 - en: Repeat
   id: totrans-190
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 重复
 - en: '`Repeat` mutator repeats some action a certain number of times. In the NAS
     context, the `Repeat` mutator tries to determine how often to iterate the same
     neural network block. For example, the ResNet neural network architecture implies
@@ -975,23 +1136,29 @@
   id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Repeat` 突变器重复执行某些操作一定次数。在 NAS 的上下文中，`Repeat` 突变器试图确定迭代相同神经网络块的频率。例如，ResNet
+    神经网络架构暗示了一个残差块的堆叠。但最优的残差块数量可能取决于具体任务。图 [4-13](#Fig13) 显示了 ResNet 架构的一部分。'
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig13_HTML.png)'
   id: totrans-192
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig13_HTML.png)'
 - en: Figure 4-13
   id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-13
 - en: ResNet architecture
   id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: ResNet 架构
 - en: '`Repeat` mutator accepts a function that generates a block by its sequence
     number. Here is the pattern how `Repeat` mutator can be applied:'
   id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Repeat` 突变器接受一个函数，通过其序列号生成一个块。以下是 `Repeat` 突变器可以应用的模式：'
 - en: '[PRE45]'
   id: totrans-196
   prefs: []
@@ -1001,6 +1168,7 @@
   id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们定义一个自定义模型块：
 - en: '[PRE46]'
   id: totrans-198
   prefs: []
@@ -1011,6 +1179,7 @@
   id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置一个构建函数，根据其在堆叠中的序号生成一个块：
 - en: '[PRE47]'
   id: totrans-200
   prefs: []
@@ -1020,6 +1189,7 @@
   id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义 `Repeat` 突变器：
 - en: '[PRE48]'
   id: totrans-202
   prefs: []
@@ -1029,6 +1199,7 @@
   id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: 评估 `Repeat` 突变器：
 - en: '[PRE49]'
   id: totrans-204
   prefs: []
@@ -1043,11 +1214,14 @@
   id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，拥有一个可以迭代构建不同长度块堆叠的工具将非常方便。这正是 `Repeat` 突变器所做的事情。让我们检查 `Repeat` 突变器在合成算术任务中的实现，就像我们之前为
+    `InputChoice` 突变器所做的那样。假设我们有一个将值添加到张量中的块序列。我们需要找到这个序列的最佳长度。列表 [4-5](#PC51) 描述了此问题的模型空间。
 - en: '`AddBlock` acts as an addition operator. It simply adds some value to the input
     tensor.'
   id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: '`AddBlock` 作为加法运算符。它只是将一些值添加到输入张量中。'
 - en: '[PRE50]'
   id: totrans-207
   prefs: []
@@ -1057,6 +1231,7 @@
   id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建 `AddBlock` 的构建函数，通过其序号：
 - en: '[PRE51]'
   id: totrans-209
   prefs: []
@@ -1066,6 +1241,7 @@
   id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们定义模型空间：
 - en: '[PRE52]'
   id: totrans-211
   prefs: []
@@ -1076,6 +1252,7 @@
   id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Repeat` 突变器生成不同长度的块序列（从 1 到 5）：'
 - en: '[PRE53]'
   id: totrans-213
   prefs: []
@@ -1085,6 +1262,7 @@
   id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过运行以下命令来检查实验：
 - en: '[PRE54]'
   id: totrans-215
   prefs: []
@@ -1096,36 +1274,43 @@
   id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 事实上，原始突变器 `LayerChoice`、`ValueChoice`、`InputChoice` 和 `Repeat` 允许您构建任何复杂性的空间。这些突变器可以与编程语言指令相提并论：
 - en: '*set*: `LayerChoice, ValueChoice`'
   id: totrans-217
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*集合*: `LayerChoice, ValueChoice`'
 - en: '*if*: `InputChoice`'
   id: totrans-218
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*if*: `InputChoice`'
 - en: '*loop*: `Repeat`'
   id: totrans-219
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*循环*: `Repeat`'
 - en: Later in this chapter, we will examine a Model Space construction for a real
     NAS task using these mutators.
   id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章的后面部分，我们将使用这些突变器检查一个真实 NAS 任务的模型空间构建。
 - en: Labeling
   id: totrans-221
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 标记
 - en: All the mutator APIs have an optional argument `label`. Mutators with the same
     `label` will share the same value. A typical example is
   id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有突变器 API 都有一个可选参数 `label`。具有相同 `label` 的突变器将共享相同的值。一个典型的例子是
 - en: '[PRE55]'
   id: totrans-223
   prefs: []
@@ -1135,6 +1320,7 @@
   id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 这与
 - en: '[PRE56]'
   id: totrans-225
   prefs: []
@@ -1145,11 +1331,13 @@
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 示例
 - en: Listing [4-6](#PC58) demonstrates a trivial example of the Model Space applied
     to the image classification network.
   id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表 [4-6](#PC58) 展示了将模型空间应用于图像分类网络的简单示例。
 - en: '[PRE57]'
   id: totrans-228
   prefs: []
@@ -1159,6 +1347,7 @@
   id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 应用 `LayerChoice` 突变器：
 - en: '[PRE58]'
   id: totrans-230
   prefs: []
@@ -1168,6 +1357,7 @@
   id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 将 `ValueChoice` 突变器作为 `Dropout` 层超参数值应用：
 - en: '[PRE59]'
   id: totrans-232
   prefs: []
@@ -1177,6 +1367,7 @@
   id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: 将 `ValueChoice` 突变器作为 `Linear` 层超参数值应用：
 - en: '[PRE60]'
   id: totrans-234
   prefs: []
@@ -1187,12 +1378,14 @@
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 评估器
 - en: 'Retiarii Evaluator is a function that accepts a model class, initiates a model,
     trains it, tests it, and returns a result to Experiment. Evaluator can be implemented
     using the following pattern:'
   id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: Retiarii 评估器是一个接受模型类、初始化模型、训练它、测试它并将结果返回给实验的函数。评估器可以使用以下模式实现：
 - en: '[PRE61]'
   id: totrans-237
   prefs: []
@@ -1203,11 +1396,13 @@
   id: totrans-238
   prefs: []
   type: TYPE_NORMAL
+  zh: Retiarii 评估器与我们在前几章中使用的 HPO 尝试方法非常相似。
 - en: Exploration Strategies
   id: totrans-239
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 探索策略
 - en: 'NNI provides the following exploration strategies for Multi-shot NAS: *Random
     Strategy*, *Grid Search*, *Regularized Evolution*, *TPE Strategy*, and *RL Strategy*.
     We are already familiar with some of them because they implement the same approach
@@ -1215,11 +1410,14 @@
   id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: NNI 为多轮 NAS 提供以下探索策略：*随机策略*、*网格搜索*、*正则化进化*、*TPE 策略*和*RL 策略*。我们已经熟悉其中的一些，因为它们实现了与相应的
+    HPO 调优器相同的方法。但无论如何，让我们简要研究每个策略。
 - en: Random Strategy
   id: totrans-241
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 随机策略
 - en: Random Strategy (`nni.retiarii.strategy.Random`) randomly samples new models
     from the Model Space. It is a simple but still effective technique to Explore
     Model Space. Random Search is a good first-time Exploration Strategy, and it can
@@ -1229,21 +1427,25 @@
   id: totrans-242
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机策略 (`nni.retiarii.strategy.Random`) 从模型空间中随机采样新的模型。这是一种简单但仍然有效的探索模型空间的技术。随机搜索是一个很好的初次探索策略，当您对所处理的数据集和合适的架构设计一无所知时，它可以为您提供很好的线索。通常，随机搜索首先使用，然后在模型空间细化后，应用更智能的探索策略。
 - en: Grid Search
   id: totrans-243
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 网格搜索
 - en: Grid Search Strategy (`nni.retiarii.strategy.GridSearch`) samples new models
     from Model Space using a Grid Search algorithm.
   id: totrans-244
   prefs: []
   type: TYPE_NORMAL
+  zh: 网格搜索策略 (`nni.retiarii.strategy.GridSearch`) 使用网格搜索算法从模型空间中采样新的模型。
 - en: Regularized Evolution
   id: totrans-245
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 正则化进化
 - en: Regularized Evolution Strategy (`nni.retiarii.strategy.RegularizedEvolution`)
     implements Genetic Algorithm Search with mutation operator using Tournament Selection
     method. Regularized Evolution Strategy is close to Evolution Tuner we studied
@@ -1252,27 +1454,33 @@
   id: totrans-246
   prefs: []
   type: TYPE_NORMAL
+  zh: 正则化进化策略 (`nni.retiarii.strategy.RegularizedEvolution`) 通过使用竞赛选择方法实现带有突变操作符的遗传算法搜索。正则化进化策略与我们在第
+    [3](526245_1_En_3_Chapter.xhtml) 章节中研究的进化调谐器相似。以下提供了描述正则化进化算法的伪代码。
 - en: 'Regularized Evolution Strategy has three global hyperparameters:'
   id: totrans-247
   prefs: []
   type: TYPE_NORMAL
+  zh: 正则化进化策略有三个全局超参数：
 - en: '`POPULATION_SIZE`: The size of a population that will try to participate in
     evolution search'
   id: totrans-248
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`POPULATION_SIZE`: 尝试参与进化搜索的种群大小'
 - en: '`CANDIDATES_N`: Number of candidates Tournament Selection method will pick
     from the population'
   id: totrans-249
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`CANDIDATES_N`: 竞赛选择方法将从种群中选择的候选人数'
 - en: '`GENERATION_N`: Total number of cycles'
   id: totrans-250
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`GENERATION_N`: 总周期数'
 - en: '[PRE62]'
   id: totrans-251
   prefs: []
@@ -1283,6 +1491,7 @@
   id: totrans-252
   prefs: []
   type: TYPE_NORMAL
+  zh: 种群使用随机个体（即随机神经网络架构）初始化：
 - en: '[PRE63]'
   id: totrans-253
   prefs: []
@@ -1292,6 +1501,7 @@
   id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: 算法从种群中随机选择 `CANDIDATES_N` 个个体：
 - en: '[PRE64]'
   id: totrans-255
   prefs: []
@@ -1302,6 +1512,7 @@
   id: totrans-256
   prefs: []
   type: TYPE_NORMAL
+  zh: 从这些候选人中，选择最佳者（即具有最佳指标的个体）：
 - en: '[PRE65]'
   id: totrans-257
   prefs: []
@@ -1312,6 +1523,7 @@
   id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 在最佳候选者（即算法在原始模型中运行多个突变体）上执行随机突变：
 - en: '[PRE66]'
   id: totrans-259
   prefs: []
@@ -1321,6 +1533,7 @@
   id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 正在评估的突变体个体：
 - en: '[PRE67]'
   id: totrans-261
   prefs: []
@@ -1330,6 +1543,7 @@
   id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 突变体替换种群中最差的个体：
 - en: '[PRE68]'
   id: totrans-263
   prefs: []
@@ -1339,137 +1553,169 @@
   id: totrans-264
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [4-14](#Fig14) 展示了正则化进化策略的算法。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig14_HTML.png)'
   id: totrans-265
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig14_HTML.png)'
 - en: Figure 4-14
   id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-14
 - en: Regularized Evolution Strategy
   id: totrans-267
   prefs: []
   type: TYPE_NORMAL
+  zh: 正则化进化策略
 - en: 'The implementation of Regularized Evolution Strategy has the following parameters:'
   id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: 正则化进化策略的实现具有以下参数：
 - en: '`optimize_mode:`'
   id: totrans-269
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`optimize_mode:`'
 - en: '**Type**: `string`'
   id: totrans-270
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `string`'
 - en: '**Default**: `maximize`'
   id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `最大化`'
 - en: '**Values**: ’`maximize`’ | ’`minimize`’'
   id: totrans-272
   prefs: []
   type: TYPE_NORMAL
+  zh: '**值**: ’`最大化`’ | ’`最小化`’'
 - en: Sets the evolution direction.
   id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置进化方向。
 - en: '`population_size:`'
   id: totrans-274
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`population_size:`'
 - en: '**Type**: `int`'
   id: totrans-275
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `int`'
 - en: '**Default**: `100`'
   id: totrans-276
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `100`'
 - en: The number of individuals in the population.
   id: totrans-277
   prefs: []
   type: TYPE_NORMAL
+  zh: 种群中的个体数量。
 - en: '`cycles:`'
   id: totrans-278
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`cycles:`'
 - en: '**Type**: `int`'
   id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `int`'
 - en: '**Default**: `20000`'
   id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `20000`'
 - en: The number of generations of the algorithm.
   id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: 算法的代数。
 - en: '`sample_size:`'
   id: totrans-282
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`sample_size:`'
 - en: '**Type**: `int`'
   id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `int`'
 - en: '**Default**: `25`'
   id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `25`'
 - en: The number of individuals that should participate in each Tournament Selection.
   id: totrans-285
   prefs: []
   type: TYPE_NORMAL
+  zh: 应该参与每个竞赛选择的个体数量。
 - en: '`mutation_prob:`'
   id: totrans-286
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`mutation_prob:` '
 - en: '**Type**: `float`'
   id: totrans-287
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**: `float`'
 - en: '**Default**: `0.05`'
   id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**: `0.05`'
 - en: Probability that mutation occurs in each mutator in the Model Space.
   id: totrans-289
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型空间中每个突变体发生突变的概率。
 - en: 'For more details, please refer to the original paper describing Regularized
     Evolution approach: [`https://arxiv.org/abs/1802.01548`](https://arxiv.org/abs/1802.01548).'
   id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: 更多细节，请参阅描述正则化进化方法的原始论文：[`https://arxiv.org/abs/1802.01548`](https://arxiv.org/abs/1802.01548)。
 - en: TPE Strategy
   id: totrans-291
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: TPE 策略
 - en: TPE Strategy (`nni.retiarii.strategy.TPEStrategy`) is a Sequential Model-Based
     Optimization approach based on Tree-structured Parzen Estimator. It acts the same
     way as TPE Tuner we studied in Chapter [3](526245_1_En_3_Chapter.xhtml).
   id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: TPE 策略 (`nni.retiarii.strategy.TPEStrategy`) 是基于树结构帕累托估计器的序列模型优化方法。它与我们第 [3](526245_1_En_3_Chapter.xhtml)
+    章节中研究的 TPE 调谐器作用相同。
 - en: 'For more details, please refer to the original paper describing the TPE approach:
     [`https://papers.nips.cc/paper/2011/file/86e8f7ab32cfd12577bc2619bc635690-Paper.pdf`](https://papers.nips.cc/paper/2011/file/86e8f7ab32cfd12577bc2619bc635690-Paper.pdf).'
   id: totrans-293
   prefs: []
   type: TYPE_NORMAL
+  zh: 更多细节，请参阅描述 TPE 方法的原始论文：[`https://papers.nips.cc/paper/2011/file/86e8f7ab32cfd12577bc2619bc635690-Paper.pdf`](https://papers.nips.cc/paper/2011/file/86e8f7ab32cfd12577bc2619bc635690-Paper.pdf)。
 - en: RL Strategy
   id: totrans-294
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: RL 策略
 - en: RL Strategy (`nni.retiarii.strategy.PolicyBasedRL`) implements the Reinforcement
     Learning approach based on policy-gradient method (Proximal Policy Optimization
     or PPO). RL Strategy implements a special Recurrent Neural Network called Controller.
@@ -1482,27 +1728,35 @@
   id: totrans-295
   prefs: []
   type: TYPE_NORMAL
+  zh: RL 策略 (`nni.retiarii.strategy.PolicyBasedRL`) 实现了基于策略梯度的方法（近端策略优化或 PPO）的强化学习方法。RL
+    策略实现了一个特殊的循环神经网络，称为控制器。控制器从模型空间生成各种模型架构。控制器作为一个随机策略；因此，它为模型空间中的每个突变体返回突变概率。每次试验后，控制器根据近端优化策略方法更新其
+    RNN 的权重。这种方法通过为每个突变体构建概率分布来探索模型空间。
 - en: Figure [4-15](#Fig15) demonstrates RL Strategy in action.
   id: totrans-296
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [4-15](#Fig15) 展示了 RL 策略的实际应用。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig15_HTML.png)'
   id: totrans-297
   prefs: []
   type: TYPE_IMG
+  zh: '![图 4-15](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig15_HTML.png)'
 - en: Figure 4-15
   id: totrans-298
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-15
 - en: Reinforcement Learning (Proximal Policy Optimization) Strategy
   id: totrans-299
   prefs: []
   type: TYPE_NORMAL
+  zh: 强化学习（近端策略优化）策略
 - en: RL Strategy requires `tianshou` package to be installed. Tianshou is a Reinforcement
     Learning platform based on pure PyTorch.
   id: totrans-300
   prefs: []
   type: TYPE_NORMAL
+  zh: RL 策略需要安装 `tianshou` 包。Tianshou 是一个基于纯 PyTorch 的强化学习平台。
 - en: '[PRE69]'
   id: totrans-301
   prefs: []
@@ -1512,96 +1766,116 @@
   id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: RL 策略的实现有以下参数：
 - en: '`max_collect`:'
   id: totrans-303
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`max_collect`:'
 - en: '**Type**: `int`'
   id: totrans-304
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`int`'
 - en: '**Default**: `100`'
   id: totrans-305
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`100`'
 - en: How many epochs Exploration Strategy performs.
   id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 探索策略执行多少个 epoch。
 - en: '`Trial_per_collect`:'
   id: totrans-307
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Trial_per_collect`:'
 - en: '**Type**: `int`'
   id: totrans-308
   prefs: []
   type: TYPE_NORMAL
+  zh: '**类型**：`int`'
 - en: '**Default**: `20`'
   id: totrans-309
   prefs: []
   type: TYPE_NORMAL
+  zh: '**默认值**：`20`'
 - en: How many trials (trajectories) each time collector collects. After each completed
     trajectory, the trainer will sample the batch from the replay buffer and do the
     Controller update.
   id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: 每次收集器收集多少次试验（轨迹）。在每个完成的轨迹之后，训练器将从重放缓冲区中采样批次并更新控制器。
 - en: 'For more details, please refer to the original paper describing the Neural
     Architecture Search with Reinforcement Learning: [`https://arxiv.org/pdf/1611.01578.pdf`](https://arxiv.org/pdf/1611.01578.pdf).'
   id: totrans-311
   prefs: []
   type: TYPE_NORMAL
+  zh: 更多细节，请参阅描述基于强化学习的神经架构搜索的原论文：[《https://arxiv.org/pdf/1611.01578.pdf》](https://arxiv.org/pdf/1611.01578.pdf)。
 - en: Experiment
   id: totrans-312
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 实验
 - en: 'And the last thing left is the Experiment. Retiarii Experiment is launched
     in stand-alone (embedded) mode and contains seven steps:'
   id: totrans-313
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后剩下的是实验。Retiarii 实验以独立（嵌入式）模式启动，包含七个步骤：
 - en: Declare Model Space
   id: totrans-314
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 声明模型空间
 - en: Declare Model Evaluator
   id: totrans-315
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 声明模型评估器
 - en: Declare Exploration Strategy
   id: totrans-316
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 声明探索策略
 - en: Initialize Retiarii Experiment
   id: totrans-317
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 初始化 Retiarii 实验
 - en: Configure Retiarii Experiment
   id: totrans-318
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 配置 Retiarii 实验
 - en: Launch Experiment
   id: totrans-319
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 启动实验
 - en: Returning results
   id: totrans-320
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 返回结果
 - en: 'The following pattern can be used to create Retiarii Experiment:'
   id: totrans-321
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用以下模式创建 Retiarii 实验：
 - en: '[PRE70]'
   id: totrans-322
   prefs: []
@@ -1612,11 +1886,13 @@
   id: totrans-323
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在运行实验后使用 WebUI，就像我们之前启动 HPO 实验时一样。
 - en: CIFAR-10 LeNet NAS
   id: totrans-324
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CIFAR-10 LeNet NAS
 - en: 'Let’s study the application of Multi-trial NAS to the CIFAR-10 problem. CIFAR-10
     is a common dataset for image classification problem. It contains 60,000 color
     images (32×32 pixels) from 10 different classes: *airplane*, *automobile*, *bird*,
@@ -1624,10 +1900,13 @@
   id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们研究多试验 NAS 在 CIFAR-10 问题中的应用。CIFAR-10 是一个常见的图像分类问题数据集。它包含来自 10 个不同类别（飞机、汽车、鸟、猫、鹿、狗、青蛙、马、船和卡车）的
+    60,000 个彩色图像（32×32 像素）。
 - en: 'Please run the following command to download the CIFAR-10 dataset to your machine:'
   id: totrans-326
   prefs: []
   type: TYPE_NORMAL
+  zh: 请运行以下命令将 CIFAR-10 数据集下载到您的机器上：
 - en: '[PRE71]'
   id: totrans-327
   prefs: []
@@ -1637,18 +1916,22 @@
   id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [4-16](#Fig16) 展示了 CIFAR10 数据集的几个样本。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig16_HTML.jpg)'
   id: totrans-329
   prefs: []
   type: TYPE_IMG
+  zh: '![图 4-16](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig16_HTML.jpg)'
 - en: Figure 4-16
   id: totrans-330
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-16
 - en: CIFAR-10 samples
   id: totrans-331
   prefs: []
   type: TYPE_NORMAL
+  zh: CIFAR-10 样本
 - en: 'Let’s try to find an appropriate deep learning model based on the LeNet approach
     solving the CIFAR-10 classification problem. As we already know, the LeNet image
     recognition architecture can be divided into two components: *Feature Extraction
@@ -1658,72 +1941,88 @@
   id: totrans-332
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们尝试找到一个基于 LeNet 方法解决 CIFAR-10 分类问题的合适深度学习模型。正如我们已知的，LeNet 图像识别架构可以分为两个部分：*特征提取组件*和*决策者组件*。*特征提取组件*由一系列带有卷积层的特征提取块组成。*决策者组件*由带有线性层的完全连接组件组成。
 - en: 'The design of the Feature Extraction block can be as follows:'
   id: totrans-333
   prefs: []
   type: TYPE_NORMAL
+  zh: 特征提取块的设计可以如下所示：
 - en: '`Conv` → `Activation`'
   id: totrans-334
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Conv` → `Activation`'
 - en: '`Conv` → `Pool` → `Activation`'
   id: totrans-335
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Conv` → `Pool` → `Activation`'
 - en: Figure [4-17](#Fig17) demonstrates possible architecture options for the Feature
     Extraction block or Feature Extraction block space.
   id: totrans-336
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [4-17](#Fig17) 展示了特征提取块或特征提取块空间的可能架构选项。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig17_HTML.png)'
   id: totrans-337
   prefs: []
   type: TYPE_IMG
+  zh: '![图](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig17_HTML.png)'
 - en: Figure 4-17
   id: totrans-338
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-17
 - en: Feature Extraction block space
   id: totrans-339
   prefs: []
   type: TYPE_NORMAL
+  zh: 特征提取块空间
 - en: 'In the same way, we can determine the possible designs for the Fully Connected
     block:'
   id: totrans-340
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样地，我们可以确定完全连接块的可能设计：
 - en: '`Linear` → `Activation`'
   id: totrans-341
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Linear` → `Activation`'
 - en: '`Linear` → `Dropout` → `Activation`'
   id: totrans-342
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Linear` → `Dropout` → `Activation`'
 - en: Figure [4-18](#Fig18) illustrates Fully Connected block space.
   id: totrans-343
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [4-18](#Fig18) 说明完全连接块空间。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig18_HTML.png)'
   id: totrans-344
   prefs: []
   type: TYPE_IMG
+  zh: '![图](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig18_HTML.png)'
 - en: Figure 4-18
   id: totrans-345
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-18
 - en: Fully Connected block space
   id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 完全连接块空间
 - en: Note
   id: totrans-347
   prefs: []
   type: TYPE_NORMAL
+  zh: 注
 - en: 'Actually, `Linear` → `Dropout(p=1)` → `Activation` equals `Linear` → `Activation`,
     and it is possible to design the same block space from Figure [4-18](#Fig18) without
     using two connections. We could achieve the same block space using simple Layer
@@ -1733,6 +2032,9 @@
   id: totrans-348
   prefs: []
   type: TYPE_NORMAL
+  zh: 实际上，`Linear` → `Dropout(p=1)` → `Activation` 等于 `Linear` → `Activation`，并且可以设计出与图
+    [4-18](#Fig18) 相同的块空间而不使用两个连接。我们可以通过简单的层超参数优化实现相同的块空间：`Linear` → `Dropout(p=[.3,
+    .5, .8, 1])` → `Activation`。但在这里我们故意使用两个连接，因为我们想展示多试验 NAS 如何选择最佳连接。
 - en: The neural architecture we are looking for consists of Feature Extraction and
     Fully Connected block sequences. Each of these blocks may have the architecture
     shown in Figures [4-17](#Fig17) and [4-18](#Fig18), respectively. The LeNet NAS
@@ -1742,23 +2044,29 @@
   id: totrans-349
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们所寻找的神经网络架构由特征提取和完全连接块序列组成。这些块中的每一个都可能具有图 [4-17](#Fig17) 和 [4-18](#Fig18) 中所示的架构。LeNet
+    NAS 算法必须找到最优的特征提取和完全连接块序列长度，以及它们的架构。LeNet NAS 的模型空间可以如图 [4-19](#Fig19) 所示绘制。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig19_HTML.png)'
   id: totrans-350
   prefs: []
   type: TYPE_IMG
+  zh: '![图](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig19_HTML.png)'
 - en: Figure 4-19
   id: totrans-351
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-19
 - en: LeNet NAS Model Space
   id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: LeNet NAS 模型空间
 - en: We will start implementing the CIFAR-10 LeNet NAS by defining a Feature Extraction
     block in Listing [4-7](#PC73).
   id: totrans-353
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将通过定义列表 [4-7](#PC73) 中的特征提取块来开始实现 CIFAR-10 LeNet NAS。
 - en: '[PRE72]'
   id: totrans-354
   prefs: []
@@ -1768,26 +2076,31 @@
   id: totrans-355
   prefs: []
   type: TYPE_NORMAL
+  zh: '`FeatureExtractionBlock` 接受以下参数：'
 - en: '`dim:` Input–output channels'
   id: totrans-356
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dim:` 输入-输出通道'
 - en: '`kernel_size:` Kernel of convolution layer'
   id: totrans-357
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`kernel_size:` 卷积层的核大小'
 - en: '`activation:` Activation function'
   id: totrans-358
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`activation:` 激活函数'
 - en: '`block_num`: Ordinal number of the block in Feature Extraction sequence'
   id: totrans-359
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`block_num`: 特征提取序列中块的序号'
 - en: '[PRE73]'
   id: totrans-360
   prefs: []
@@ -1797,6 +2110,7 @@
   id: totrans-361
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化核心卷积层：
 - en: '[PRE74]'
   id: totrans-362
   prefs: []
@@ -1806,6 +2120,7 @@
   id: totrans-363
   prefs: []
   type: TYPE_NORMAL
+  zh: 声明池化和激活层：
 - en: '[PRE75]'
   id: totrans-364
   prefs: []
@@ -1815,16 +2130,19 @@
   id: totrans-365
   prefs: []
   type: TYPE_NORMAL
+  zh: 对两个不同分支的选择：
 - en: '`Conv` → `Pool` → `Activation`'
   id: totrans-366
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Conv` → `Pool` → `Activation`'
 - en: '`Conv` → `Activation`'
   id: totrans-367
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Conv` → `Activation`'
 - en: '[PRE76]'
   id: totrans-368
   prefs: []
@@ -1834,6 +2152,7 @@
   id: totrans-369
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义 `forward` 方法：
 - en: '[PRE77]'
   id: totrans-370
   prefs: []
@@ -1844,6 +2163,7 @@
   id: totrans-371
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下方法在 `Repeat` 变异体中使用。它通过特征提取序列中的序号返回适当的 `FeatureExtractionBlock`。
 - en: '[PRE78]'
   id: totrans-372
   prefs: []
@@ -1854,6 +2174,7 @@
   id: totrans-373
   prefs: []
   type: TYPE_NORMAL
+  zh: 完全连接块的实现类似于特征提取块，并在列表 [4-8](#PC80) 中提供。
 - en: '[PRE79]'
   id: totrans-374
   prefs: []
@@ -1863,26 +2184,31 @@
   id: totrans-375
   prefs: []
   type: TYPE_NORMAL
+  zh: '`FullyConnectedBlock` 接受以下参数：'
 - en: '`dim:` Input–output features for linear layer'
   id: totrans-376
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dim:` 线性层的输入-输出特征'
 - en: '`dropout_rate:` Layer hyperparameter for dropout layer'
   id: totrans-377
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dropout_rate:` Dropout 层的层超参数'
 - en: '`activation:` Activation function'
   id: totrans-378
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`activation:` 激活函数'
 - en: '`block_num`: Ordinal number of the block in Fully Connected sequence'
   id: totrans-379
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`block_num`: 全连接序列中块的序号'
 - en: '[PRE80]'
   id: totrans-380
   prefs: []
@@ -1892,6 +2218,7 @@
   id: totrans-381
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化线性层：
 - en: '[PRE81]'
   id: totrans-382
   prefs: []
@@ -1901,6 +2228,7 @@
   id: totrans-383
   prefs: []
   type: TYPE_NORMAL
+  zh: 声明 dropout 和激活层：
 - en: '[PRE82]'
   id: totrans-384
   prefs: []
@@ -1910,16 +2238,19 @@
   id: totrans-385
   prefs: []
   type: TYPE_NORMAL
+  zh: 两个不同分支的切换选择：
 - en: '`Linear` → `Dropout` → `Activation`'
   id: totrans-386
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Linear` → `Dropout` → `Activation`'
 - en: '`Linear` → `Activation`'
   id: totrans-387
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Linear` → `Activation`'
 - en: '[PRE83]'
   id: totrans-388
   prefs: []
@@ -1929,6 +2260,7 @@
   id: totrans-389
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义 `forward` 方法：
 - en: '[PRE84]'
   id: totrans-390
   prefs: []
@@ -1939,6 +2271,7 @@
   id: totrans-391
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 `Repeat` 修改器中使用以下方法。它通过其在全连接序列中的序号返回适当的 `FullyConnectedBlock`。
 - en: '[PRE85]'
   id: totrans-392
   prefs: []
@@ -1948,10 +2281,12 @@
   id: totrans-393
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经准备好构建 LeNet Model Space。
 - en: 'Importing modules:'
   id: totrans-394
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入模块：
 - en: '[PRE86]'
   id: totrans-395
   prefs: []
@@ -1961,6 +2296,7 @@
   id: totrans-396
   prefs: []
   type: TYPE_NORMAL
+  zh: 不要忘记将 `@model_wrapper` 添加到 Model Space 类中：
 - en: '[PRE87]'
   id: totrans-397
   prefs: []
@@ -1971,6 +2307,7 @@
   id: totrans-398
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们定义特征提取序列的空间。所有特征提取块将共享相同的激活函数：
 - en: '[PRE88]'
   id: totrans-399
   prefs: []
@@ -1980,6 +2317,7 @@
   id: totrans-400
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Repeat` 修改器将创建一行中的两个或三个特征提取块：'
 - en: '[PRE89]'
   id: totrans-401
   prefs: []
@@ -1989,6 +2327,7 @@
   id: totrans-402
   prefs: []
   type: TYPE_NORMAL
+  zh: 第二，我们定义一个全连接序列：
 - en: '[PRE90]'
   id: totrans-403
   prefs: []
@@ -1998,6 +2337,7 @@
   id: totrans-404
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有全连接块将共享相同的激活函数：
 - en: '[PRE91]'
   id: totrans-405
   prefs: []
@@ -2007,6 +2347,7 @@
   id: totrans-406
   prefs: []
   type: TYPE_NORMAL
+  zh: 全连接块的层超参数：
 - en: '[PRE92]'
   id: totrans-407
   prefs: []
@@ -2017,6 +2358,7 @@
   id: totrans-408
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Repeat` 修改器将创建一行中的一个到三个全连接块：'
 - en: '[PRE93]'
   id: totrans-409
   prefs: []
@@ -2026,6 +2368,7 @@
   id: totrans-410
   prefs: []
   type: TYPE_NORMAL
+  zh: 最终的成对分类层（`linear_final` 层延迟初始化）：
 - en: '[PRE94]'
   id: totrans-411
   prefs: []
@@ -2035,6 +2378,7 @@
   id: totrans-412
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行 `forward` 方法：
 - en: '[PRE95]'
   id: totrans-413
   prefs: []
@@ -2045,15 +2389,18 @@
   id: totrans-414
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型评估器是一个经典的神经网络训练-测试算法。您可以在以下位置查看其代码：ch4/retiarii/cifar_10_lenet/eval.py。
 - en: Fine! Since LeNet Model Space is ready, we can start the research with the code
     in Listing [4-10](#PC97).
   id: totrans-415
   prefs: []
   type: TYPE_NORMAL
+  zh: 好的！由于 LeNet Model Space 已经准备好，我们可以使用列表 [4-10](#PC97) 中的代码开始研究。
 - en: 'Importing modules:'
   id: totrans-416
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入模块：
 - en: '[PRE96]'
   id: totrans-417
   prefs: []
@@ -2063,6 +2410,7 @@
   id: totrans-418
   prefs: []
   type: TYPE_NORMAL
+  zh: 声明 Model Space：
 - en: '[PRE97]'
   id: totrans-419
   prefs: []
@@ -2072,6 +2420,7 @@
   id: totrans-420
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义模型评估器：
 - en: '[PRE98]'
   id: totrans-421
   prefs: []
@@ -2081,6 +2430,7 @@
   id: totrans-422
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将为此实验使用 RL 搜索策略：
 - en: '[PRE99]'
   id: totrans-423
   prefs: []
@@ -2090,6 +2440,7 @@
   id: totrans-424
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化 Retiarii 实验：
 - en: '[PRE100]'
   id: totrans-425
   prefs: []
@@ -2099,6 +2450,7 @@
   id: totrans-426
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验配置：
 - en: '[PRE101]'
   id: totrans-427
   prefs: []
@@ -2108,6 +2460,7 @@
   id: totrans-428
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动实验：
 - en: '[PRE102]'
   id: totrans-429
   prefs: []
@@ -2117,6 +2470,7 @@
   id: totrans-430
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回结果：
 - en: '[PRE103]'
   id: totrans-431
   prefs: []
@@ -2126,6 +2480,7 @@
   id: totrans-432
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验可以按以下方式运行：
 - en: '[PRE104]'
   id: totrans-433
   prefs: []
@@ -2135,16 +2490,19 @@
   id: totrans-434
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Duration ~ 20 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
   id: totrans-435
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 Intel Core i7 配备 CUDA (GeForce GTX 1050) 的系统上运行时间约为 20 小时
 - en: 'The best model shows **0.84** accuracy on test dataset. It is not a bad result,
     but it seems there is still room for improvement. The best model has the following
     parameters:'
   id: totrans-436
   prefs: []
   type: TYPE_NORMAL
+  zh: 最佳模型在测试数据集上显示 **0.84** 的准确率。这不是一个坏的结果，但似乎仍有改进的空间。最佳模型具有以下参数：
 - en: '[PRE105]'
   id: totrans-437
   prefs: []
@@ -2154,11 +2512,13 @@
   id: totrans-438
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述参数可以这样解释：
 - en: '`"fe_repeat": 2` – means that `Repeat` mutator generates the Feature Extraction
     sequence of two blocks:'
   id: totrans-439
   prefs: []
   type: TYPE_NORMAL
+  zh: '`"fe_repeat": 2` – 表示 `Repeat` 修改器生成两个块的特征提取序列：'
 - en: '[PRE106]'
   id: totrans-440
   prefs: []
@@ -2168,6 +2528,7 @@
   id: totrans-441
   prefs: []
   type: TYPE_NORMAL
+  zh: '`"fe_kernel_size_0": 3` – 表示在 `ValueChoice` 修改器中选择 `3`：'
 - en: '[PRE107]'
   id: totrans-442
   prefs: []
@@ -2178,6 +2539,7 @@
   id: totrans-443
   prefs: []
   type: TYPE_NORMAL
+  zh: '`"fe_switch_0": 0` – 表示在 `InputChoice` 修改器中使用第一个连接：'
 - en: '[PRE108]'
   id: totrans-444
   prefs: []
@@ -2188,18 +2550,22 @@
   id: totrans-445
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，使用 Trial 详细面板中的 Netron 可方便地可视化架构。图 [4-20](#Fig20) 展示了最佳模型的架构。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig20_HTML.jpg)'
   id: totrans-446
   prefs: []
   type: TYPE_IMG
+  zh: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig20_HTML.jpg)'
 - en: Figure 4-20
   id: totrans-447
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-20
 - en: LeNet NAS Best Model Architecture
   id: totrans-448
   prefs: []
   type: TYPE_NORMAL
+  zh: LeNet NAS 最佳模型架构
 - en: The research we made in this section can be a good starting point for your own
     NAS solutions. It contains basic techniques used in Multi-trial NAS. Here, we
     used the LeNet model as the Base Model, but you can choose any model and any mutators
@@ -2209,11 +2575,14 @@
   id: totrans-449
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在本节中进行的这项研究可以作为您自己的 NAS 解决方案的良好起点。它包含了在多试验 NAS 中使用的基本技术。在这里，我们使用了 LeNet 模型作为基础模型，但您可以选择任何模型和任何更适合具体问题的修改器。但我们没有在
+    LeNet NAS 中取得很好的结果。在下一节中，我们将尝试使用更复杂的方法进行另一种 NAS。
 - en: CIFAR-10 ResNet NAS
   id: totrans-450
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CIFAR-10 ResNet NAS
 - en: Let’s try to find another approach to the architecture search that solves the
     CIFAR-10 problem. In 2015, the article “Deep Residual Learning for Image Recognition”
     ([`https://arxiv.org/pdf/1512.03385.pdf`](https://arxiv.org/pdf/1512.03385.pdf))
@@ -2223,6 +2592,7 @@
   id: totrans-451
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们尝试找到另一种解决 CIFAR-10 问题的架构搜索方法。2015 年，发表了文章“用于图像识别的深度残差学习”([`https://arxiv.org/pdf/1512.03385.pdf`](https://arxiv.org/pdf/1512.03385.pdf))。这篇文章对深度学习产生了巨大影响。它引入了残差项的概念，可以降低神经网络块的性能，从而提高其性能。
 - en: The basic building block of the ResNet model is the Bottleneck block. Original
     Bottleneck block skips connections inside. But we will add this as an optional
     feature. NAS algorithm will define if it is appropriate to use the skip connection
@@ -2232,18 +2602,23 @@
   id: totrans-452
   prefs: []
   type: TYPE_NORMAL
+  zh: ResNet 模型的基本构建块是瓶颈块。原始瓶颈块内部跳过连接。但我们将将其作为可选功能添加。NAS 算法将定义是否适合为瓶颈块使用跳转连接技术。因此，在
+    ResNet NAS 中有两种瓶颈块变体：带有和没有跳转连接技术的。瓶颈块空间的结构可以在图 [4-21](#Fig21) 中展示。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig21_HTML.png)'
   id: totrans-453
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig21_HTML.png)'
 - en: Figure 4-21
   id: totrans-454
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-21
 - en: Bottleneck block space
   id: totrans-455
   prefs: []
   type: TYPE_NORMAL
+  zh: 瓶颈块空间
 - en: Another component of ResNet is the Residual Cell. Residual Cell consists of
     a sequence of Bottleneck blocks. The optimal length of the Bottleneck sequence
     in Residual Cell depends on the concrete dataset. Figure [4-22](#Fig22) shows
@@ -2251,59 +2626,72 @@
   id: totrans-456
   prefs: []
   type: TYPE_NORMAL
+  zh: ResNet 的另一个组件是残差单元。残差单元由一系列瓶颈块组成。残差单元中瓶颈序列的最优长度取决于具体的数据集。图 [4-22](#Fig22) 展示了残差单元的空间。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig22_HTML.png)'
   id: totrans-457
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig22_HTML.png)'
 - en: Figure 4-22
   id: totrans-458
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-22
 - en: Residual Cell space
   id: totrans-459
   prefs: []
   type: TYPE_NORMAL
+  zh: 残差单元空间
 - en: 'And finally, we can construct the ResNet model. ResNet has the following architecture:'
   id: totrans-460
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们可以构建 ResNet 模型。ResNet 具有以下架构：
 - en: Initial convolution layer
   id: totrans-461
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 初始卷积层
 - en: Residual Cell sequence
   id: totrans-462
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 残差单元序列
 - en: Several Fully Connected layers
   id: totrans-463
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 几个全连接层
 - en: The optimal length of a Residual Cell sequence depends on the dataset. And we
     will try to find it in ResNet NAS. Figure [4-23](#Fig23) presents the complete
     Model Space for ResNet NAS.
   id: totrans-464
   prefs: []
   type: TYPE_NORMAL
+  zh: 残差单元序列的最优长度取决于数据集。我们将在 ResNet NAS 中尝试找到它。图 [4-23](#Fig23) 展示了 ResNet NAS 的完整模型空间。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig23_HTML.png)'
   id: totrans-465
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig23_HTML.png)'
 - en: Figure 4-23
   id: totrans-466
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 4-23
 - en: ResNet NAS space
   id: totrans-467
   prefs: []
   type: TYPE_NORMAL
+  zh: ResNet NAS 空间
 - en: Listing [4-11](#PC110) defines the Bottleneck block for ResNet Model Space.
   id: totrans-468
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表 [4-11](#PC110) 定义了 ResNet 模型空间中的瓶颈块。
 - en: '[PRE109]'
   id: totrans-469
   prefs: []
@@ -2313,6 +2701,7 @@
   id: totrans-470
   prefs: []
   type: TYPE_NORMAL
+  zh: 瓶颈扩展比：
 - en: '[PRE110]'
   id: totrans-471
   prefs: []
@@ -2322,6 +2711,7 @@
   id: totrans-472
   prefs: []
   type: TYPE_NORMAL
+  zh: 瓶颈块产生的输出通道数：
 - en: '[PRE111]'
   id: totrans-473
   prefs: []
@@ -2331,26 +2721,31 @@
   id: totrans-474
   prefs: []
   type: TYPE_NORMAL
+  zh: 瓶颈块接受以下参数：
 - en: '`cell_num`: The ordinal number of Residual Cell this block belongs to'
   id: totrans-475
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`cell_num`：此块所属的残差单元的序号'
 - en: '`in_channels`: Input channels to the first convolution layer'
   id: totrans-476
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`in_channels`：第一个卷积层的输入通道'
 - en: '`out_channels`: Output channels to all convolutional layers in the block'
   id: totrans-477
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`out_channels`：块中所有卷积层的输出通道'
 - en: '`i_downsample`: Identity downsample block'
   id: totrans-478
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`i_downsample`：标识下采样块'
 - en: '[PRE112]'
   id: totrans-479
   prefs: []
@@ -2360,6 +2755,7 @@
   id: totrans-480
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义三个带有批量归一化的卷积层：
 - en: '[PRE113]'
   id: totrans-481
   prefs: []
@@ -2370,6 +2766,7 @@
   id: totrans-482
   prefs: []
   type: TYPE_NORMAL
+  zh: 跳转连接在残差单元的所有块中作用相同，因为所有 `InputChoice` 修改器在残差单元中共享相同的标签：
 - en: '[PRE114]'
   id: totrans-483
   prefs: []
@@ -2379,6 +2776,7 @@
   id: totrans-484
   prefs: []
   type: TYPE_NORMAL
+  zh: 标识下采样块：
 - en: '[PRE115]'
   id: totrans-485
   prefs: []
@@ -2388,6 +2786,7 @@
   id: totrans-486
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义前向方法：
 - en: '[PRE116]'
   id: totrans-487
   prefs: []
@@ -2397,6 +2796,7 @@
   id: totrans-488
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`self.skip_connection`返回`not None`，则跳过连接：
 - en: '[PRE117]'
   id: totrans-489
   prefs: []
@@ -2407,15 +2807,18 @@
   id: totrans-490
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们已经定义了瓶颈块，我们可以转向ResNet模型空间定义，如清单[4-12](#PC119)所示。
 - en: '(Some unimportant code segments are omitted. Complete code is provided in the
     corresponding file: *ch4/retiarii/cifar_10_resnet/res_net_model_space.py*.)'
   id: totrans-491
   prefs: []
   type: TYPE_NORMAL
+  zh: （省略了一些不重要的代码段。完整的代码在相应的文件中提供：*ch4/retiarii/cifar_10_resnet/res_net_model_space.py*。）
 - en: 'Importing modules:'
   id: totrans-492
   prefs: []
   type: TYPE_NORMAL
+  zh: 导入模块：
 - en: '[PRE118]'
   id: totrans-493
   prefs: []
@@ -2425,6 +2828,7 @@
   id: totrans-494
   prefs: []
   type: TYPE_NORMAL
+  zh: 不要忘记用`@model_wrapper`注释模型空间：
 - en: '[PRE119]'
   id: totrans-495
   prefs: []
@@ -2434,6 +2838,7 @@
   id: totrans-496
   prefs: []
   type: TYPE_NORMAL
+  zh: 全局模型常量：
 - en: '[PRE120]'
   id: totrans-497
   prefs: []
@@ -2443,6 +2848,7 @@
   id: totrans-498
   prefs: []
   type: TYPE_NORMAL
+  zh: 选择`ReLU`作为全局激活函数：
 - en: '[PRE121]'
   id: totrans-499
   prefs: []
@@ -2452,6 +2858,7 @@
   id: totrans-500
   prefs: []
   type: TYPE_NORMAL
+  zh: 带批量归一化的入口卷积层：
 - en: '[PRE122]'
   id: totrans-501
   prefs: []
@@ -2461,6 +2868,7 @@
   id: totrans-502
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有如下超参数列表`[2, 3]`的MaxPool层：
 - en: '[PRE123]'
   id: totrans-503
   prefs: []
@@ -2471,6 +2879,7 @@
   id: totrans-504
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`Repeat`突变体（从两个到五个细胞）构建残差单元序列：
 - en: '[PRE124]'
   id: totrans-505
   prefs: []
@@ -2480,6 +2889,7 @@
   id: totrans-506
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用两个线性层构建全连接序列：
 - en: '[PRE125]'
   id: totrans-507
   prefs: []
@@ -2489,6 +2899,7 @@
   id: totrans-508
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义`forward`方法：
 - en: '[PRE126]'
   id: totrans-509
   prefs: []
@@ -2498,6 +2909,7 @@
   id: totrans-510
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下方法用于为`Repeat`突变体构建残差单元：
 - en: '[PRE127]'
   id: totrans-511
   prefs: []
@@ -2507,6 +2919,7 @@
   id: totrans-512
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义残差单元参数：
 - en: '[PRE128]'
   id: totrans-513
   prefs: []
@@ -2516,6 +2929,7 @@
   id: totrans-514
   prefs: []
   type: TYPE_NORMAL
+  zh: 残差单元中的瓶颈块数量：
 - en: '[PRE129]'
   id: totrans-515
   prefs: []
@@ -2525,6 +2939,7 @@
   id: totrans-516
   prefs: []
   type: TYPE_NORMAL
+  zh: 瓶颈块的占位符：
 - en: '[PRE130]'
   id: totrans-517
   prefs: []
@@ -2534,6 +2949,7 @@
   id: totrans-518
   prefs: []
   type: TYPE_NORMAL
+  zh: 如有必要，构建下采样身份块：
 - en: '[PRE131]'
   id: totrans-519
   prefs: []
@@ -2543,6 +2959,7 @@
   id: totrans-520
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成瓶颈块的序列：
 - en: '[PRE132]'
   id: totrans-521
   prefs: []
@@ -2557,6 +2974,7 @@
   id: totrans-522
   prefs: []
   type: TYPE_NORMAL
+  zh: 哇，如果你对ResNet还不熟悉，那么要理解ResNet模型空间定义并不容易。无论如何，别忘了NAS将神经网络视为数据流图，并试图在我们构建的模型空间中找到节点和连接的最优组合。即使你对一些深度学习概念还不熟悉，也试着将NAS视为在超图空间中寻找最优子图的过程。
 - en: 'ResNet model evaluator is a classical neural network train–test algorithm.
     You can examine its code here: ch4/retiarii/cifar_10_resnet/eval.py. ResNet NAS
     Experiment script does not differ too much from LeNet NAS, and I don’t provide
@@ -2564,10 +2982,13 @@
   id: totrans-523
   prefs: []
   type: TYPE_NORMAL
+  zh: ResNet模型评估器是一个经典的神经网络训练-测试算法。你可以在这里查看其代码：ch4/retiarii/cifar_10_resnet/eval.py。ResNet
+    NAS实验脚本与LeNet NAS没有太大区别，我在书中没有提供其代码。请参阅脚本文件：ch4/retiarii/cifar_10_resnet/run_cifar10_resnet_experiment.py。
 - en: 'The experiment can be run as follows:'
   id: totrans-524
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验可以按以下方式进行：
 - en: '[PRE133]'
   id: totrans-525
   prefs: []
@@ -2577,16 +2998,19 @@
   id: totrans-526
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Duration ~ 60 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
   id: totrans-527
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Intel Core i7和CUDA（GeForce GTX 1050）上运行需要约60小时：
 - en: 'The best model shows **0.957** accuracy on test dataset. That is not perfect,
     but a much better result than LeNet NAS produced (**0.84**). The best neural network
     architecture has the following parameters:'
   id: totrans-528
   prefs: []
   type: TYPE_NORMAL
+  zh: 最佳模型在测试数据集上显示**0.957**的准确率。这并不完美，但比LeNet NAS产生的**0.84**要好得多。最佳神经网络架构具有以下参数：
 - en: '[PRE134]'
   id: totrans-529
   prefs: []
@@ -2599,6 +3023,7 @@
   id: totrans-530
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些参数意味着最佳模型具有五个残差单元的序列：第一个单元不使用跳过连接技术，而其他单元使用它。这是一个可预测的结果，因为通常跳过连接技术可以提高神经网络性能。
 - en: In this section, we have achieved a great result! CIFAR-10 is a highly complex
     computer vision problem, and even large, sophisticated neural networks cannot
     reach high accuracy with this dataset. Table [4-2](#Tab2) compares the architecture
@@ -2606,60 +3031,74 @@
   id: totrans-531
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们取得了很大的成果！CIFAR-10是一个高度复杂的计算机视觉问题，即使是大型、复杂的神经网络也无法使用这个数据集达到高准确率。表[4-2](#Tab2)比较了我们在此节中构建的架构与其他常见架构。
 - en: Table 4-2
   id: totrans-532
   prefs: []
   type: TYPE_NORMAL
+  zh: 表 4-2
 - en: Rating of the best architectures for CIFAR-10
   id: totrans-533
   prefs: []
   type: TYPE_NORMAL
+  zh: 对CIFAR-10最佳架构进行评分
 - en: '| Rank | Architecture | Accuracy |'
   id: totrans-534
   prefs: []
   type: TYPE_TB
+  zh: '| 排名 | 架构 | 准确率 |'
 - en: '| --- | --- | --- |'
   id: totrans-535
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- |'
 - en: '| 79 | AutoDropout | 96.8 |'
   id: totrans-536
   prefs: []
   type: TYPE_TB
+  zh: '| 79 | AutoDropout | 96.8 |'
 - en: '| 96 | Wide ResNet | 96.11 |'
   id: totrans-537
   prefs: []
   type: TYPE_TB
+  zh: '| 96 | Wide ResNet | 96.11 |'
 - en: '| **-** | **Multi-trial NAS ResNet Result** | **95.7** |'
   id: totrans-538
   prefs: []
   type: TYPE_TB
+  zh: '| **-** | **多试验 NAS ResNet 结果** | **95.7** |'
 - en: '| 104 | SimpleNetv1 | 95.51 |'
   id: totrans-539
   prefs: []
   type: TYPE_TB
+  zh: '| 104 | SimpleNetv1 | 95.51 |'
 - en: '| 108 | MomentumNet | 95.18 |'
   id: totrans-540
   prefs: []
   type: TYPE_TB
+  zh: '| 108 | MomentumNet | 95.18 |'
 - en: '| 116 | VGG-19 with GradInit | 94.71 |'
   id: totrans-541
   prefs: []
   type: TYPE_TB
+  zh: '| 116 | VGG-19 with GradInit | 94.71 |'
 - en: '| 128 | Tree+Max-Avg pooling | 94 |'
   id: totrans-542
   prefs: []
   type: TYPE_TB
+  zh: '| 128 | Tree+Max-Avg pooling | 94 |'
 - en: For more detailed information concerning architecture performance on the CIFAR-10
     problem, please refer to [`https://paperswithcode.com/sota/image-classification-on-cifar-10`](https://paperswithcode.com/sota/image-classification-on-cifar-10).
   id: totrans-543
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于 CIFAR-10 问题架构性能的更详细信息，请参阅[`https://paperswithcode.com/sota/image-classification-on-cifar-10`](https://paperswithcode.com/sota/image-classification-on-cifar-10)。
 - en: Classic Neural Architecture Search (TensorFlow)
   id: totrans-544
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 经典神经架构搜索（TensorFlow）
 - en: 'Classic NAS implements the Multi-trial NAS approach. Evaluator takes a model
     from Model Space and evaluates it separately. Last valid documentation regarding
     Classic NAS with NNI can be found here: [`https://nni.readthedocs.io/en/v2.2/nas.html`](https://nni.readthedocs.io/en/v2.2/nas.html).
@@ -2671,17 +3110,23 @@
   id: totrans-545
   prefs: []
   type: TYPE_NORMAL
+  zh: 经典 NAS 实现了多试验 NAS 方法。评估器从模型空间中取一个模型并单独评估它。关于经典 NAS 的最后有效文档可以在以下位置找到：[`https://nni.readthedocs.io/en/v2.2/nas.html`](https://nni.readthedocs.io/en/v2.2/nas.html)。NNI
+    目前支持经典 NAS，但正在弃用它以支持 Retiarii 框架。经典 NAS 算法的流程与超参数调整类似。用户使用 `nnictl` 启动实验，每个模型作为一个试验运行。不同之处在于，搜索空间文件是通过运行
+    `nnictl ss_gen` 从模型空间自动生成的。
 - en: The main logical entities of Classic NAS are *Base Model*, *Mutator*, *Search
     Space*, *Trial*, and *Search Strategy*. Let’s study each of them by applying NAS
     algorithm to the classical MNIST problem.
   id: totrans-546
   prefs: []
   type: TYPE_NORMAL
+  zh: 经典神经架构搜索（NAS）的主要逻辑实体包括 *基础模型*、*突变器*、*搜索空间*、*试验* 和 *搜索策略*。让我们通过将 NAS 算法应用于经典的
+    MNIST 问题来逐一研究它们。
 - en: Base Model
   id: totrans-547
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 基础模型
 - en: Every Neural Architecture Search starts with defining a Base Model. The Base
     Model is a neural network that acts as a starting point for new architectures.
     The Base Model can be very simple or very complex. The researcher chooses the
@@ -2689,10 +3134,12 @@
   id: totrans-548
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个神经架构搜索都从定义一个基础模型开始。基础模型是一个神经网络，它作为新架构的起点。基础模型可以是非常简单或非常复杂的。研究人员选择最适合作为基线的模型。
 - en: Let’s examine the classic LeNet model for the MNIST problem in Listing [4-13](#PC136).
   id: totrans-549
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们检查列表 [4-13](#PC136) 中的经典 LeNet 模型，用于 MNIST 问题。
 - en: '[PRE135]'
   id: totrans-550
   prefs: []
@@ -2702,6 +3149,7 @@
   id: totrans-551
   prefs: []
   type: TYPE_NORMAL
+  zh: 基础模型层：
 - en: '[PRE136]'
   id: totrans-552
   prefs: []
@@ -2711,6 +3159,7 @@
   id: totrans-553
   prefs: []
   type: TYPE_NORMAL
+  zh: 前馈：
 - en: '[PRE137]'
   id: totrans-554
   prefs: []
@@ -2721,11 +3170,13 @@
   id: totrans-555
   prefs: []
   type: TYPE_NORMAL
+  zh: 列表 [4-13](#PC136) 中描述的模型将作为新架构的粘土。
 - en: Mutators
   id: totrans-556
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 突变器
 - en: 'Mutator transforms the Base Model into a new one. A set of mutators allow defining
     a search space for the NAS. Classic NNI NAS provides two mutators: `LayerChoice`
     and `InputChoice`. `LayerChoice` mutator forms the candidate layers for a layer
@@ -2735,6 +3186,8 @@
   id: totrans-557
   prefs: []
   type: TYPE_NORMAL
+  zh: 突变器将基础模型转换成一个新的模型。一组突变器允许定义 NAS 的搜索空间。经典 NNI NAS 提供了两个突变器：`LayerChoice` 和 `InputChoice`。`LayerChoice`
+    突变器为层占位符形成候选层。探索过程中尝试其中一个候选者。`InputChoice` 尝试不同的连接。它从几个张量中选择 `n_chosen` 个张量。
 - en: You can learn more about `LayerChoice` and `InputChoice` mutators in the subsection
     “Mutators” under the section “Neural Architecture Search Using Retiarii (PyTorch).”
     We can apply `LayerChoice` and `InputChoice` mutators to the Base Model in the
@@ -2742,6 +3195,8 @@
   id: totrans-558
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在“神经架构搜索使用 Retiarii（PyTorch）”部分的“突变器”子部分中了解更多关于 `LayerChoice` 和 `InputChoice`
+    突变器的信息。我们可以以下这种方式将 `LayerChoice` 和 `InputChoice` 突变器应用于基础模型。
 - en: '[PRE138]'
   id: totrans-559
   prefs: []
@@ -2751,6 +3206,7 @@
   id: totrans-560
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们尝试为 `conv1` 占位符使用三种不同的卷积层：
 - en: '[PRE139]'
   id: totrans-561
   prefs: []
@@ -2760,6 +3216,7 @@
   id: totrans-562
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们尝试为 `pool` 占位符使用两种不同的池化层：
 - en: '[PRE140]'
   id: totrans-563
   prefs: []
@@ -2769,6 +3226,7 @@
   id: totrans-564
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们尝试为 `conv2` 占位符使用三种不同的卷积层：
 - en: '[PRE141]'
   id: totrans-565
   prefs: []
@@ -2778,6 +3236,7 @@
   id: totrans-566
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们添加了跳过连接技术：
 - en: '[PRE142]'
   id: totrans-567
   prefs: []
@@ -2787,6 +3246,7 @@
   id: totrans-568
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们为 `fc1` 占位符添加两个候选者：
 - en: '[PRE143]'
   id: totrans-569
   prefs: []
@@ -2797,27 +3257,33 @@
   id: totrans-570
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 [4-24](#Fig24) 展示了由列表 [4-14](#PC139) 描述的所有可能的架构集合。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig24_HTML.png)'
   id: totrans-571
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig24_HTML.png)'
 - en: Figure 4-24
   id: totrans-572
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-24
 - en: Set of all possible architectures
   id: totrans-573
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有可能的架构集合
 - en: We see that each mutator adds variance to the Base Model.
   id: totrans-574
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以看到每个变异器都向基础模型添加了方差。
 - en: Trial
   id: totrans-575
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Trial
 - en: 'NAS Trial means the same as the Trial in the HPO context. It initializes the
     model, trains it, tests it, and returns model accuracy. There is only one new
     feature: you must use the `get_and_apply_next_architecture` method from `nn.algorithms.nas.tensorflow.classic_nas`
@@ -2825,10 +3291,13 @@
   id: totrans-576
   prefs: []
   type: TYPE_NORMAL
+  zh: NAS Trial与HPO环境中的Trial含义相同。它初始化模型，训练它，测试它，并返回模型准确率。只有一个新特性：您必须使用`nn.algorithms.nas.tensorflow.classic_nas`包中的`get_and_apply_next_architecture`方法来初始化模型。列表[4-15](#PC145)提供了NAS
+    Trial。
 - en: '(Full code is provided in the corresponding file: *ch4/classic/trial.py*.)'
   id: totrans-577
   prefs: []
   type: TYPE_NORMAL
+  zh: （完整代码在相应的文件中提供：*ch4/classic/trial.py*。）
 - en: '[PRE144]'
   id: totrans-578
   prefs: []
@@ -2839,11 +3308,13 @@
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 搜索空间
 - en: 'After the Trial script is defined, you should generate the search space JSON
     file manually using the following command:'
   id: totrans-580
   prefs: []
   type: TYPE_NORMAL
+  zh: 在定义了Trial脚本之后，您应该使用以下命令手动生成搜索空间JSON文件：
 - en: '[PRE145]'
   id: totrans-581
   prefs: []
@@ -2853,6 +3324,7 @@
   id: totrans-582
   prefs: []
   type: TYPE_NORMAL
+  zh: 上一条命令生成了如列表[4-16](#PC147)所示的文件。
 - en: '[PRE146]'
   id: totrans-583
   prefs: []
@@ -2863,41 +3335,49 @@
   id: totrans-584
   prefs: []
   type: TYPE_NORMAL
+  zh: 如您所见，NNI Classic NAS实现与HPO实现非常接近。搜索空间文件是所有可能的神经网络架构选择的列表。
 - en: Search Strategy
   id: totrans-585
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 搜索策略
 - en: 'Classic NAS supports the following Search Strategies:'
   id: totrans-586
   prefs: []
   type: TYPE_NORMAL
+  zh: 经典NAS支持以下搜索策略：
 - en: '`Random Search`'
   id: totrans-587
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`随机搜索`'
 - en: '`PPO Tuner:` Reinforcement Learning Tuner based on Proximal Policy Optimization
     algorithm'
   id: totrans-588
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`PPO Tuner`：基于近端策略优化算法的强化学习调优器'
 - en: For more information about these tuners, you can refer to the subsection “Exploration
     Strategies” under the section “Neural Architecture Search Using Retiarii (PyTorch).”
   id: totrans-589
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于这些调优器的更多信息，您可以参考“使用Retiarii进行神经架构搜索”部分下的“探索策略”子部分。
 - en: Experiment
   id: totrans-590
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 实验
 - en: The last thing left to do is to define the experiment configuration. Experiment
     configuration is defined in Listing [4-17](#PC148).
   id: totrans-591
   prefs: []
   type: TYPE_NORMAL
+  zh: 剩下的最后一件事是定义实验配置。实验配置在列表[4-17](#PC148)中定义。
 - en: '[PRE147]'
   id: totrans-592
   prefs: []
@@ -2907,6 +3387,7 @@
   id: totrans-593
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以使用以下命令开始实验：
 - en: '[PRE148]'
   id: totrans-594
   prefs: []
@@ -2916,15 +3397,18 @@
   id: totrans-595
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Duration ~ 2 hours on Intel Core i7 with CUDA (GeForce GTX 1050)
   id: totrans-596
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Intel Core i7和CUDA（GeForce GTX 1050）上持续约2小时
 - en: 'Experiment returns the best accuracy **0.9923** on test dataset, with the following
     parameter set:'
   id: totrans-597
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验在测试数据集上返回了最佳准确率 **0.9923**，以下参数设置：
 - en: '[PRE149]'
   id: totrans-598
   prefs: []
@@ -2934,6 +3418,7 @@
   id: totrans-599
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述参数可以解释为以下神经网络架构：
 - en: '[PRE150]'
   id: totrans-600
   prefs: []
@@ -2943,18 +3428,22 @@
   id: totrans-601
   prefs: []
   type: TYPE_NORMAL
+  zh: 最佳神经网络架构如图[4-25](#Fig25)所示。
 - en: '![](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig25_HTML.png)'
   id: totrans-602
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../images/526245_1_En_4_Chapter/526245_1_En_4_Fig25_HTML.png)'
 - en: Figure 4-25
   id: totrans-603
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4-25
 - en: Best neural architecture
   id: totrans-604
   prefs: []
   type: TYPE_NORMAL
+  zh: 最佳神经网络架构
 - en: Classic NAS does not differ too much from the HPO approach. Indeed, we could
     build the same experiment with layer and design hyperparameter search. We made
     a close trick in Chapter [2](526245_1_En_2_Chapter.xhtml), in the section “From
@@ -2964,11 +3453,13 @@
   id: totrans-605
   prefs: []
   type: TYPE_NORMAL
+  zh: 经典NAS与HPO方法没有太大区别。实际上，我们可以用层和设计超参数搜索构建相同的实验。我们在第[2](526245_1_En_2_Chapter.xhtml)章的“从LeNet到AlexNet”部分中做了一些类似的技巧。神经架构搜索最近取得了巨大进展，而经典NAS无法支持新的研究想法。无论如何，您仍然可以使用经典NAS并通过搜索新解决方案获得有意义的结果。
 - en: Summary
   id: totrans-606
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 摘要
 - en: Multi-trial Neural Architecture Search using Retiarii and classic approaches
     offers clear and elegant solutions for searching robust neural architectures.
     Many meaningful results could be achieved using Multi-trial NAS. But this approach
