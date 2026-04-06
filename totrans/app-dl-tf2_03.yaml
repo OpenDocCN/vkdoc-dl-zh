@@ -1,0 +1,3107 @@
+- en: 3. Feed-Forward Neural Networks
+  id: totrans-0
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+  zh: 3. 前馈神经网络
+- en: 'In the last chapter we did some amazing things with one neuron, but that is
+    hardly flexible enough to tackle more complex cases. The real power of neural
+    networks comes into light when several (thousands, even millions) neurons interact
+    with each other to solve a specific problem. The network architecture (how neurons
+    are connected to each other, how they behave, and so on) plays a crucial role
+    in how efficient the learning of a network is, how good its predictions are, and
+    what kind of problems it can solve. There are many kinds of architectures that
+    have been extensively studied and that are very complex, but from a learning perspective,
+    it is important to start from the simplest kind of neural network with multiple
+    neurons. It makes sense to start with a *feed-forward neural network*, where data
+    enters at the input layer and passes through the network, layer by layer, until
+    it arrives at the output layer (this gives the networks their name: feed-forward
+    neural networks).'
+  id: totrans-1
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在上一章中，我们使用一个神经元完成了一些令人惊叹的事情，但这几乎不足以应对更复杂的案例。神经网络真正的力量在于当数千（甚至数百万）个神经元相互交互以解决特定问题时才显现出来。网络架构（神经元如何相互连接，它们如何表现，等等）在网络的效率、预测的准确性以及它能解决的问题类型中起着至关重要的作用。已经有许多种架构被广泛研究，并且非常复杂，但从学习的角度来看，从最简单的多神经元神经网络开始是很重要的。从*前馈神经网络*开始是有意义的，在这种网络中，数据从输入层进入，逐层通过网络，直到到达输出层（这也给网络命名：前馈神经网络）。
+- en: This chapter discusses networks where each neuron in a layer gets its input
+    from all neurons from the preceding layer and feeds its output into each neuron
+    of the next layer. As it is easy to imagine, with more complexity come more challenges.
+    It is more difficult to get quick learning and good accuracy, since the number
+    of hyper-parameters that are available grows due to the increase in network complexity.
+    A simple gradient descent algorithm is not as efficient when dealing with big
+    datasets. When developing models with many neurons, we need to have at our disposal
+    an expanded set of tools that allow us to deal with all the challenges that those
+    networks present.
+  id: totrans-2
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章讨论的是那些每一层的神经元都从前一层的所有神经元获取输入并将输出馈送到下一层每个神经元的网络。正如你可以想象的，随着复杂性的增加，挑战也越来越多。由于网络复杂性的增加，可用的超参数数量增加，因此快速学习和良好的准确性变得更加困难。当处理大型数据集时，简单的梯度下降算法并不高效。在开发具有许多神经元的模型时，我们需要拥有一套扩展的工具，使我们能够应对这些网络提出的所有挑战。
+- en: This chapter starts looking at some more advanced methods and algorithms that
+    will allow you to work efficiently with big datasets and big networks. These complex
+    networks can do some interesting multiclass classifications, one of the tasks
+    that big networks are most often required to do (for example, handwriting recognition,
+    face recognition, image recognition, and so on), so we will use a dataset that
+    will allow us to perform multiclass classification and study its difficulties.
+  id: totrans-3
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 本章开始探讨一些更高级的方法和算法，这些方法和算法将使你能够有效地处理大型数据集和大型网络。这些复杂的网络可以进行一些有趣的多元分类，这是大型网络最常被要求执行的任务之一（例如，手写识别、面部识别、图像识别等），因此我们将使用一个数据集，使我们能够执行多元分类并研究其困难。
+- en: We start the chapter with the network architecture and the needed matrix formalism.
+    Next is a short overview of the new hyper-parameters that come with this new type
+    of networks. You learn how to do multiclass classifications using the softmax
+    function and what kind of output layer is needed. Then, before starting with the
+    Python code, we will go into a brief digression to explain what exactly overfitting
+    is with a simple example, and how to do a basic error analysis with complex networks.
+  id: totrans-4
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们从网络架构和所需的矩阵形式开始本章。接下来是关于这种新类型网络带来的新超参数的简要概述。你将学习如何使用softmax函数进行多类分类以及需要什么样的输出层。然后，在开始Python代码之前，我们将简要地偏离主题，用一个简单的例子解释什么是过度拟合，以及如何对复杂网络进行基本的错误分析。
+- en: Then we will start using Keras to construct bigger networks, applying them to
+    a MNIST-similar dataset based on images of clothing items (the Fashion-MNIST dataset,
+    from Zalando). Then we will look at how to add many layers in an efficient way
+    and how to initialize the weights and the biases in the best way possible to make
+    training fast and stable. We will look at Xavier and He initialization for the
+    sigmoid and ReLU activation functions, respectively. Finally, we describe a rule
+    of thumb for comparing the complexity of networks going beyond only the number
+    of neurons. This chapter concludes with some tips on how to choose the right networks
+    and a method to estimate the memory footprint depending on the architecture.
+  id: totrans-5
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，我们将开始使用 Keras 构建更大的网络，将它们应用于基于服装物品图像的 MNIST 类似数据集（Fashion-MNIST 数据集，来自 Zalando）。然后我们将探讨如何以高效的方式添加许多层，以及如何以最佳方式初始化权重和偏差，以使训练快速且稳定。我们将探讨
+    sigmoid 和 ReLU 激活函数的 Xavier 和 He 初始化。最后，我们描述了一个比较网络复杂性的经验法则，该法则超越了仅神经元数量的范畴。本章以一些关于如何选择合适的网络以及根据架构估计内存占用大小的技巧结束。
+- en: A Short Review of Network’s Architecture and Matrix Notation
+  id: totrans-6
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 网络架构和矩阵表示的简要回顾
+- en: The network architecture is quite easy to understand. It consists of an *input
+    layer* (the inputs *x*[*i*, *j*]), several layers (called *hidden* because they
+    are sandwiched between the input and the output layers, so they are “invisible”
+    from the outside so to speak), and then an *output layer*. In each layer you may
+    have one to several neurons. The main property of such a network is that each
+    neuron gets input from each neuron in the preceding layer and feeds its output
+    to every neuron in the next layer. Figure [3-1](#Fig1) shows a graphical representation
+    of such a network (in the inputs, we omitted the first index indicating the observation
+    index for clarity).
+  id: totrans-7
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 网络架构非常容易理解。它由一个 *输入层*（输入 *x*[*i*, *j*]）、几个层（称为 *隐藏层*，因为它们被输入层和输出层夹在中间，所以从外面看是“看不见”的，换句话说），然后是一个
+    *输出层*。在每个层中，你可能有一个或多个神经元。此类网络的主要特性是每个神经元都从前一层的每个神经元接收输入，并将其输出馈送到下一层的每个神经元。图 [3-1](#Fig1)
+    展示了此类网络的图形表示（为了清晰起见，在输入中省略了表示观察索引的第一个索引）。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig1_HTML.jpg)'
+  id: totrans-8
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig1_HTML.jpg)'
+- en: Figure 3-1
+  id: totrans-9
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-1
+- en: The schematic representation of a deep feed-forward neural network with many
+    hidden layers, where each neuron gets input from each neuron in the preceding
+    layer and feeds its output to every neuron in the next layer
+  id: totrans-10
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 深度前馈神经网络的示意图，具有许多隐藏层，其中每个神经元都从前一层的每个神经元接收输入，并将输出馈送到下一层的每个神经元
+- en: 'To jump from one neuron to this is quite a big step. To build the model, we
+    need to work with matrix formalism and therefore we need to get all the matrix
+    dimension right. Let’s first discuss some new notation:'
+  id: totrans-11
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从一个神经元跳到这一点是一个相当大的步骤。为了构建模型，我们需要使用矩阵形式，因此我们需要正确地确定所有矩阵维度。让我们首先讨论一些新的符号：
+- en: '*L* is the number of hidden layers, excluding the input layer but including
+    the output layer'
+  id: totrans-12
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*L* 是隐藏层的数量，不包括输入层但包括输出层'
+- en: '*n*[*l*] is the number of neurons in layer *l*'
+  id: totrans-13
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*n*[*l*] 是层 *l* 中的神经元数量'
+- en: In a network such as the one in Figure [3-1](#Fig1), we indicate the total number
+    of neurons with *N*[*neurons*], which can be written as follows
+  id: totrans-14
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在如图 [3-1](#Fig1) 所示的网络中，我们用 *N*[*神经元*] 表示神经元的总数，可以表示如下
+- en: '![$$ {N}_{neurons}={n}_x+\sum \limits_{i=1}^L{n}_i=\sum \limits_{i=0}^L{n}_i
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equa.png)'
+  id: totrans-15
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {N}_{neurons}={n}_x+\sum \limits_{i=1}^L{n}_i=\sum \limits_{i=0}^L{n}_i
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equa.png)'
+- en: Where, by convention, we define *n*[0] = *n*[*x*]. Each connection between two
+    neurons will have its own weight. Let’s indicate the weight between neuron *i*
+    in layer *l* and neuron *j* in layer *l* − 1 with ![$$ {w}_{ij}^{\left[l\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq1.png). Figure
+    [3-2](#Fig2) shows only the first two layers (input and layer 1) of the generic
+    network from Figure [3-1](#Fig1), with the weights between the first neuron in
+    the input layer and all the others in layer 1\. All other neurons are grayed out
+    for clarity.
+  id: totrans-16
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中，按照惯例，我们定义 *n*[0] = *n*[*x*]。两个神经元之间的每个连接都将有自己的权重。让我们用 ![$$ {w}_{ij}^{\left[l\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq1.png) 表示层 *l*
+    中神经元 *i* 和层 *l* − 1 中神经元 *j* 之间的权重。图 [3-2](#Fig2) 仅显示了图 [3-1](#Fig1) 中通用网络的前两层（输入层和层
+    1），以及输入层第一个神经元和层 1 中所有其他神经元之间的权重。为了清晰起见，其他神经元都被灰色化。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig2_HTML.jpg)'
+  id: totrans-17
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig2_HTML.jpg)'
+- en: Figure 3-2
+  id: totrans-18
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-2
+- en: The first two layers of a generic neural network, with the weights of the connections
+    between the first neuron in the input layers and the others in the second layer.
+    All other neurons and connections are drawn in light gray to make the diagram
+    clearer
+  id: totrans-19
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个通用神经网络的头两层，包括输入层第一个神经元与其他第二层神经元之间的连接权重。所有其他神经元和连接都以浅灰色绘制，以使图更清晰
+- en: The weights between the input layer and layer 1 can be written as a matrix as
+    follows
+  id: totrans-20
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 输入层和层1之间的权重可以写成如下矩阵
+- en: '![$$ {W}^{\left[1\right]}=\left(\begin{array}{ccc}{w}_{11}^{\left[1\right]}&amp;
+    \dots &amp; {w}_{1{n}_x}^{\left[1\right]}\ \\ {}\vdots &amp; \ddots &amp; \vdots
+    \\ {}{w}_{n_11}^{\left[1\right]}&amp; \dots &amp; {w^{\left[1\right]}}_{n_1{n}_x}\end{array}\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equb.png)'
+  id: totrans-21
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {W}^{\left[1\right]}=\left(\begin{array}{ccc}{w}_{11}^{\left[1\right]}&amp;
+    \dots &amp; {w}_{1{n}_x}^{\left[1\right]}\ \\ {}\vdots &amp; \ddots &amp; \vdots
+    \\ {}{w}_{n_11}^{\left[1\right]}&amp; \dots &amp; {w^{\left[1\right]}}_{n_1{n}_x}\end{array}\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equb.png)'
+- en: That means that the matrix *W*^([1]) has dimensions *n*[1] × *n*[*x*]. This
+    of course can be generalized between any two layers *l* and *l* − 1\. Meaning
+    that the weight matrix between two adjacent layers *l* and *l* − 1, which we indicate
+    with *W*^([*l*]), will have dimensions *n*[*l*] × *n*[*l* − 1]. By convention,
+    *n*[0] = *n*[*x*] is the number of input features (not the number of observations,
+    which we indicate with *m*).
+  id: totrans-22
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这意味着矩阵*W*^([1])的维度是*n*[1] × *n*[x*]。这当然可以推广到任何两层*l*和*l* − 1之间。这意味着我们用*W*^([*l*])表示的两个相邻层*l*和*l* − 1之间的权重矩阵将具有*n*[l*] × *n*[l* − 1]的维度。按照惯例，*n*[0] = *n*[x*]是输入特征的数目（不是观察数目，我们用*m*表示）。
+- en: Note
+  id: totrans-23
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The weight matrix between two adjacent layers *l* and *l* − 1, which we indicate
+    with *W*^([*l*]), will have dimensions *n*[*l*] × *n*[*l* − 1], where, by convention,
+    *n*[0] = *n*[*x*] is the number of input features.
+  id: totrans-24
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 两个相邻层*l*和*l* − 1之间的权重矩阵，我们用*W*^([*l*])表示，它将有*n*[l*] × *n*[l* − 1]的维度，其中，按照惯例，*n*[0] = *n*[x*]是输入特征的数目。
+- en: The bias (indicated with *b*) will be a matrix this time. Remember that each
+    neuron that receives inputs will have its own bias, so when considering our two
+    layers *l* and *l* − 1 we will need *n*[*l*] different values of *b*. We indicate
+    this matrix with *b*^([*l*]) and it will have dimensions *n*[*l*] × 1.
+  id: totrans-25
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 偏置（用*b*表示）这次将是一个矩阵。请记住，每个接收输入的神经元都将有自己的偏置，因此当我们考虑我们的两层*l*和*l* − 1时，我们需要*n*[l*]个不同的*b*值。我们用*b*^([l*])表示这个矩阵，它将有*n*[l*] × 1的维度。
+- en: Note
+  id: totrans-26
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The bias matrix for two adjacent layers *l* and *l* − 1, which we indicate with
+    *b*^([*l*]), will have dimensions *n*[*l*] × 1.
+  id: totrans-27
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 两个相邻层*l*和*l* − 1的偏置矩阵，我们用*b*^([l*])表示，它将有*n*[l*] × 1的维度。
+- en: Output of Neurons
+  id: totrans-28
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 神经元的输出
+- en: Now let’s consider the output of our neurons. To begin, we will consider the
+    *i*^(*th*) neuron of the first layer (remember our input layer is by definition
+    layer 0). Let’s indicate its output with ![$$ {\hat{y}}_i^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq2.png)
+    and let’s assume that all neurons in layer *l* use the same activation function
+    that we indicate with *g*^([*l*]). Then we will have
+  id: totrans-29
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们考虑神经元的输出。首先，我们将考虑第一层的*i*^(*th*)个神经元（记住我们的输入层按定义是层0）。让我们用![$$ {\hat{y}}_i^{\left[1\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq2.png)来表示它的输出，并假设层*l*中的所有神经元都使用我们用*g*^([l*])表示的相同的激活函数。那么我们将有
+- en: '![$$ {\hat{y}}_i^{\left[1\right]}={g}^{\left[1\right]}\left({z}_i^{\left[1\right]}\right)={g}^{\left[i\right]}\kern0.75em
+    \left(\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right)\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equc.png)'
+  id: totrans-30
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {\hat{y}}_i^{\left[1\right]}={g}^{\left[1\right]}\left({z}_i^{\left[1\right]}\right)={g}^{\left[i\right]}\kern0.75em
+    \left(\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right)\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equc.png)'
+- en: where we have indicated *z*[*i*] as
+  id: totrans-31
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中，我们用*z*[*i*]表示
+- en: '![$$ {z}_i^{\left[1\right]}=\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\
+    {x}_{i,j}+{b}_i^{\left[1\right]}\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equd.png)'
+  id: totrans-32
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {z}_i^{\left[1\right]}=\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\
+    {x}_{i,j}+{b}_i^{\left[1\right]}\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equd.png)'
+- en: As you can imagine, we want to have a matrix for all the output of layer 1,
+    so we will use this notation
+  id: totrans-33
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如您所想象，我们希望对于层1的所有输出都有一个矩阵，因此我们将使用这种表示法
+- en: '![$$ {Z}^{\left[1\right]}={W}^{\left[1\right]}X+{b}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Eque.png)'
+  id: totrans-34
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Eque.png)'
+- en: Where *Z*^([1]) will have dimensions *n*[1] × 1, and where with *X* we have
+    indicated our matrix with all our observations (rows for the features and columns
+    for observations). We assume that all neurons in layer *l* will use the same activation
+    function, which we will indicate with *g*^([*l*]).
+  id: totrans-35
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中 *Z*^([1]) 将具有 *n*[1] × 1 的维度，并且我们用 *X* 表示包含所有观察值的矩阵（行表示特征，列表示观察）。我们假设层 *l*
+    中的所有神经元都使用相同的激活函数，我们将用 *g*^([*l*]) 表示。
+- en: 'We can easily generalize the previous equation for a layer *l*:'
+  id: totrans-36
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们可以轻松地将前一个方程推广到层 *l*：
+- en: '![$$ {Z}^{\left[l\right]}={W}^{\left[l\right]}{Z}^{\left[l-1\right]}+{b}^{\left[l\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equf.png)'
+  id: totrans-37
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equf.png)'
+- en: Since layer *l* will get its input from layer *l* − 1, we just need to substitute
+    *X* with *Z*^([*l* − 1]). *Z*^([*l*]) will have dimensions *n*[*l*] × 1\. Our
+    output in matrix form will then be
+  id: totrans-38
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于层 *l* 将从层 *l* − 1 获取其输入，我们只需将 *X* 替换为 *Z*^([*l* − 1])。*Z*^([*l*]) 将具有 *n*[*l*]
+    × 1 的维度。我们的输出将以矩阵形式如下
+- en: '![$$ {Y}^{\left[l\right]}={g}^{\left[l\right]}\left({Z}^{\left[l\right]}\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equg.png)'
+  id: totrans-39
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equg.png)'
+- en: where the activation function acts, as usual, element by element.
+  id: totrans-40
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中激活函数通常按元素逐个作用。
+- en: A Short Summary of Matrix Dimensions
+  id: totrans-41
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 矩阵维度的简要概述
+- en: Let’s summarize the dimensions of all the matrixes we have described so far
+  id: totrans-42
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们总结一下我们迄今为止所描述的所有矩阵的维度
+- en: '*W*^([*l*]) has dimensions *n*[*l*] × *n*[*l* − 1] (where we have *n*[0] = *n*[*x*]
+    by definition)'
+  id: totrans-43
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*W*^([*l*]) 的维度为 *n*[*l*] × *n*[*l* − 1]（其中我们根据定义有 *n*[0] = *n*[*x*]）'
+- en: '*b*^([*l*]) has dimensions *n*[*l*] × 1'
+  id: totrans-44
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*b*^([*l*]) 的维度为 *n*[*l*] × 1'
+- en: '*Z*^([*l* − 1]) has dimensions *n*[*l* − 1] × 1'
+  id: totrans-45
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Z*^([*l* − 1]) 的维度为 *n*[*l* − 1] × 1'
+- en: '*Z*^([*l*]) has dimensions *n*[*l*] × 1'
+  id: totrans-46
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Z*^([*l*]) 的维度为 *n*[*l*] × 1'
+- en: '*Y*^([*l*]) has dimensions *n*[*l*] × 1'
+  id: totrans-47
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '*Y*^([*l*]) 的维度为 *n*[*l*] × 1'
+- en: In each case, *l* goes from 1 to *L*.
+  id: totrans-48
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在每种情况下，*l* 从 1 到 *L*。
+- en: 'Example: Equations for a Network with Three Layers'
+  id: totrans-49
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 示例：三层网络的方程
+- en: To make all this discussion a bit more concrete, let’s consider an example of
+    a network with three layers (so *L* = 3) with *n*[1] = 3, *n*[2] = 2, and *n*[3] = 1,
+    as depicted in Figure [3-3](#Fig3).
+  id: totrans-50
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了使所有这些讨论更加具体，让我们考虑一个具有三层网络（因此 *L* = 3）的例子，其中 *n*[1] = 3, *n*[2] = 2, 和 *n*[3]
+    = 1，如图 [3-3](#Fig3) 所示。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig3_HTML.jpg)'
+  id: totrans-51
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig3_HTML.jpg)'
+- en: Figure 3-3
+  id: totrans-52
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-3
+- en: A practical example of a feed-forward neural network
+  id: totrans-53
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 前馈神经网络的实际例子
+- en: In this case, we need to calculate the following quantities
+  id: totrans-54
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，我们需要计算以下量
+- en: '![$$ {\hat{Y}}^{\left[1\right]}={g}^{\left[1\right]}\left({W}^{\left[1\right]}X+{b}^{\left[1\right]}\right),
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq3.png) whereby
+    *W*^([1]) has dimensions 3 × *n*[*x*], *b* has dimensions 3 × 1, and *X* has dimensions
+    *n*[*x*] × *m*'
+  id: totrans-55
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq3.png) 其中
+    *W*^([1]) 的维度为 3 × *n*[*x*]，*b* 的维度为 3 × 1，而 *X* 的维度为 *n*[*x*] × *m*'
+- en: '![$$ {\hat{Y}}^{\left[2\right]}={g}^{\left[2\right]}\left({W}^{\left[2\right]}{\hat{Y}}^{\left[1\right]}+{b}^{\left[2\right]}\right),
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq4.png) whereby
+    *W*^([2]) has dimensions 2 × 3, *b* has dimensions 2 × 1, and ![$$ {\hat{Y}}^{\left[1\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq5.png) has dimensions
+    3 × *m*'
+  id: totrans-56
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq4.png) 其中
+    *W*^([2]) 的维度为 2 × 3，*b* 的维度为 2 × 1，而 ![$$ {\hat{Y}}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq5.png)
+    的维度为 3 × *m*'
+- en: '![$$ {\hat{Y}}^{\left[3\right]}={g}^{\left[3\right]}\left({W}^{\left[3\right]}{\hat{Y}}^{\left[2\right]}+{b}^{\left[3\right]}\right),
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq6.png) whereby
+    *W*^([3]) has dimensions 1 × 2, *b* has dimensions 1 × 1, and ![$$ {\hat{Y}}^{\left[2\right]}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq7.png) has dimensions
+    2 × *m*'
+  id: totrans-57
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq6.png)，其中
+    *W*^([3]) 的维度为 1 × 2，*b* 的维度为 1 × 1，而 ![$$ {\hat{Y}}^{\left[2\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq7.png)
+    的维度为 2 × *m*'
+- en: The network output ![$$ {\hat{Y}}^{\left[3\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq8.png)
+    will have, as expected, dimensions 1 × *m*.
+  id: totrans-58
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 网络输出 ![$$ {\hat{Y}}^{\left[3\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq8.png)
+    将会有，正如预期的那样，维度为 1 × *m*。
+- en: All this may seem rather abstract (and in fact it is). You will see later in
+    the chapter how easy it is to implement in Keras simply building the right architecture,
+    based on the steps just discussed.
+  id: totrans-59
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 所有这些可能看起来相当抽象（事实上也是如此）。你将在本章后面看到，在 Keras 中，仅通过构建正确的架构，就可以很容易地实现这些步骤。
+- en: Hyper-Parameters in Fully Connected Networks
+  id: totrans-60
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 全连接网络中的超参数
+- en: In networks as the ones just discussed, there are quite a few parameters that
+    you can tune to find the best model for your problem.
+  id: totrans-61
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在刚刚讨论过的网络中，有相当多的参数你可以调整以找到最适合你问题的最佳模型。
+- en: Note
+  id: totrans-62
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Parameters that you fix at the beginning and then do not change during the training
+    phase are called hyper-parameters (like the number of epochs).
+  id: totrans-63
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在训练阶段开始时固定并在此期间不改变的参数被称为超参数（如时代的数量）。
+- en: 'You need to tune the additional following hyper-parameters for feed-forward
+    networks:'
+  id: totrans-64
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于前馈网络，你需要调整以下额外的超参数：
+- en: The number of layers, *L*
+  id: totrans-65
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 层数，*L*
+- en: The number of neurons in each layer *n*[*i*] for *i*, from 1 to L
+  id: totrans-66
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每层的神经元数量 *n*[*i*] 对于 *i*，从 1 到 L
+- en: The choice of activation function for each layer *g*^([*l*])
+  id: totrans-67
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 每层的激活函数选择 *g*^([*l*])
+- en: 'Then of course you still have the following hyper-parameters:'
+  id: totrans-68
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当然，你仍然有以下超参数：
+- en: The number of iterations (or epochs)
+  id: totrans-69
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 迭代次数（或时代）
+- en: The learning rate
+  id: totrans-70
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 学习率
+- en: A Short Review of the Softmax Activation Function for Multiclass Classifications
+  id: totrans-71
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 多类分类的softmax激活函数简评
+- en: You still need to suffer a bit more theory before getting to some TensorFlow
+    code. These kinds of networks start to be complex enough to be able to perform
+    multiclass classifications with reasonable results. To do this, we must introduce
+    the softmax function.
+  id: totrans-72
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接触到一些 TensorFlow 代码之前，你仍然需要学习一些理论知识。这类网络开始变得足够复杂，能够以合理的结果执行多类分类。为了做到这一点，我们必须引入softmax函数。
+- en: Mathematically speaking, the softmax function *S* transforms a *k* dimensional
+    vector into another *k* dimensional vector of real values, each between 0 and
+    1, that sum up to 1\. Given *k* real values *z*[*i*] for *i* = 1, …, *k* we define
+    the vector ***z =*** (*z*[1], …, *z*[*k*]) and we define the softmax vector function
+    ***S***(***z***) = (*S*(***z***)[1] *S*(***z***)[2]… *S*(***z***)[*k*]) as follows
+  id: totrans-73
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从数学的角度讲，softmax函数 *S* 将一个 *k* 维向量转换成另一个 *k* 维的实值向量，每个值介于 0 和 1 之间，且这些值之和为 1。给定
+    *k* 个实值 *z*[*i*] 对于 *i* = 1, …, *k*，我们定义向量 ***z =*** (*z*[1], …, *z*[*k*])，并定义softmax向量函数
+    ***S***(***z***) = (*S*(***z***)[1] *S*(***z***)[2]… *S*(***z***)[*k*]) 如下
+- en: '![$$ S{\left(\boldsymbol{z}\right)}_i=\frac{e^{z_i}}{\sum_{j=1}^k{e}^{z_j}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equh.png)'
+  id: totrans-74
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equh.png)'
+- en: Since the denominator is always bigger than the nominator *S*(***z***)[*i*] < 1\.
+    Additionally, we have
+  id: totrans-75
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于分母总是大于分子 *S*(***z***)[*i*] < 1。此外，我们还有
+- en: '![$$ \sum \limits_{i=1}^kS{\left(\boldsymbol{z}\right)}_i=\sum \limits_{i=1}^k\frac{e^{z_i}}{\sum_{j=1}^k{e}^{z_j}}=\frac{\sum_{i=1}^k{e}^{z_i}}{\sum_{j=1}^k{e}^{z_j}}=1
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equi.png)'
+  id: totrans-76
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equi.png)'
+- en: 'So *S*(***z***)[*i*] behaves like a probability since its sum over *i* is 1
+    and its elements are all less than 1\. We will look at *S*(***z***)[*i*] as a
+    probability distribution over *k* possible outcomes. For this example, *S*(***z***)[*i*]
+    will simply be the probability of our input observation of being of class *i*.
+    Let’s suppose we are trying to classify an observation into three classes. We
+    may get the following output: *S*(***z***)[1] = 0.1, *S*(***z***)[2] = 0.6, and
+    *S*(***z***)[3] = 0.3\. That means that the observation has a 10% probability
+    of being in class 1, a 60% probability of being in class 2, and a 30% probability
+    of being in class 3\. Normally, you would choose to classify the input observation
+    into the class with the higher probability—in this example, class 2 with 60% probability.'
+  id: totrans-77
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，*S*(***z***)[*i*] 的行为类似于概率，因为其 *i* 的和为 1，且其元素都小于 1。我们将把 *S*(***z***)[*i*]
+    视为 *k* 个可能结果上的概率分布。对于这个例子，*S*(***z***)[*i*] 将简单地表示我们的输入观察属于类别 *i* 的概率。假设我们正在尝试将一个观察结果分类到三个类别中。我们可能会得到以下输出：*S*(***z***)[1]
+    = 0.1, *S*(***z***)[2] = 0.6, 和 *S*(***z***)[3] = 0.3。这意味着该观察结果有 10% 的概率属于类别 1，60%
+    的概率属于类别 2，30% 的概率属于类别 3。通常，你会选择将输入观察结果分类到概率较高的类别中——在这个例子中，概率为 60% 的类别 2。
+- en: Note
+  id: totrans-78
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: We will look at *S*(***z***)[*i*] with *i* = 1, …, *k* as a probability distribution
+    over *k* possible outcomes. For this example, *S*(***z***)[*i*] will simply be
+    the probability of our input observation being in class *i*.
+  id: totrans-79
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将把 *S*(***z***)[*i*]（其中 *i* = 1, …, *k*）视为 *k* 个可能结果上的概率分布。对于这个例子，*S*(***z***)[*i*]
+    将简单地表示我们的输入观察属于类别 *i* 的概率。
+- en: To be able to use the softmax function for classification, we need to use a
+    specific output layer. We need to use ten neurons (in the case of a ten-class
+    multiclass classification problem, like the one we see later in the chapter),
+    where each will give ***z***[*i*] as its output and then one neuron that will
+    output ***S***(***z***). This neuron will have the softmax function as the activation
+    function and will have as inputs the ten outputs ***z***[*i*] of the last layer
+    with ten neurons. In Keras, you use the `tf.keras.activations.softmax` function
+    applied to the last layer with ten neurons. Remember that this Keras function
+    will act element by element. You will a concrete example from start to finish
+    on how to implement this practically later in this chapter.
+  id: totrans-80
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了能够使用 softmax 函数进行分类，我们需要使用特定的输出层。我们需要使用十个神经元（在十个类别的多类分类问题中，如本章后面所看到的），每个神经元将输出
+    ***z***[*i*]，然后一个神经元将输出 ***S***(***z***)。这个神经元将使用 softmax 函数作为激活函数，并将输入设置为最后层的十个神经元的十个输出
+    ***z***[*i*]。在 Keras 中，你使用 `tf.keras.activations.softmax` 函数应用于具有十个神经元的最后层。记住，这个
+    Keras 函数将逐元素操作。你将在本章后面从始至终看到一个具体的实现例子。
+- en: 'A Brief Digression: Overfitting'
+  id: totrans-81
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 简短插叙：过拟合
+- en: One of the most common problems that you will encounter when training deep neural
+    networks is *overfitting*. Your network may, due to its flexibility, learn patterns
+    that are due to noise, errors, or simply wrong data. It is very important to understand
+    what overfitting is, so now we will go through a practical example of what can
+    happen, to get an decent understanding of it. To make it easier to visualize,
+    we will work with a simple two-dimensional dataset created for this purpose.
+  id: totrans-82
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在训练深度神经网络时，你可能会遇到的最常见问题之一是 *过拟合*。由于网络的灵活性，你的网络可能会学习到由于噪声、错误或仅仅是错误数据而产生的模式。理解过拟合是什么非常重要，因此现在我们将通过一个实际例子来了解可能发生的情况，以便对它有一个基本的理解。为了更容易可视化，我们将使用为这个目的创建的简单二维数据集进行操作。
+- en: A Practical Example of Overfitting
+  id: totrans-83
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 过拟合的实用示例
+- en: 'To understand overfitting, consider the following problem: find the best polynomial
+    that approximates a given dataset. Given a set of two-dimensional points (*x*[*i*],
+    *y*[*i*]), we want to find the best polynomial of degree *K* in the form^([1](#Fn1))'
+  id: totrans-84
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了理解过拟合，考虑以下问题：找到最佳的多项式来逼近给定的数据集。给定一组二维点 (*x*[*i*], *y*[*i*])，我们希望找到形式为^([1](#Fn1))
+    的最佳多项式度 *K*：
+- en: '![$$ f\left({x}_i\right)=\sum \limits_{j=0}^K{a}_j{x}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equj.png)'
+  id: totrans-85
+  prefs: []
+  type: TYPE_IMG
+  zh: '![f(x_i)=∑_(j=0)^K a_jx_i](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equj.png)'
+- en: That minimizes the mean square error
+  id: totrans-86
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这最小化了均方误差
+- en: '![$$ \frac{1}{m}\sum \limits_{i=1}^m{\left({y}_i-f\left({x}_i\right)\right)}^2
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equk.png)'
+  id: totrans-87
+  prefs: []
+  type: TYPE_IMG
+  zh: '![1/m∑_(i=1)^m(y_i-f(x_i))^2](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equk.png)'
+- en: where, as usual, *m* indicates the number of data points we have. We do not
+    only want to determine all the parameters *a*[*j*] but also the value of *K* that
+    best approximates the data. *K* in this case measures our model complexity. For
+    example, for *K* = 0 we simply have *f*(*x*[*i*]) = *a*[0] (a constant), the simplest
+    polynomial we can think of. For higher *K*, we have higher order polynomials,
+    meaning our function is more complex and has more parameters available for training.
+    Here is an example of the function for *K* = 3
+  id: totrans-88
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中，通常 *m* 表示我们拥有的数据点的数量。我们不仅想要确定所有参数 *a*[*j*]，还要确定最佳逼近数据的 *K* 值。在这种情况下，*K* 衡量我们的模型复杂度。例如，对于
+    *K* = 0，我们简单地有 *f*(*x*[*i*]) = *a*[0]（一个常数），这是我们能够想到的最简单的多项式。对于更高的 *K*，我们有更高阶的多项式，这意味着我们的函数更复杂，有更多的参数可用于训练。这里是一个
+    *K* = 3 的函数示例
+- en: '![$$ f\left({x}_i\right)=\sum \limits_{j=0}^3{a}_j{x}_i^j={a}_0+{a}_1{x}_i+{a}_2{x}_i^2+{a}_3{x}_i^3
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equl.png)'
+  id: totrans-89
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equl.png)'
+- en: Where we have four parameters that can be tuned during the model’s training.
+    Let’s generate some data, starting from a second-order polynomial (*K* = 2)
+  id: totrans-90
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中，我们有四个参数可以在模型训练过程中进行调整。让我们从二次多项式（*K* = 2）开始生成一些数据
+- en: '![$$ 1+2{x}_i+3{x}_i^2 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equm.png)'
+  id: totrans-91
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equm.png)'
+- en: We are adding some random error (this will make overfitting visible). Let’s
+    first import our standard libraries with the addition of the `curve_fit` function,
+    which will automatically minimize the standard error and find the best parameters.
+    Do not worry too much about this function; the goal here is to show you what can
+    happen when you use a model that is too complex.
+  id: totrans-92
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们正在添加一些随机误差（这将使过拟合变得明显）。让我们首先导入我们的标准库，并添加 `curve_fit` 函数，该函数将自动最小化标准误差并找到最佳参数。不要过于担心这个函数；这里的目的是向您展示当您使用过于复杂的模型时可能会发生什么。
+- en: '[PRE0]'
+  id: totrans-93
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE0]'
+- en: Let’s define a function for a second-degree polynomial
+  id: totrans-94
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们定义一个二次多项式的函数
+- en: '[PRE1]'
+  id: totrans-95
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE1]'
+- en: Then let’s generate the dataset
+  id: totrans-96
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后让我们生成数据集
+- en: '[PRE2]'
+  id: totrans-97
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE2]'
+- en: To add some random noise to the function, we used the `np.random.normal(0, 1,
+    size = len(x))` function, which generates a NumPy array of random values from
+    a normal distribution of length `len(x)` with average 0 and standard deviation
+    1.
+  id: totrans-98
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了给函数添加一些随机噪声，我们使用了 `np.random.normal(0, 1, size = len(x))` 函数，它生成一个长度为 `len(x)`、平均值为0、标准差为1的正态分布的NumPy数组。
+- en: Figure [3-4](#Fig4) shows the data for *a* = 1, *b* = 2, and *c* = 3.
+  id: totrans-99
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 [3-4](#Fig4) 展示了 *a* = 1, *b* = 2, 和 *c* = 3 的数据。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig4_HTML.jpg)'
+  id: totrans-100
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig4_HTML.jpg)'
+- en: Figure 3-4
+  id: totrans-101
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-4
+- en: The data we generated with *a* = 1, *b* = 2, and *c* = 3
+  id: totrans-102
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们生成的数据，*a* = 1, *b* = 2, 和 *c* = 3
+- en: Now let’s consider a model that is too simple to capture the feature of the
+    data, meaning we will see what a model with high bias^([2](#Fn2)) can do. Consider
+    a linear model (*K* = 1). The code will be
+  id: totrans-103
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在让我们考虑一个过于简单以捕捉数据特征的模型，这意味着我们将看到具有高偏差^([2](#Fn2))的模型能做什么。考虑一个线性模型（*K* = 1）。代码将是
+- en: '[PRE3]'
+  id: totrans-104
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE3]'
+- en: That will give the best values for *a* and *b* that minimize the standard error.
+    In Figure [3-5](#Fig5), it’s clear how this model completely misses the main feature
+    of the data, being too simple.
+  id: totrans-105
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将给出使标准误差最小的 *a* 和 *b* 的最佳值。在图 [3-5](#Fig5) 中，很明显这个模型完全错过了数据的主要特征，因为它过于简单。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig5_HTML.jpg)'
+  id: totrans-106
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig5_HTML.jpg)'
+- en: Figure 3-5
+  id: totrans-107
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-5
+- en: The linear model misses the main feature of the data being too simple. In this
+    case, the model has high bias
+  id: totrans-108
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 线性模型因为过于简单而错过了数据的主要特征。在这种情况下，模型具有高偏差
+- en: Let’s try to fit a two-degree polynomial (*K* = 2). The results are shown in
+    Figure [3-6](#Fig6).
+  id: totrans-109
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们尝试拟合一个二次多项式（*K* = 2）。结果如图 [3-6](#Fig6) 所示。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig6_HTML.jpg)'
+  id: totrans-110
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig6_HTML.jpg)'
+- en: Figure 3-6
+  id: totrans-111
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-6
+- en: The result (red line) for a two-degree polynomial
+  id: totrans-112
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 二次多项式的结果（红色线）
+- en: That is better. This model seems to capture the main features of the data, ignoring
+    the random noise. Now let’s try a very complex model, a 21-degree polynomial (*K* = 21).
+    The results are shown in Figure [3-7](#Fig7).
+  id: totrans-113
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这样更好。这个模型似乎捕捉到了数据的主要特征，忽略了随机噪声。现在让我们尝试一个非常复杂的模型，一个21次多项式（*K* = 21）。结果如图 [3-7](#Fig7)
+    所示。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig7_HTML.jpg)'
+  id: totrans-114
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig7_HTML.jpg)'
+- en: Figure 3-7
+  id: totrans-115
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-7
+- en: The results for a 21-degree polynomial model
+  id: totrans-116
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 21次多项式模型的结果
+- en: This model shows features that we know are wrong (since we created our data).
+    Those features are not present, but the model is so flexible that it captures
+    the random variability that we introduced with noise. The oscillations that have
+    appeared using this high-ordered polynomial are wrong and do not describe the
+    data correctly.
+  id: totrans-117
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该模型显示了我们所知是错误的特点（因为我们创建了我们的数据）。这些特点并不存在，但模型非常灵活，能够捕捉到我们通过噪声引入的随机变异性。使用这种高阶多项式出现振荡是错误的，并且不能正确描述数据。
+- en: In this case, we talk about *overfitting*, meaning we start capturing with our
+    model features that are due to random error, for example. It is easy to understand
+    that this generalizes quite badly. If we applied this 21-degree polynomial model
+    to new data it would not work well, since the random noise would be different
+    in the new data and so the oscillations (the ones represented in Figure [3-7](#Fig7))
+    would make no sense.
+  id: totrans-118
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在这种情况下，我们谈论的是*过拟合*，这意味着我们开始用我们的模型捕捉到由于随机误差而产生的特征。很容易理解这很糟糕地泛化。如果我们将这个21次多项式模型应用于新数据，它将不起作用，因为新数据中的随机噪声将不同，所以图[3-7](#Fig7)中代表的振荡将没有意义。
+- en: Figure [3-8](#Fig8) shows the best 21-degree polynomial models obtained by fitting
+    data generated with ten different random noise values . You can clearly see how
+    much it varies. It is not stable and is strongly dependent on the random noise.
+    The oscillations are always different! In this case, we talk about high variance*.*
+  id: totrans-119
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图[3-8](#Fig8)显示了使用十个不同随机噪声值生成的数据拟合得到的最佳21次多项式模型。您可以清楚地看到它的变化有多大。它并不稳定，并且强烈依赖于随机噪声。振荡总是不同的！在这种情况下，我们谈论的是高方差*.*
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig8_HTML.jpg)'
+  id: totrans-120
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig8_HTML.jpg)'
+- en: Figure 3-8
+  id: totrans-121
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-8
+- en: The result of our model with a 21-degree polynomial fitted to ten different
+    datasets generated with different random noise values
+  id: totrans-122
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将21次多项式拟合到使用不同随机噪声值生成的十个不同数据集上的模型的结果
+- en: Now let’s run the same plot with this linear model, while varying the random
+    noise as we did in Figure [3-8](#Fig8). You can see the results in Figure [3-9](#Fig9).
+  id: totrans-123
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们用这个线性模型运行相同的图表，同时像图[3-8](#Fig8)中那样改变随机噪声。您可以在图[3-9](#Fig9)中看到结果。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig9_HTML.jpg)'
+  id: totrans-124
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig9_HTML.jpg)'
+- en: Figure 3-9
+  id: totrans-125
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-9
+- en: The result of the linear model applied to data where we have randomly changed
+    the random noise. For easier comparison with Figure [3-8](#Fig8), we used the
+    same scale
+  id: totrans-126
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将线性模型应用于我们随机改变随机噪声的数据的结果。为了更容易与图[3-8](#Fig8)进行比较，我们使用了相同的刻度
+- en: You can see that the model is much more stable. The linear model does not capture
+    features that are dependent from the noise, but it misses the main features of
+    the data (the concave nature). We talk here of high bias*.*
+  id: totrans-127
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 您可以看到模型要稳定得多。线性模型没有捕捉到依赖于噪声的特点，但它错过了数据的主要特点（凹性质）。我们在这里谈论的是高偏差*.*
+- en: Figure [3-10](#Fig10) illustrates the concepts of bias and variance.
+  id: totrans-128
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图[3-10](#Fig10)说明了偏差和方差的定义。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig10_HTML.jpg)'
+  id: totrans-129
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig10_HTML.jpg)'
+- en: Figure 3-10
+  id: totrans-130
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-10
+- en: Bias is a measure of how close the measurements are to the true values (the
+    center in the figure) and variance is a measure of how spread the measurements
+    are around the average (not necessarily the true value, as you can see on the
+    left)
+  id: totrans-131
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 偏差是衡量测量值与真实值（图中的中心）接近程度的指标，方差是衡量测量值围绕平均值（不一定是真实值，如您在左侧所看到的）分散程度的指标
+- en: In the case of neural networks, we have many hyper-parameters (number of layers,
+    number of neurons in each layer, activation function, and so on) and it is very
+    difficult to know in which regime we are. How can we tell if our model has a high
+    variance or a high bias, for example? An entire chapter is dedicated to this subject,
+    but the first step to performing this error analysis is to split the dataset in
+    two different subsets. Let’s see what that means and why we have to do it.
+  id: totrans-132
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在神经网络的情况下，我们有许多超参数（层数、每层的神经元数量、激活函数等），很难知道我们处于哪种状态。我们如何判断我们的模型是否有高方差或高偏差，例如？整章内容都致力于这个主题，但进行这种错误分析的第一步是将数据集分成两个不同的子集。让我们看看这意味着什么，以及为什么我们必须这样做。
+- en: Note
+  id: totrans-133
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: The essence of *overfitting* is to have unknowingly extracted some of the residual
+    variation (i.e., the noise) as if that variation represented underlying model
+    structure [1]. The opposite is called *underfitting,* when the model cannot capture
+    the structure of the data.
+  id: totrans-134
+  prefs: []
+  type: TYPE_NORMAL
+  zh: '*过度拟合*的本质是无意中提取了一些残留变异（即噪声），好像这种变异代表了潜在模型结构[1]。相反的是*欠拟合*，当模型无法捕捉数据的结构时。'
+- en: The problem with overfitting and deep neural networks is that there is no way
+    of easily visualizing the results. Therefore we need a different approach to determine
+    if our model is overfitting, underfitting, or is just right. This can be achieved
+    by splitting the dataset into different parts and comparing the metrics of the
+    parts. You learn about the basic idea in the next section.
+  id: totrans-135
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 过度拟合和深度神经网络的问题在于无法轻易可视化结果。因此，我们需要不同的方法来确定我们的模型是否过度拟合、欠拟合，或者恰到好处。这可以通过将数据集分成不同的部分并比较各部分的指标来实现。你将在下一节中了解基本思想。
+- en: Basic Error Analysis
+  id: totrans-136
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 基本错误分析
+- en: 'To check how your model is doing and to perform a proper error analysis, you
+    need to split your dataset in two parts^([3](#Fn3)):'
+  id: totrans-137
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要检查你的模型表现如何并执行适当的错误分析，你需要将你的数据集分成两部分^([3](#Fn3))：
+- en: 'Training dataset: The model is trained on this dataset using the inputs and
+    the relative labels and using an optimizer algorithm like gradient descent. Often
+    this is called the training set.'
+  id: totrans-138
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 训练集：模型使用这个数据集、输入和相对标签以及梯度下降等优化算法进行训练。通常这被称为训练集。
+- en: 'Development (or validation) set: The trained model will then be used on this
+    dataset to check how it is doing. On this dataset we will test different hyper-parameters.
+    For example, we can train two different models with a different number of layers
+    on the training dataset and test them on this dataset to check how they are doing.
+    Often this is called the dev set.'
+  id: totrans-139
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 开发（或验证）集：训练好的模型将用于这个数据集来检查其表现。在这个数据集上，我们将测试不同的超参数。例如，我们可以在训练数据集上训练两个具有不同层数的不同模型，并在该数据集上测试它们，以检查它们的表现。通常这被称为开发集。
+- en: There is an entire chapter dedicated to error analysis, but it is a good idea
+    to read an overview of why it is important to split the dataset. Let’s suppose
+    we are dealing with classification and the metric we use to judge how good our
+    model is the accuracy minus one, or in other words the percentage of the cases
+    that are wrongly classified.
+  id: totrans-140
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 整整一章都致力于错误分析，但了解为什么分割数据集很重要是个好主意。假设我们正在处理分类，我们用来判断模型好坏的指标是准确率减一，换句话说，是错误分类的案例百分比。
+- en: Table 3-1
+  id: totrans-141
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表 3-1
+- en: Examples of the Difference Between Models with High Bias and Models with High
+    Variance
+  id: totrans-142
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 高偏差模型与高方差模型之间差异的示例
+- en: '| Error | Case A | Case B | Case C | Case D |'
+  id: totrans-143
+  prefs: []
+  type: TYPE_TB
+  zh: '| 错误 | 案例 A | 案例 B | 案例 C | 案例 D |'
+- en: '| --- | --- | --- | --- | --- |'
+  id: totrans-144
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- |'
+- en: '| Train set error | 1% | 15% | 14% | 0.3% |'
+  id: totrans-145
+  prefs: []
+  type: TYPE_TB
+  zh: '| 训练集错误率 | 1% | 15% | 14% | 0.3% |'
+- en: '| Dev set error | 11% | 16% | 32% | 1.1% |'
+  id: totrans-146
+  prefs: []
+  type: TYPE_TB
+  zh: '| 开发集错误率 | 11% | 16% | 32% | 1.1% |'
+- en: 'Let’s consider the three cases reported in Table [3-1](#Tab1):'
+  id: totrans-147
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们考虑表 [3-1](#Tab1) 中报告的三个案例：
+- en: '**Case A**: We are overfitting (high variance), because we are doing very well
+    on the training set, but our model generalizes very badly to our dev set (see
+    Figure [3-8](#Fig8) again).'
+  id: totrans-148
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**案例 A**：我们过度拟合（高方差），因为我们训练集上的表现非常好，但我们的模型对开发集的泛化能力非常差（再次查看图 [3-8](#Fig8)）。'
+- en: '**Case B**: We see a problem with high bias, meaning that our model is not
+    doing very well generally, on both datasets (see Figure [3-9](#Fig9) again).'
+  id: totrans-149
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**案例 B**：我们看到了高偏差的问题，这意味着我们的模型在两个数据集上总体表现不佳（再次查看图 [3-9](#Fig9)）。'
+- en: '**Case C**: We have a high bias (the model cannot predict the training set
+    very well) and high variance (the model does not generalize on the dev set very
+    well).'
+  id: totrans-150
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**案例 C**：我们有一个高偏差（模型无法很好地预测训练集）和高方差（模型在开发集上泛化能力不佳）。'
+- en: '**Case D**: Everything seems okay. There is good error on the training set
+    and good data on the dev set. It is a good candidate for our best model.'
+  id: totrans-151
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**案例 D**：一切看起来都很正常。训练集上的错误率很好，开发集上的数据也很好。这是我们最佳模型的良好候选。'
+- en: We will explain much better all those concepts later in the book, where we provide
+    recipes on how to solve problems of high bias, high variances, both, and even
+    more complex cases.
+  id: totrans-152
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将在本书的后面部分更好地解释所有这些概念，并提供如何解决高偏差、高方差、两者以及更复杂情况的问题的配方。
+- en: 'To recap, to do a very basic error analysis, you need to split your dataset
+    into at least two sets: train and dev. You should then calculate your metric on
+    both sets and compare them. You want to have a model that has low error on the
+    train set, low error on the dev set (as with Case D in the previous example),
+    and the two values should be comparable.'
+  id: totrans-153
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了回顾，要进行非常基本的错误分析，你需要将你的数据集分成至少两个集合：训练集和开发集。然后你应该在这两个集合上计算你的指标并比较它们。你希望有一个在训练集上错误率低、在开发集上错误率也低（如前一个例子中的案例D）的模型，并且这两个值应该是可比较的。
+- en: Note
+  id: totrans-154
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: 'Your main take away from this section should be two-fold: **1)** you need a
+    set of recipes and guidelines for understanding how your model is doing: is it
+    overfitting, underfitting, or is it just right? **2)** to answer question 1 and
+    perform the analysis, you need to split the dataset into two parts (later in the
+    book, you will also see what you can do with the dataset split in three or even
+    four parts).'
+  id: totrans-155
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你从这个部分的主要收获应该是两方面的：**1)** 你需要一套食谱和指南来理解你的模型表现如何：它是过拟合、欠拟合，还是恰到好处？**2)** 为了回答问题1并进行分析，你需要将数据集分成两部分（在本书的后面，你还将看到你可以如何使用分成三部分甚至四部分的数据集）。
+- en: Implementing a Feed-Forward Neural Network in Keras
+  id: totrans-156
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 在Keras中实现前馈神经网络
+- en: Building a feed-forward neural network in Keras is straightforward and is simply
+    a generalization of the one neuron model you built in last chapter. Let’s compare
+    the two cases. Here you have the schematic one-neuron model Keras implementation
+  id: totrans-157
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Keras中构建前馈神经网络非常简单，它只是你在上一章构建的单神经元模型的推广。让我们比较一下这两种情况。这里是你所拥有的单神经元模型Keras实现图
+- en: '[PRE4]'
+  id: totrans-158
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE4]'
+- en: 'The following is a feed-forward network model with one hidden layer made of
+    15 neurons (the first model we will use for our multiclass classification task
+    on the Zalando dataset):'
+  id: totrans-159
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下是一个包含15个神经元（我们将用于在Zalando数据集上的多类分类任务）的单隐藏层前馈网络模型：
+- en: '[PRE5]'
+  id: totrans-160
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE5]'
+- en: As you can see, we added more neurons (15) to the hidden layer (that in the
+    one-neuron model was already the output one) and we added the output layer, made
+    of ten neurons, since we have ten classes. As you can notice, you can easily create
+    very complex models by simply adding to the stack one layer after another.
+  id: totrans-161
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如你所见，我们在隐藏层（在单神经元模型中已经是输出层）中添加了更多的神经元（15个），并且添加了输出层，由十个神经元组成，因为我们有十个类别。如你所注意到的，你可以通过简单地一层层添加到堆栈中轻松创建非常复杂的模型。
+- en: In the next paragraphs, you will see a practical example about how you use this
+    model, choosing the right activation function and the right loss function (given
+    as additional parameters) to solve a multiclass classification task.
+  id: totrans-162
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在接下来的段落中，你将看到一个关于如何使用此模型的实际例子，选择正确的激活函数和正确的损失函数（作为附加参数）来解决多类分类任务。
+- en: Multiclass Classification with Feed-Forward Neural Networks
+  id: totrans-163
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 使用前馈神经网络进行多类分类
+- en: The task we are going to solve together is a multiclass classification problem
+    on the Zalando dataset. It consists of predicting the corresponding label among
+    ten possible cases (ten different types of clothing). To solve it, we will use
+    a feed-forward network architecture and try different configurations (different
+    optimizers and architectures), performing some error analysis to see which situation
+    is better. Let’s start by looking at the data.
+  id: totrans-164
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将要一起解决的任务是Zalando数据集上的多类分类问题。它包括预测十个可能案例（十种不同的服装）中的相应标签。为了解决这个问题，我们将使用前馈网络架构并尝试不同的配置（不同的优化器和架构），进行一些错误分析以查看哪种情况更好。让我们先看看数据。
+- en: The Zalando Dataset for the Real-World Example
+  id: totrans-165
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: Zalando数据集的实例
+- en: Zalando SE is a German commerce company based in Berlin . The company maintains
+    a cross-platform store that sells shoes, clothing, and other fashion items [2].
+    For a Kaggle competition, they prepared a MNIST-similar dataset of Zalando’s clothing
+    article images [4], where they provided 60000 training images and 10000 test images.
+    (If you do not know what Kaggle is, check out their website [3], where you can
+    participate in many competitions where the goal is to solve problems with data
+    science.) As in MNIST, each image is 28x28 pixels in grayscale. They classified
+    all images in ten different classes and provided the labels for each image. The
+    dataset has 785 columns, where the first column is the class label (an integer
+    going from 0 to 9) and the remaining 784 contain the pixel gray value of the image
+    (you can calculate that 28x28=784).
+  id: totrans-166
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zalando SE 是一家总部位于柏林的德国商业公司。该公司维护一个跨平台商店，销售鞋子、服装和其他时尚商品 [2]。为了参加 Kaggle 比赛，他们准备了一个与
+    MNIST 类似的 Zalando 服装图像数据集 [4]，其中他们提供了 60000 张训练图像和 10000 张测试图像。（如果你不知道 Kaggle
+    是什么，可以查看他们的网站 [3]，在那里你可以参加许多比赛，目标是使用数据科学解决问题。）与 MNIST 一样，每个图像都是 28x28 像素的灰度图。他们将所有图像分为十个不同的类别，并为每个图像提供了标签。数据集有
+    785 列，其中第一列是类别标签（一个从 0 到 9 的整数）和剩余的 784 列包含图像的像素灰度值（你可以计算出 28x28=784）。
+- en: 'Each training and test example is assigned to one of the following labels (as
+    from the documentation):'
+  id: totrans-167
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个训练和测试示例都被分配到以下标签之一（如文档中所述）：
+- en: '0: T-shirt/top'
+  id: totrans-168
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '0: T恤/上衣'
+- en: '1: Trouser'
+  id: totrans-169
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '1: 裤子'
+- en: '2: Pullover'
+  id: totrans-170
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '2: 开衫'
+- en: '3: Dress'
+  id: totrans-171
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '3: 裙子'
+- en: '4: Coat'
+  id: totrans-172
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '4: 外套'
+- en: '5: Sandal'
+  id: totrans-173
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '5: 凉鞋'
+- en: '6: Shirt'
+  id: totrans-174
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '6: 衬衫'
+- en: '7: Sneaker'
+  id: totrans-175
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '7: 运动鞋'
+- en: '8: Bag'
+  id: totrans-176
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '8: 背包'
+- en: '9: Ankle boot'
+  id: totrans-177
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '9: 袜靴'
+- en: Figure [3-11](#Fig11) shows an example of each class chosen randomly from the
+    dataset.
+  id: totrans-178
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 [3-11](#Fig11) 显示了从数据集中随机选择的每个类别的示例。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig11_HTML.png)'
+  id: totrans-179
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig11_HTML.png)'
+- en: Figure 3-11
+  id: totrans-180
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-11
+- en: One example from each of the ten classes in the Zalando dataset
+  id: totrans-181
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Zalando 数据集中每个类别的示例之一
+- en: The dataset has been provided under the MIT License^([4](#Fn4)). The datafile
+    can be downloaded from Kaggle ([`https://www.kaggle.com/zalando-research/fashionmnist/data`](https://www.kaggle.com/zalando-research/fashionmnist/data))
+    or directly from GitHub ([`https://github.com/zalandoresearch/fashion-mnist`](https://github.com/zalandoresearch/fashion-mnist)).
+    If you choose the second option, you need to prepare the data a bit (you can convert
+    it to CSV with the script located at [`https://pjreddie.com/projects/mnist-in-csv/`](https://pjreddie.com/projects/mnist-in-csv/)).
+    If you download it from Kaggle, you have all the data in the right format. You
+    will find two CSV files zipped on the Kaggle website. The ZIP file contains `fashion-mnist_train.csv`,
+    with 60000 images (roughly 130 MB) and `fashion-mnist_test.csv`, with 10000 (roughly
+    21 MB).
+  id: totrans-182
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该数据集是在 MIT 许可证下提供的 [4](#Fn4)。数据文件可以从 Kaggle（[`https://www.kaggle.com/zalando-research/fashionmnist/data`](https://www.kaggle.com/zalando-research/fashionmnist/data)）或直接从
+    GitHub（[`https://github.com/zalandoresearch/fashion-mnist`](https://github.com/zalandoresearch/fashion-mnist)）下载。如果你选择第二种选项，你需要准备一下数据（你可以使用位于
+    [`https://pjreddie.com/projects/mnist-in-csv/`](https://pjreddie.com/projects/mnist-in-csv/)
+    的脚本将其转换为 CSV 格式）。如果你从 Kaggle 下载，你将获得所有正确格式的数据。你将在 Kaggle 网站上找到两个压缩的 CSV 文件。ZIP
+    文件包含 `fashion-mnist_train.csv`，有 60000 张图像（大约 130 MB）和 `fashion-mnist_test.csv`，有
+    10000 张（大约 21 MB）。
+- en: 'In our example, we will retrieve the dataset in a third way: from the TensorFlow
+    datasets catalog ([`https://www.tensorflow.org/datasets/catalog/fashion_mnist`](https://www.tensorflow.org/datasets/catalog/fashion_mnist)),
+    since in this way we will not have to perform any preprocessing steps and we will
+    automatically import the data inside our notebook. Now, let’s code!'
+  id: totrans-183
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在我们的例子中，我们将以第三种方式检索数据集：从 TensorFlow 数据集目录（[`https://www.tensorflow.org/datasets/catalog/fashion_mnist`](https://www.tensorflow.org/datasets/catalog/fashion_mnist)），因为这样我们就不必执行任何预处理步骤，并且可以自动将数据导入我们的笔记本中。现在，让我们开始编写代码吧！
+- en: We will need the following imports in our code
+  id: totrans-184
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要在代码中导入以下内容
+- en: '[PRE6]'
+  id: totrans-185
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE6]'
+- en: Then, to retrieve the dataset, we can simply run the following command
+  id: totrans-186
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后，为了检索数据集，我们可以简单地运行以下命令
+- en: '[PRE7]'
+  id: totrans-187
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE7]'
+- en: Incredibly easy! Now we have two numpy matrices (`trainX` and `testX`) containing
+    all the pixel values describing each of the training and test images and two NumPy
+    arrays (`trainY` and `testY`) containing the associated labels.
+  id: totrans-188
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常简单！现在我们有了两个 NumPy 矩阵（`trainX` 和 `testX`），它们包含描述每个训练和测试图像的所有像素值，以及两个 NumPy
+    数组（`trainY` 和 `testY`），它们包含相关的标签。
+- en: Let’s print the datasets’ dimensions
+  id: totrans-189
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们打印数据集的维度
+- en: '[PRE8]'
+  id: totrans-190
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE8]'
+- en: which will return as output
+  id: totrans-191
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这将返回以下输出
+- en: '[PRE9]'
+  id: totrans-192
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE9]'
+- en: Tip
+  id: totrans-193
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 小贴士
+- en: Remember that you should not focus on the Python implementation. Focus on the
+    model, on the concepts behind the implementation. You can achieve the same results
+    using pandas, NumPy, or even C. Try to concentrate on how to prepare the data,
+    how to normalize it, how to check the training, and so on.
+  id: totrans-194
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 记住，你不应该关注 Python 的实现。关注模型，关注实现背后的概念。你可以使用 pandas、NumPy 或甚至 C 来实现相同的结果。尽量集中精力准备数据，如何归一化数据，如何检查训练，等等。
+- en: As you can see, we have a training dataset made of 60000 items, stored as images
+    of 28x28 pixels each, and a test dataset made of 10000 items, stored in the same
+    way. Then, an array of corresponding labels is associated with each dataset.
+  id: totrans-195
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如你所见，我们有一个由 60000 个项目组成的训练数据集，每个项目存储为 28x28 像素的图像，以及一个由 10000 个项目组成的测试数据集，以相同的方式存储。然后，与每个数据集相关联的标签数组。
+- en: Now we need to modify our data to obtain a “flattened” version of image, meaning
+    an array of 754 pixels, instead of a matrix of 28x28 pixels. This step is necessary,
+    because, as we saw when we discussed the feed-forward network architecture, it
+    receives as inputs all the features as separate values. Therefore, we need to
+    have all the pixels stored in the same array. On the contrary, Convolutional Neural
+    Networks (CNNs) do not work with flattened versions of the images, but that’s
+    a topic for Chapter [7](463356_2_En_7_Chapter.xhtml). For now, keep this in mind.
+  id: totrans-196
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在我们需要修改我们的数据以获得图像的“展平”版本，即一个包含 754 个像素的数组，而不是 28x28 像素的矩阵。这一步是必要的，因为我们讨论前馈网络架构时已经看到，它接收所有特征作为单独的值作为输入。因此，我们需要将所有像素存储在同一个数组中。相反，卷积神经网络（CNNs）不处理图像的展平版本，但这将是第
+    [7](463356_2_En_7_Chapter.xhtml) 章节的内容。现在，请记住这一点。
+- en: The following lines reshape the matrix dimensions
+  id: totrans-197
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 以下行将矩阵维度进行重塑
+- en: '[PRE10]'
+  id: totrans-198
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE10]'
+- en: Let’s summarize our data so far
+  id: totrans-199
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们总结到目前为止的数据
+- en: '`labels`: Has dimensions (60000) and contains the class labels (integers from
+    0 to 9)'
+  id: totrans-200
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`labels`：具有 (60000) 维度，包含类别标签（从 0 到 9 的整数）'
+- en: '`train`: Has dimensions *m* × *n*[*x*] (60000x784) and contains the features,
+    where each column contains the grayscale value of a single pixel in the image
+    (remember 28x28=784)'
+  id: totrans-201
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '`train`：具有 *m* × *n*[*x*] (60000x784) 维度，包含特征，其中每一列包含图像中单个像素的灰度值（记住 28x28=784）'
+- en: See Figure [3-11](#Fig11) again to get an idea of how the images look. Finally
+    let’s normalize the input so that instead of having values from 0 to 255 (the
+    grayscale values), it has only values between 0 and 1\. This is very easy to do
+    with the code
+  id: totrans-202
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 再次查看图 [3-11](#Fig11) 以了解图像的外观。最后，让我们将输入归一化，使其值从 0 到 255（灰度值）变为仅介于 0 和 1 之间。这可以通过代码轻松实现
+- en: '[PRE11]'
+  id: totrans-203
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE11]'
+- en: Before developing the network, we need to solve another problem. Labels must
+    be provided in a different form when performing a multiclass classification task.
+  id: totrans-204
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在开发网络之前，我们需要解决另一个问题。在执行多类分类任务时，标签必须以不同的形式提供。
+- en: 'Modifying Labels for the Softmax Function: One-Hot Encoding'
+  id: totrans-205
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 调整 Softmax 函数的标签：One-Hot 编码
+- en: In classification , we use the following cost function (called cross-entropy)
+  id: totrans-206
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在分类中，我们使用以下代价函数（称为交叉熵）
+- en: '![$$ L\left({\hat{y}}_i,{y}_i\right)=-\left({y}_i\ \log {\hat{y}}_i+\left(1-{y}_i\right)\log
+    \left(1-{\hat{y}}_i\right)\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equn.png)'
+  id: totrans-207
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ L\left({\hat{y}}_i,{y}_i\right)=-\left({y}_i\ \log {\hat{y}}_i+\left(1-{y}_i\right)\log
+    \left(1-{\hat{y}}_i\right)\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equn.png)'
+- en: where *y*[*i*] contains our labels and ![$$ {\hat{y}}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq9.png)is
+    the result of our network. So, the two elements must have the same dimensions.
+    In our case we saw that our network will give as output a vector with ten elements,
+    while a label in our dataset is simply a scalar. So, we have ![$$ {\hat{y}}_i
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq10.png) that
+    has dimensions (10,1) and *y*[*i*] that has dimensions (1,1). This will not work
+    if we do not do something smart. We need to transform our labels in a vector that
+    have dimensions (10,1). A vector with a value for each class, but what value should
+    we use?
+  id: totrans-208
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中 *y*[*i*] 包含我们的标签，而 ![$$ {\hat{y}}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq9.png)
+    是我们网络的结果。因此，这两个元素必须具有相同的维度。在我们的例子中，我们看到我们的网络将输出一个包含十个元素的向量，而数据集中的标签只是一个标量。因此，我们有一个
+    ![$$ {\hat{y}}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq10.png)
+    向量，其维度为 (10,1)，而 *y*[*i*] 的维度为 (1,1)。如果我们不做些聪明的事情，这将不起作用。我们需要将标签转换为一个维度为 (10,1)
+    的向量。一个包含每个类值的向量，但我们应该使用什么值呢？
+- en: 'What we need to do is what is called one-hot encoding^([5](#Fn5)). Meaning
+    we will transform our labels (integers from 0 to 9) to vectors with dimensions
+    (1,10) with this algorithm: our one-hot encoded vector will have all zeros, except
+    at the index of the label. For example, for a label 2 our 1x10 vector will have
+    all zeros except at position with index 2, or in other words, it will be (0,0,1,0,0,0,0,0,0,0).
+    Let’s look at some other examples (see Table [3-2](#Tab2)).'
+  id: totrans-209
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们需要做的是所谓的独热编码^([5](#Fn5))。这意味着我们将使用此算法将我们的标签（从 0 到 9 的整数）转换为维度为 (1,10) 的向量：我们的独热编码向量除了标签的索引处外，其余都是零。例如，对于标签
+    2，我们的 1x10 向量除了索引为 2 的位置外，其余都是零，换句话说，它将是 (0,0,1,0,0,0,0,0,0,0)。让我们看看其他一些例子（见表
+    [3-2](#Tab2))。
+- en: Table 3-2
+  id: totrans-210
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表 3-2
+- en: Examples of How One-Hot Encoding Works. Remember that Labels Go from 0 to 9,
+    as Indexes
+  id: totrans-211
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 独热编码工作原理的示例。记住标签从 0 到 9，作为索引
+- en: '| Label | One-Hot Encoded Label |'
+  id: totrans-212
+  prefs: []
+  type: TYPE_TB
+  zh: '| 标签 | 独热编码标签 |'
+- en: '| --- | --- |'
+  id: totrans-213
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- |'
+- en: '| 0 | (1,0,0,0,0,0,0,0,0,0) |'
+  id: totrans-214
+  prefs: []
+  type: TYPE_TB
+  zh: '| 0 | (1,0,0,0,0,0,0,0,0,0) |'
+- en: '| 2 | (0,0,1,0,0,0,0,0,0,0) |'
+  id: totrans-215
+  prefs: []
+  type: TYPE_TB
+  zh: '| 2 | (0,0,1,0,0,0,0,0,0,0) |'
+- en: '| 5 | (0,0,0,0,0,1,0,0,0,0) |'
+  id: totrans-216
+  prefs: []
+  type: TYPE_TB
+  zh: '| 5 | (0,0,0,0,0,1,0,0,0,0) |'
+- en: '| 7 | (0,0,0,0,0,0,0,1,0,0) |'
+  id: totrans-217
+  prefs: []
+  type: TYPE_TB
+  zh: '| 7 | (0,0,0,0,0,0,0,1,0,0) |'
+- en: Figure [3-12](#Fig12) shows a graphical representation of the process of one-hot
+    encoding a label.
+  id: totrans-218
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 [3-12](#Fig12) 显示了标签独热编码过程的图形表示。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig12_HTML.jpg)'
+  id: totrans-219
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig12_HTML.jpg)'
+- en: Figure 3-12
+  id: totrans-220
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-12
+- en: A graphical representation of the process of one-hot encoding a label. Two labels
+    (2 and 5) are one-hot encoded in two vectors. The grayed element of the vector
+    is the one the becomes 1, while the white marked ones remain 0
+  id: totrans-221
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 标签独热编码过程的图形表示。两个标签（2 和 5）在两个向量中进行了独热编码。向量中的灰色元素是变为 1 的元素，而白色标记的元素保持为 0
+- en: 'Sklearn has several ways of doing this automatically (check for example the
+    function `OneHotEncoder()`). But I think it’s instructive to do it manually to
+    really see how it’s done. Once you understand why you need it, and in which format
+    you need it, you can use the function you like best. The Python code to do this
+    is very simple:'
+  id: totrans-222
+  prefs: []
+  type: TYPE_NORMAL
+  zh: Sklearn 有几种自动执行此操作的方法（例如，检查 `OneHotEncoder()` 函数）。但我认为手动执行是有教育意义的，以便真正看到它是如何完成的。一旦你理解了为什么需要它，以及你需要它的格式，你就可以使用你最喜欢的函数。执行此操作的
+    Python 代码非常简单：
+- en: '[PRE12]'
+  id: totrans-223
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE12]'
+- en: 'First you create a new array with the right dimensions: (60000,10), and then
+    you fill it with zeros with the NumPy function `np.zeros((60000,10))`. Then you
+    set to 1 only the columns related to the label itself, using pandas functionalities
+    to slice dataframes with the line `labels_train[np.arange(60000), trainY] = 1`
+    (the same of course is also performed in the case of the test dataset). In the
+    end, you obtain the dimensions (60000,10), where each row indicates a different
+    observation.'
+  id: totrans-224
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 首先，你创建一个具有正确维度的新的数组：(60000,10)，然后使用 NumPy 函数 `np.zeros((60000,10))` 在其中填充零。然后，使用
+    pandas 功能仅将 1 设置到与标签本身相关的列中，使用切片数据框的行 `labels_train[np.arange(60000), trainY]
+    = 1`（当然，测试数据集的情况也是如此）。最后，你获得维度为 (60000,10) 的数组，其中每一行表示一个不同的观察值。
+- en: Now we can compare *y*[*i*] and ![$$ {\hat{y}}_i, $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq11.png)since
+    both have the dimensions (10,1) for one observation, or when considering the entire
+    test dataset of (10000,10). The same can of course be asserted for the training
+    dataset. Each column in ![$$ {\hat{y}}_i $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq12.png)
+    will represent the probability of our observation being of a specific class. At
+    the very end when calculating the accuracy of our model, we will assign the class
+    with the highest probability to each observation.
+  id: totrans-225
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们可以比较 *y*[*i*] 和 ![${\hat{y}}_i, $](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq11.png)，因为它们对于单个观察值或当考虑整个测试数据集（10000,10）时，都具有
+    (10,1) 的维度。当然，对于训练数据集也可以做出同样的断言。![${\hat{y}}_i $](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq12.png)中的每一列将代表我们的观察值属于特定类别的概率。在最后计算我们模型的准确率时，我们将具有最高概率的类别分配给每个观察值。
+- en: Note
+  id: totrans-226
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Our network will give us the ten probabilities for the observation of being
+    of each of the ten classes. At the end, we will assign to the observation the
+    class that has the highest probability.
+  id: totrans-227
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们的网络将为我们提供每个观察值属于十个类别之一的十个概率。最后，我们将具有最高概率的类别分配给观察值。
+- en: The Feed-Forward Network Model
+  id: totrans-228
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 前馈网络模型
+- en: We will start with a network with just one hidden layer. We will have an input
+    layer with 784 features, then a hidden layer (where we will vary the number of
+    neurons), then an output layer of ten neurons that will feed their output into
+    a neuron that will have as an activation function the softmax function. Figure
+    [3-13](#Fig13) shows a graphical representation of the network. We will spend
+    some time looking at the various parts, especially the output layers.
+  id: totrans-229
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将从只有一个隐藏层的网络开始。我们将有一个包含 784 个特征的输入层，然后是一个隐藏层（我们将改变神经元的数量），然后是一个有十个神经元的输出层，这些神经元将输出输入到一个具有
+    softmax 函数作为激活函数的神经元。图 [3-13](#Fig13) 展示了网络的图形表示。我们将花一些时间来查看各个部分，特别是输出层。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig13_HTML.jpg)'
+  id: totrans-230
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig13_HTML.jpg)'
+- en: Figure 3-13
+  id: totrans-231
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-13
+- en: The network architecture with a single hidden layer. We will vary the number
+    of neurons *n*[1] in the hidden layer during our analysis
+  id: totrans-232
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 具有单个隐藏层的网络架构。在分析过程中，我们将改变隐藏层中的神经元数量 *n*[1]。
+- en: 'Let’s look at why this strange output layer has ten neurons and why we need
+    an additional neuron for the softmax function. Remember, we want to be able to
+    tell which class each image belongs to. To do this, as explained when discussing
+    the softmax function, we need to get ten outputs for each observation: each being
+    the probability of the image being in each of the classes. So given input ***x***^((*i*)),
+    we need ten values: *P*(*y*[*i*] = 1| *x*[*i*]), *P*(*y*[*i*] = 2| *x*[*i*]),
+    …, *P*(*y*[*i*] = 10| *x*[*i*]) (the probability of the observation class *y*^((*i*))
+    being one of the ten possibilities given the input *x*[*i*]). Or, in other words,
+    our output should be a vector of dimensions 1x10 in this form'
+  id: totrans-233
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们看看为什么这个奇怪的输出层有十个神经元，以及为什么我们需要一个额外的神经元来执行 softmax 函数。记住，我们希望能够告诉每个图像属于哪个类别。为此，正如在讨论
+    softmax 函数时解释的那样，我们需要为每个观察结果获得十个输出：每个输出是图像属于每个类别的概率。所以给定输入 ***x***^((*i*))，我们需要十个值：*P*(*y*[*i*] = 1|
+    *x*[*i*])，*P*(*y*[*i*] = 2| *x*[*i*]) …，*P*(*y*[*i*] = 10| *x*[*i*])（观察类别 *y*^((*i*))
+    是输入 *x*[*i*] 给定的十个可能性中的一个的概率）。或者，换句话说，我们的输出应该是一个 1x10 维的向量，形式如下
+- en: '![$$ \hat{\boldsymbol{y}}=\left(P\left({y}_i=1|{x}_i\right)\kern1em P\left({y}_i=2|{x}_i\right)\kern0.75em
+    \dots \kern1.25em P\left({y}_i=10|{x}_i\right)\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equo.png)'
+  id: totrans-234
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ \hat{\boldsymbol{y}}=\left(P\left({y}_i=1|{x}_i\right)\kern1em P\left({y}_i=2|{x}_i\right)\kern0.75em
+    \dots \kern1.25em P\left({y}_i=10|{x}_i\right)\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equo.png)'
+- en: And since the observation must be of one single class, this condition must be
+    satisfied
+  id: totrans-235
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 由于观察结果必须是单个类别，因此必须满足此条件
+- en: '![$$ \sum \limits_{j=1}^{10}P\left({y}_i=j|{x}_i\right)=1 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equp.png)'
+  id: totrans-236
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ \sum \limits_{j=1}^{10}P\left({y}_i=j|{x}_i\right)=1 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equp.png)'
+- en: 'This can be understood as: the observation has a 100% probability of being
+    one of the ten classes. Or, in other words, all the probabilities must add up
+    to 1\. We solve this problem in two steps:'
+  id: totrans-237
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这可以理解为：观察结果有 100% 的概率属于十个类别之一。或者，换句话说，所有概率的总和必须为 1。我们通过两个步骤解决这个问题：
+- en: We create an output layer with ten neurons, in this way we will have our ten
+    values as output.
+  id: totrans-238
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们创建了一个包含十个神经元的输出层，这样我们就会得到十个输出值。
+- en: Then we feed the ten values into a new neuron (let’s call it “softmax” neuron)
+    that will take the ten inputs and give as output ten values that are all less
+    than one, which adds to 1.
+  id: totrans-239
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后，我们将十个值输入到一个新的神经元（让我们称它为“softmax 神经元”）中，该神经元将接受十个输入并输出十个值，这些值都小于 1，总和为 1。
+- en: Calling *z*[*i*] the output of the *i*^(*th*) neuron in the last layer (with
+    *i* going from 1 to 10), we will have
+  id: totrans-240
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将 *z*[*i*] 称为最后一层中 *i*^(*th*) 个神经元的输出（其中 *i* 从 1 到 10），我们将有
+- en: '![$$ P\left({y}_i=j|{x}_i\right)=\frac{e^{z_i}}{\sum_{j=1}^{10}{e}^{z_j}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equq.png)'
+  id: totrans-241
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ P\left({y}_i=j|{x}_i\right)=\frac{e^{z_i}}{\sum_{j=1}^{10}{e}^{z_j}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equq.png)'
+- en: In Keras, this is straightforward. But it is instructive to know exactly what
+    each line of code does. That is what the Keras function `model.add(Dense(10, activation
+    = '`**softmax**`'))` does. It takes a vector as the input and returns a vector
+    with the same dimensions as the input, but “normalized,” as discussed above. In
+    other words, if we feed ***z =*** (*z*[1]  *z*[2] …  *z*[10]) into the function,
+    it will return a vector with the same dimensions as ***z***, meaning 1x10, where
+    each element added to the others gives 1.
+  id: totrans-242
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Keras中，这很简单。但了解每一行代码的确切作用是有教育意义的。这就是Keras函数`model.add(Dense(10, activation
+    = '`**softmax**`'))`的作用。它接受一个向量作为输入，并返回一个与输入具有相同维度的向量，但“归一化”，如上所述。换句话说，如果我们把***z =*** (*z*[1]  *z*[2] …  *z*[10])输入到函数中，它将返回一个与***z***具有相同维度的向量，即1x10，其中每个元素加到其他元素上等于1。
+- en: Keras Implementation
+  id: totrans-243
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: Keras实现
+- en: Now is time to build our model with Keras. The following code will do the job
+  id: totrans-244
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在是时候用Keras构建我们的模型了。以下代码将完成这项工作
+- en: '[PRE13]'
+  id: totrans-245
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE13]'
+- en: 'Now we will not go through each line of code, since you should understand by
+    now how a basic Keras model is built (remember our simple one-neuron model in
+    Chapter [2](463356_2_En_2_Chapter.xhtml)). But there are a few details of the
+    code that need to be stressed:'
+  id: totrans-246
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，我们不会逐行分析代码，因为你现在应该已经理解了如何构建基本的Keras模型（记得我们在第[2](463356_2_En_2_Chapter.xhtml)章中的简单单神经元模型）。但代码中还有一些细节需要强调：
+- en: 'Our last layer will use the softmax function: `model.add(Dense(10, activation
+    = ''softmax''))`.'
+  id: totrans-247
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们的最后层将使用softmax函数：`model.add(Dense(10, activation = 'softmax'))`。
+- en: The two parameters—15 (*n*[1]) and 10 (*n*[2])—define the number of neurons
+    in the different layers. Remember the second (output) layer must have ten neurons
+    to be able to use the softmax function. But we will play with the value of *n*[1].
+    Increasing *n*[1] will increase the complexity of the network.
+  id: totrans-248
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 这两个参数——15 (*n*[1]) 和 10 (*n*[2])——定义了不同层的神经元数量。记住，第二个（输出）层必须有十个神经元才能使用softmax函数。但我们将玩弄*n*[1]的值。增加*n*[1]将增加网络的复杂性。
+- en: We set the categorical cross-entropy (`loss = 'categorical_crossentropy'`) as
+    the loss function and the categorical accuracy (`metrics = ['categorical_accuracy']`)
+    as the metrics. The reason for this choice is that we have hot-encoded the labels
+    and therefore the categorical versions of these functions are needed.
+  id: totrans-249
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 我们将分类交叉熵(`loss = 'categorical_crossentropy'`)设置为损失函数，将分类准确率(`metrics = ['categorical_accuracy']`)设置为度量标准。选择这个的原因是我们已经对标签进行了热编码，因此需要这些函数的分类版本。
+- en: 'Now let’s try to perform the training as we did in last chapter for the single-neuron
+    model. The code structure is always the same. Try to run the following code on
+    your laptop:'
+  id: totrans-250
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在，让我们尝试像上一章中为单神经元模型所做的那样进行训练。代码结构始终相同。尝试在你的笔记本电脑上运行以下代码：
+- en: '[PRE14]'
+  id: totrans-251
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE14]'
+- en: We have set as the optimizer the standard version of the gradient descent .
+    The biggest problem is that the model, as we coded it, will create a huge matrix
+    for all observations (that are 60,000) and then will modify the weights and bias
+    only after a complete sweep over all observations. This requires a lot of resources,
+    memory, and CPU. If that was the only choice we have, we would have been doomed.
+    Keep in mind that in the deep learning world, 60,000 examples of 784 features
+    is not a big dataset at all. We need to find a way of letting this model learn
+    faster.
+  id: totrans-252
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 我们将标准版本的梯度下降设置为优化器。最大的问题是，按照我们编写的代码，模型将为所有观测值（共60,000个）创建一个巨大的矩阵，然后在遍历所有观测值之后才会修改权重和偏差。这需要大量的资源、内存和CPU。如果这是我们唯一的选择，我们就会陷入困境。记住，在深度学习领域，784个特征的60,000个示例根本不是一个大数据集。我们需要找到一种让这个模型更快学习的方法。
+- en: Moreover, notice that, when training the model, we have set `batch_size = data_train_norm.shape[0]`
+    inside the Keras `fit` method. Keras by default sets the batch size to 32 observations
+    [5], but the batch gradient descent updates weights and biases after all training
+    observations have been seen by the network. Therefore, we need to change this
+    parameter to obtain the basic version of gradient descent.
+  id: totrans-253
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，请注意，在训练模型时，我们在Keras的`fit`方法中设置了`batch_size = data_train_norm.shape[0]`。Keras默认将批大小设置为32个观测值[5]，但批梯度下降在所有训练观测值都被网络看到之后才会更新权重和偏差。因此，我们需要更改此参数以获得基本梯度下降版本。
+- en: In the same way, we need to set the `momentum = 0.0` inside the method `tf.keras.optimizers.SGD`.
+    To summarize, since Keras does not include a function to perform the standard
+    gradient descent, we used the stochastic gradient descent function, setting the
+    momentum to zero and the batch size to the entire number of observations.
+  id: totrans-254
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 同样，我们还需要在`tf.keras.optimizers.SGD`方法内部设置`momentum = 0.0`。总结一下，由于Keras没有包含执行标准梯度下降的功能，我们使用了随机梯度下降函数，将动量设置为0，并将批量大小设置为观测值的总数。
+- en: To do some basic error analysis, you also need the dev dataset, which we loaded
+    and prepared in the previous paragraphs.
+  id: totrans-255
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了进行一些基本的错误分析，你还需要开发数据集，我们在前面的段落中已经加载并准备好了。
+- en: 'Do not get confused by the fact that the filename contains the word test. Sometimes
+    the dev dataset is called the test dataset. When we discuss error analysis later
+    in the book, we use three datasets: train, dev, and test. To remain consistent
+    in the book, we use the name *dev* here as well, not to confuse you with different
+    names in different chapters.'
+  id: totrans-256
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不要因为文件名中包含单词test而感到困惑。有时开发数据集也被称为测试数据集。当我们在本书的后面讨论错误分析时，我们使用三个数据集：训练集、开发集和测试集。为了保持书中的连贯性，我们在这里也使用名称*dev*，以免你在不同章节中因为不同的名称而混淆。
+- en: To calculate accuracy on the dev dataset, we use the `model.evaluate()` function
+    and apply the built model on the dev dataset.
+  id: totrans-257
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要计算开发数据集上的准确度，我们使用`model.evaluate()`函数并将构建的模型应用于开发数据集。
+- en: '[PRE15]'
+  id: totrans-258
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE15]'
+- en: which returns
+  id: totrans-259
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 返回
+- en: '[PRE16]'
+  id: totrans-260
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE16]'
+- en: To recap, we applied the model trained on the 60,000 observations to the dev
+    test (made up of 10,000 observations) and then calculated the accuracy on both
+    datasets.
+  id: totrans-261
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 回顾一下，我们将训练在60,000个观测值上的模型应用于开发测试集（由10,000个观测值组成），然后计算了两个数据集上的准确度。
+- en: A good exercise is to include this calculation in your model so that your `build_model()`
+    function automatically returns the two values.
+  id: totrans-262
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一个好的练习是将这个计算包含在你的模型中，这样你的`build_model()`函数会自动返回两个值。
+- en: Gradient Descent Variations Performances
+  id: totrans-263
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 梯度下降变体性能
+- en: In Chapter [2](463356_2_En_2_Chapter.xhtml), we looked at the different GD variations
+    and discussed their advantages and disadvantages. Let’s know see how they differ
+    in a practical case.
+  id: totrans-264
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在第[2](463356_2_En_2_Chapter.xhtml)章中，我们研究了不同的GD变体，并讨论了它们的优缺点。现在让我们看看它们在实际案例中的区别。
+- en: Comparing the Variations
+  id: totrans-265
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 比较变体
+- en: Let’s summarize the findings for the three variations of gradient descent for
+    100 epochs (see Table [3-3](#Tab3)).
+  id: totrans-266
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们总结一下对梯度下降的三个变体在100个epoch（见表[3-3](#Tab3)）的发现。
+- en: Table 3-3
+  id: totrans-267
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表3-3
+- en: Comparing the Performances of Three Variations of Gradient Descent
+  id: totrans-268
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 比较三种梯度下降变体的性能
+- en: '| Gradient Descent Variation | Running Time | Final Value of Cost Function
+    | Accuracy |'
+  id: totrans-269
+  prefs: []
+  type: TYPE_TB
+  zh: '| 梯度下降变体 | 运行时间 | 成本函数的最终值 | 准确度 |'
+- en: '| --- | --- | --- | --- |'
+  id: totrans-270
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- | --- |'
+- en: '| Batch gradient descent | 0.35 min | 1.86 | 43% |'
+  id: totrans-271
+  prefs: []
+  type: TYPE_TB
+  zh: '| 批量梯度下降 | 0.35 min | 1.86 | 43% |'
+- en: '| Stochastic gradient descent | 60.23 min | 0.26 | 91% |'
+  id: totrans-272
+  prefs: []
+  type: TYPE_TB
+  zh: '| 随机梯度下降 | 60.23 min | 0.26 | 91% |'
+- en: '| Mini-batch gradient descent (mini-batch size = 50) | 1.70 min | 0.26 | 90%
+    |'
+  id: totrans-273
+  prefs: []
+  type: TYPE_TB
+  zh: '| 小批量梯度下降（小批量大小 = 50） | 1.70 min | 0.26 | 90% |'
+- en: Now you can see that mini-batch gradient descent is definitely the best compromise
+    in terms of execution time and classification performance. Now you should be convinced
+    that it is currently the preferred method to be used as an optimizer in deep neural
+    networks, among the different gradient descent types, since it can reach high
+    performance, maintaining a good trade-off between performance and execution time.
+  id: totrans-274
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在你可以看到，在小批量梯度下降在执行时间和分类性能方面确实是最佳折衷方案。现在你应该相信，在所有梯度下降类型中，它目前是作为深度神经网络优化器的首选方法，因为它可以达到高性能，同时在性能和执行时间之间保持良好的权衡。
+- en: Figure [3-14](#Fig14) shows how the cost function decreases with different mini-batch
+    sizes. Note how, with respect to number of epochs, a smaller mini-batch size means
+    a faster (not in time) decrease.
+  id: totrans-275
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图[3-14](#Fig14)展示了成本函数如何随着不同的批量大小而降低。注意，与epoch数量相比，较小的批量大小意味着更快的（不是时间上的）降低。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig14_HTML.jpg)'
+  id: totrans-276
+  prefs: []
+  type: TYPE_IMG
+  zh: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig14_HTML.jpg)'
+- en: Figure 3-14
+  id: totrans-277
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-14
+- en: A comparison of speed of convergence of the mini-batch gradient descent algorithm
+    with different mini-batch sizes. The learning rate used for this figure was *γ* = 0.0001\.
+    Note that the time needed by each case is not the same. The smaller the mini-batch
+    size, the more time the algorithm needs
+  id: totrans-278
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 比较不同批量大小的小批量梯度下降算法的收敛速度。此图使用的学习率为*γ* = 0.0001。请注意，每种情况所需的时间并不相同。批量大小越小，算法需要的时间越多。
+- en: Tip
+  id: totrans-279
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 提示
+- en: The best compromise between running time and convergence speed (with respect
+    to the number of epochs) is achieved using the mini-batch gradient descent. The
+    optimal size of the mini-batches is dependent on your problem, but small numbers
+    like 30 or 50 are a good place to start. You will find a compromise between running
+    time and convergence speed.
+  id: totrans-280
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在运行时间和收敛速度（相对于epoch数量）之间取得最佳折衷方案是通过使用mini-batch梯度下降实现的。mini-batch的大小取决于你的问题，但像30或50这样的小数字是一个好的起点。你将找到一个运行时间和收敛速度之间的折衷方案。
+- en: To get an idea of how the running time depends on what value the cost function
+    can reach after 100 epochs, see Figure [3-15](#Fig15) (in comparison to Chapter
+    [2](463356_2_En_2_Chapter.xhtml), the times are evaluated with a real dataset).
+    Each point is labeled with the size of the mini-batch used in that run. You can
+    see that decreasing the mini-batch size decreases the value of *J* after 100 epochs.
+    This happens quickly, without increasing the running time significantly, until
+    you arrive at a value for the mini-batch size that is around 20\. At that point,
+    the time starts to increase quickly and the value of *J* after 100 epochs does
+    not decrease and flattens out.
+  id: totrans-281
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要了解运行时间如何取决于成本函数在100个epoch后可以达到的值，请参阅图[3-15](#Fig15)（与第[2](463356_2_En_2_Chapter.xhtml)章相比，时间是用真实数据集评估的）。每个点都标有该次运行使用的mini-batch大小。你可以看到，减小mini-batch大小会快速降低100个epoch后*J*的值，而不会显著增加运行时间，直到你达到大约20的mini-batch大小值。在这个点上，时间开始快速增加，而100个epoch后的*J*值不再降低并趋于平稳。
+- en: The best compromise is to choose a value for the mini-batch size where the curve
+    is closer to zero (a small running time and a small cost function value), and
+    that is at a mini-batch size value of 20 in this specific case. This is the reason
+    that those are the most common values. After that point, the increase in running
+    time becomes very quick and is not helpful. Note that for other datasets, the
+    optimal value may be very different. So it’s worth trying different values to
+    see which one works best. In very big datasets you may want to try bigger values,
+    such as 200, 300, or 500\. In this case, we have 60,000 observations and a mini-batch
+    size of 50, which means 1200 batches. If you have much more data, for example
+    1e6 observations, a mini-batch size of 50 would give 20,000 batches. So, keep
+    that in mind and try different values to see which one works best.
+  id: totrans-282
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最佳折衷方案是选择一个使曲线更接近零（运行时间短且成本函数值小）的mini-batch大小值，在这个特定情况下是20。这就是为什么这些值是最常见的。从那时起，运行时间的增加变得非常快，而且没有帮助。请注意，对于其他数据集，最佳值可能非常不同。因此，尝试不同的值以查看哪个效果最好是值得的。在非常大的数据集中，你可能想尝试更大的值，例如200、300或500。在这种情况下，我们有60,000个观测值和50的mini-batch大小，这意味着有1200个批次。如果你有更多的数据，例如1e6个观测值，50的mini-batch大小将给出20,000个批次。所以，请记住这一点，并尝试不同的值以查看哪个效果最好。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig15_HTML.jpg)'
+  id: totrans-283
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig15_HTML.jpg)'
+- en: Figure 3-15
+  id: totrans-284
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-15
+- en: The plot shows the value of the cost function after 100 epochs for the Zalando
+    dataset vs. the running time needed to run through 100 epochs. Note that the points
+    are single runs, and the plot is only indicative of the dependency. Running time
+    and cost function have a small variance when evaluated over several runs. This
+    variance is not shown in the plot
+  id: totrans-285
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图表显示了Zalando数据集在100个epoch后成本函数的值与运行100个epoch所需的运行时间。请注意，这些点是单次运行，图表仅指示依赖关系。在多次运行中评估时，运行时间和成本函数有很小的变化。这种变化在图表中没有显示
+- en: 'As a tip, it is good programming practice to write a function that runs your
+    evaluations. This way, you can tune your hyper-parameters (like the mini-batch
+    size) without copy and pasting the same chunk of code over and over. The following
+    function is one that you can use to train our model with different mini-batch
+    sizes (of course, you can add more parameters to be optimized, such as the number
+    of epochs, the learning rate, etc.):'
+  id: totrans-286
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个小贴士，编写一个运行评估的函数是良好的编程实践。这样，你可以调整超参数（如mini-batch大小），而无需反复复制粘贴相同的代码块。以下是一个你可以用来用不同的mini-batch大小（当然，你可以添加更多要优化的参数，如epoch数量、学习率等）来训练我们的模型的函数：
+- en: '[PRE17]'
+  id: totrans-287
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE17]'
+- en: Tip
+  id: totrans-288
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 小贴士
+- en: Writing a function with the hyper-parameters as inputs is common practice. This
+    allows you to test different models with different values for the hyper-parameters
+    and check which ones are better.
+  id: totrans-289
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将超参数作为输入编写函数是常见的做法。这允许你使用不同的超参数值测试不同的模型，并检查哪个更好。
+- en: Examples of Wrong Predictions
+  id: totrans-290
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 错误预测的例子
+- en: Running the model with batch gradient descent—with one hidden layer with 15
+    neurons for 1000 epochs and at a learning rate of 0.0001—will give us an accuracy
+    on the training set of 86%. You can increase the accuracy by using more neurons
+    in your hidden layer. For example, using 50 neurons, 1000 epochs, and a learning
+    rate of 0.0001 will allow you to reach 87% on the training set and 85% on the
+    test set. It is interesting to check a few examples of incorrectly classified
+    images, to see if you can learn something from these errors. Figure [3-16](#Fig16)
+    shows an example of incorrectly classified images for each class.
+  id: totrans-291
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用批量梯度下降运行模型——一个包含 15 个神经元的隐藏层，运行 1000 个周期，学习率为 0.0001——将在训练集上给出 86% 的准确率。你可以通过在隐藏层中使用更多的神经元来提高准确率。例如，使用
+    50 个神经元，1000 个周期，学习率为 0.0001，你可以在训练集上达到 87%，在测试集上达到 85%。检查一些错误分类图像的几个例子，看看你是否可以从这些错误中学习到一些东西。图
+    [3-16](#Fig16) 展示了每个类别的错误分类图像的例子。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig16_HTML.png)'
+  id: totrans-292
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig16_HTML.png)'
+- en: Figure 3-16
+  id: totrans-293
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 3-16
+- en: One example of incorrectly classified images for each class. Over each image,
+    the True class (labeled with “True”) and the predicted (labeled with “Pred”) class
+    are reported. This model has one hidden layer with 15 neurons, has been run for
+    1000 epochs with a learning rate of 0.0001
+  id: totrans-294
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每个类别的错误分类图像的一个例子。在每个图像上，报告真实类别（标记为“True”）和预测类别（标记为“Pred”）。此模型有一个包含 15 个神经元的隐藏层，已经运行了
+    1000 个周期，学习率为 0.0001
+- en: Some errors are understandable, such as where a coat was wrongly classified
+    as a pullover. We could easily make the same mistake. The wrongly classified dress
+    is, on the other hand, easy for a human to get right.
+  id: totrans-295
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 一些错误是可以理解的，例如将外套错误地分类为开衫。我们很容易犯同样的错误。另一方面，错误分类的连衣裙对人类来说很容易判断正确。
+- en: Weight Initialization
+  id: totrans-296
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 权重初始化
+- en: If you tried to run the code, you will have realized that the convergence of
+    the algorithm is strongly variable, and it depends on the way you initialize your
+    weights. In the previous sections, we focused on understanding how such a network
+    works to not get distracted by additional information, but it is time to look
+    at this problem a bit more closely, since it plays a fundamental role in many
+    layers.
+  id: totrans-297
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你尝试运行代码，你会意识到算法的收敛性非常不稳定，并且它取决于你初始化权重的的方式。在前面的章节中，我们专注于理解这样一个网络是如何工作的，以避免被额外的信息分散注意力，但现在我们有必要更仔细地研究这个问题，因为它在许多层中起着基本的作用。
+- en: 'Basically, we want to avoid the gradient descent algorithm to explode and start
+    returning nan. For example, in the first layer for the *i*^(*th*) neuron, we need
+    to calculate the ReLU activation function of the quantity (see the beginning of
+    this chapter for an explanation if you forget why):'
+  id: totrans-298
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 基本上，我们想要避免梯度下降算法爆炸并开始返回 nan。例如，对于第一层的第 *i* 个神经元，我们需要计算该量的 ReLU 激活函数（如果你忘记了为什么，请参阅本章开头进行解释）：
+- en: '![$$ {z}_i=\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equr.png)'
+  id: totrans-299
+  prefs: []
+  type: TYPE_IMG
+  zh: '![公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equr.png)'
+- en: Normally, in a deep network, the number of weights is quite big, so you can
+    easily imagine that if the ![$$ {w}_{ij}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq13.png)
+    are big, the quantity *z*[*i*] can be quite big, and then the ReLU activation
+    function can return a nan value since the argument is too big for Python to calculate
+    it properly (remember that in a classification problems, you have a log() function
+    and therefore values of the argument as zero for example are not acceptable).
+    So, you want the *z*[*i*] to be small enough to avoid an explosion of the output
+    of the neurons, and big enough to avoid having the outputs die out and making
+    the convergence a very slow process.
+  id: totrans-300
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，在深度网络中，权重的数量相当大，所以你可以想象如果 ![$$ {w}_{ij}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq13.png)
+    很大，那么 *z*[*i*] 的值可以相当大，然后 ReLU 激活函数会返回一个 nan 值，因为参数太大，Python 无法正确计算（记住，在分类问题中，你有一个
+    log() 函数，因此参数为零等值是不被接受的）。所以，你希望 *z*[*i*] 足够小以避免神经元输出的爆炸，同时足够大以避免输出死亡，使收敛过程非常缓慢。
+- en: The problem has been researched extensively [6], and there are different initialization
+    strategies depending on the activation function you are using. Let’s outline a
+    few of them in Table [3-4](#Tab4), where we assume that the weights will be initialized
+    with a normal distribution with a mean of 0 and a standard deviation as given
+    in the table (note that the standard deviation will depend on the activation function
+    you want to use).
+  id: totrans-301
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 该问题已被广泛研究[6]，根据你使用的激活函数，存在不同的初始化策略。让我们在表[3-4](#Tab4)中概述其中的一些，我们假设权重将以均值为0，标准差如表中所示的正态分布进行初始化（请注意，标准差将取决于你想要使用的激活函数）。
+- en: Table 3-4
+  id: totrans-302
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表3-4
+- en: Some Examples of Weight Initialization for Deep Neural Networks
+  id: totrans-303
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 深度神经网络权重初始化的一些示例
+- en: '| Activation Function | Standard Deviation σ for a Given Layer |'
+  id: totrans-304
+  prefs: []
+  type: TYPE_TB
+  zh: '| 激活函数 | 给定层的标准差 σ |'
+- en: '| --- | --- |'
+  id: totrans-305
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- |'
+- en: '| Sigmoid | ![$$ \sigma =\sqrt{\frac{2}{n_{inputs}+{n}_{outputs}}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq14.png)
+    Usually called Xavier initialization |'
+  id: totrans-306
+  prefs: []
+  type: TYPE_TB
+  zh: '| Sigmoid | ![$$ \sigma =\sqrt{\frac{2}{n_{inputs}+{n}_{outputs}}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq14.png)
+    通常称为Xavier初始化 |'
+- en: '| ReLU | ![$$ \sigma =\sqrt{\frac{4}{n_{inputs}+{n}_{outputs}}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq15.png)
+    Usually called He initialization |'
+  id: totrans-307
+  prefs: []
+  type: TYPE_TB
+  zh: '| ReLU | ![$$ \sigma =\sqrt{\frac{4}{n_{inputs}+{n}_{outputs}}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq15.png)
+    通常称为He初始化 |'
+- en: In a layer *l* the number of inputs will be the number of neurons of the preceding
+    layer *l* − 1 and the number of outputs will be the number of neurons in the layer
+    coming next *l* + 1\. So, we will have
+  id: totrans-308
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在层 *l* 中，输入的数量将是前一层的神经元数量 *l* − 1，输出的数量将是下一层的神经元数量 *l* + 1。因此，我们将有
+- en: '![$$ {n}_{inputs}={n}_{l-1} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equs.png)'
+  id: totrans-309
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {n}_{inputs}={n}_{l-1} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equs.png)'
+- en: And
+  id: totrans-310
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并且
+- en: '![$$ {n}_{outputs}={n}_{l+1} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equt.png)'
+  id: totrans-311
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {n}_{outputs}={n}_{l+1} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equt.png)'
+- en: Very often, deep networks, as the one we discussed before, will have several
+    layers all with the same number of neurons. Therefore you have for most of the
+    layers *n*[*l* − 1] = *n*[*l* + 1] and therefore you will have for Xavier initialization
+  id: totrans-312
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 非常常见的是，深度网络，就像我们之前讨论的那样，将具有多个具有相同数量的神经元层。因此，对于大多数层，*n*[*l* − 1] = *n*[*l* + 1]，因此对于Xavier初始化
+- en: '![$$ {\sigma}_{Xavier}=\sqrt{1/{n}_{l+1}}\kern1.25em or\kern1em \sqrt{1/{n}_{l-1}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equu.png)'
+  id: totrans-313
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {\sigma}_{Xavier}=\sqrt{1/{n}_{l+1}}\kern1.25em or\kern1em \sqrt{1/{n}_{l-1}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equu.png)'
+- en: And for ReLU activation functions the He initialization will be
+  id: totrans-314
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于ReLU激活函数，He初始化将是
+- en: '![$$ {\sigma}_{He}=\sqrt{2/{n}_{l+1}}\kern1.25em or\kern1em \sqrt{2/{n}_{l-1}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equv.png)'
+  id: totrans-315
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {\sigma}_{He}=\sqrt{2/{n}_{l+1}}\kern1.25em or\kern1em \sqrt{2/{n}_{l-1}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equv.png)'
+- en: Let’s consider the ReLU activation function (the one we used in this chapter).
+    Every layer, as we have discussed, will have *n*[*l*] neurons. A way of initializing
+    the weights for our single hidden layer for example would then be
+  id: totrans-316
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们考虑ReLU激活函数（我们在本章中使用的激活函数）。正如我们讨论的那样，每一层都将有 *n*[*l*] 个神经元。例如，为我们的单个隐藏层初始化权重的一种方法将是
+- en: '[PRE18]'
+  id: totrans-317
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE18]'
+- en: Typically, to more easily evaluate and construct the networks, the most typical
+    initialization form used is for ReLU activation function
+  id: totrans-318
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，为了更容易评估和构建网络，最典型的初始化形式用于ReLU激活函数
+- en: '![$$ {\sigma}_{He}=\sqrt{2/{n}_{l-1}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equw.png)'
+  id: totrans-319
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {\sigma}_{He}=\sqrt{2/{n}_{l-1}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equw.png)'
+- en: And
+  id: totrans-320
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 并且
+- en: '![$$ {\sigma}_{Xavier}=\sqrt{1/{n}_{l-1}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equx.png)'
+  id: totrans-321
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {\sigma}_{Xavier}=\sqrt{1/{n}_{l-1}} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equx.png)'
+- en: For Sigmoid activation function.
+  id: totrans-322
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于Sigmoid激活函数。
+- en: Using this initialization can speed up training considerably and is the standard
+    way that many libraries initialize weights (for example, the Caffe library).
+  id: totrans-323
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 使用这种初始化方法可以显著加快训练速度，并且是许多库初始化权重（例如，Caffe库）的标准方式。
+- en: In Keras, weight initialization is straightforward by means of the `tf.keras.initializers`
+    function. Look at the Keras documentation to see which initialization strategies
+    are available [7].
+  id: totrans-324
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 在Keras中，通过`tf.keras.initializers`函数可以简单地初始化权重。查看Keras文档以了解哪些初始化策略可用[7]。
+- en: Adding Many Layers Efficiently
+  id: totrans-325
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 高效地添加多层
+- en: Typing all this code each time is a bit tedious and error prone. You can instead
+    define a function that creates a layer. That can be done easily with this code
+  id: totrans-326
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 每次键入所有这些代码都有些繁琐且容易出错。你可以定义一个函数来创建一个层。这可以通过以下代码轻松完成
+- en: '[PRE19]'
+  id: totrans-327
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE19]'
+- en: 'Let’s go through the code:'
+  id: totrans-328
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们来看看代码：
+- en: First we define the dimensions of the input layer.
+  id: totrans-329
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 首先，我们定义输入层的维度。
+- en: Then we define the first hidden layer (the number of neurons is given as the
+    function’s input).
+  id: totrans-330
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后我们定义第一个隐藏层（神经元数量作为函数的输入给出）。
+- en: Then we add the other hidden layers one at a time. The number of layers is given
+    as the function’s input.
+  id: totrans-331
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后我们一次添加一个其他隐藏层。层数作为函数的输入给出。
+- en: We then add the output layer and we stack all the layers together inside the
+    model.
+  id: totrans-332
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后，我们添加输出层，并将所有层堆叠在模型内部。
+- en: We then compile and train the model, returning its performance.
+  id: totrans-333
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 然后，我们编译并训练模型，返回其性能。
+- en: Notice that in the previous code, we used Keras functional API (see Appendix
+    A if you are not sure how it works), a functionality that provides a more flexible
+    way to create models with respect to the `tf.keras.Sequential` API. With this
+    functionality, we easily created a model with a customizable number of layers
+    and neurons per layer.
+  id: totrans-334
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意，在之前的代码中，我们使用了Keras功能API（如果你不确定它是如何工作的，请参阅附录A），这是一个提供创建模型比`tf.keras.Sequential`
+    API更灵活的功能。使用此功能，我们很容易创建一个具有可定制层数和每层神经元的模型。
+- en: 'To create the networks, we can simply apply the function with a different number
+    of neurons and layers as inputs:'
+  id: totrans-335
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 要创建网络，我们可以简单地应用一个函数，该函数以不同的神经元和层数作为输入：
+- en: '[PRE20]'
+  id: totrans-336
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE20]'
+- en: The code is now much easier to understand, and you can use it to create networks
+    as big as you want.
+  id: totrans-337
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 代码现在更容易理解，你可以用它来创建你想要的任意大小的网络。
+- en: 'With the function defined, it’s easy to run several models and compare them,
+    as we have done in Figure [3-17](#Fig17), where we tested five different models:'
+  id: totrans-338
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 函数定义后，很容易运行多个模型并比较它们，就像我们在图[3-17](#Fig17)中所做的那样，在那里我们测试了五个不同的模型：
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig17_HTML.jpg)'
+  id: totrans-339
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图片](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig17_HTML.jpg)'
+- en: Figure 3-17
+  id: totrans-340
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-17
+- en: The cost function vs. epochs for five models
+  id: totrans-341
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 五个模型的成本函数与迭代次数的关系
+- en: One layer and ten neurons each layer
+  id: totrans-342
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 一层，每层十个神经元
+- en: Two layers and ten neurons each layer
+  id: totrans-343
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 两层，每层十个神经元
+- en: Three layers and ten neurons each layer
+  id: totrans-344
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 三层，每层十个神经元
+- en: Four layers and ten neurons each layer
+  id: totrans-345
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 四层，每层十个神经元
+- en: Four layer and 100 neurons each layer
+  id: totrans-346
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 四层，每层100个神经元
+- en: In case you are wondering, the model with four layers, each with 100 neurons,
+    which seems much better than the others, is starting to go in the overfitting
+    regime, with a train set accuracy of 91% and of 87% on the dev set (after only
+    200 epochs).
+  id: totrans-347
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 如果你有所疑问，具有四层、每层100个神经元的模型，看起来比其他模型好得多，开始进入过拟合状态，训练集准确率为91%，开发集准确率为87%（仅经过200个迭代次数）。
+- en: Advantages of Additional Hidden Layers
+  id: totrans-348
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 额外隐藏层的优势
+- en: It is instructive to play with the models. Try varying the number of layers,
+    the number of neurons, how you initialize the weights, and so on. If you invest
+    some time you can reach an accuracy of over 90% in a few minutes of running time,
+    but that requires some work. If you try several models you may realize that in
+    this case using several layers does not seem to bring benefits versus a network
+    with just one. This is often the case.
+  id: totrans-349
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 玩转模型是有教育意义的。尝试改变层数、神经元数量、如何初始化权重等。如果你投入一些时间，你可以在几分钟的运行时间内达到超过90%的准确率，但这需要一些工作。如果你尝试了几个模型，你可能会意识到在这种情况下，使用多层似乎并不比只有一个网络带来好处。这通常是情况。
+- en: Theoretically speaking, a one-layer network can approximate every function you
+    can imagine, but the number of neurons needed may be very large and therefore
+    the model becomes less useful. Now the catch is that the ability of approximating
+    a function does not mean that the network can do it, due for example to the sheer
+    number of neurons involved or the time needed.
+  id: totrans-350
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从理论上讲，一层网络可以近似你所能想象到的每一个函数，但所需的神经元数量可能非常大，因此模型变得不那么有用。现在的问题是，近似函数的能力并不意味着网络能够做到这一点，例如，由于涉及的神经元数量庞大或所需时间过长。
+- en: Empirically it has been shown that networks with more layers require a much
+    smaller number of neurons to reach the same results and usually generalize better
+    to unknown data.
+  id: totrans-351
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上已经证明，具有更多层的网络需要更少的神经元就能达到相同的结果，并且通常对未知数据的泛化能力更好。
+- en: Note
+  id: totrans-352
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: Theoretically speaking, you do not need to have multiple layers in your networks,
+    but often in practice you should. It is almost always a good idea to try a network
+    with several layers and a few neurons in each instead of a network with one layer
+    populated by a huge number of neurons. There is no set rule on how many neurons
+    or layers are best. You should try starting with low numbers of layers and neurons
+    and then increase them until your results stop getting better.
+  id: totrans-353
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从理论上讲，您不需要在您的网络中拥有多个层，但在实践中通常应该这样做。尝试具有几个层和每个层中只有几个神经元的网络几乎总是个好主意，而不是一个由大量神经元组成的单层网络。没有关于最佳神经元或层数的固定规则。您应该从低层和神经元数量开始尝试，然后逐渐增加，直到您的结果不再变得更好。
+- en: In addition, having more layers may allow your network to learn different aspects
+    of your inputs. For example, one layer may learn to recognize vertical edges of
+    an image, and another horizontal ones. Remember that in this chapter we discussed
+    networks where each layer is identical (up to the number of neurons) to all the
+    others. You will learn in Chapter [7](463356_2_En_7_Chapter.xhtml) how to build
+    networks whereby the layers perform very different tasks and are structured very
+    differently from each other, making this kind of network much more powerful for
+    certain tasks with respect to the models we discussed in this chapter.
+  id: totrans-354
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 此外，拥有更多的层可能允许您的网络学习到输入的不同方面。例如，一层可能学习识别图像的垂直边缘，另一层则识别水平边缘。记住，在本章中，我们讨论了每一层都与所有其他层相同（直到神经元数量）的网络。您将在第[7](463356_2_En_7_Chapter.xhtml)章中学习如何构建网络，其中层执行非常不同的任务，并且彼此之间结构差异很大，这使得这种网络对于本章讨论的某些任务来说要强大得多。
+- en: As a simple example, imagine predicting the selling prices of houses. In this
+    case a network with several layers may learn more information on how the features
+    relate to the price. For example, the first layer may learn basic relationships,
+    such as bigger houses mean higher prices. But the second layer may learn more
+    complex features, such as a big house with a small number of bathrooms means a
+    lower selling price.
+  id: totrans-355
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 作为一个简单的例子，想象一下预测房屋的销售价格。在这种情况下，具有多个层的网络可能能够学习到更多关于特征与价格之间关系的信息。例如，第一层可能学习到基本的关系，比如房子越大价格越高。但第二层可能学习到更复杂的特征，比如一个大房子但卫生间数量少意味着销售价格较低。
+- en: Comparing Different Networks
+  id: totrans-356
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+  zh: 比较不同的网络
+- en: Now you should know how to build neural networks with a huge number of layers
+    or neurons. But it is relatively easy to lose yourself in a forest of possible
+    models without knowing which ones are worth trying. Suppose you start with a network
+    (as we have done in the previous sections) with one hidden layer with five neurons,
+    one layer with ten neurons (for our softmax function), and our softmax neuron.
+    Now suppose you have reached some accuracy and you would like to try different
+    models. At first you should try increasing the number of neurons in your hidden
+    layers to see what you can achieve. Figure [3-18](#Fig18) shows the cost function
+    plotted as it decreases for different numbers of neurons. The calculations have
+    been performed with a mini-batch gradient descent with a batch size of 50, one
+    hidden layer with 1, 5, 15, and 30 neurons, and a learning rate of 0.0001\. You
+    can see how moving from one neuron to five immediately makes the convergence faster.
+    But further increasing the number of neurons does not bring as much improvement.
+    For example, increasing from 15 to 30 brings no improvement at all.
+  id: totrans-357
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 现在您应该知道如何构建具有大量层或神经元的神经网络。但是，如果您不知道哪些模型值得尝试，很容易迷失在可能的模型森林中。假设您从一个网络（如我们在前面的章节中所做的那样）开始，这个网络有一个包含五个神经元的隐藏层，一个包含十个神经元的层（用于我们的softmax函数），以及我们的softmax神经元。现在假设您已经达到了一定的准确度，并且想要尝试不同的模型。首先，您应该尝试增加隐藏层中的神经元数量，看看您能取得什么成果。图[3-18](#Fig18)显示了随着神经元数量的不同而下降的成本函数。计算使用的是批量大小为50的迷你批量梯度下降，一个包含1、5、15和30个神经元的隐藏层，以及学习率为0.0001。您可以看到从单个神经元增加到五个神经元会立即加快收敛速度。但进一步增加神经元数量并不会带来太大的改进。例如，从15增加到30没有任何改进。
+- en: '![](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig18_HTML.jpg)'
+  id: totrans-358
+  prefs: []
+  type: TYPE_IMG
+  zh: '![图](../images/463356_2_En_3_Chapter/463356_2_En_3_Fig18_HTML.jpg)'
+- en: Figure 3-18
+  id: totrans-359
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图3-18
+- en: The cost functionis decreasing vs. epochs for a neural network, with one hidden
+    layer and 1, 5, 15, and 30 neurons. The calculations have been performed with
+    mini-batch gradient descent with a batch size of 50 and a learning rate of 0.0001
+  id: totrans-360
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 成本函数随神经网络中隐藏层和1、5、15、30个神经元的变化而下降。计算使用的是批量大小为50的迷你批量梯度下降，学习率为0.0001。
+- en: Let’s first try to find a way of comparing those networks. Only comparing the
+    number of neurons can be very misleading, as you will see shortly. Remember that
+    your algorithm is trying to find the best combinations of weights and biases to
+    minimize your cost function. But how many learnable parameters do we have in our
+    model? We have the weights and the biases. You will remember from the theoretical
+    discussion that we can associate a certain number of weights to each layer, and
+    the number of learnable parameters in our layer *l* that we will indicate with
+    *Q*^([*l*]) is given by the total number of elements in the matrix *W*^([*l*]),
+    that is *n*[*l*]*n*[*l* − 1] (where we have *n*[0] = *n*[*x*] by definition) plus
+    the number of biases we have (in each layer we will have *n*[*l*] biases). The
+    number *Q*^([*l*]) can then be written as follows
+  id: totrans-361
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们先尝试找到一种比较这些网络的方法。仅仅比较神经元的数量可能会非常误导，正如你很快就会看到的。记住，你的算法正在尝试找到最佳权重和偏差组合以最小化你的成本函数。但我们在模型中有多少可学习的参数呢？我们有权重和偏差。你会记得从理论讨论中，我们可以将一定数量的权重与每一层关联起来，我们将在
+    *l* 层中指示的可学习参数数量 *Q*^([*l*]) 由矩阵 *W*^([*l*]) 中的元素总数给出，即 *n*[*l*]*n*[*l* − 1]（其中我们通过定义有
+    *n*[0] = *n*[*x*]）。此外，我们还有偏差的数量（在每个层中我们将有 *n*[*l*] 个偏差）。*Q*^([*l*]) 可以写成以下形式
+- en: '![$$ {Q}^{\left[l\right]}={n}_l{n}_{l-1}+{n}_l={n}_l\left({n}_{l-1}+1\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equy.png)'
+  id: totrans-362
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {Q}^{\left[l\right]}={n}_l{n}_{l-1}+{n}_l={n}_l\left({n}_{l-1}+1\right)
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equy.png)'
+- en: So that the total number of learnable parameters in our network (indicated here
+    with *Q*) can be written as follows
+  id: totrans-363
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 因此，我们网络中的可学习参数总数（在此用 *Q* 表示）可以写成以下形式
+- en: '![$$ Q=\sum \limits_{j=1}^L{n}_l\left({n}_{l-1}+1\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equz.png)'
+  id: totrans-364
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ Q=\sum \limits_{j=1}^L{n}_l\left({n}_{l-1}+1\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equz.png)'
+- en: Where by definition *n*[0] = *n*[*x*]. Note that the *Q* parameter of our network
+    is strongly architecture dependent. Let’s calculate it with some practical examples
+    (see Table [3-5](#Tab5)).
+  id: totrans-365
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 其中，通过定义 *n*[0] = *n*[*x*]。请注意，我们网络的 *Q* 参数强烈依赖于架构。让我们通过一些实际例子来计算它（见表 [3-5](#Tab5)）。
+- en: Table 3-5
+  id: totrans-366
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表 3-5
+- en: Examples of Different Network Architectures and Their Corresponding *Q* Parameters
+  id: totrans-367
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不同网络架构及其对应的 *Q* 参数示例
+- en: '| Network Architecture | Parameter ***Q*** (Number of Learnable Parameters)
+    | Number of Neurons |'
+  id: totrans-368
+  prefs: []
+  type: TYPE_TB
+  zh: '| 网络架构 | 参数 ***Q***（可学习参数数量） | 神经元数量 |'
+- en: '| --- | --- | --- |'
+  id: totrans-369
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- |'
+- en: '| **Network A**: 784 features, 2 layers: *n*[1] = 15, *n*[2] = 10 | *Q*[*A*] = 15(784 + 1) + 10 ∗ (15 + 1) = 11935
+    | 25 |'
+  id: totrans-370
+  prefs: []
+  type: TYPE_TB
+  zh: '| **网络 A**: 784 个特征，2 层：*n*[1] = 15, *n*[2] = 10 | *Q*[*A*] = 15(784 + 1) + 10 ∗ (15 + 1) = 11935
+    | 25 |'
+- en: '| **Network B**: 784 features, 16 layers: *n*[1] = *n*[2] = … = *n*[15] = 1,
+    *n*[16] = 10 | *Q*[*B*] = 1 ∗ (784 + 1) + 1 ∗ (1 + 1) + … + 10 ∗ (1 + 1) = 923
+    | 25 |'
+  id: totrans-371
+  prefs: []
+  type: TYPE_TB
+  zh: '| **网络 B**: 784 个特征，16 层：*n*[1] = *n*[2] = … = *n*[15] = 1, *n*[16] = 10 |
+    *Q*[*B*] = 1 ∗ (784 + 1) + 1 ∗ (1 + 1) + … + 10 ∗ (1 + 1) = 923 | 25 |'
+- en: '| **Network C**: 784 features, 3 layers: *n*[1] = 10, *n*[2] = 10, *n*[3] = 10
+    | *Q*[*C*] = 10 ∗ (784 + 1) + 10 ∗ (10 + 1) + 10 ∗ (10 + 1) = 8070 | 30 |'
+  id: totrans-372
+  prefs: []
+  type: TYPE_TB
+  zh: '| **网络 C**: 784 个特征，3 层：*n*[1] = 10, *n*[2] = 10, *n*[3] = 10 | *Q*[*C*] = 10 ∗ (784 + 1) + 10 ∗ (10 + 1) + 10 ∗ (10 + 1) = 8070
+    | 30 |'
+- en: Draw your attention to networks A and B. Both have 25 neurons, but the *Q*[*A*]
+    parameter is much bigger (more than a factor of ten) than *Q*[*B*]. You can imagine
+    how network A will be much more flexible in learning than network B, even if the
+    number of neurons is the same.
+  id: totrans-373
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 请注意网络 A 和 B。它们都有 25 个神经元，但 *Q*[*A*] 参数比 *Q*[*B*] 大得多（超过十倍）。你可以想象，即使神经元的数量相同，网络
+    A 在学习上也会比网络 B 更灵活。
+- en: Note
+  id: totrans-374
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意
+- en: '*Q* in practice is not a measure of how complex or how good a network is. It
+    may well happen that, of all the neurons, only a few will play a role, therefore
+    calculating *Q* in this way does not tell the entire story. There is a vast amount
+    of research on the so-called effective degrees of freedom of deep neural networks
+    but that would go way beyond the scope of this book. But this parameter gives
+    a good rule of thumb for deciding if the set of models you want to test are in
+    a reasonable complexity progression.'
+  id: totrans-375
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 实际上，*Q* 并不是衡量网络复杂度或好坏的指标。可能发生的情况是，在所有神经元中，只有少数会发挥作用，因此以这种方式计算 *Q* 并不能完全说明问题。关于深度神经网络所谓的有效自由度的研究有很多，但这会远远超出本书的范围。但这个参数为决定你想要测试的模型集是否在合理的复杂度递增中提供了一个很好的经验法则。
+- en: Nonetheless, checking *Q* for the model you want to test may give you some hints
+    about what you should neglect and what you should try. For example, let’s consider
+    the cases we have tested in Figure [3-18](#Fig18) and calculate the *Q* parameter
+    for each network (see Table [3-6](#Tab6)).
+  id: totrans-376
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尽管如此，检查你想要测试的模型的 *Q* 参数可能会给你一些提示，关于你应该忽略什么，以及你应该尝试什么。例如，让我们考虑我们在图 [3-18](#Fig18)
+    中测试的案例，并计算每个网络的 *Q* 参数（见表 [3-6](#Tab6))。
+- en: Table 3-6
+  id: totrans-377
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 表 3-6
+- en: Network Architectures Tested in Figure [3-18](#Fig18) with their Corresponding
+    *Q* Parameters
+  id: totrans-378
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 图 [3-18](#Fig18) 中测试的与它们相应的 *Q* 参数的网络架构
+- en: '| Network Architecture | Parameter ***Q*** (Number of Learnable Parameters)
+    | Number of Neurons |'
+  id: totrans-379
+  prefs: []
+  type: TYPE_TB
+  zh: '| 网络架构 | 参数 ***Q***（可学习参数的数量） | 神经元数量 |'
+- en: '| --- | --- | --- |'
+  id: totrans-380
+  prefs: []
+  type: TYPE_TB
+  zh: '| --- | --- | --- |'
+- en: '| 784 features, 1 layer with 1 neuron, 1 layer with ten neurons | *Q* = 1 ∗ (784 + 1) + 10 ∗ (1 + 1) = 895
+    | 11 |'
+  id: totrans-381
+  prefs: []
+  type: TYPE_TB
+  zh: '| 784 个特征，1 层有 1 个神经元，1 层有 10 个神经元 | *Q* = 1 * (784 + 1) + 10 * (1 + 1) = 895
+    | 11 |'
+- en: '| 784 features, 1 layer with 5 neuron, 1 layer with ten neurons | *Q* = 5 ∗ (784 + 1) + 10 ∗ (5 + 1) = 3985
+    | 15 |'
+  id: totrans-382
+  prefs: []
+  type: TYPE_TB
+  zh: '| 784 个特征，1 层有 5 个神经元，1 层有 10 个神经元 | *Q* = 5 * (784 + 1) + 10 * (5 + 1) = 3985
+    | 15 |'
+- en: '| 784 features, 1 layer with 15 neuron, 1 layer with ten neurons | *Q* = 15 ∗ (784 + 1) + 10 ∗ (15 + 1) = 11935
+    | 25 |'
+  id: totrans-383
+  prefs: []
+  type: TYPE_TB
+  zh: '| 784 个特征，1 层有 15 个神经元，1 层有 10 个神经元 | *Q* = 15 * (784 + 1) + 10 * (15 + 1)
+    = 11935 | 25 |'
+- en: '| 784 features, 1 layer with 30 neuron, 1 layer with ten neurons | *Q* = 30 ∗ (784 + 1) + 10 ∗ (30 + 1) = 23860
+    | 40 |'
+  id: totrans-384
+  prefs: []
+  type: TYPE_TB
+  zh: '| 784 个特征，1 层有 30 个神经元，1 层有 10 个神经元 | *Q* = 30 * (784 + 1) + 10 * (30 + 1)
+    = 23860 | 40 |'
+- en: From Figure [3-18](#Fig18), let’s suppose we choose the model with 15 neurons
+    as the candidate for the best model. Now let’s suppose we want to try a model
+    with three layers, all with the same number of neurons that should compete (and
+    possibly be better) than our (for the moment) candidate model, with one layer
+    and 15 neurons. What should we choose as a starting point for the number of neurons
+    in the three layers? Let’s indicate as model A the one with one layer and 15 neurons
+    and model B as the model with three layers and an unknown number of neurons in
+    each layer indicated with *n*[*B*]. We can easily calculate the *Q* parameter
+    for both networks
+  id: totrans-385
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 从图 [3-18](#Fig18) 中，假设我们选择具有 15 个神经元的模型作为最佳模型的候选者。现在假设我们想要尝试一个具有三层，每层具有相同数量的神经元，这些神经元应该能够竞争（并且可能优于）我们（目前）的候选模型，其中一层有
+    15 个神经元。我们应该选择什么作为三层中神经元数量的起点？让我们用模型 A 表示一层有 15 个神经元的模型，用模型 B 表示具有三层且每层神经元数量未知的模型，用
+    *n*[*B*] 表示。我们可以轻松地计算两个网络的 *Q* 参数
+- en: '![$$ {Q}_A=15\ast \left(784+1\right)+10\ast \left(15+1\right)=11935 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaa.png)'
+  id: totrans-386
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {Q}_A=15\ast \left(784+1\right)+10\ast \left(15+1\right)=11935 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaa.png)'
+- en: And
+  id: totrans-387
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 然后
+- en: '![$$ {Q}_B={n}_B\ast \left(784+1\right)+{n}_B\ast \left({n}_B+1\right)+{n}_B\ast
+    \left({n}_B+1\right)+10\ast \left({n}_B+1\right)=2\ {n}_B^2+797\ {n}_B+10 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equab.png)'
+  id: totrans-388
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ {Q}_B={n}_B\ast \left(784+1\right)+{n}_B\ast \left({n}_B+1\right)+{n}_B\ast
+    \left({n}_B+1\right)+10\ast \left({n}_B+1\right)=2\ {n}_B^2+797\ {n}_B+10 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equab.png)'
+- en: What value for *n*[*B*] will give *Q*[*B*] ≈ *Q*[*A*]? We can solve the equation
+  id: totrans-389
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于什么值的 *n*[*B*] 会使得 *Q*[*B*] ≈ *Q*[*A*]？我们可以解这个方程
+- en: '![$$ 2\ {n}_B^2+797\ {n}_B+10=11935 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equac.png)'
+  id: totrans-390
+  prefs: []
+  type: TYPE_IMG
+  zh: '![$$ 2\ {n}_B^2+797\ {n}_B+10=11935 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equac.png)'
+- en: You should be able to solve a quadratic equation, so we will only look at the
+    solution here. This equation is solved for a value of *n*[*B*] = 14.4, but since
+    we cannot have 14.4 neurons, we will need to use the closest integer, *n*[*B*] = 14\.
+    For *n*[*B*] = 14, we will have *Q*[*B*] = 11560, a value very close to 11935.
+  id: totrans-391
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你应该能够解一个二次方程，所以我们只看这里的解。这个方程解出的 *n*[*B*] 值为 14.4，但由于我们不能有 14.4 个神经元，我们需要使用最接近的整数，即
+    *n*[*B*] = 14。对于 *n*[*B*] = 14，我们将有 *Q*[*B*] = 11560，这个值非常接近 11935。
+- en: Note
+  id: totrans-392
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注
+- en: The fact that the two networks have the same number of learnable parameters
+    does not mean that they can reach the same accuracy and does not even mean that
+    if one learns very quickly the second will learn at all!
+  id: totrans-393
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 两个网络具有相同数量的可学习参数这一事实并不意味着它们可以达到相同的准确度，甚至并不意味着如果一个学习得非常快，第二个是否也会学习！
+- en: The model with three layers, each with 14 neurons, could be a good starting
+    point for further testing.
+  id: totrans-394
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 具有三个层，每层有 14 个神经元的模型可能是进一步测试的一个好的起点。
+- en: 'Let’s discuss another point that is important when dealing with a complex dataset.
+    Consider the first layer. Let’s suppose we consider the Zalando dataset and we
+    create a network with two layers: the first with one neuron and the second with
+    many. All the complex features that your dataset has may well be lost in your
+    single first neuron, since it will combine all features into a single value and
+    pass the same value to all the other neurons of the second layer.'
+  id: totrans-395
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 让我们讨论另一个在处理复杂数据集时非常重要的点。考虑第一层。假设我们考虑Zalando数据集，并创建一个包含两层网络：第一层有一个神经元，第二层有多个神经元。你的数据集可能包含的所有复杂特征可能会在你的单个第一个神经元中丢失，因为它会将所有特征组合成一个单一值，并将相同的值传递给第二层的所有其他神经元。
+- en: Tips for Choosing the Right Network
+  id: totrans-396
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+  zh: 选择正确网络的建议
+- en: You have discussed a lot of cases, you have seen a lot of formulas, but how
+    can you decide how to design your network?
+  id: totrans-397
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 你已经讨论了很多案例，看到了很多公式，但你怎么决定如何设计你的网络？
+- en: 'Unfortunately, there is no fixed set of rules. But you may consider the following
+    tips:'
+  id: totrans-398
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 不幸的是，没有固定的规则。但你可以考虑以下建议：
+- en: When considering a set of models (or network architectures) you want to test,
+    a good rule of thumb is to start with a less complex one and move to more complex
+    ones. A rule of thumb to estimate the relative complexity (to make sure that you
+    are moving in the right direction) is the *Q* parameter .
+  id: totrans-399
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 当考虑你想要测试的一组模型（或网络架构）时，一个好的经验法则是从一个较简单的开始，然后逐渐过渡到更复杂的。一个估计相对复杂性的经验法则是*Q*参数。
+- en: If you cannot reach good accuracy if any of your layers has a particular low
+    number of neurons. This layer may kill the effective capacity of learning from
+    a complex dataset of your network. Consider for example the case with one neuron
+    in Figure [3-18](#Fig18). The model cannot reach low values for the cost function
+    because the network is too simple to learn from a complex dataset like the Zalando
+    one.
+  id: totrans-400
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 如果你的任何一层具有特定数量的神经元太少，那么你无法达到良好的准确度。这个层可能会降低你的网络从复杂数据集中学习有效能力。例如，考虑图[3-18](#Fig18)中只有一个神经元的情况。由于网络太简单，无法从像Zalando这样的复杂数据集中学习，因此模型无法达到成本函数的低值。
+- en: Remember that a low or high number of neurons is always relative to the number
+    of features you have. If you have only two features in your dataset, one neuron
+    may well be enough, but if you have a few hundred (like in the Zalando dataset,
+    where *n*[*x*] = 784), you should not expect one neuron to be enough.
+  id: totrans-401
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 记住，神经元数量低或高总是相对于你拥有的特征数量而言的。如果你的数据集中只有两个特征，一个神经元可能就足够了，但如果你有几百个（比如Zalando数据集中，*n*[*x*]
+    = 784），你不应该期望一个神经元就足够了。
+- en: Which architecture you need is also dependent on what you want to do. It’s always
+    worth checking the online literature to see what others have already discovered
+    about specific problems. For example, it’s well known that for image recognition,
+    convolutional networks are very good, so they would be a good choice.
+  id: totrans-402
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: 你需要的架构也取决于你想要做什么。始终检查在线文献，看看别人已经发现了关于特定问题的什么。例如，众所周知，对于图像识别，卷积网络非常好，所以它们是一个很好的选择。
+- en: Final Tip
+  id: totrans-403
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 最后的建议
+- en: When moving from a model with *L* layers to one with *L* + 1 layers, it’s always
+    a good idea to start with the new model and use a slightly smaller number of neurons
+    in each layer and then increase it step by step. Remember that more layers have
+    a chance of learning complex features more effectively, so if you are lucky fewer
+    neurons may be enough. It is something worth trying. Always keep track of your
+    optimizing metric for all your models. When you are not getting much improvement
+    anymore, it may be worth trying completely different architectures (maybe convolutional
+    neuronal networks, etc.).
+  id: totrans-404
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当从一个具有*L*层的模型移动到一个具有*L*+1层的模型时，始终从新模型开始，并在每一层使用稍微少一点的神经元，然后逐步增加。记住，更多的层有更有效地学习复杂特征的机会，所以如果你很幸运，可能更少的神经元就足够了。这是值得一试的事情。始终跟踪你所有模型的优化指标。当你不再获得很大改进时，尝试完全不同的架构（比如卷积神经网络等）可能是有价值的。
+- en: Estimating the Memory Requirements of Models
+  id: totrans-405
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 估算模型的内存需求
+- en: For the calculation, let’s consider a feed-forward neural network with *N*[*L*]
+    hidden layers, each having *n* neurons. Let’s consider a concrete case to make
+    things clearer. Suppose we are working with the MNIST dataset. In this case, the
+    input data is composed of a vector of the 784 gray values of the images (each
+    image is 28 × 28 pixels in gray values). The output layer of a network for classification
+    will be composed of ten neurons (the ten classes in which the model tries to classify
+    the images). The total number of weights *N*[*W*] can be easily calculated and
+    can be written as follows
+  id: totrans-406
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 对于计算，让我们考虑一个具有 *N*[*L*] 个隐藏层的前馈神经网络，每个隐藏层有 *n* 个神经元。让我们考虑一个具体的例子来使事情更清晰。假设我们正在处理
+    MNIST 数据集。在这种情况下，输入数据由图像的 784 个灰度值向量组成（每个图像的灰度值为 28 × 28 像素）。用于分类的网络输出层将由十个神经元组成（模型试图将这些图像分类的十个类别）。总权重数
+    *N*[*W*] 可以很容易地计算出来，可以写成以下形式
+- en: '![$$ {N}_W=\underset{\mathrm{Weights}}{\underbrace{784n+{N}_L{n}^2+10n}}+\underset{\mathrm{Biases}}{\underbrace{N_Ln}}\underset{\mathrm{large}\
+    n}{\sim }{N}_L{n}^2 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equad.png)'
+  id: totrans-407
+  prefs: []
+  type: TYPE_IMG
+  zh: '![神经网络权重公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equad.png)'
+- en: Where the second part of the equation mean that, for large *n*, *N*[*W*] will
+    asymptotically grow quadratically in *n*, which is the number of neurons in each
+    layer. In general, there are three components that need to be taken into account.
+  id: totrans-408
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 方程式的第二部分意味着，对于大的 *n*，*N*[*W*] 将在 *n*（每层的神经元数量）中呈二次增长，这是通常需要考虑的三个组成部分。
+- en: '**Parameters**: In memory, you need to keep the parameters, their gradients
+    during backpropagation, and also additional information if the optimization is
+    using momentum, Adagrad, Adam, or RMSProp optimizers. A good rule of thumb in
+    order to account for all these factors^([6](#Fn6)) is to multiply the memory taken
+    by the weights alone by roughly 3\. With the notation we have used so far, the
+    memory used from parameters (indicated with *M*[*W*]) in Gb would be'
+  id: totrans-409
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**参数**：在内存中，你需要保留参数、反向传播期间的梯度，以及如果优化使用动量、Adagrad、Adam 或 RMSProp 优化器时需要的一些附加信息。为了考虑到所有这些因素^([6](#Fn6))，一个很好的经验法则是将仅由权重占用的内存乘以大约
+    3。使用我们迄今为止使用的符号，参数（用 *M*[*W*] 表示）在 Gb 中使用的内存将是'
+- en: '![$$ {M}_W=\underset{\mathrm{Correction}\ \mathrm{Factor}}{\underbrace{3}}+\underset{\mathrm{Conversion}\
+    \mathrm{to}\ \mathrm{byets}\ \mathrm{for}\ \mathrm{Floating}\ \mathrm{point}\
+    64}{\underbrace{64/8}}+\underset{\mathrm{Conversion}\ \mathrm{to}\  Gb}{\underbrace{\frac{N_W}{1024^3}}}
+    $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equae.png)'
+  id: totrans-410
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+  zh: '![权重内存公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equae.png)'
+- en: '**Activations**: Each neuron output must be stored, normally with their gradient
+    for backpropagation. Conservatively only a mini-batch will need to be kept in
+    memory. Calling *S*[*MB*] the mini-batch size the memory needed for activations
+    *M*[*A*] in Gb can be written as'
+  id: totrans-411
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**激活**：每个神经元的输出必须被存储，通常与它们的梯度一起用于反向传播。保守起见，只需要在内存中保留一个小的批量。将小批量大小称为 *S*[*MB*]，激活所需的内存
+    *M*[*A*] 在 Gb 中可以写成'
+- en: '![$$ {M}_A=2{S}_{MB}\left(2n+10\right)\frac{8}{1024^3} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaf.png)'
+  id: totrans-412
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+  zh: '![激活内存公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaf.png)'
+- en: '**Miscellaneous**: This part includes the data that must be loaded into memory
+    and so on. For the purposes of a rough estimate, the memory taken here *M*[*M*]
+    will be estimated only with the dataset size. In the case of MNIST, that will
+    be (in Gb) given by the following equation. Each pixel value, although originally
+    an INT8, must be converted to floating-point 64-data type to perform the training'
+  id: totrans-413
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '**杂项**：这部分包括必须加载到内存中的数据等。为了粗略估计，这里使用的内存大小 *M*[*M*] 将仅根据数据集大小进行估计。在 MNIST 的情况下，它将（以
+    Gb 计）由以下公式给出。每个像素值，尽管最初是 INT8，但必须转换为浮点 64 数据类型以进行训练'
+- en: '![$$ {M}_M=6000\times 784\frac{8}{1024^3} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equag.png)'
+  id: totrans-414
+  prefs:
+  - PREF_IND
+  type: TYPE_IMG
+  zh: '![MNIST 数据集内存公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equag.png)'
+- en: For example, to find out if a model will run on a limited memory device that
+    will have *M*[*D*] GB free, it is enough to check if the following equation has
+    solutions in *n* or *N*[*L*]
+  id: totrans-415
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 例如，为了确定一个模型是否能在具有*N*[*D*] GB空闲内存的受限内存设备上运行，只需检查以下方程在*n*或*N*[*L*]中是否有解
+- en: '![$$ {M}_W+{M}_A+{M}_M={M}_D $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equah.png)'
+  id: totrans-416
+  prefs: []
+  type: TYPE_IMG
+  zh: '![内存占用公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equah.png)'
+- en: Note that this is just a rough indication and will not be precise since the
+    amount of memory taken by a model may depend on software versions, the operating
+    system, and many more factors. If we solve the last equation for *n* for example,
+    we can get a very good estimate of the biggest FFNN network that could be run
+    on such a device when applied to MNIST. For example, consider the case of a Raspberry
+    Pi 4 with 2 GB of memory. Typically, such a system has roughly *M*[*D*] = 1.7
+    GB free at any moment. So for a network with *N*[*L*] = 2 and *S*[*MB*] = 128,
+    the last equation will give a solution of *n* ≈ 8200\. Indeed, trying to train
+    a network with more than 8200 neurons on such a device will give a memory error
+    on the device, since there is not enough memory to keep everything available in
+    RAM. (If you test it, your results may vary, depending as mentioned on which version
+    of the Raspberry Pi you have, which version of TensorFlow you are using, and so
+    on.)
+  id: totrans-417
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 注意，这只是一个粗略的指示，不会非常精确，因为模型占用的内存量可能取决于软件版本、操作系统以及许多其他因素。如果我们解最后一个方程中的*n*，例如，我们可以得到在应用于MNIST时，在这样一个设备上可以运行的最大的FFNN网络的一个非常好的估计。例如，考虑一个具有2
+    GB内存的Raspberry Pi 4的情况。通常，这样的系统在任何时候大约有*M*[*D*] = 1.7 GB的空闲内存。所以对于*N*[*L*] = 2和*S*[*MB*] = 128的网络，最后一个方程将给出*n* ≈ 8200的解。确实，尝试在这样一个设备上训练超过8200个神经元的网络将导致设备上的内存错误，因为内存不足以在RAM中保留所有内容。（如果你测试它，你的结果可能会有所不同，取决于你拥有的Raspberry
+    Pi版本、你使用的TensorFlow版本等等。）
+- en: For practical purposes to get a rougher estimate, you can neglect the linear
+    terms in *n* in the last equation and still get a usable guideline. For example,
+    in the example discussed previously, neglecting the linear term would give an
+    estimate of *n* ≈ 8700\. Higher than the actual one, but one that will give useful
+    rough information about the maximum number of usable neurons. Finally, remember
+    that only a practical test will guarantee that a specific model can run on a low-memory
+    device.
+  id: totrans-418
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 为了得到一个更粗略的估计，在实际应用中可以忽略最后一个方程中*n*的线性项，仍然可以得到一个有用的指导。例如，在前面讨论的例子中，忽略线性项将给出*n* ≈ 8700的估计。这个估计比实际的高，但可以提供有关最大可用神经元的数量的一些有用的粗略信息。最后，请记住，只有实际测试才能保证特定的模型可以在低内存设备上运行。
+- en: General Formula for the Memory Footprint
+  id: totrans-419
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 内存占用的一般公式
+- en: In general , when working with a dataset of size *n*[*x*] the formula for the
+    number of parameters can be written as follows
+  id: totrans-420
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 通常，当处理大小为*n*[*x*]的数据集时，参数数量的公式可以写成以下形式
+- en: '![$$ {N}_W=\underset{\mathrm{Weights}}{\underbrace{n_xn+{N}_L{n}^2+{N}_On}}+\underset{\mathrm{Biases}}{\underbrace{N_Ln}}\underset{\mathrm{large}\
+    n}{\sim }{N}_L{n}^2 $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equai.png)'
+  id: totrans-421
+  prefs: []
+  type: TYPE_IMG
+  zh: '![神经网络权重公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equai.png)'
+- en: Where we indicate the number of neurons in the output layer as *N*[*O*]. If
+    you refer to the previous section, you can see that the formulas for *M*[*W*]
+    and *M*[*A*] are unchanged, while *M*[*M*] needs to be written as
+  id: totrans-422
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 当我们表示输出层中的神经元数量为*N*[*O*]时。如果你参考了上一节，你可以看到*M*[*W*]和*M*[*A*]的公式没有变化，而*M*[*M*]需要写成
+- en: '![$$ {M}_M=m{n}_x\frac{8}{1024^3} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaj.png)'
+  id: totrans-423
+  prefs: []
+  type: TYPE_IMG
+  zh: '![内存占用公式](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equaj.png)'
+- en: This accounts for the fact that the dataset size is not 60000 but *m* and that
+    the input dimension is not 784 but *n*[*x*].
+  id: totrans-424
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 这考虑到数据集大小不是60000而是*m*，输入维度不是784而是*n*[*x*]。
+- en: Exercises
+  id: totrans-425
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 练习
+- en: 'Exercise 1 (Level: Easy)'
+  id: totrans-426
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 练习1（难度：简单）
+- en: 'Try to build a multiclass classification model like the one you saw in this
+    chapter, but with a different dataset, the MNIST database of handwritten digits
+    ([`http://yann.lecun.com/exdb/mnist/`](http://yann.lecun.com/exdb/mnist/)). To
+    download the dataset from TensorFlow, use the following code:'
+  id: totrans-427
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试构建一个类似于本章中看到的多类分类模型，但使用不同的数据集，即手写数字的MNIST数据库([`http://yann.lecun.com/exdb/mnist/`](http://yann.lecun.com/exdb/mnist/))。要从TensorFlow下载数据集，请使用以下代码：
+- en: '[PRE21]'
+  id: totrans-428
+  prefs: []
+  type: TYPE_PRE
+  zh: '[PRE21]'
+- en: 'Exercise 2 (Level: Medium)'
+  id: totrans-429
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 练习2（难度：中等）
+- en: Apply He weight initialization to the multiclass classification problem you
+    saw in this chapter to see if you can speed up the learning phase.
+  id: totrans-430
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 将本章中看到的多元分类问题应用 He 权重初始化，看看你是否能加快学习阶段。
+- en: 'Exercise 3 (Level: Difficult)'
+  id: totrans-431
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 练习 3（难度：困难）
+- en: 'Try to optimize the feed-forward neural network built in this chapter to reach
+    the best possible accuracy (without overfitting the training dataset!). Tune the
+    number of epochs, the learning rate, the optimizer, the number of neurons, the
+    layers, and the mini-batches. *Hint*: Write a function like the one we used to
+    test different numbers of layers and neurons and give it as inputs all the tunable
+    parameters.'
+  id: totrans-432
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 尝试优化本章中构建的前馈神经网络，以达到最佳可能的准确率（不要过度拟合训练数据集！）调整训练轮数、学习率、优化器、神经元数量、层数和迷你批处理。*提示*：编写一个类似于我们用来测试不同层数和神经元数量的函数，并将所有可调整的参数作为输入。
+- en: 'Exercise 4 (Level: Difficult)'
+  id: totrans-433
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 练习 4（难度：困难）
+- en: 'Consider the regression problem we solved with a model made by a single neuron
+    (predicting radon activity in U.S. houses). Try to build a feed-forward neural
+    network to solve the same regression task. See if you can get better prediction
+    performance. *Hint*: You will need to change the loss function and the metrics
+    to evaluate your results, and one-hot encoding will not be necessary anymore.
+    As a starting point, you can find the entire code in the online version of the
+    book at [`https://adl.toelt.ai`](https://adl.toelt.ai).'
+  id: totrans-434
+  prefs: []
+  type: TYPE_NORMAL
+  zh: 考虑我们使用单个神经元构建的模型解决的回归问题（预测美国房屋中的氡活动）。尝试构建一个前馈神经网络来解决相同的回归任务。看看你是否能获得更好的预测性能。*提示*：你需要更改损失函数和评估结果的标准，并且不再需要独热编码。作为起点，你可以在书籍的在线版本中找到整个代码，网址为
+    [https://adl.toelt.ai](https://adl.toelt.ai).
+- en: References
+  id: totrans-435
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+  zh: 参考文献
+- en: '[1] Burnham, K. P.; Anderson, D. R. (2002), *Model Selection and Multimodel
+    Inference* (2nd ed.), Springer-Verlag.'
+  id: totrans-436
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[1] Burnham, K. P.; Anderson, D. R. (2002), *模型选择与多模型推断*（第2版），Springer-Verlag.'
+- en: '[2] [`https://en.wikipedia.org/wiki/Zalando`](https://en.wikipedia.org/wiki/Zalando),
+    last accessed 16.02.2021.'
+  id: totrans-437
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[2] [https://en.wikipedia.org/wiki/Zalando](https://en.wikipedia.org/wiki/Zalando),
+    最后访问日期 16.02.2021.'
+- en: '[3] [`www.kaggle.com`](http://www.kaggle.com), last accessed 16.02.2021.'
+  id: totrans-438
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[3] [http://www.kaggle.com](http://www.kaggle.com), 最后访问日期 16.02.2021.'
+- en: '[4] Xiao, Han, Kashif Rasul, and Roland Vollgraf. “Fashion-mnist: a novel image
+    dataset for benchmarking machine learning algorithms.” arXiv preprint arXiv:1708.07747
+    (2017).'
+  id: totrans-439
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[4] Xiao, Han, Kashif Rasul, and Roland Vollgraf. “Fashion-mnist: a novel image
+    dataset for benchmarking machine learning algorithms.” arXiv preprint arXiv:1708.07747
+    (2017).'
+- en: '[5] [`https://keras.io/api/models/model_training_apis/#fit-method`](https://keras.io/api/models/model_training_apis/%2523fit-method),
+    last accessed 14/03/2021.'
+  id: totrans-440
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[5] [https://keras.io/api/models/model_training_apis/#fit-method](https://keras.io/api/models/model_training_apis/%2523fit-method),
+    最后访问日期 14/03/2021.'
+- en: '[6] “Understanding the Difficulty of Training Deep Feedforward neural networks”,
+    X. Glorot, Y. Bengio (2010), [`https://goo.gl/bHB5BM`](https://goo.gl/bHB5BM).'
+  id: totrans-441
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[6] “理解训练深度前馈神经网络的难度”，X. Glorot, Y. Bengio (2010)，[https://goo.gl/bHB5BM](https://goo.gl/bHB5BM).'
+- en: '[7] [`https://www.tensorflow.org/api_docs/python/tf/keras/initializers`](https://www.tensorflow.org/api_docs/python/tf/keras/initializers),
+    last accessed 23.02.2021.'
+  id: totrans-442
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+  zh: '[7] [https://www.tensorflow.org/api_docs/python/tf/keras/initializers](https://www.tensorflow.org/api_docs/python/tf/keras/initializers),
+    最后访问日期 23.02.2021.'
