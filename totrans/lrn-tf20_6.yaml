@@ -1,7 +1,9 @@
 - en: 6. TensorFlow Models in Production
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 6. TensorFlow 模型在生产环境中的应用
 - en: In this final chapter of the book, you will apply what you’ve learned in previous
     chapters and deploy the models built in TensorFlow 2.0 in a production environment.
     We believe that there are two principal aspects to using machine learning. The
@@ -18,26 +20,38 @@
     deployment and their challenges. The second part demonstrates how to deploy a
     Python-based machine language model, using Flask (web framework). In the chapter’s
     final section, we discuss the process of building a TensorFlow 2.0–based model.
+  id: totrans-1
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本书的最后一章中，你将应用之前章节中学到的知识，并在生产环境中部署在 TensorFlow 2.0 中构建的模型。我们认为使用机器学习的两个主要方面是：第一个方面是能够构建任何类型的机器学习模型，而不将其与任何应用程序集成（独立模型）；第二个方面，影响更大的方面，涉及将训练好的机器学习模型与一个应用程序嵌入在一起。与第一个方面相比，第二个方面可能会变得更加复杂，因为我们必须暴露训练好的模型端点，以便应用程序能够消费和使用它们的预测结果以进行激活或其他目的。本章介绍了我们可以用来部署机器学习模型的一些技术。我们不会构建一个完整的基于
+    TensorFlow 的应用程序。相反，我们将探讨不同的框架来保存模型、重新加载它进行预测以及部署它。在章节的第一部分，我们回顾了模型部署的内部结构和它们的挑战。在章节的第二部分，我们演示了如何使用
+    Flask（Web 框架）部署一个基于 Python 的机器学习模型。在章节的最后部分，我们讨论了构建基于 TensorFlow 2.0 的模型的过程。
 - en: Model Deployment
+  id: totrans-2
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 模型部署
 - en: '*The sad reality: the most common way Machine Learning gets deployed today
     is PowerPoint slides.*'
+  id: totrans-3
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '*令人悲哀的现实：目前机器学习最常见的方式是 PowerPoint 幻灯片。*'
 - en: ''
+  id: totrans-4
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: “Deploying Machine Learning at Scale,” Algorithmia, [`https://info.algorithmia.com/deploying-machine-learning-at-scale-1`](https://info.algorithmia.com/deploying-machine-learning-at-scale-1),
     May 29, 2018.
+  id: totrans-5
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: “大规模部署机器学习”，Algorithmia，[https://info.algorithmia.com/deploying-machine-learning-at-scale-1](https://info.algorithmia.com/deploying-machine-learning-at-scale-1)，2018
+    年 5 月 29 日。
 - en: According to a survey, less than 5% of commercial data science projects make
     it to production. For readers who have never undertaken any sort of software or
     machine learning deployment before, let us explain a few fundamental features
@@ -52,8 +66,10 @@
     become critical components. The successful deployment of a model takes a lot of
     planning and testing before an application platform matures to a level of self-sustaining
     prediction.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据一项调查，不到 5% 的商业数据科学项目能够进入生产阶段。对于以前从未进行过任何形式的软件或机器学习部署的读者，让我们解释一下模型部署的一些基本特征。它更与应用程序的可扩展性方面相关，可以服务更多的请求。例如，几乎每个人都可以为自己或家人在家做饭。另一方面，要成功地为餐厅或在线食品服务做饭，则需要不同的要求、技能和资源。前者可以轻松完成，而后者可能需要大量的规划、实施和测试才能顺利运营。模型部署也是如此。在机器学习模型必须部署在应用程序系统中的场景中，集成和维护成为关键组成部分。在应用程序平台成熟到能够自我维持预测的水平之前，模型的成功部署需要大量的规划和测试。
 - en: There is little doubt or argument regarding the fact that the true value of
     machine learning can only be unlocked or gained when it’s deployed in an application
     or system. Without deployment, machine learning offers limited success and impact
@@ -66,12 +82,16 @@
     learning–based application, which is not always easy to carry out. Therefore,
     let’s go over some of the challenges one might face while deploying a model into
     an application or system.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于这样一个事实，即机器学习的真正价值只有在部署到应用或系统中时才能解锁或获得，几乎没有疑问或争议。没有部署，机器学习在当今的商业世界中只能取得有限的成功和影响。部署为机器学习能力提供了一个令人兴奋的维度。假设我们对机器学习模型有相当的了解，我们可以安全地转向其部署方面。为了设定正确的期望，让我们一开始就做一个大胆的声明。与部署相比，机器学习相对容易。原因是部署带来了一系列必须考虑的其他参数，以便构建一个端到端的基于机器学习的应用程序，这并不总是容易实现的。因此，让我们回顾一下在将模型部署到应用或系统时可能会遇到的一些挑战。
 - en: Isolation
+  id: totrans-8
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 隔离
 - en: Machine learning models can be built in isolation. In fact, all that we require
     to build a machine learning model is reasonably sized training data. However,
     deployment of a machine learning model doesn’t work in isolation. Figure [6-1](#Fig1)
@@ -80,81 +100,113 @@
     In reality, a machine learning model code seems to be a very small component in
     the overall setup. It is the rest of the elements that demand consistent engagement
     and communication with the machine learning model.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 机器学习模型可以独立构建。实际上，我们构建机器学习模型所需的所有东西就是合理规模的训练数据。然而，机器学习模型的部署并不是孤立的。图 [6-1](#Fig1)（摘自Sculley等人，“机器学习系统中的隐藏技术债务”，2015年）描绘了机器学习模型部署带来的挑战。实际上，机器学习模型代码在整体设置中似乎只是一个非常小的组成部分。其余的元素需要与机器学习模型保持持续的参与和沟通。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig1_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig1_HTML.jpg)'
+  id: totrans-10
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig1_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig1_HTML.jpg)'
 - en: Figure 6-1
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-1
 - en: Application management
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 应用管理
 - en: Collaboration
+  id: totrans-13
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 协作
 - en: Most of us are aware that it’s teams who build products or execute projects.
     Therefore, it takes a lot of collaboration and engagement to build or deploy a
     successful product. It’s no different in the machine learning world, where application
     developers might have to coordinate with data scientists, to deploy a model in
     a system. Issues arise, for example, when the model is built in one language,
     and DevOps or applications folks are using some other language.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们中的大多数人意识到，是团队构建产品或执行项目。因此，构建或部署一个成功的产品需要大量的协作和参与。在机器学习领域也是如此，应用开发者可能需要与数据科学家协调，以在系统中部署模型。例如，当模型是用一种语言构建的，而DevOps或应用人员使用另一种语言时，就会产生问题。
 - en: Model Updates
+  id: totrans-15
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 模型更新
 - en: Things around us hardly remain the same. However, a few things are changing
     so rapidly that technology has not been able to keep pace with the changing behaviors
     of users. Similarly, machine learning models must also be regularly updated, in
     order to remain relevant and highly efficient. This is easier to ensure with a
     standalone model, but it requires a lot of steps to update a model live in production.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们周围的事物几乎不会保持不变。然而，有一些事物变化如此之快，以至于技术还没有能够跟上用户行为的变化。同样，机器学习模型也必须定期更新，以保持相关性和高效性。对于独立模型来说，这更容易保证，但在生产环境中实时更新模型需要很多步骤。
 - en: Model Performance
+  id: totrans-17
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 模型性能
 - en: The whole idea of using machine learning in applications is to be able to generalize
     well and help customers make suitable choices. This all depends on the performance
     underneath the model. Therefore, the tracking and monitoring of models in production
     become a critical part of the overall application.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 在应用中使用机器学习的整个想法是能够很好地泛化并帮助客户做出合适的决策。这完全取决于模型底层的性能。因此，对生产中的模型进行跟踪和监控成为整体应用的一个关键部分。
 - en: Load Balancer
+  id: totrans-19
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 负载均衡器
 - en: The final challenge in model deployment is the ability to handle requests at
     scale. Every application or platform should be designed in such a way that it
     can work seamlessly in high-traffic situations.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型部署的最终挑战是处理大规模请求的能力。每个应用程序或平台都应该设计成能够在高流量情况下无缝工作。
 - en: Now that we have reviewed the challenges faced in model deployment, we can go
     over some of the basic-to-intermediate steps to deploy Python-based models. Again,
     the focus of this chapter is to expose some of the available tools and techniques
     to deploy machine learning models, instead of building a full application.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经回顾了模型部署中面临的挑战，我们可以回顾一些基本的到中级步骤来部署基于Python的模型。再次强调，本章的重点是介绍一些可用的工具和技术来部署机器学习模型，而不是构建一个完整的应用程序。
 - en: Python-Based Model Deployment
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基于Python的模型部署
 - en: There are multiple ways in which a machine learning model can be deployed in
     production. All depend on the requirement and load that is expected to be served
     by the model. In this section, we will go over a couple of approaches, to see
     how we can create, save, and restore a Python-based machine learning model for
     making predictions. We then move on to deploying TensorFlow-based models in production,
     in the last section.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 机器学习模型在生产中的部署有多种方式。所有这些方式都取决于模型预期要服务的需求和负载。在本节中，我们将介绍几种方法，以了解我们如何创建、保存和恢复基于Python的机器学习模型以进行预测。然后我们在最后一节中转向在生产中部署基于TensorFlow的模型。
 - en: Saving and Restoring a Machine Learning Model
+  id: totrans-24
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 保存和恢复机器学习模型
 - en: At the end of the day, a machine learning model is simply a combination of a
     few scores, respective to every input feature used while training the model, which
     describes the relationship between given inputs and output in the best possible
@@ -169,82 +221,120 @@
     focus on using the `joblib` function to save and persist sklearn models. Once
     the model is saved on disk or at any other location, we can reload or restore
     it back, for making predictions on new data.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 从根本上说，机器学习模型只是几个分数的组合，这些分数对应于在训练模型时使用的每个输入特征，以最佳方式描述了给定输入与输出之间的关系。保存任何机器学习模型（无论是否在Python、R或TensorFlow中构建）都允许我们在任何时间点使用它来对新数据进行预测，以及与其他用户共享。保存任何模型也称为序列化。这也可以以不同的方式完成，因为Python有其自己的模型持久化方式，称为*pickle*。Pickle可以用于序列化机器学习模型以及任何其他转换器。另一种方法具有sklearn内置的功能，允许保存和恢复基于Python的机器学习模型。在本节中，我们将重点介绍使用`joblib`函数保存和持久化sklearn模型。一旦模型在磁盘或任何其他位置保存，我们就可以重新加载或恢复它，以对新数据进行预测。
 - en: In the example below, we consider the standard data set for building a linear
     regression model. The input data has five input columns and one output column.
     All the variables are numeric in nature, so little feature engineering is required.
     Nevertheless, the idea here is not to focus on building a perfect model but to
     build a baseline model, save it, and then restore it. In the first step, we load
     the data and create input and output feature variables (`X,y`).
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面的示例中，我们考虑构建线性回归模型的标准数据集。输入数据有五个输入列和一个输出列。所有变量都是数值型的，因此需要的特征工程很少。然而，这里的想法不是构建一个完美的模型，而是构建一个基线模型，保存它，然后恢复它。在第一步中，我们加载数据并创建输入和输出特征变量（`X,y`）。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figa_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figa_HTML.jpg)'
+  id: totrans-27
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figa_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figa_HTML.jpg)'
 - en: '[PRE0]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: The next step is to split the data into train and test sets. Then we build the
     linear regression model on the training data and access the coefficient values
     for all the input variables.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是将数据分为训练集和测试集。然后我们在训练数据上构建线性回归模型，并访问所有输入变量的系数值。
 - en: '[PRE2]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: The performance of this baseline model seems reasonable, with an R-squared value
     of 87% on the training set and 85% on the test set.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 该基线模型的性能似乎合理，在训练集上的R-squared值为87%，在测试集上的值为85%。
 - en: '[PRE3]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Now that we have the trained model available, we can save it at any location
     or disk, using `joblib` or `pickle`. We name the exported model `linear_regression_model.pkl`.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经有了可用的训练模型，我们可以使用`joblib`或`pickle`在任何位置或磁盘上保存它。我们命名导出的模型为`linear_regression_model.pkl`。
 - en: '[PRE4]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Now, we create a random input feature set and predict the output, using the
     trained model that we just saved.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们创建一个随机的输入特征集，并使用我们刚刚保存的训练模型来预测输出。
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: In order to predict the output with the same model, we first must import or
     load the saved model, using `joblib.load`. Once the model is loaded, we can simply
     use the `predic`t function, to make the prediction on a new data point.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了使用相同的模型预测输出，我们首先必须使用`joblib.load`导入或加载保存的模型。一旦模型被加载，我们就可以简单地使用`predict`函数，对新数据点进行预测。
 - en: '[PRE6]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: This was clearly done from a local disk space and not any cloud location, but
     to an extent, this approach would still work in production, as the pickled file
     of the model can be saved at a location in the production environment. For a couple
     of reasons, this is not the ideal way to deploy your model in production.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 这显然是在本地磁盘空间中完成的，而不是在任何云位置，但在一定程度上，这种方法在生产环境中仍然可以工作，因为模型的可序列化文件可以保存在生产环境中的某个位置。由于几个原因，这并不是在生产环境中部署模型的最佳方式。
 - en: Limited access. Only users who have access to the production environment can
     use the machine learning model, as it is restricted to a particular environment.
+  id: totrans-41
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 访问限制。只有有权访问生产环境的用户才能使用机器学习模型，因为它限制在特定环境中。
 - en: Scalability. Having just a single instance of model prediction can result in
     serious challenges, once the load or demand for the output increases.
+  id: totrans-42
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 可扩展性。一旦负载或对输出的需求增加，仅有一个模型预测实例可能会导致严重的挑战。
 - en: Deploying a Machine Learning Model As a REST Service
+  id: totrans-43
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 将机器学习模型作为REST服务部署
 - en: To overcome the limitations mentioned previously, we can deploy the model as
     a REST (representational state transfer) service, in order to expose it to external
     users. This allows them to use the model output or prediction without having to
@@ -253,40 +343,57 @@
     to deploy applications on a server. This book does not cover Flask in detail,
     but for those readers who have never used it, the following code snippet offers
     a brief introduction.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了克服之前提到的限制，我们可以将模型部署为一个REST（表示状态传输）服务，以便将其暴露给外部用户。这允许他们使用模型输出或预测，而无需访问底层模型。在本节中，我们将使用Flask将模型部署为REST服务。Flask是一个轻量级的Python构建的Web框架，用于在服务器上部署应用程序。本书不会详细介绍Flask，但对于那些从未使用过它的读者，以下代码片段提供了一个简要的介绍。
 - en: We create a simple `.py` file and write the subsequent lines of code, in order
     to run a simple Flask-based app. We first import Flask and create the Flask app.
     Then we decorate our main function, which is a simple Hello World!, with `app.route`,
     which gives the path for accessing the app (a simple `/`, in this case). The last
     step is to run the app, by calling the mains file.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们创建一个简单的`.py`文件，并编写随后的代码行，以运行一个简单的基于Flask的应用程序。我们首先导入Flask并创建Flask应用程序。然后，我们使用`app.route`装饰我们的主函数，这是一个简单的Hello
+    World！，它为访问应用程序提供了路径（在这种情况下是一个简单的`/`）。最后一步是通过调用主文件来运行应用程序。
 - en: '[PRE7]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: We can now go to localhost:5000 and witness the Flask server running and showing
     “Hello World!”
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以访问localhost:5000，并见证Flask服务器正在运行并显示“Hello World！”
 - en: 'Next, we are going to use the model that we built earlier and deploy it, using
     the Flask server. In order to do this, we must create a new folder (`web_app`)
     and save the `model.pkl` file. We are going to use the same model that we built
     in the preceding section. We can either move the `model.pkl` file manually to
     the `web_app` folder or re-save the model, using the earlier script in a new location,
     as shown following:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将使用我们之前构建的模型，并使用Flask服务器进行部署。为了做到这一点，我们必须创建一个新的文件夹（`web_app`）并保存`model.pkl`文件。我们将使用我们在上一节中构建的相同模型。我们可以手动将`model.pkl`文件移动到`web_app`文件夹，或者使用之前的脚本在新位置重新保存模型，如下所示：
 - en: '[PRE8]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Let’s begin to create the main `app.py` file, which will spin up the Flask server
     to run the app.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们开始创建主要的`app.py`文件，该文件将启动Flask服务器以运行应用程序。
 - en: '[PRE9]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Let’s go over the steps, in order to understand the details of the `app.py`
     file. First, we import all the required libraries from Python. Next, we create
     our first function, which is the home page that renders the HTML template to allow
@@ -300,30 +407,46 @@
     another HTML template (`predict.html`). If we run the main file (`app.py`) now
     in the terminal, we will see the page shown in Figure [6-2](#Fig2), asking the
     user to fill the values. The output is shown in Figure [6-3](#Fig3).
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们回顾一下步骤，以便了解`app.py`文件的细节。首先，我们从Python导入所有必需的库。接下来，我们创建第一个函数，这是一个主页，它渲染HTML模板以允许用户填写输入值。下一个函数是将模型对用户提供的输入值进行的预测发布出来。我们将输入值保存到来自用户的五个不同变量中，并创建一个列表（`pred_args`）。然后我们将它转换成一个numpy数组。我们将其重塑成所需的形式，以便能够以相同的方式进行预测。下一步是加载训练好的模型（`linear_regression_model.pkl`）并进行预测。我们将最终输出保存到一个变量（`model_prediction`）中。然后我们通过另一个HTML模板（`predict.html`）发布这些结果。如果我们现在在终端中运行主文件（`app.py`），我们将看到图[6-2](#Fig2)所示的页面，要求用户填写值。输出显示在图[6-3](#Fig3)中。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig3_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig3_HTML.jpg)'
+  id: totrans-53
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig3_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig3_HTML.jpg)'
 - en: Figure 6-3
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-3
 - en: Prediction output
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 预测输出
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig2_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig2_HTML.jpg)'
+  id: totrans-56
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig2_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig2_HTML.jpg)'
 - en: Figure 6-2.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-2。
 - en: Inputs to the model
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型的输入
 - en: Templates
+  id: totrans-59
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 模板
 - en: There are two web pages that we have to design, in order to post requests to
     the server and receive in return the response message, which is the prediction
     by the machine learning model for that particular request. Because this book doesn’t
@@ -332,49 +455,77 @@
     values in five different variables. We are using a standard CSS template with
     very basic fields (Figure [6-4](#Fig4)). Users with prior knowledge of HTML can
     feel free to redesign the home page per their requirements (Figure [6-5](#Fig5)).
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要设计两个网页，以便向服务器发送请求并接收响应消息，这是针对特定请求的机器学习模型的预测结果。由于本书不专注于HTML，您可以简单地使用这些文件，无需对其进行任何修改。但对于好奇的读者，我们正在创建一个表单，用于请求五个不同变量的五个值。我们使用了一个标准的CSS模板，包含非常基本的字段（图[6-4](#Fig4)）。了解HTML的用户可以自由地根据他们的需求重新设计主页（图[6-5](#Fig5)）。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig5_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig5_HTML.jpg)'
+  id: totrans-61
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig5_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig5_HTML.jpg)'
 - en: Figure 6-5
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-5
 - en: Input web page
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入网页
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig4_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig4_HTML.jpg)'
+  id: totrans-64
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig4_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig4_HTML.jpg)'
 - en: Figure 6-4
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-4
 - en: User input’s HTML
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 用户输入的HTML
 - en: The next template is to publish the model prediction back to the user (Figure
     [6-6](#Fig6)). It is less complicated, compared to the first template, as there
     is just one value that we have to post back to the user (Figure [6-7](#Fig7)).
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一个模板是将模型预测结果返回给用户（图[6-6](#Fig6)）。与第一个模板相比，它更简单，因为我们只需要将一个值返回给用户（图[6-7](#Fig7)）。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig7_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig7_HTML.jpg)'
+  id: totrans-68
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig7_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig7_HTML.jpg)'
 - en: Figure 6-7
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-7
 - en: Model’s output
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型的输出
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig6_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig6_HTML.jpg)'
+  id: totrans-71
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig6_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig6_HTML.jpg)'
 - en: Figure 6-6
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-6
 - en: Model’s output HTML
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型的输出HTML
 - en: Now that we have seen how to deploy a model, using a web framework, we can move
     on to the last section of this chapter, which focuses on deploying a TensorFlow
     2.0 model. There are two parts to this section. In the first, we will build a
@@ -382,12 +533,16 @@
     neural network is trained, we will save it and load it back, to make predictions
     on test data. In the second part of this section, we will go over the process
     to deploy the model, using the TensorFlow server platform.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经看到了如何使用Web框架部署模型，我们可以继续本章的最后一部分，该部分专注于部署TensorFlow 2.0模型。本节分为两部分。在第一部分，我们将使用`tf.keras`构建一个标准的深度学习网络，用于分类图像。一旦神经网络训练完成，我们将保存它并重新加载，以便在测试数据上进行预测。在本节的第二部分，我们将介绍使用TensorFlow服务器平台部署模型的流程。
 - en: Challenges of Using Flask
+  id: totrans-75
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用Flask的挑战
 - en: Although Flask is fine for deploying models as a service, it hits a roadblock
     when an application has numerous users. For a small-scale application, Flask can
     do a good job and manage the load. The alternative to Flask can be to use containers,
@@ -402,124 +557,190 @@
     the number of containers, if requests are fewer, and runs another instance of
     the applications, if load increases. In the next section, we are going to see
     how we can build a TensorFlow model and reload it for prediction in TensorFlow.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然Flask适合作为服务部署模型，但当应用程序拥有众多用户时，它就会遇到瓶颈。对于小型应用程序，Flask可以很好地处理负载。Flask的替代方案可以是使用容器，例如Docker。对于从未使用过Docker的读者来说，它仅仅是一种将应用程序容器化的技术，以便在不受平台限制的情况下运行。与手动方法相比，它解决了所有应用程序依赖性问题，运行速度更快，更简单。如今，在生产环境中部署任何应用程序的常见流程是使用Docker进行容器化，然后在Kubernetes或其他任何云平台上运行服务。其中一项挑战是处理对应用程序发出的请求数量。因此，Docker和Kubernetes可以通过内置的负载均衡器管理任何数量的增加请求。如果请求较少，它会减少容器数量；如果负载增加，它会运行应用程序的另一个实例。在下一节中，我们将看到如何构建TensorFlow模型并在TensorFlow中进行预测。
 - en: Building a Keras TensorFlow-Based Model
+  id: totrans-77
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基于Keras TensorFlow的模型构建
 - en: The data set that we are going to use to build this deep neural network is the
     standard Fashion-MNIST set we used previously. We start by importing the required
     libraries and ensuring that we have the latest version of TensorFlow.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将用于构建这个深度神经网络的数据集是之前使用的标准Fashion-MNIST集。我们首先导入所需的库，并确保我们拥有TensorFlow的最新版本。
 - en: '[PRE10]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The next step is to load the data set and divide it into training and test sets.
     We have 60,000 images in the training set on which we are going to train the network.
     Before training the model, we must execute a couple of steps.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是加载数据集并将其分为训练集和测试集。我们在训练集中有60,000张图像，将在其上训练网络。在训练模型之前，我们必须执行几个步骤。
 - en: Label the target classes, so as to recognize the image better.
+  id: totrans-81
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 标记目标类别，以便更好地识别图像。
 - en: Standardizing the size of each image.
+  id: totrans-82
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 标准化每张图像的大小。
 - en: '[PRE11]'
+  id: totrans-83
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'To see a sample image, we can use the `imshow` function and pass a particular
     image, as shown in a couple of examples following:'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 要查看示例图像，我们可以使用`imshow`函数并传递特定的图像，如下面的几个示例所示：
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figb_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figb_HTML.jpg)'
+  id: totrans-85
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figb_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figb_HTML.jpg)'
 - en: '[PRE12]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figc_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figc_HTML.jpg)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figc_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figc_HTML.jpg)'
 - en: '[PRE13]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: The next step is to actually define and build the model. We use a conventional
     sequential model with three layers, the first containing 200 units, the second
     100, and the last containing the prediction layer with 10 units of neurons.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是实际定义和构建模型。我们使用一个传统的顺序模型，包含三个层，第一层包含200个单元，第二层包含100个单元，最后一层包含具有10个神经元的预测层。
 - en: '[PRE15]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: We now train the model on the training set and set the number of epochs to 10.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在在训练集上训练模型，并将epoch数设置为10。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figd_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figd_HTML.jpg)'
+  id: totrans-93
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figd_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figd_HTML.jpg)'
 - en: '[PRE16]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Once the model is trained, we can test its accuracy on the test data. It appears
     to be close to 85%. We can definitely improve the model, by making changes in
     the network or using a CNN (convolutional neural network) that is more suitable
     for image classification, but the idea of this exercise is to save a model and
     call it later for predictions.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦模型训练完成，我们就可以在测试数据上测试其准确性。它似乎接近85%。我们可以通过改变网络或使用更适合图像分类的CNN（卷积神经网络）来改进模型，但这个练习的目的是保存一个模型并在以后进行预测。
 - en: '[PRE17]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Now, we save the model as a Keras model and load it back, using `load_model`
     for prediction.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们将模型保存为Keras模型，并使用`load_model`进行预测来加载它。
 - en: '[PRE18]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: In the following example, we load a test image (`100`), which is a dress, and
     then we will use our saved model to make a prediction about this image.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 在以下示例中，我们加载一张测试图像（`100`），它是一条裙子，然后我们将使用我们保存的模型对这张图像进行预测。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fige_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fige_HTML.jpg)'
+  id: totrans-100
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fige_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fige_HTML.jpg)'
 - en: '[PRE19]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: We create a new variable (`new_image`) and reshape it into the desired form
     for model prediction. The model correctly classifies the image as “Dress.”
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们创建一个新的变量（`new_image`）并将其重塑为模型预测所需的形式。模型正确地将图像分类为“Dress。”
 - en: '[PRE20]'
+  id: totrans-103
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'One more example: We can select another image (`500`) and make a prediction
     using the saved model.'
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一个例子：我们可以选择另一张图像（`500`）并使用保存的模型进行预测。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figf_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figf_HTML.jpg)'
+  id: totrans-105
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Figf_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Figf_HTML.jpg)'
 - en: '[PRE21]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-107
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: TF ind deployment
+  id: totrans-108
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: TF ind部署
 - en: Another way of productionizing the machine learning model is to use the Kubeflow
     platform. Kubeflow is a native tool for managing and deploying machine learning
     models on Kubernetes. Because Kubernetes is beyond the scope of this book, we
@@ -527,8 +748,10 @@
     as a container orchestration platform that allows for the running, deployment,
     and management of containerized applications (machine learning models, in our
     case).
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 将机器学习模型投入生产的另一种方式是使用Kubeflow平台。Kubeflow是用于在Kubernetes上管理和部署机器学习模型的原生工具。由于Kubernetes超出了本书的范围，我们不会深入探讨其细节。然而，Kubernetes可以被定义为一个容器编排平台，它允许运行、部署和管理容器化应用程序（在我们的案例中是机器学习模型）。
 - en: In this section, we will replicate the same model that we built previously and
     run it in the cloud (via Google Cloud Platform), using Kubeflow. We will also
     use the Kubeflow UI, to navigate and run Jupyter Notebook in the cloud. Because
@@ -538,72 +761,114 @@
     Google user account, if you do not have one already. You will be required to provide
     a few additional details, along with credit card information, as shown in Figure
     [6-8](#Fig8).
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将复制之前构建的相同模型，并在云中（通过Google Cloud Platform）运行它，使用Kubeflow。我们还将使用Kubeflow
+    UI，在云中导航和运行Jupyter Notebook。由于我们将使用Google Cloud Platform（GCP），我们必须有一个Google账户，这样我们才能利用Google为GCP组件提供的免费信用额度。前往`https://console.cloud.google.com/`并创建一个Google用户账户，如果您还没有的话。您将需要提供一些额外的详细信息，以及信用卡信息，如图[6-8](#Fig8)所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig8_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig8_HTML.jpg)'
+  id: totrans-111
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig8_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig8_HTML.jpg)'
 - en: Figure 6-8
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 图6-8
 - en: Google user account
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: Google用户账户
 - en: Once we log in to the Google console, there are many options to explore, but
     first, we must enable the free credits provided by Google, in order to access
     the cloud services for free (up to $300). Next, we must create a new project or
     select one of the existing projects, for users already in possession of a Google
     account, as shown in Figure [6-9](#Fig9).
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦我们登录到Google控制台，有许多选项可以探索，但首先，我们必须启用Google提供的免费信用额度，以便免费访问云服务（最高$300）。接下来，我们必须创建一个新的项目或选择一个现有的项目，对于已经拥有Google账户的用户，如图[6-9](#Fig9)所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig9_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig9_HTML.jpg)'
+  id: totrans-115
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig9_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig9_HTML.jpg)'
 - en: Figure 6-9
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-9
 - en: Google project
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: Google 项目
 - en: To use Kubeflow, the final step is to enable Kubernetes Engine APIs. In order
     to enable Kubernetes Engine APIs, we must go to the APIs & Services dashboard
     (Figure [6-10](#Fig10)) and search for Kubernetes Engine API. Once this shows
     up in the library, we must enable it, as shown in Figure [6-11](#Fig11).
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用 Kubeflow，最后一步是启用 Kubernetes Engine API。为了启用 Kubernetes Engine API，我们必须前往
+    API & 服务仪表板（图 [6-10](#Fig10)）并搜索 Kubernetes Engine API。一旦它在库中显示出来，我们必须启用它，如图 [6-11](#Fig11)
+    所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig11_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig11_HTML.jpg)'
+  id: totrans-119
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig11_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig11_HTML.jpg)'
 - en: Figure 6-11
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-11
 - en: Enabling Kubernetes APIs
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 启用 Kubernetes API
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig10_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig10_HTML.jpg)'
+  id: totrans-122
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig10_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig10_HTML.jpg)'
 - en: Figure 6-10
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-10
 - en: APIs dashboard
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: API 仪表板
 - en: The next step is to deploy the Kubernetes cluster on GCP, using Kubeflow. There
     are multiple ways of doing this, but we are going to deploy the cluster by using
     a UI. Go to `https://deploy.kubeflow.cloud/#/` and provide the required details,
     as shown in Figure [6-12](#Fig12).
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是在 GCP 上使用 Kubeflow 部署 Kubernetes 集群。有多种方法可以做到这一点，但我们将通过使用 UI 来部署集群。前往 `https://deploy.kubeflow.cloud/#/`
+    并提供所需的详细信息，如图 [6-12](#Fig12) 所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig12_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig12_HTML.jpg)'
+  id: totrans-126
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig12_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig12_HTML.jpg)'
 - en: Figure 6-12
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-12
 - en: Kubeflow deployment
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: Kubeflow 部署
 - en: We must enter the project ID (to view the project details under the Project
     tab on the GCP console), the deployment name of choice, and select the option
     to log in with a username and password, to keep things simple. Next, we again
@@ -618,45 +883,75 @@
     the Kubeflow Service Endpoint button, and a new UI page will be available. We
     must use the same username and password that we provided during the deployment
     phase, as shown in Figure [6-13](#Fig13).
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们必须输入项目 ID（在 GCP 控制台的“项目”选项卡下查看项目详情），选择所需的部署名称，并选择使用用户名和密码登录的选项，以保持简单。接下来，我们再次输入我们选择的用户名和密码（我们还需要它们来登录到
+    Kubeflow UI）。我们可以根据可用的区域再次选择 Google Kubernetes Engine 区域，并选择 Kubeflow 版本 0.62。点击创建部署确保所有必需的资源将在大约
+    30 分钟内启动并运行。我们还可以通过返回 Google 控制台仪表板并选择 Kubernetes Engine 和集群选项来检查 Kubernetes 集群是否启动并运行。在我们可以看到
+    Kubernetes Engine 集群启动并运行之前可能需要几分钟。现在，Kubeflow 部署已经设置好，我们可以简单地点击 Kubeflow 服务端点按钮，就会有一个新的
+    UI 页面可用。我们必须使用在部署阶段提供的相同用户名和密码，如图 [6-13](#Fig13) 所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig13_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig13_HTML.jpg)'
+  id: totrans-130
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig13_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig13_HTML.jpg)'
 - en: Figure 6-13
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-13
 - en: Kubeflow login
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: Kubeflow 登录
 - en: Once we log in to the Kubeflow UI, we can see the Kubeflow dashboard, with its
     multiple options, such as Pipelines, Notebook Servers, etc., as shown in Figure
     [6-14](#Fig14).
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦我们登录到 Kubeflow UI，我们可以看到 Kubeflow 仪表板，其中包含多个选项，如管道、笔记本服务器等，如图 [6-14](#Fig14)
+    所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig14_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig14_HTML.jpg)'
+  id: totrans-134
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig14_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig14_HTML.jpg)'
 - en: Figure 6-14
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-14
 - en: Kubeflow dashboard
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: Kubeflow 仪表板
 - en: We must select Notebook Servers, to start a new notebook server. For a new notebook
     server, we must provide a few details regarding the desired configuration, as
     shown in Figure [6-15](#Fig15).
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们必须选择笔记本服务器，以启动一个新的笔记本服务器。对于一个新的笔记本服务器，我们必须提供一些有关所需配置的详细信息，如图 [6-15](#Fig15)
+    所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig15_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig15_HTML.jpg)'
+  id: totrans-138
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig15_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig15_HTML.jpg)'
 - en: Figure 6-15
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-15
 - en: Kubeflow Notebook Servers
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: Kubeflow 笔记本服务器
 - en: Now we must provide a few configuration details to spin up the server, such
     as base image (with pre-installed libraries and dependencies), the size of CPU/GPUs,
     and total memory (5 CPUs and 5GB memory suffices for our model). We can select
@@ -665,17 +960,27 @@
     to GCP’s storage bucket and use it for serving purposes. After a while, the notebook
     server will be up and running, and we can click Connect, to open the Jupyter Notebook
     running on the Kubeflow server, as shown in Figure [6-16](#Fig16).
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们必须提供一些配置细节来启动服务器，例如基础镜像（带有预安装的库和依赖项）、CPU/GPU 的大小以及总内存（5 个 CPU 和 5GB 内存足以满足我们的模型需求）。我们可以选择带有
+    TensorFlow 2.0 版本的镜像，因为我们是用这个版本构建模型的。我们还必须添加 GCP 凭据，以防我们想要将模型保存到 GCP 的存储桶中并用于服务目的。过了一会儿，笔记本服务器就会启动并运行，我们可以点击连接，打开在
+    Kubeflow 服务器上运行的 Jupyter Notebook，如图 [6-16](#Fig16) 所示。
 - en: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig16_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig16_HTML.jpg)'
+  id: totrans-142
   prefs: []
   type: TYPE_IMG
+  zh: '![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig16_HTML.jpg](../images/489297_1_En_6_Chapter/489297_1_En_6_Fig16_HTML.jpg)'
 - en: Figure 6-16
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 图 6-16
 - en: Opening the Jupyter Notebook server from Notebook Servers
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 从笔记本服务器打开 Jupyter Notebook 服务器
 - en: Once Jupyter Notebook is up, we can select the option to create a new Python
     3 notebook or simply go to its terminal and clone the required repo from Git,
     to download all the model files to this notebook. In our case, because we are
@@ -684,21 +989,32 @@
     the only difference being that we are now using Kubeflow to build and serve the
     model. In case any library is not available, we can simply pip3 install the library
     and use it in this notebook.
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦 Jupyter Notebook 启动，我们可以选择创建一个新的 Python 3 笔记本，或者简单地进入其终端并从 Git 克隆所需的仓库，将所有模型文件下载到这个笔记本中。在我们的案例中，因为我们是从头开始构建模型，我们将创建一个新的
+    Python 3 笔记本并复制本章中早期构建的相同模型。它应该和之前一样工作，唯一的区别是我们现在使用 Kubeflow 来构建和提供模型。如果任何库不可用，我们只需简单地使用
+    pip3 install 安装库并在笔记本中使用它。
 - en: Once the model is built and we have used the services of Kubeflow, we must terminate
     and delete all the resources, in order to avoid any extra cost. We must go back
     to the Google console and, under the Kubernetes clusters list, delete the Kubeflow
     server.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦模型构建完成并且我们使用了 Kubeflow 的服务，我们必须终止并删除所有资源，以避免任何额外费用。我们必须回到 Google 控制台，在 Kubernetes
+    集群列表下删除 Kubeflow 服务器。
 - en: Conclusion
+  id: totrans-147
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this chapter, we explored the common challenges faced when taking machine
     learning models into production and how to overcome them. We also reviewed the
     process for saving a machine learning model (Python- and TensorFlow-based) and
     deploying it into production, using different frameworks.
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本章中，我们探讨了将机器学习模型投入生产时面临的常见挑战以及如何克服它们。我们还回顾了保存机器学习模型（基于 Python 和 TensorFlow）并将其部署到生产环境的过程，使用了不同的框架。
