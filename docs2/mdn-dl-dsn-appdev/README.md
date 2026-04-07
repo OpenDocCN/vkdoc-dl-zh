@@ -1,6 +1,6 @@
-# Go 编程蓝图
+# 现代深度学习设计与应用开发
 
-> 原文：[`zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66`](https://zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66)
+> 原文：[`zh.annas-archive.org/md5/b0c175ff00c5b28589453af5c1caa7a2`](https://zh.annas-archive.org/md5/b0c175ff00c5b28589453af5c1caa7a2)
 > 
 > 译者：[飞龙](https://github.com/wizardforcel)
 > 

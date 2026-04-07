@@ -1,6 +1,6 @@
-# Go 编程蓝图
+# 神经网络智能的自动深度学习
 
-> 原文：[`zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66`](https://zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66)
+> 原文：[`zh.annas-archive.org/md5/80ee28a74544e4605cb877aaeaf5ea50`](https://zh.annas-archive.org/md5/80ee28a74544e4605cb877aaeaf5ea50)
 > 
 > 译者：[飞龙](https://github.com/wizardforcel)
 > 

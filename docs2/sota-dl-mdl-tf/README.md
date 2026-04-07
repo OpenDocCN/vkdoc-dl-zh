@@ -1,6 +1,6 @@
-# Go 编程蓝图
+# TensorFlow SOTA 深度学习模型
 
-> 原文：[`zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66`](https://zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66)
+> 原文：[`zh.annas-archive.org/md5/083f710d87db951bdffc521ad4b76169`](https://zh.annas-archive.org/md5/083f710d87db951bdffc521ad4b76169)
 > 
 > 译者：[飞龙](https://github.com/wizardforcel)
 > 

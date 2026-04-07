@@ -1,6 +1,6 @@
-# Go 编程蓝图
+# TensorFlow2 应用深度学习
 
-> 原文：[`zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66`](https://zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66)
+> 原文：[`zh.annas-archive.org/md5/716f6d4fd31d06d6ad108dfc1daef856`](https://zh.annas-archive.org/md5/716f6d4fd31d06d6ad108dfc1daef856)
 > 
 > 译者：[飞龙](https://github.com/wizardforcel)
 > 

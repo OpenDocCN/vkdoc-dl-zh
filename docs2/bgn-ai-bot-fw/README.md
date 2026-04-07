@@ -1,6 +1,6 @@
-# Go 编程蓝图
+# 人工智能机器人框架入门指南
 
-> 原文：[`zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66`](https://zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66)
+> 原文：[`zh.annas-archive.org/md5/f70c32d6de5306b6ad734d67296cf5c5`](https://zh.annas-archive.org/md5/f70c32d6de5306b6ad734d67296cf5c5)
 > 
 > 译者：[飞龙](https://github.com/wizardforcel)
 > 

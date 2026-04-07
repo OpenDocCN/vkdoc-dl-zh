@@ -1,6 +1,6 @@
-# Go 编程蓝图
+# Python 深度学习异常检测入门指南
 
-> 原文：[`zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66`](https://zh.annas-archive.org/md5/AC9839247134C458206EE3BE6D404A66)
+> 原文：[`zh.annas-archive.org/md5/da8321f5c6bf056fccd625e7b6273b49`](https://zh.annas-archive.org/md5/da8321f5c6bf056fccd625e7b6273b49)
 > 
 > 译者：[飞龙](https://github.com/wizardforcel)
 > 
