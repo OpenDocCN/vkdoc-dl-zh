@@ -1,0 +1,8 @@
++   [现代深度学习设计与应用开发](README.md)
++   [1. 深入探讨 Keras](mdn-dl-dsn-appdev_1.md)
++   [2. 预训练策略和迁移学习](mdn-dl-dsn-appdev_2.md)
++   [3. 自动编码器的多功能性](mdn-dl-dsn-appdev_3.md)
++   [4. 实际部署中的模型压缩](mdn-dl-dsn-appdev_4.md)
++   [5. 使用元优化自动化模型设计](mdn-dl-dsn-appdev_5.md)
++   [6. 成功的神经网络架构设计](mdn-dl-dsn-appdev_6.md)
++   [7. 重新定义困难的深度学习问题](mdn-dl-dsn-appdev_7.md)

@@ -1,0 +1,5 @@
++   [Azure 深度学习](README.md)
++   [第一部分](dl-az_1.md)
++   [第二部分](dl-az_2.md)
++   [第三部分](dl-az_3.md)
++   [第四部分](dl-az_4.md)

@@ -1,0 +1,7 @@
++   [GPU 加速的人工智能](README.md)
++   [1. 深度学习与 GPU 加速简介](gpu-acc-dl_0.md)
++   [2. GPU 架构、优化和部署](gpu-acc-dl_1.md)
++   [3. 高性能 GPU 工作负载的深度学习架构](gpu-acc-dl_2.md)
++   [4. 高级 GPU 编程用于深度学习](gpu-acc-dl_3.md)
++   [5. 分布式和多 GPU 训练策略](gpu-acc-dl_4.md)
++   [6. 最近的应用和新兴趋势](gpu-acc-dl_5.md)
