@@ -628,7 +628,7 @@ First five predictions, actual labels, confidences, and images
 
 对于本课，前往本书的 URL，点击 *chapter2*，点击 *figures*，点击 *Figure0201.png*，点击 *下载* 按钮，在图片内部右键点击，点击 *另存为…*，并在电脑上保存图片。将图片拖放到你的 Google Drive *Colab Notebooks* 文件夹。
 
-![../images/501128_1_En_2_Chapter/501128_1_En_2_Figa_HTML.jpg](img/501128_1_En_2_Figa_HTML.jpg)
+![img/501128_1_En_2_Chapter/501128_1_En_2_Figa_HTML.jpg](img/501128_1_En_2_Figa_HTML.jpg)
 
 ## 挂载 Google Drive 以显示图片
 

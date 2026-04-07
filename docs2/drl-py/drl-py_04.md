@@ -62,13 +62,13 @@
 
 ![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.N{(s)}_n+G}{N{(s)}_{n+1}} $$](img/502835_2_En_4_Chapter_TeX_Equf.png)
 
-![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.\left[N{(s)}_{n+1}-1\right]+G}{N{(s)}_{n+1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equg.png)
+![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.\left[N{(s)}_{n+1}-1\right]+G}{N{(s)}_{n+1}} $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equg.png)
 
-![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.N{(s)}_{n+1}+\left[G-V{(s)}_n\right]}{N{(s)}_{n+1}} $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equh.png)
+![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=\frac{V{(s)}_n.N{(s)}_{n+1}+\left[G-V{(s)}_n\right]}{N{(s)}_{n+1}} $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equh.png)
 
-![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--} V{(s)}_n\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equi.png)
+![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--} V{(s)}_n\right] $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equi.png)
 
-![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--} V{(s)}_n\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ1.png)
+![$$ \Rightarrow \mathrm{V}{\left(\mathrm{s}\right)}_{\mathrm{n}+1}=V{(s)}_n+\frac{1}{N{(s)}_{n+1}}.\left[G\hbox{--} V{(s)}_n\right] $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ1.png)
 
 (4-1)
 
@@ -310,7 +310,7 @@ GLIE MC Control Algorithm
 
 从数学上讲，如果你想要估计函数 *f* 在分布 *p* 下的期望值，但你只有来自分布 *q* 的样本，那么重要性采样估计器如下所示：
 
-![$$ {E}_p\left[f\right]\approx \frac{1}{N}{\sum}_{i=1}^N\frac{p\left({x}_i\right)}{q\left({x}_i\right)}f\left({x}_i\right) $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equj.png)
+![$$ {E}_p\left[f\right]\approx \frac{1}{N}{\sum}_{i=1}^N\frac{p\left({x}_i\right)}{q\left({x}_i\right)}f\left({x}_i\right) $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equj.png)
 
 其中 *E*[*p*][ *f* ] 是函数 *f* 在分布 *p* 下的期望值。*x*[*i*] 是从分布 *q* 中抽取的样本，*N* 是样本数量。术语 ![$$ \frac{p\left({x}_i\right)}{q\left({x}_i\right)} $$](img/502835_2_En_4_Chapter_TeX_IEq3.png) 被称为重要性权重或重要性比率。
 
@@ -342,11 +342,11 @@ GLIE MC Control Algorithm
 
 在轨迹展开的上下文中推导出重要性采样表达式后，让我们看看为什么你需要它。在蒙特卡洛方法中，你试图估计的是什么？你使用从起始状态/动作开始的样本展开的平均值，并且这些展开是在目标策略 π 下观察到的：
 
-![$$ {Q}_{\uppi}\left(s,a\right)={E}_{\uppi}\left[{G}_t|{S}_t=s,{A}_T=a\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equo.png)
+![$$ {Q}_{\uppi}\left(s,a\right)={E}_{\uppi}\left[{G}_t|{S}_t=s,{A}_T=a\right] $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equo.png)
 
 记住 *G*[*t*] 是从 *S*[*t*]，*A*[*t*] 开始的回滚回报，并继续直到基于策略 *π* 执行动作终止。但是，当你使用行为策略 *b* 进行相同的回滚时，你不会以与目标策略 *π* 相同的频率看到这条特定的轨迹。在行为策略 *b* 下对所有回滚的回报进行简单平均将给出以下结果：
 
-![$$ {Q}_{\mathrm{b}}\left(s,a\right)={E}_{\mathrm{b}}\left[{G}_t|{S}_t=s,{A}_T=a\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equp.png)
+![$$ {Q}_{\mathrm{b}}\left(s,a\right)={E}_{\mathrm{b}}\left[{G}_t|{S}_t=s,{A}_T=a\right] $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equp.png)
 
 当遵循策略 *b* 时得到的 *q* 值是适用于策略 *b* 的 *q* 值，而不是 *π*。重要性采样比率确保在行为策略下观察到的轨迹回报根据在目标策略下观察轨迹的相对概率与在行为策略下观察相同轨迹的概率进行调整。π 下 *Q*(*S*[*t*], *A*[*t*]) 的单个回滚估计如下：
 
@@ -378,7 +378,7 @@ GLIE MC Control Algorithm
 
 新的回报 *G*[*n*] 到达。更新的估计和权重总和将是：
 
-![$$ {Q}_{n+1}=\frac{\sum_{k=1}^n{W}_k{G}_k}{{\mathrm{C}}_{\mathrm{n}}}={q}_n+\frac{W_n}{C_n}\left[{G}_n-{Q}_n\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equv.png)
+![$$ {Q}_{n+1}=\frac{\sum_{k=1}^n{W}_k{G}_k}{{\mathrm{C}}_{\mathrm{n}}}={q}_n+\frac{W_n}{C_n}\left[{G}_n-{Q}_n\right] $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equv.png)
 
 ![$$ {C}_n={C}_{n-1}+{W}_n $$](img/502835_2_En_4_Chapter_TeX_Equw.png)
 
@@ -520,7 +520,7 @@ DP、MC 和 TD(0) 的回溯图比较
 
 TD 设置是无模型的——也就是说，你没有关于转换的先验全面知识。因此，对于给定状态，为了能够通过在该状态下选择正确的动作来最大化回报，你需要知道该状态下所有动作的状态-动作值*Q*(*S*, *A*)。你需要对所有状态都这样做。因此，找到最优策略的最标准方式是找到所有状态/动作对的所有*Q*值。你可以将 TD 估计从方程 4-5 重新表述为方程 4-7，本质上用*Q*(*s*, *a*)替换*V*(*s*)。这两种设置都是马尔可夫过程，方程 4-5 关注状态到状态转换，而方程 4-7 将重点转向状态-动作到状态-动作。
 
-![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ7.png)
+![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right] $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ7.png)
 
 (4-7)
 
@@ -669,7 +669,7 @@ Video Recording Code
 
 q 值的更新规则现在定义为如下：
 
-![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp \underset{A_{t+1}}{\mathit{\max}}Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right] $$](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ10.png)
+![$$ Q\left({S}_t,{A}_t\right)\leftarrow Q\left({S}_t,{A}_t\right)+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp \underset{A_{t+1}}{\mathit{\max}}Q\left({S}_{t+1},{A}_{t+1}\right)-Q\left({S}_t,{A}_t\right)\right] $$](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ10.png)
 
 (4-10)
 
@@ -766,7 +766,7 @@ Q-learning 学习过程中的奖励图和代理学习的策略
 
 本节探讨了另一种方法，它介于 Q-learning 和 SARSA 之间，被称为 *expected SARSA*。它与 Q-learning 类似，除了 4-10 中的“max”被期望值所取代，如下所示：
 
-![Q({S}_t,{A}_t) \leftarrow Q({S}_t,{A}_t) + \alpha \left[{R}_{t+1} + \gamma \cdot \sum_{a \in {A}_{t+1}} \pi(a|{S}_{t+1}) \cdot Q({S}_{t+1},a) - Q({S}_t,{A}_t)\right]](../images/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ11.png)
+![Q({S}_t,{A}_t) \leftarrow Q({S}_t,{A}_t) + \alpha \left[{R}_{t+1} + \gamma \cdot \sum_{a \in {A}_{t+1}} \pi(a|{S}_{t+1}) \cdot Q({S}_{t+1},a) - Q({S}_t,{A}_t)\right]](img/502835_2_En_4_Chapter/502835_2_En_4_Chapter_TeX_Equ11.png)
 
 (4-11)
 

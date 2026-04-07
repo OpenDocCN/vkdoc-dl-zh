@@ -30,7 +30,7 @@
 
 ![$$ {N}_{neurons}={n}_x+\sum \limits_{i=1}^L{n}_i=\sum \limits_{i=0}^L{n}_i $$](img/463356_2_En_3_Chapter_TeX_Equa.png)
 
-其中，按照惯例，我们定义 *n*[0] = *n*[*x*]。两个神经元之间的每个连接都将有自己的权重。让我们用 ![$$ {w}_{ij}^{\left[l\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq1.png) 表示层 *l* 中神经元 *i* 和层 *l* − 1 中神经元 *j* 之间的权重。图 3-2 仅显示了图 3-1 中通用网络的前两层（输入层和层 1），以及输入层第一个神经元和层 1 中所有其他神经元之间的权重。为了清晰起见，其他神经元都被灰色化。
+其中，按照惯例，我们定义 *n*[0] = *n*[*x*]。两个神经元之间的每个连接都将有自己的权重。让我们用 ![$$ {w}_{ij}^{\left[l\right]} $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq1.png) 表示层 *l* 中神经元 *i* 和层 *l* − 1 中神经元 *j* 之间的权重。图 3-2 仅显示了图 3-1 中通用网络的前两层（输入层和层 1），以及输入层第一个神经元和层 1 中所有其他神经元之间的权重。为了清晰起见，其他神经元都被灰色化。
 
 ![](img/463356_2_En_3_Fig2_HTML.jpg)
 
@@ -40,7 +40,7 @@
 
 输入层和层 1 之间的权重可以写成如下矩阵
 
-![$$ {W}^{\left[1\right]}=\left(\begin{array}{ccc}{w}_{11}^{\left[1\right]}&amp; \dots &amp; {w}_{1{n}_x}^{\left[1\right]}\ \\ {}\vdots &amp; \ddots &amp; \vdots \\ {}{w}_{n_11}^{\left[1\right]}&amp; \dots &amp; {w^{\left[1\right]}}_{n_1{n}_x}\end{array}\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equb.png)
+![$$ {W}^{\left[1\right]}=\left(\begin{array}{ccc}{w}_{11}^{\left[1\right]}&amp; \dots &amp; {w}_{1{n}_x}^{\left[1\right]}\ \\ {}\vdots &amp; \ddots &amp; \vdots \\ {}{w}_{n_11}^{\left[1\right]}&amp; \dots &amp; {w^{\left[1\right]}}_{n_1{n}_x}\end{array}\right) $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equb.png)
 
 这意味着矩阵*W*^([1])的维度是*n*[1] × *n*[x*]。这当然可以推广到任何两层*l*和*l* − 1 之间。这意味着我们用*W*^([*l*])表示的两个相邻层*l*和*l* − 1 之间的权重矩阵将具有*n*[l*] × *n*[l* − 1]的维度。按照惯例，*n*[0] = *n*[x*]是输入特征的数目（不是观察数目，我们用*m*表示）。
 
@@ -56,13 +56,13 @@
 
 ### 神经元的输出
 
-现在，让我们考虑神经元的输出。首先，我们将考虑第一层的*i*^(*th*)个神经元（记住我们的输入层按定义是层 0）。让我们用![$$ {\hat{y}}_i^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq2.png)来表示它的输出，并假设层*l*中的所有神经元都使用我们用*g*^([l*])表示的相同的激活函数。那么我们将有
+现在，让我们考虑神经元的输出。首先，我们将考虑第一层的*i*^(*th*)个神经元（记住我们的输入层按定义是层 0）。让我们用![$$ {\hat{y}}_i^{\left[1\right]} $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq2.png)来表示它的输出，并假设层*l*中的所有神经元都使用我们用*g*^([l*])表示的相同的激活函数。那么我们将有
 
-![$$ {\hat{y}}_i^{\left[1\right]}={g}^{\left[1\right]}\left({z}_i^{\left[1\right]}\right)={g}^{\left[i\right]}\kern0.75em \left(\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right)\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equc.png)
+![$$ {\hat{y}}_i^{\left[1\right]}={g}^{\left[1\right]}\left({z}_i^{\left[1\right]}\right)={g}^{\left[i\right]}\kern0.75em \left(\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right)\right) $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equc.png)
 
 其中，我们用*z*[*i*]表示
 
-![$$ {z}_i^{\left[1\right]}=\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equd.png)
+![$$ {z}_i^{\left[1\right]}=\sum \limits_{j=1}^{n_x}\left({w}_{ij}^{\left[1\right]}\ {x}_{i,j}+{b}_i^{\left[1\right]}\right) $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equd.png)
 
 如您所想象，我们希望对于层 1 的所有输出都有一个矩阵，因此我们将使用这种表示法
 
@@ -110,11 +110,11 @@
 
 +   ![公式](img/463356_2_En_3_Chapter_TeX_IEq3.png) 其中 *W*^([1]) 的维度为 3 × *n*[*x*]，*b* 的维度为 3 × 1，而 *X* 的维度为 *n*[*x*] × *m*
 
-+   ![公式](img/463356_2_En_3_Chapter_TeX_IEq4.png) 其中 *W*^([2]) 的维度为 2 × 3，*b* 的维度为 2 × 1，而 ![$$ {\hat{Y}}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq5.png) 的维度为 3 × *m*
++   ![公式](img/463356_2_En_3_Chapter_TeX_IEq4.png) 其中 *W*^([2]) 的维度为 2 × 3，*b* 的维度为 2 × 1，而 ![$$ {\hat{Y}}^{\left[1\right]} $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq5.png) 的维度为 3 × *m*
 
-+   ![公式](img/463356_2_En_3_Chapter_TeX_IEq6.png)，其中 *W*^([3]) 的维度为 1 × 2，*b* 的维度为 1 × 1，而 ![$$ {\hat{Y}}^{\left[2\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq7.png) 的维度为 2 × *m*
++   ![公式](img/463356_2_En_3_Chapter_TeX_IEq6.png)，其中 *W*^([3]) 的维度为 1 × 2，*b* 的维度为 1 × 1，而 ![$$ {\hat{Y}}^{\left[2\right]} $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq7.png) 的维度为 2 × *m*
 
-网络输出 ![$$ {\hat{Y}}^{\left[3\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq8.png) 将会有，正如预期的那样，维度为 1 × *m*。
+网络输出 ![$$ {\hat{Y}}^{\left[3\right]} $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq8.png) 将会有，正如预期的那样，维度为 1 × *m*。
 
 所有这些可能看起来相当抽象（事实上也是如此）。你将在本章后面看到，在 Keras 中，仅通过构建正确的架构，就可以很容易地实现这些步骤。
 
@@ -690,7 +690,7 @@ return hist_mbgd
 
 ![公式](img/463356_2_En_3_Chapter_TeX_Equr.png)
 
-通常，在深度网络中，权重的数量相当大，所以你可以想象如果 ![$$ {w}_{ij}^{\left[1\right]} $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq13.png) 很大，那么 *z*[*i*] 的值可以相当大，然后 ReLU 激活函数会返回一个 nan 值，因为参数太大，Python 无法正确计算（记住，在分类问题中，你有一个 log() 函数，因此参数为零等值是不被接受的）。所以，你希望 *z*[*i*] 足够小以避免神经元输出的爆炸，同时足够大以避免输出死亡，使收敛过程非常缓慢。
+通常，在深度网络中，权重的数量相当大，所以你可以想象如果 ![$$ {w}_{ij}^{\left[1\right]} $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_IEq13.png) 很大，那么 *z*[*i*] 的值可以相当大，然后 ReLU 激活函数会返回一个 nan 值，因为参数太大，Python 无法正确计算（记住，在分类问题中，你有一个 log() 函数，因此参数为零等值是不被接受的）。所以，你希望 *z*[*i*] 足够小以避免神经元输出的爆炸，同时足够大以避免输出死亡，使收敛过程非常缓慢。
 
 该问题已被广泛研究[6]，根据你使用的激活函数，存在不同的初始化策略。让我们在表 3-4 中概述其中的一些，我们假设权重将以均值为 0，标准差如表中所示的正态分布进行初始化（请注意，标准差将取决于你想要使用的激活函数）。
 
@@ -852,7 +852,7 @@ res_100_4 = model_nlayers(100, 4)
 
 让我们先尝试找到一种比较这些网络的方法。仅仅比较神经元的数量可能会非常误导，正如你很快就会看到的。记住，你的算法正在尝试找到最佳权重和偏差组合以最小化你的成本函数。但我们在模型中有多少可学习的参数呢？我们有权重和偏差。你会记得从理论讨论中，我们可以将一定数量的权重与每一层关联起来，我们将在 *l* 层中指示的可学习参数数量 *Q*^([*l*]) 由矩阵 *W*^([*l*]) 中的元素总数给出，即 *n*[*l*]*n*[*l* − 1]（其中我们通过定义有 *n*[0] = *n*[*x*]）。此外，我们还有偏差的数量（在每个层中我们将有 *n*[*l*] 个偏差）。*Q*^([*l*]) 可以写成以下形式
 
-![$$ {Q}^{\left[l\right]}={n}_l{n}_{l-1}+{n}_l={n}_l\left({n}_{l-1}+1\right) $$](../images/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equy.png)
+![$$ {Q}^{\left[l\right]}={n}_l{n}_{l-1}+{n}_l={n}_l\left({n}_{l-1}+1\right) $$](img/463356_2_En_3_Chapter/463356_2_En_3_Chapter_TeX_Equy.png)
 
 因此，我们网络中的可学习参数总数（在此用 *Q* 表示）可以写成以下形式
 

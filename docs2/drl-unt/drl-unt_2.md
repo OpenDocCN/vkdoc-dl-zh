@@ -6,7 +6,7 @@
 
 状态和动作的概念对于启发式路径查找算法至关重要。由于大多数路径查找算法依赖于集中式距离最小化技术，因此对每个算法都添加了某些修改，包括动态加权、边选择、双向最小化和更多。图 2-1 展示了智能体如何使用路径查找到达其目的地的一个预览。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig1_HTML.png](img/502041_1_En_2_Fig1_HTML.png)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig1_HTML.png](img/502041_1_En_2_Fig1_HTML.png)
 
 图 2-1
 
@@ -18,7 +18,7 @@
 
 让我们尝试理解路径查找中涉及的不同算法。我们将开始强调算法实现，并观察这些算法的时间复杂度对比。最初，我们将从通用的穷举贪婪搜索算法开始，然后逐渐深入到 A*算法优化启发式家族的深处。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig2_HTML.jpg](img/502041_1_En_2_Fig2_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig2_HTML.jpg](img/502041_1_En_2_Fig2_HTML.jpg)
 
 图 2-2
 
@@ -106,7 +106,7 @@ print(et-st)
 
 这里源网格被选为(0, 0)，目的网格被选为(7, 6)；然而，这些可以根据我们的需求进行更改。然后调用 Greedy 函数，并使用 Python 的“time”库计算路径的计算时间。在 Notebook 中运行代码后，我们看到一系列不同的网格，其中智能体移动到(7, 6)。由于 Greedy 是穷举的，搜索次数可能会重复，路径可能会非常长。这可以与算法的巨大运行时间相关联，如图 2-3 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig3_HTML.jpg](img/502041_1_En_2_Fig3_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig3_HTML.jpg](img/502041_1_En_2_Fig3_HTML.jpg)
 
 图 2-3
 
@@ -126,7 +126,7 @@ V(s) = U(s) + d(u, u[1]) + U1 + d(u[1], v),
 
 Dijkstra 算法使用此原理来找到最优最短路径，并记录已访问的节点或网格状态，以避免回溯。然而，该算法适用于正权图和网格，并不提供负权边或网格路径的最优解（由 Bellman-Ford 解决）。算法存储每个网格状态或节点从源点或起始节点的距离，这通常是递增的顺序。这在图 2-4 中显示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig4_HTML.jpg](img/502041_1_En_2_Fig4_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig4_HTML.jpg](img/502041_1_En_2_Fig4_HTML.jpg)
 
 图 2-4
 
@@ -196,7 +196,7 @@ return path,distance
 
 这是迪杰斯特拉算法的完整控制逻辑，我们将比较这个算法与之前创建的贪婪搜索算法的运行时间复杂度。运行此算法后，我们将看到与图 2-5 所示的运行时间相似。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig5_HTML.jpg](img/502041_1_En_2_Fig5_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig5_HTML.jpg](img/502041_1_En_2_Fig5_HTML.jpg)
 
 图 2-5
 
@@ -219,7 +219,7 @@ nx.draw_networkx(G)
 
 此实现的模拟图看起来与图 2-6 所示的相似。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig6_HTML.jpg](img/502041_1_En_2_Fig6_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig6_HTML.jpg](img/502041_1_En_2_Fig6_HTML.jpg)
 
 图 2-6
 
@@ -227,7 +227,7 @@ nx.draw_networkx(G)
 
 现在我们已经了解了迪杰斯特拉算法，我们将在下一节中创建一个在 Unity 中的相同模拟，其中 AI 代理尝试使用该算法达到目标。目前，我们将专注于被称为 A* 的不同类路径搜索算法的基本方面。当涉及到游戏、强化学习和机器人技术时，这是最重要的算法类别，因为它与迪杰斯特拉算法非常紧密相关，我们将了解差异以及算法的变体。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig7_HTML.png](img/502041_1_En_2_Fig7_HTML.png)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig7_HTML.png](img/502041_1_En_2_Fig7_HTML.png)
 
 图 2-7
 
@@ -375,7 +375,7 @@ open_list.append(child)
 
 这就是 A* 算法的实现，如果我们运行这个模拟，我们将能够看到算法遵循的路径以及算法的运行时间，类似于图 2-8 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig8_HTML.jpg](img/502041_1_En_2_Fig8_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig8_HTML.jpg](img/502041_1_En_2_Fig8_HTML.jpg)
 
 图 2-8
 
@@ -435,7 +435,7 @@ child.f = child.g + child.w*child.h
 
 我们首先记录实际成本 G（子网格）和启发式估计 H（子网格）的值，然后通过将搜索深度与衰减因子相乘来更新 W（子网格）因子。搜索深度表示代理在搜索轨迹上访问网格的距离。最后，我们使用动态加权 A* 的方程更新 F（子网格）值。其余的代码段与 A* 相同，包括更新封闭列表并将子网格添加到开放列表以进行下一次迭代。运行代码后，我们可以得到算法所需时间的估计，如图 2-9 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig9_HTML.jpg](img/502041_1_En_2_Fig9_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig9_HTML.jpg](img/502041_1_En_2_Fig9_HTML.jpg)
 
 图 2-9
 
@@ -465,7 +465,7 @@ break
 
 如果条件验证当前子网格 F (child) 值是否小于阈值，如果是，则子网格成为下一个要分析的网格。这是一种最小化技术，强调在所有子网格中选择最低可能的 F (child) 值作为新的阈值。同样，一旦子网格与目标网格相同，我们就中断。我们可以运行此程序以生成算法的运行时间效率。由于此算法中没有内存，路径可能包含多个重复的网格节点，这对于在游戏中和模拟中，为每个非玩家角色 (NPC) 分配内存成本高昂的场景来说是非常有用的。在单个 NPC 或机器人学的情况下，此算法可能无法提供适当的解决方案，因为迭代提供了时间开销。IDA* 的复杂度主要依赖于路径的深度，并且像 A* 一样返回最优路径，前提是启发式函数是可接受的（即 h 值不高估真实成本）。图 2-10 展示了算法的运行时间。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig10_HTML.jpg](img/502041_1_En_2_Fig10_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig10_HTML.jpg](img/502041_1_En_2_Fig10_HTML.jpg)
 
 图 2-10
 
@@ -553,7 +553,7 @@ child.f = min(min(child.g,child.rhs) + child.h,child.g + child.h)
 
 该算法在通用路径查找 AI 的任何模拟引擎中都有广泛的应用。原因可以归因于当网格环境变化时，F(n)、G(n)、H(n)和 Rhs(n)值的快速更新。这在动态环境中非常实用，在牺牲更多内存消耗的情况下，可以返回更快的最优轨迹。我们可以在笔记本或 Colab 中运行此代码，以检查算法的运行时间，如图 2-11 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig11_HTML.jpg](img/502041_1_En_2_Fig11_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig11_HTML.jpg](img/502041_1_En_2_Fig11_HTML.jpg)
 
 图 2-11
 
@@ -591,7 +591,7 @@ open_list.append(child)
 
 一旦我们理解了 D*算法的这种简化版本，我们就可以检查该算法的运行时间。聚焦 D*算法依赖于提升和降低属性的启发式估计。运行时间的预览如图 2-12 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig12_HTML.jpg](img/502041_1_En_2_Fig12_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig12_HTML.jpg](img/502041_1_En_2_Fig12_HTML.jpg)
 
 图 2-12
 
@@ -615,7 +615,7 @@ open_list.append(child)
 
 我们可以运行此代码，并获得此算法的运行时间，如图 2-13 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig13_HTML.jpg](img/502041_1_En_2_Fig13_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig13_HTML.jpg](img/502041_1_En_2_Fig13_HTML.jpg)
 
 图 2-13
 
@@ -645,7 +645,7 @@ open_list.append(child)
 
 运行此代码段为我们提供了路径以及运行时间，如图 2-14 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig14_HTML.jpg](img/502041_1_En_2_Fig14_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig14_HTML.jpg](img/502041_1_En_2_Fig14_HTML.jpg)
 
 图 2-14
 
@@ -673,7 +673,7 @@ SMA*算法的运行时间
 
 我们必须下载“DeepLearning”Unity 文件夹（来自与本书相关的 GitHub 项目），并且我们将使用这个文件夹来完成所有我们的项目。下载完成后，我们将打开“Assets”文件夹，并导航到“HeuristicPathfinding”文件夹。这个文件夹包含了 Dijkstra 和 A*算法模拟的设置场景。在 Unity 编辑器中打开“DijkstraAgent”场景文件。模拟的概念是让紫色代理立方体通过最低成本路径到达绿色目标立方体。路径中的障碍物由白色立方体块表示。我们将从我们在 Python 实现的 Dijkstra 算法中创建的 GridWorld 或 menvironment 中绘制我们的类比。模拟的平台或平面被划分为网格（如 Unity 场景中所示）。这些网格紧密排列形成一个迷宫（网格矩阵）。迷宫的尺寸是 6X6，其中我们在水平和垂直方向上有六个网格。像之前一样，对于可走的网格，我们将网格的值初始化为 0，而对于不可走的网格（有障碍物的网格），我们初始化一个值为 1 的值。我们将 Unity 场景转换为 Python 的迷宫模拟，通过将网格分配给平台，将障碍物作为白色立方体，将目标作为目标网格。场景的预览如图 2-15 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig15_HTML.jpg](img/502041_1_En_2_Fig15_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig15_HTML.jpg](img/502041_1_En_2_Fig15_HTML.jpg)
 
 图 2-15
 
@@ -890,7 +890,7 @@ yield return new WaitForSeconds(1f);
 
 这完成了 Unity 中路径查找的 Dijkstra 算法的整个模拟代码段。在我们对代码的分析感到满意后，我们可以在 Unity 编辑器中尝试运行它。我们将观察到，对于每个迭代，代理立方体通过不同的网格到达目标。我们允许代理根据 Dijkstra 优化做出的每个决策等待 1 秒钟。我们还可以进入 DeepLearning 根文件夹下的环境文件夹，运行涉及 Dijkstra 算法的 Unity 可执行模拟。这为读者提供了一个粗略的模板，并且可以使用这个模板实现不同的图搜索算法。在下一部分，我们将考虑经典 A*算法的实现。由于我们现在已经熟悉了原始算法以及我们在本节中创建的 Unity 迷宫环境，因此理解 Unity 中的 A*模拟概念将相对容易。我们将使用专门的节点类来存储 F、G、H 值，就像算法中一样，并使用组合集合容器根据启发式估计和最小化成本函数来更新这些值。图 2-16 提供了场景的表示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig16_HTML.jpg](img/502041_1_En_2_Fig16_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig16_HTML.jpg](img/502041_1_En_2_Fig16_HTML.jpg)
 
 图 2-16
 
@@ -900,7 +900,7 @@ yield return new WaitForSeconds(1f);
 
 让我们在相同的 Unity 迷宫环境或网格环境中创建 A*模拟。我们有与 Unity 场景相同的架构，代理和目标分别在(0, 0)和(5, 5)。图 2-17 提供了场景的视图。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig17_HTML.jpg](img/502041_1_En_2_Fig17_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig17_HTML.jpg](img/502041_1_En_2_Fig17_HTML.jpg)
 
 图 2-17
 
@@ -1139,7 +1139,7 @@ heapq.Add(var_test);
 
 这是在 Unity 中 A*算法的完整实现。然后我们在“move_agent”Coroutine 中传递路径容器，就像在 Dijkstra 算法中一样，这样代理变换就可以沿着最优路径上的网格变换进行。我们可以在 Unity 编辑器中运行这段代码，并检查代理的运动路径。图 2-18 展示了 A*算法的工作表示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig18_HTML.jpg](img/502041_1_En_2_Fig18_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig18_HTML.jpg](img/502041_1_En_2_Fig18_HTML.jpg)
 
 图 2-18
 
@@ -1161,7 +1161,7 @@ heapq.Add(var_test);
 
 导航网格的概念始于 20 世纪 80 年代，当时主要用于机器人和游戏，被称为“草地地图”。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig19_HTML.jpg](img/502041_1_En_2_Fig19_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig19_HTML.jpg](img/502041_1_En_2_Fig19_HTML.jpg)
 
 图 2-19
 
@@ -1173,7 +1173,7 @@ heapq.Add(var_test);
 
 打开“DeepLearning”根文件夹，导航到“environments。”然后导航到“NavigationPuppo”Unity 可执行文件。运行模拟或游戏。我们可以看到，如果我们点击绿色区域（平台）的任何地方，Puppo 会立即前往该位置。这是一个 AI 代理试图从当前位置找到我们屏幕上指出的位置的优化路径的例子。无论我们在地面上点击哪里，我们都会看到 Puppo 前往那个特定位置。图 2-20 提供了 Puppo 场景的视图。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig20_HTML.jpg](img/502041_1_En_2_Fig20_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig20_HTML.jpg](img/502041_1_En_2_Fig20_HTML.jpg)
 
 图 2-20
 
@@ -1181,7 +1181,7 @@ heapq.Add(var_test);
 
 让我们尝试创建这个模拟游戏。打开 Assets 文件夹中的“NavigationPuppo”文件夹，然后点击“NavigationMeshPuppo”场景。在 Unity 中，我们可以非常快速地创建导航网格。我们可以进入 Unity 编辑器中的 Windows 选项卡，然后选择 AI。在 AI 中，我们有“Navigation”选项。这使我们能够使用 UnityEngine.NavMesh 组件，并将我们的强化学习平台环境转换为导航网格。因此，在 Unity 场景中添加导航组件的一般方法是遵循 **Windows ➤ AI ➤ Navigation**。这可以在图 2-21 中显示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig21_HTML.jpg](img/502041_1_En_2_Fig21_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig21_HTML.jpg](img/502041_1_En_2_Fig21_HTML.jpg)
 
 图 2-21
 
@@ -1189,7 +1189,7 @@ heapq.Add(var_test);
 
 然后我们选择我们想要导航网格出现的地形或地面环境。这个过程在 Unity 中被称为 NavMesh Baking。NavMesh Baking 过程收集所有标记为导航静态的凸多边形的渲染网格。这意味着导航网格将在环境中保持静态。在场景中选择“平台变体”后，我们转到检查器窗口中的导航选项卡（如图 2-21 右侧所示）并点击烘焙。导航网格随后以蓝色覆盖层的形式出现在地面平台上，如图 2-22 所示。导航选项卡下有四个主要子选项卡，我们将分别探讨这些子选项卡。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig22_HTML.jpg](img/502041_1_En_2_Fig22_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig22_HTML.jpg](img/502041_1_En_2_Fig22_HTML.jpg)
 
 图 2-22
 
@@ -1209,7 +1209,7 @@ heapq.Add(var_test);
 
 代理选项卡可以像图 2-23 所示那样进行视觉观察和更改。当我们将 Puppo 分配为导航网格代理（NavMesh 代理）时，这是必需的。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig23_HTML.jpg](img/502041_1_En_2_Fig23_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig23_HTML.jpg](img/502041_1_En_2_Fig23_HTML.jpg)
 
 图 2-23
 
@@ -1217,7 +1217,7 @@ heapq.Add(var_test);
 
 +   **区域:** 此选项卡专注于导航网格的不同部分。正如我们所观察到的，我们可以看到两个平行的选项卡，“名称”和“成本”。如果我们为代理创建一个多样化的环境，其中某些地形部分可以是水性的或泥泞的，而其他部分可以是平坦的，这将很有用。我们可以将不同的成本关联到以它们的名称突出显示的不同网格部分。由于 Unity 引擎内部使用 A*算法，成本因子决定了最小化函数的实际成本，这在之前的章节中已经看到，用 G(n)值表示。成本越高，代理沿着路径移动就越困难，因为根据我们对 A*的讨论，G(n)的较低值始终被考虑（开放列表）。从视觉上，这可以如图 2-24 所示。
 
-    ![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig24_HTML.jpg](img/502041_1_En_2_Fig24_HTML.jpg)
+    ![img/502041_1_En_2_Chapter/502041_1_En_2_Fig24_HTML.jpg](img/502041_1_En_2_Fig24_HTML.jpg)
 
     图 2-24
 
@@ -1247,7 +1247,7 @@ heapq.Add(var_test);
 
     +   **高度网格:** 地形上方的导航网格的高度。
 
-        ![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig25_HTML.jpg](img/502041_1_En_2_Fig25_HTML.jpg)
+        ![img/502041_1_En_2_Chapter/502041_1_En_2_Fig25_HTML.jpg](img/502041_1_En_2_Fig25_HTML.jpg)
 
         图 2-25
 
@@ -1255,7 +1255,7 @@ heapq.Add(var_test);
 
 +   **对象**：此选项卡包含场景中预制体、网格渲染器和地形（包含导航网格）的详细信息。我们还有导航静态、离网链接和导航区域，在此选项卡中设置为可通行，如图 2-26 所示。在随后的章节中，我们将关注离网链接以在导航网格之间生成自动离网链接。
 
-    ![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig26_HTML.jpg](img/502041_1_En_2_Fig26_HTML.jpg)
+    ![img/502041_1_En_2_Chapter/502041_1_En_2_Fig26_HTML.jpg](img/502041_1_En_2_Fig26_HTML.jpg)
 
     图 2-26
 
@@ -1304,7 +1304,7 @@ navmesh_puppo.SetDestination(hit.point);
 
 完成后，我们可以关闭编辑器并将脚本分配给 Puppo (CORGI) 游戏对象。然后我们可以在编辑器中运行游戏。图 2-27 展示了此场景。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig27_HTML.jpg](img/502041_1_En_2_Fig27_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig27_HTML.jpg](img/502041_1_En_2_Fig27_HTML.jpg)
 
 图 2-27
 
@@ -1314,7 +1314,7 @@ Unity 编辑器中的导航 Puppo 场景
 
 在上一节中，我们概述了 Unity 中的导航组件及其创建一个可以使用 A* 移动到屏幕上点击的任何点的 AI 代理的方法。现在让我们回到一个经典的奖励和障碍物的强化学习环境。在“环境”文件夹中，我们将打开“ObstaclePuppo”Unity 可执行文件。当我们运行游戏时，我们看到 Puppo 现在放置在相同的地面上，但有一些障碍物以路障的形式存在，Puppo 无法通过。但是 Puppo 必须从地面上不同的位置收集所有三根棍子，并且还要遵循到三根棍子的最优组合路径。当我们玩游戏时，我们看到 Puppo 如何智能地导航场景，避开路障，并最终收集所有三根棍子。图 2-28 展示了 Puppo 在收集所有三根棍子后休息的情景。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig28_HTML.jpg](img/502041_1_En_2_Fig28_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig28_HTML.jpg](img/502041_1_En_2_Fig28_HTML.jpg)
 
 图 2-28
 
@@ -1322,7 +1322,7 @@ Unity 中的障碍 Puppo 游戏
 
 在 Unity 中打开“ObstacleMeshPuppo”场景。我们有一个与之前相似的环境，增加了两个作为导航网格障碍物的路障和三个作为奖励或目标的棍子。我们像之前一样烘焙场景并可视化导航网格的蓝色覆盖。这里的区别在于我们必须初始化网格中存在的障碍物。标记为“Fence”的预制件是障碍物，我们必须将 NavMesh obstacle 组件添加到它们上。这使 Unity 引擎知道网格在那些特定的变换或位置包含障碍物。其余的所有值和其他组件，如 NavMesh agent 或 Bake 属性，与之前的场景相同。图 2-29 展示了导航网格障碍物场景。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig29_HTML.jpg](img/502041_1_En_2_Fig29_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig29_HTML.jpg](img/502041_1_En_2_Fig29_HTML.jpg)
 
 图 2-29
 
@@ -1399,7 +1399,7 @@ yield return new WaitForSeconds(1f);
 
 最后，我们让 Puppo 在收集每根棍子后以及收集完所有棍子后休息。这是 Puppo 在收集第一根棍子的过程中的样子，如图 2-30 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig30_HTML.jpg](img/502041_1_En_2_Fig30_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig30_HTML.jpg](img/502041_1_En_2_Fig30_HTML.jpg)
 
 图 2-30
 
@@ -1415,7 +1415,7 @@ yield return new WaitForSeconds(1f);
 
     “跳过”的轨迹定义为水平移动距离超过 2* agentRadius 且小于跳跃距离。图 2-31 展示了 Off Mesh Links。
 
-    ![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig31_HTML.jpg](img/502041_1_En_2_Fig31_HTML.jpg)
+    ![img/502041_1_En_2_Chapter/502041_1_En_2_Fig31_HTML.jpg](img/502041_1_En_2_Fig31_HTML.jpg)
 
     图 2-31
 
@@ -1425,7 +1425,7 @@ yield return new WaitForSeconds(1f);
 
 在添加 Off Mesh 链接后，我们将看到两个导航网格之间形成了链接。这也显示了代理 Puppo 可以穿越的路径，以到达下一个导航网格中的目标棍子，如图 2-32 和图 2-33 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig32_HTML.jpg](img/502041_1_En_2_Fig32_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig32_HTML.jpg](img/502041_1_En_2_Fig32_HTML.jpg)
 
 图 2-32
 
@@ -1450,7 +1450,7 @@ yield return new WaitForSeconds(1f);
 
 运行场景（或我们可以从“环境”文件夹中选择“OffMeshPuppo”Unity.exe 文件来玩游戏），我们可以看到 Puppo 如何使用 Off Mesh 链接在不同导航网格之间进行连接。这如图 2-33 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig33_HTML.jpg](img/502041_1_En_2_Fig33_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig33_HTML.jpg](img/502041_1_En_2_Fig33_HTML.jpg)
 
 图 2-33
 
@@ -1464,7 +1464,7 @@ Unity 游戏场景中的 Off Mesh 链接
 
 图 2-34 展示了带有导航网格的敌人 AI 的 Unity 场景。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig34_HTML.jpg](img/502041_1_En_2_Fig34_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig34_HTML.jpg](img/502041_1_En_2_Fig34_HTML.jpg)
 
 图 2-34
 
@@ -1472,7 +1472,7 @@ Unity 游戏场景中的 Off Mesh 链接
 
 现在，让我们打开 Assets 中的“EnemyAI”文件夹，以探索场景和导航网格。我们有墙壁作为障碍物，平台作为导航网格的场景。我们使用之前提到的 Bake 方法创建这个场景。然后我们将 NavMesh 代理组件分配给紫色代理立方体。这是敌人代理，它使用启发式 A* 寻找到达目标立方体的最优路径。导航网格以及 NavMesh 代理的设置值默认设置。我们为此特定用例有两个不同的脚本。“PlayerAI”脚本控制目标（即我们）的运动，而“EnemyAI”脚本控制紫色代理。我们将探索“PlayerAI”，因为它类似于“NavigationPuppo.cs”脚本，该脚本使用相机和射线投射来确定屏幕上的击中点，并使目标相应地移动到那里。场景的预览如图 2-33 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig35_HTML.jpg](img/502041_1_En_2_Fig35_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig35_HTML.jpg](img/502041_1_En_2_Fig35_HTML.jpg)
 
 图 2-35
 
@@ -1595,7 +1595,7 @@ Destroy(clone);
 
 这就是整个游戏的代码段。让我们回到 Unity，将“PlayerAI.cs”脚本分配给目标（绿色）和“EnemyAI.cs”脚本分配给代理（紫色）。这两个 GameObject 都附加了 NavMesh 代理。在 Unity 编辑器中点击播放，我们可以玩这个由 AI 驱动的路径查找游戏，如图 2-35 和 2-36 所示。
 
-![../images/502041_1_En_2_Chapter/502041_1_En_2_Fig36_HTML.jpg](img/502041_1_En_2_Fig36_HTML.jpg)
+![img/502041_1_En_2_Chapter/502041_1_En_2_Fig36_HTML.jpg](img/502041_1_En_2_Fig36_HTML.jpg)
 
 图 2-36
 

@@ -26,31 +26,31 @@
 
 例如，假设我们有一个 9 × 9 像素的灰度图像，它有一个通道（一个二维矩阵）和一个 3 × 3 的卷积核。如果我们选择步长为（1,1），即在整个图像上水平移动 1 像素和垂直移动 1 像素，我们将得到一个 7 × 7 的输出特征图。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figa_HTML.jpg](img/489297_1_En_4_Figa_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figa_HTML.jpg](img/489297_1_En_4_Figa_HTML.jpg)
 
 *输入* *灰度图像* *字母 X（9 × 9 像素）*
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figb_HTML.jpg](img/489297_1_En_4_Figb_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figb_HTML.jpg](img/489297_1_En_4_Figb_HTML.jpg)
 
 *卷积核（3 × 3 像素）*
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figc_HTML.jpg](img/489297_1_En_4_Figc_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figc_HTML.jpg](img/489297_1_En_4_Figc_HTML.jpg)
 
 *输入图像子集与核的* *第一次点积*
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figd_HTML.jpg](img/489297_1_En_4_Figd_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figd_HTML.jpg](img/489297_1_En_4_Figd_HTML.jpg)
 
 *输入图像子集与核的* *第二次点积（步长（1,1））*
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fige_HTML.jpg](img/489297_1_En_4_Fige_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fige_HTML.jpg](img/489297_1_En_4_Fige_HTML.jpg)
 
 *最终* *特征图* *在核通过整个输入图像后变为 7 × 7*
 
 通常，对于最终的输出特征，会应用一个激活函数（例如，ReLU [修正线性单元]）。ReLU 基本上确保特征输出矩阵中没有负值，通过将这些（负值）强制设为零（图 4-1）。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figf_HTML.jpg](img/489297_1_En_4_Figf_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figf_HTML.jpg](img/489297_1_En_4_Figf_HTML.jpg)
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig1_HTML.jpg](img/489297_1_En_4_Fig1_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig1_HTML.jpg](img/489297_1_En_4_Fig1_HTML.jpg)
 
 图 4-1
 
@@ -62,23 +62,23 @@ ReLU 函数
 
 池化层有助于减少输入特征的维度，从而减少模型的参数总数和复杂性。最广泛使用的池化技术之一是最大池化。正如其名所示，这种技术只取池中的最大值。例如，让我们以前面得到的 ReLU 输出为例，使用窗口大小为 2 和步长为 2 进行池化。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figg_HTML.jpg](img/489297_1_En_4_Figg_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figg_HTML.jpg](img/489297_1_En_4_Figg_HTML.jpg)
 
 在这种情况下，我们取(0.77, 0, 0, 1.0)中的最大值，即第一个池中的 1.0。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figh_HTML.jpg](img/489297_1_En_4_Figh_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figh_HTML.jpg](img/489297_1_En_4_Figh_HTML.jpg)
 
 我们取(0.11, 0.33, 0, 0.33)中的最大值，即第二个池中的 0.33。
 
 最后，当我们完成所有步长后，我们得到以下输出：
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figi_HTML.jpg](img/489297_1_En_4_Figi_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figi_HTML.jpg](img/489297_1_En_4_Figi_HTML.jpg)
 
 ### 完全连接层
 
 这一层与任何具有神经元与前一层的所有激活完全连接的人工神经网络（ANN）系统相同（见图 4-2）。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig2_HTML.png](img/489297_1_En_4_Fig2_HTML.png)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig2_HTML.png](img/489297_1_En_4_Fig2_HTML.png)
 
 图 4-2
 
@@ -88,7 +88,7 @@ ReLU 函数
 
 让我们使用 TensorFlow 2.0 实现一个简单的卷积神经网络。为此，我们将使用 Zalando 的 Fashion-MNIST 数据集（MIT 许可 [MIT] 版权 © [2017] Zalando SE，[`https://tech.zalando.com`](https://tech.zalando.com)），该数据集包含 70,000 张图片（灰度），分为 10 个不同的类别。这些图片是 28 × 28 像素的单独服装物品，值范围从 0 到 255，如图 4-3 所示。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig3_HTML.jpg](img/489297_1_En_4_Fig3_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig3_HTML.jpg](img/489297_1_En_4_Fig3_HTML.jpg)
 
 图 4-3
 
@@ -96,7 +96,7 @@ Zalando 的 Fashion-MNIST 数据集中的图片（来源：[`https://bit.ly/2xqI
 
 在总共 70,000 张图片中，60,000 张用于训练，剩余的 10,000 张用于测试。标签是范围从 0 到 9 的整数数组。类别名称不是数据集的一部分。因此，我们必须包括以下映射用于训练/预测：
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figj_HTML.jpg](img/489297_1_En_4_Figj_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figj_HTML.jpg](img/489297_1_En_4_Figj_HTML.jpg)
 
 *(来源*：[`https://bit.ly/2xqIwCH`](https://bit.ly/2xqIwCH)*)*
 
@@ -178,7 +178,7 @@ Zalando 的 Fashion-MNIST 数据集中的图片（来源：[`https://bit.ly/2xqI
 
 我们可以通过使用以下所示的方法来检查 CNN 模型中构建的不同层的详细信息：
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figk_HTML.jpg](img/489297_1_En_4_Figk_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figk_HTML.jpg](img/489297_1_En_4_Figk_HTML.jpg)
 
 ```py
 [In]: cnn_model.summary()
@@ -193,7 +193,7 @@ Zalando 的 Fashion-MNIST 数据集中的图片（来源：[`https://bit.ly/2xqI
 
 模型训练：
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figl_HTML.jpg](img/489297_1_En_4_Figl_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figl_HTML.jpg](img/489297_1_En_4_Figl_HTML.jpg)
 
 ```py
 [In]: cnn_model.fit(training_images, training_labels, epochs=10)
@@ -204,7 +204,7 @@ Zalando 的 Fashion-MNIST 数据集中的图片（来源：[`https://bit.ly/2xqI
 
 1.  训练评估
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figm_HTML.jpg](img/489297_1_En_4_Figm_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figm_HTML.jpg](img/489297_1_En_4_Figm_HTML.jpg)
 
 ```py
 [In]: training_loss, training_accuracy = cnn_model.evaluate(training_images, training_labels)
@@ -214,7 +214,7 @@ Zalando 的 Fashion-MNIST 数据集中的图片（来源：[`https://bit.ly/2xqI
 
 1.  测试评估
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fign_HTML.jpg](img/489297_1_En_4_Fign_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fign_HTML.jpg](img/489297_1_En_4_Fign_HTML.jpg)
 
 ```py
 [In]: test_loss, test_accuracy = cnn_model.evaluate(test_images, test_labels)
@@ -231,7 +231,7 @@ Zalando 的 Fashion-MNIST 数据集中的图片（来源：[`https://bit.ly/2xqI
 
 1.  VGG-16。这个卷积神经网络是由牛津大学的 K. Simonyan 和 A. Zisserman 提出的，在论文“用于大规模图像识别的超深卷积神经网络”中介绍。与 AlexNet 相比，VGG-16 使用多个 3 × 3 的核作为滤波器，而不是 AlexNet 中使用的较大滤波器（第一层卷积有 11 个滤波器，第二层有 5 个滤波器）。这导致了 92.7% 的准确率——在 ImageNet 挑战赛的前五名中——并且这个模型也被提交到了 ILSVRC-2014，当时它是亚军。图 4-4 展示了典型的 VGG-16 架构。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig4_HTML.jpg](img/489297_1_En_4_Fig4_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig4_HTML.jpg](img/489297_1_En_4_Fig4_HTML.jpg)
 
 图 4-4
 
@@ -239,7 +239,7 @@ VGG-16 架构
 
 1.  Inception(GoogleNet)。这是由谷歌开发的，并在 ILSVRC-2014 竞赛中获胜，其中它实现了 6.67% 的顶级错误率。使用了 Inception 模块和较小的卷积，使得参数数量减少到仅 400 万。图 4-5 展示了 GoogleNet 架构。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig5_HTML.jpg](img/489297_1_En_4_Fig5_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig5_HTML.jpg](img/489297_1_En_4_Fig5_HTML.jpg)
 
 图 4-5
 
@@ -247,13 +247,13 @@ GoogleNet 架构
 
 1.  ResNet。这个架构是由 Kaiming He、Xiangyu Zhang、Shaoqing Ren 和 Jian Sun 在 2015 年开发的。它在 ILSVRC-2015 竞赛中获胜，顶级错误率为 3.57%，低于人类顶级错误率。图 4-6 展示了 ResNet 架构。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig6_HTML.jpg](img/489297_1_En_4_Fig6_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig6_HTML.jpg](img/489297_1_En_4_Fig6_HTML.jpg)
 
 图 4-6
 
 ResNet 架构
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig7_HTML.jpg](img/489297_1_En_4_Fig7_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig7_HTML.jpg](img/489297_1_En_4_Fig7_HTML.jpg)
 
 图 4-7
 
@@ -279,7 +279,7 @@ DenseNet 架构
 
 图 4-8 描述了一个典型的机器学习系统。我们可以看到，对于给定域的特定任务，机器学习模型能够很好地学习和泛化。然而，如果有一个来自不同域的新任务，它必须构建一个全新的模型，才能为该任务/域进行泛化。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig8_HTML.png](img/489297_1_En_4_Fig8_HTML.png)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig8_HTML.png](img/489297_1_En_4_Fig8_HTML.png)
 
 图 4-8
 
@@ -287,7 +287,7 @@ DenseNet 架构
 
 图 4-9 描述了一个典型的迁移学习方法。我们可以看到，对于任务/域 A，机器学习模型能够很好地学习和泛化。现在，我们提取从任务/域 A 获得的“通用”知识，并将其应用于类似的任务/域 B。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig9_HTML.png](img/489297_1_En_4_Fig9_HTML.png)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig9_HTML.png](img/489297_1_En_4_Fig9_HTML.png)
 
 图 4-9
 
@@ -313,7 +313,7 @@ DenseNet 架构
 
 自动编码器是一种用于以与输入数据相同的方式无监督地生成输出数据的 ANN。自动编码器本质上包含两个主要部分：编码器和解码器。编码器将输入数据压缩为其低维表示，解码器将表示解压缩为原始输入数据。图 4-10 展示了应用于图像的简单自动编码器。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig10_HTML.jpg](img/489297_1_En_4_Fig10_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig10_HTML.jpg](img/489297_1_En_4_Fig10_HTML.jpg)
 
 图 4-10
 
@@ -333,7 +333,7 @@ DenseNet 架构
 
 VAE 是一种生成模型，结合了通用自动编码器，允许我们从模型中采样以生成数据。大多数 VAE 架构与通用自动编码器相同，除了 VAE 强制输入数据的压缩表示遵循零均值和单位方差的高斯分布。一个简单的 VAE 架构如图 4-11 所示。
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Fig11_HTML.jpg](img/489297_1_En_4_Fig11_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Fig11_HTML.jpg](img/489297_1_En_4_Fig11_HTML.jpg)
 
 图 4-11
 
@@ -501,7 +501,7 @@ generate_and_save_images(vae_model, epochs, rand_vec)
 [Out]:
 ```
 
-![../images/489297_1_En_4_Chapter/489297_1_En_4_Figo_HTML.jpg](img/489297_1_En_4_Figo_HTML.jpg)
+![img/489297_1_En_4_Chapter/489297_1_En_4_Figo_HTML.jpg](img/489297_1_En_4_Figo_HTML.jpg)
 
 如前所述，我们能够使用 Fashion-MNIST 数据集进行训练，生成新的手写数字图像。
 

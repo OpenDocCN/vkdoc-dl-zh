@@ -98,13 +98,13 @@
 
 在添加偏差后，新的参数向量为 *w* ∈ *R*^((*n* + 1) × 1)，添加常数项 1 后的新输入特征向量为 *x* ∈ *R*^((*n* + 1) × 1)，其中
 
-![x^{\prime }={\left[{x}_1\ {x}_2{x}_3..\kern0.5em {x}_n\right]}^T](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equd.png)
+![x^{\prime }={\left[{x}_1\ {x}_2{x}_3..\kern0.5em {x}_n\right]}^T](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equd.png)
 
-![x={\left[1\ {x}_1\ {x}_2{x}_3..\kern0.5em {x}_n\right]}^T](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Eque.png)
+![x={\left[1\ {x}_1\ {x}_2{x}_3..\kern0.5em {x}_n\right]}^T](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Eque.png)
 
-![w^{\hbox{'}}={\left[{w}_1\ {w}_2{w}_3..\kern0.5em {w}_n\right]}^T](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equf.png)
+![w^{\hbox{'}}={\left[{w}_1\ {w}_2{w}_3..\kern0.5em {w}_n\right]}^T](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equf.png)
 
-![w={\left[b\ {w}_1\ {w}_2{w}_3..\kern0.5em {w}_n\right]}^T](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equg.png)
+![w={\left[b\ {w}_1\ {w}_2{w}_3..\kern0.5em {w}_n\right]}^T](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equg.png)
 
 通过进行上述操作，我们使 *R*^(*n*) 中的超平面在原点处通过原点，在 *R*^((*n* + 1)) 向量空间中。现在超平面仅由其权重参数向量 *w* ∈ *R*^((*n* + 1) × 1) 决定，分类规则简化如下：
 
@@ -176,33 +176,33 @@
 
 让我们初始化权重向量 *w* → [ 0 0 0]^(*T*)，其中权重向量的第一个分量对应于偏置项。同样，所有输入向量的第一个分量都为 1。
 
-+   对于 *x*[1] = 1, *x*[2] = 0, *y* = 1，预测是 ![$$ {\textrm{w}}^Tx=\left[0\ 0\ 0\right]\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq10.png) = 0。由于 w^(*T*)*x* = 0，数据点会被分类为 0，这与实际类别 1 不符。因此，根据感知器规则更新的权重向量应该是 ![$$ w\to w+x=\left[\begin{array}{c}0\\ {}0\\ {}0\end{array}\right]+\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq11.png).
++   对于 *x*[1] = 1, *x*[2] = 0, *y* = 1，预测是 ![$$ {\textrm{w}}^Tx=\left[0\ 0\ 0\right]\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq10.png) = 0。由于 w^(*T*)*x* = 0，数据点会被分类为 0，这与实际类别 1 不符。因此，根据感知器规则更新的权重向量应该是 ![$$ w\to w+x=\left[\begin{array}{c}0\\ {}0\\ {}0\end{array}\right]+\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq11.png).
 
-+   对于 *x*[1] = 0, *x*[2] = 1, *y* = 1，预测是 ![$$ {\textrm{w}}^Tx=\left[1\ 1\ 0\right]\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq12.png) = 1。由于 w^(*T*)*x* = 1 > 0，数据点会被正确分类为 1。因此，权重向量不会有更新，并保持在 ![$$ \left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq13.png)
++   对于 *x*[1] = 0, *x*[2] = 1, *y* = 1，预测是 ![$$ {\textrm{w}}^Tx=\left[1\ 1\ 0\right]\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq12.png) = 1。由于 w^(*T*)*x* = 1 > 0，数据点会被正确分类为 1。因此，权重向量不会有更新，并保持在 ![$$ \left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq13.png)
 
-+   对于 *x*[1] = 1, *x*[2] = 1, *y* = 0，预测为 ![$$ {\textrm{w}}^Tx=\left[1\ 1\ 0\right]\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq14.png) = 2。由于 w^(*T*)*x* = 2，数据点将被分类为 1，这与实际类别 0 不符。因此，更新的权重向量应该是 ![$$ w\to w-x=\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]-\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=\left[\begin{array}{c}0\\ {}0\\ {}-1\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq15.png)。
++   对于 *x*[1] = 1, *x*[2] = 1, *y* = 0，预测为 ![$$ {\textrm{w}}^Tx=\left[1\ 1\ 0\right]\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq14.png) = 2。由于 w^(*T*)*x* = 2，数据点将被分类为 1，这与实际类别 0 不符。因此，更新的权重向量应该是 ![$$ w\to w-x=\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]-\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=\left[\begin{array}{c}0\\ {}0\\ {}-1\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq15.png)。
 
-+   对于 *x*[1] = 0, *x*[2] = 0, *y* = 0，预测为 ![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq16.png) = 0。由于 w^(*T*)*x* = 0，数据点将被正确分类为 0。因此，权重向量 *w* 将不会更新。
++   对于 *x*[1] = 0, *x*[2] = 0, *y* = 0，预测为 ![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq16.png) = 0。由于 w^(*T*)*x* = 0，数据点将被正确分类为 0。因此，权重向量 *w* 将不会更新。
 
 因此，在第一次遍历数据点后的权重向量为 *w* = [0 0 − 1]^(*T*). 基于更新的权重向量 *w*，让我们评估这些点被分类得有多好。
 
-+   对于数据点 1，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=0 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq17.png)，因此它被错误地分类为类别 0。
++   对于数据点 1，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=0 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq17.png)，因此它被错误地分类为类别 0。
 
-+   对于数据点 2，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right]=-1 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq18.png)，因此它被错误地分类为类别 0。
++   对于数据点 2，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right]=-1 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq18.png)，因此它被错误地分类为类别 0。
 
-+   对于数据点 3，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=-1 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq19.png)，因此它被正确地分类为类别 0。
++   对于数据点 3，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=-1 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq19.png)，因此它被正确地分类为类别 0。
 
-+   对于数据点 4，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right]=0 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq20.png)，因此它被正确地分类为类别 0。
++   对于数据点 4，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right]=0 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq20.png)，因此它被正确地分类为类别 0。
 
 根据前面的分类，我们看到在第一次迭代后，感知机算法成功地将负类正确分类。如果我们再次在数据点上应用感知机学习规则，第二次遍历中权重向量 *w* 的更新如下：
 
-+   对于数据点 1，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=0 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq21.png) 因此它被错误地分类为类别 0。因此，根据感知机规则更新的权重为 ![$$ w\to w+x=\kern0.5em \left[\begin{array}{c}0\\ {}0\\ {}-1\end{array}\right]+\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=\left[\begin{array}{c}1\\ {}1\\ {}-1\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq22.png)。
++   对于数据点 1，![$$ {\textrm{w}}^Tx=\left[0\ 0-1\right]\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=0 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq21.png) 因此它被错误地分类为类别 0。因此，根据感知机规则更新的权重为 ![$$ w\to w+x=\kern0.5em \left[\begin{array}{c}0\\ {}0\\ {}-1\end{array}\right]+\left[\begin{array}{c}1\\ {}1\\ {}0\end{array}\right]=\left[\begin{array}{c}1\\ {}1\\ {}-1\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq22.png)。
 
-+   对于数据点 2，![$$ {\textrm{w}}^Tx=\left[1\ 1-1\right]\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right]=0 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq23.png)，因此它被错误地分类为类别 0。因此，根据感知机规则更新的权重为 ![$$ w\to w+x=\kern0.5em \left[\begin{array}{c}1\\ {}1\\ {}-1\end{array}\right]+\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right]=\left[\begin{array}{c}2\\ {}1\\ {}0\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq24.png)。
++   对于数据点 2，![$$ {\textrm{w}}^Tx=\left[1\ 1-1\right]\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right]=0 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq23.png)，因此它被错误地分类为类别 0。因此，根据感知机规则更新的权重为 ![$$ w\to w+x=\kern0.5em \left[\begin{array}{c}1\\ {}1\\ {}-1\end{array}\right]+\left[\begin{array}{c}1\\ {}0\\ {}1\end{array}\right]=\left[\begin{array}{c}2\\ {}1\\ {}0\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq24.png)。
 
-+   对于数据点 3，![$$ {\textrm{w}}^Tx=\left[2\ 10\right]\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=3 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq25.png)，因此它被错误地分类为类别 1。因此，根据感知机规则更新的权重为 ![$$ w\to w-x=\kern0.5em \left[\begin{array}{c}2\\ {}1\\ {}0\end{array}\right]-\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=\left[\begin{array}{c}1\\ {}0\\ {}-1\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq26.png)。
++   对于数据点 3，![$$ {\textrm{w}}^Tx=\left[2\ 10\right]\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=3 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq25.png)，因此它被错误地分类为类别 1。因此，根据感知机规则更新的权重为 ![$$ w\to w-x=\kern0.5em \left[\begin{array}{c}2\\ {}1\\ {}0\end{array}\right]-\left[\begin{array}{c}1\\ {}1\\ {}1\end{array}\right]=\left[\begin{array}{c}1\\ {}0\\ {}-1\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq26.png)。
 
-+   对于数据点 4，![$$ {\textrm{w}}^Tx=\left[1\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right]=1 $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq27.png)，因此它被错误地分类为类别 1。因此，根据感知机规则更新的权重为 ![$$ w\to w-x=\kern0.5em \left[\begin{array}{c}1\\ {}0\\ {}-1\end{array}\right]-\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right]=\left[\begin{array}{c}0\\ {}0\\ {}-1\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq28.png)。
++   对于数据点 4，![$$ {\textrm{w}}^Tx=\left[1\ 0-1\right]\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right]=1 $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq27.png)，因此它被错误地分类为类别 1。因此，根据感知机规则更新的权重为 ![$$ w\to w-x=\kern0.5em \left[\begin{array}{c}1\\ {}0\\ {}-1\end{array}\right]-\left[\begin{array}{c}1\\ {}0\\ {}0\end{array}\right]=\left[\begin{array}{c}0\\ {}0\\ {}-1\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq28.png)。
 
 第二次遍历后的权重向量为 [0 0 − 1]^(*T*)，这与第一次遍历后的权重向量相同。从感知机学习第一次和第二次遍历期间做出的观察来看，很明显，无论我们对数据点进行多少次遍历，我们最终都会得到权重向量 [0 0 − 1]^(*T*)。正如我们之前所看到的，这个权重向量只能正确分类负类，因此我们可以安全地推断，在一般情况下，感知机算法将始终无法模拟 XOR 逻辑。
 
@@ -1086,11 +1086,11 @@ w 与 c 之间的关系图。在图中，两条直线曲线在一点相交形成
 
 因此，(*x*, *y*) = (0, 0) 是一个驻点。接下来要做的事情是计算 Hessian 矩阵，并在 (*x*, *y*) = (0, 0) 处评估其特征值。Hessian 矩阵 *Hf*(*x*, *y*) 如下所示：
 
-![$$ Hf\left(x,y\right)=\left[\begin{array}{cc}\frac{\partial²f}{\partial {x}²}& \frac{\partial²f}{\partial x\partial y}\\ \frac{\partial²f}{\partial x\partial y}& \frac{\partial²f}{\partial {y}²}\end{array}\right]=\left[\begin{array}{cc}2& 0\\ 0& -2\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equcg.png)
+![$$ Hf\left(x,y\right)=\left[\begin{array}{cc}\frac{\partial²f}{\partial {x}²}& \frac{\partial²f}{\partial x\partial y}\\ \frac{\partial²f}{\partial x\partial y}& \frac{\partial²f}{\partial {y}²}\end{array}\right]=\left[\begin{array}{cc}2& 0\\ 0& -2\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equcg.png)
 
-因此，包括 (*x*, *y*) = (0, 0) 在内的所有点的 Hessian 矩阵 *Hf*(*x*, *y*) 是 ![$$ \left[\begin{array}{cc}2& 0\\ 0& -2\end{array}\right]. $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq65.png)
+因此，包括 (*x*, *y*) = (0, 0) 在内的所有点的 Hessian 矩阵 *Hf*(*x*, *y*) 是 ![$$ \left[\begin{array}{cc}2& 0\\ 0& -2\end{array}\right]. $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq65.png)
 
-*Hf*(*x*, *y*) 的两个特征值是 2 和 -2，对应于特征向量 ![$$ \left[\begin{array}{c}1\\ 0\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq66.png) 和 ![$$ \left[\begin{array}{c}0\\ 1\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq67.png)，这不过是沿着 *X* 和 *Y* 轴的方向。由于一个特征值是正的，另一个是负的，所以 (*x*, *y*) = (0, 0) 是一个鞍点。
+*Hf*(*x*, *y*) 的两个特征值是 2 和 -2，对应于特征向量 ![$$ \left[\begin{array}{c}1\\ 0\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq66.png) 和 ![$$ \left[\begin{array}{c}0\\ 1\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq67.png)，这不过是沿着 *X* 和 *Y* 轴的方向。由于一个特征值是正的，另一个是负的，所以 (*x*, *y*) = (0, 0) 是一个鞍点。
 
 非凸函数 *f*(*x*, *y*) = *x*² − *y*² 在图 2-23 中绘制，其中 *S* 是鞍点，位于 *x*, *y* = (0, 0) 处。
 
@@ -1148,7 +1148,7 @@ optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=0.001)
 
 其中 *G*[(*t*)] 是包含每个维度过去梯度到迭代 *t* 的 l² 范数的对角矩阵。矩阵 *G*[(*t*)] 将具有以下形式：
 
-![$$ {G}_{(t)}=\left[\begin{array}{ccc}\sqrt{\sum \limits_{\tau =1}^t{\theta_1^{\left(\tau \right)}}²+\epsilon\ }&amp; \dots &amp; 0\\ {}\dots &amp; \sqrt{\sum \limits_{\tau =1}^t{\theta_i^{\left(\tau \right)}}²+\epsilon\ }&amp; \dots \\ {}0&amp; \dots &amp; \sqrt{\sum \limits_{\tau =1}^t{\theta_n^{\left(\tau \right)}}²+\epsilon\ }\end{array}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equcj.png)
+![$$ {G}_{(t)}=\left[\begin{array}{ccc}\sqrt{\sum \limits_{\tau =1}^t{\theta_1^{\left(\tau \right)}}²+\epsilon\ }&amp; \dots &amp; 0\\ {}\dots &amp; \sqrt{\sum \limits_{\tau =1}^t{\theta_i^{\left(\tau \right)}}²+\epsilon\ }&amp; \dots \\ {}0&amp; \dots &amp; \sqrt{\sum \limits_{\tau =1}^t{\theta_n^{\left(\tau \right)}}²+\epsilon\ }\end{array}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equcj.png)
 
 有时，在数据中不太显现的稀疏特征对于优化问题可能非常有用。然而，使用基本的梯度下降法或随机梯度下降法时，学习率在每次迭代中对所有特征给予同等的重要性。由于学习率相同，非稀疏特征的整体贡献将远大于稀疏特征。因此，我们最终会丢失稀疏特征中的关键信息。使用`Adagrad`，每个参数都会用不同的学习率进行更新。特征越稀疏，其参数在迭代中的更新就越高。这是因为对于稀疏特征，量 ![$$ \sqrt{\sum \limits_{\tau =1}^t{\theta_i^{\left(\tau \right)}}²+\epsilon\ } $$](img/448418_2_En_2_Chapter_TeX_IEq68.png) 会更小，因此整体学习率会更高。
 
@@ -1264,17 +1264,17 @@ optimizer = tf.keras.optimizers.Adadelta(learning_rate=0.001, rho=0.95, epsilon=
 
 ![$$ ={\beta}_1^t{m}_{ij}^{(0)}+{\beta}_1^{t-1}\left(1-{\beta}_1\right)\frac{\partial {C}^{(1)}}{\partial {w}_{ij}}+\dots +\left(1-{\beta}_1\right)\frac{\partial {C}^{(t)}}{\partial {w}_{ij}} $$](img/448418_2_En_2_Chapter_TeX_Equdd.png)
 
-对 ![$$ E\left[{m}_{ij}^{(t)}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq77.png) 求期望，并假设 E![$$ \left[\frac{\partial {C}^{(i)}}{\partial {w}_{ij}}\right]=g $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq78.png) 是整个数据集的实际梯度，我们得到以下结果：
+对 ![$$ E\left[{m}_{ij}^{(t)}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq77.png) 求期望，并假设 E![$$ \left[\frac{\partial {C}^{(i)}}{\partial {w}_{ij}}\right]=g $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_IEq78.png) 是整个数据集的实际梯度，我们得到以下结果：
 
-![$$ E\left[{m}_{ij}^{(t)}\right]=E\left[{\beta}_1^t{m}_{ij}^{(0)}+{\beta}_1^{t-1}\left(1-{\beta}_1\right)\frac{\partial {C}^{(1)}}{\partial {w}_{ij}}+\dots +\left(1-{\beta}_1\right)\frac{\partial {C}^{(t)}}{\partial {w}_{ij}}\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equde.png)
+![$$ E\left[{m}_{ij}^{(t)}\right]=E\left[{\beta}_1^t{m}_{ij}^{(0)}+{\beta}_1^{t-1}\left(1-{\beta}_1\right)\frac{\partial {C}^{(1)}}{\partial {w}_{ij}}+\dots +\left(1-{\beta}_1\right)\frac{\partial {C}^{(t)}}{\partial {w}_{ij}}\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equde.png)
 
-![$$ =E\left[{\beta}_1^t{m}_{ij}^{(0)}\right]+\left(1-{\beta}_1\right)g\left[{\beta}_1^{t-1}+\dots +1\right] $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdf.png)
+![$$ =E\left[{\beta}_1^t{m}_{ij}^{(0)}\right]+\left(1-{\beta}_1\right)g\left[{\beta}_1^{t-1}+\dots +1\right] $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdf.png)
 
-![$$ =E\left[{\beta}_1^t{m}_{ij}^{(0)}\right]+\frac{\left(1-{\beta}_1\right)g\left(1-{\beta}_1^t\right)}{\left(1-{\beta}_1\right)} $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdg.png)
+![$$ =E\left[{\beta}_1^t{m}_{ij}^{(0)}\right]+\frac{\left(1-{\beta}_1\right)g\left(1-{\beta}_1^t\right)}{\left(1-{\beta}_1\right)} $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdg.png)
 
 如果我们将梯度移动平均的初始估计 ![$$ {m}_{ij}^{(0)} $$](img/448418_2_En_2_Chapter_TeX_IEq79.png) 设为零，那么根据上面的公式，我们有：
 
-![$$ E\left[{m}_{ij}^{(t)}\right]=E\left[{\beta}_1{m}_{ij}^{\left(t-1\right)}+\left(1-{\beta}_1\right)\frac{\partial {C}^{(t)}}{\partial {w}_{ij}}\right]=g\left(1-{\beta}_1^t\right) $$](../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdh.png)
+![$$ E\left[{m}_{ij}^{(t)}\right]=E\left[{\beta}_1{m}_{ij}^{\left(t-1\right)}+\left(1-{\beta}_1\right)\frac{\partial {C}^{(t)}}{\partial {w}_{ij}}\right]=g\left(1-{\beta}_1^t\right) $$](img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdh.png)
 
 因此，为了使梯度移动平均成为迭代 *t* 时整个数据集的真实梯度 *g* 的无偏估计，我们定义梯度归一化移动平均为 ![$$ {\hat{m}}_{ij}^{(t)} $$](img/448418_2_En_2_Chapter_TeX_IEq80.png)，如下所示：
 
@@ -1328,7 +1328,7 @@ optimizer =tf.keras.optimizers.Adam(learning_rate=0.001,beta_1=0.9,beta_2=0.999,
 
 ![$$ {\theta}^{\left(t+\frac{1}{2}\right)}={\theta}^{(t)}+\alpha {v}^{(t)} $$](img/448418_2_En_2_Chapter_TeX_Equdq.png)
 
-![v^(t+1)=αv^(t)−η∇C(θ=θ^(t+1/2))] (../images/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdr.png)
+![v^(t+1)=αv^(t)−η∇C(θ=θ^(t+1/2))] (img/448418_2_En_2_Chapter/448418_2_En_2_Chapter_TeX_Equdr.png)
 
 ![θ^(t+1)=θ^(t)+v^(t+1)](img/448418_2_En_2_Chapter_TeX_Equds.png)
 

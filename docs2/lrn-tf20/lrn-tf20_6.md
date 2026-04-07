@@ -16,7 +16,7 @@
 
 机器学习模型可以独立构建。实际上，我们构建机器学习模型所需的所有东西就是合理规模的训练数据。然而，机器学习模型的部署并不是孤立的。图 6-1（摘自 Sculley 等人，“机器学习系统中的隐藏技术债务”，2015 年）描绘了机器学习模型部署带来的挑战。实际上，机器学习模型代码在整体设置中似乎只是一个非常小的组成部分。其余的元素需要与机器学习模型保持持续的参与和沟通。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig1_HTML.jpg](img/489297_1_En_6_Fig1_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig1_HTML.jpg](img/489297_1_En_6_Fig1_HTML.jpg)
 
 图 6-1
 
@@ -50,7 +50,7 @@
 
 在下面的示例中，我们考虑构建线性回归模型的标准数据集。输入数据有五个输入列和一个输出列。所有变量都是数值型的，因此需要的特征工程很少。然而，这里的想法不是构建一个完美的模型，而是构建一个基线模型，保存它，然后恢复它。在第一步中，我们加载数据并创建输入和输出特征变量（`X,y`）。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Figa_HTML.jpg](img/489297_1_En_6_Figa_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Figa_HTML.jpg](img/489297_1_En_6_Figa_HTML.jpg)
 
 ```py
 [In]: import pandas as pd
@@ -188,13 +188,13 @@ app.run(host='0.0.0.0')
 
 让我们回顾一下步骤，以便了解`app.py`文件的细节。首先，我们从 Python 导入所有必需的库。接下来，我们创建第一个函数，这是一个主页，它渲染 HTML 模板以允许用户填写输入值。下一个函数是将模型对用户提供的输入值进行的预测发布出来。我们将输入值保存到来自用户的五个不同变量中，并创建一个列表（`pred_args`）。然后我们将它转换成一个 numpy 数组。我们将其重塑成所需的形式，以便能够以相同的方式进行预测。下一步是加载训练好的模型（`linear_regression_model.pkl`）并进行预测。我们将最终输出保存到一个变量（`model_prediction`）中。然后我们通过另一个 HTML 模板（`predict.html`）发布这些结果。如果我们现在在终端中运行主文件（`app.py`），我们将看到图 6-2 所示的页面，要求用户填写值。输出显示在图 6-3 中。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig3_HTML.jpg](img/489297_1_En_6_Fig3_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig3_HTML.jpg](img/489297_1_En_6_Fig3_HTML.jpg)
 
 图 6-3
 
 预测输出
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig2_HTML.jpg](img/489297_1_En_6_Fig2_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig2_HTML.jpg](img/489297_1_En_6_Fig2_HTML.jpg)
 
 图 6-2。
 
@@ -204,13 +204,13 @@ app.run(host='0.0.0.0')
 
 我们需要设计两个网页，以便向服务器发送请求并接收响应消息，这是针对特定请求的机器学习模型的预测结果。由于本书不专注于 HTML，您可以简单地使用这些文件，无需对其进行任何修改。但对于好奇的读者，我们正在创建一个表单，用于请求五个不同变量的五个值。我们使用了一个标准的 CSS 模板，包含非常基本的字段（图 6-4）。了解 HTML 的用户可以自由地根据他们的需求重新设计主页（图 6-5）。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig5_HTML.jpg](img/489297_1_En_6_Fig5_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig5_HTML.jpg](img/489297_1_En_6_Fig5_HTML.jpg)
 
 图 6-5
 
 输入网页
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig4_HTML.jpg](img/489297_1_En_6_Fig4_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig4_HTML.jpg](img/489297_1_En_6_Fig4_HTML.jpg)
 
 图 6-4
 
@@ -218,13 +218,13 @@ app.run(host='0.0.0.0')
 
 下一个模板是将模型预测结果返回给用户（图 6-6）。与第一个模板相比，它更简单，因为我们只需要将一个值返回给用户（图 6-7）。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig7_HTML.jpg](img/489297_1_En_6_Fig7_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig7_HTML.jpg](img/489297_1_En_6_Fig7_HTML.jpg)
 
 图 6-7
 
 模型的输出
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig6_HTML.jpg](img/489297_1_En_6_Fig6_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig6_HTML.jpg](img/489297_1_En_6_Fig6_HTML.jpg)
 
 图 6-6
 
@@ -274,14 +274,14 @@ app.run(host='0.0.0.0')
 
 要查看示例图像，我们可以使用`imshow`函数并传递特定的图像，如下面的几个示例所示：
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Figb_HTML.jpg](img/489297_1_En_6_Figb_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Figb_HTML.jpg](img/489297_1_En_6_Figb_HTML.jpg)
 
 ```py
 [In]: plt.imshow(X_train[100])
 [Out]:
 ```
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Figc_HTML.jpg](img/489297_1_En_6_Figc_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Figc_HTML.jpg](img/489297_1_En_6_Figc_HTML.jpg)
 
 ```py
 [In]: print(labels[y_train[100]])
@@ -308,7 +308,7 @@ app.run(host='0.0.0.0')
 
 我们现在在训练集上训练模型，并将 epoch 数设置为 10。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Figd_HTML.jpg](img/489297_1_En_6_Figd_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Figd_HTML.jpg](img/489297_1_En_6_Figd_HTML.jpg)
 
 ```py
 [In]: history = keras_model.fit(X_train, y_train,epochs=10)
@@ -332,7 +332,7 @@ app.run(host='0.0.0.0')
 
 在以下示例中，我们加载一张测试图像（`100`），它是一条裙子，然后我们将使用我们保存的模型对这张图像进行预测。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fige_HTML.jpg](img/489297_1_En_6_Fige_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fige_HTML.jpg](img/489297_1_En_6_Fige_HTML.jpg)
 
 ```py
 [In]: plt.imshow(X_test[100])
@@ -354,7 +354,7 @@ app.run(host='0.0.0.0')
 
 另一个例子：我们可以选择另一张图像（`500`）并使用保存的模型进行预测。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Figf_HTML.jpg](img/489297_1_En_6_Figf_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Figf_HTML.jpg](img/489297_1_En_6_Figf_HTML.jpg)
 
 ```py
 [In]: plt.imshow(X_test[500])
@@ -378,7 +378,7 @@ app.run(host='0.0.0.0')
 
 在本节中，我们将复制之前构建的相同模型，并在云中（通过 Google Cloud Platform）运行它，使用 Kubeflow。我们还将使用 Kubeflow UI，在云中导航和运行 Jupyter Notebook。由于我们将使用 Google Cloud Platform（GCP），我们必须有一个 Google 账户，这样我们才能利用 Google 为 GCP 组件提供的免费信用额度。前往`https://console.cloud.google.com/`并创建一个 Google 用户账户，如果您还没有的话。您将需要提供一些额外的详细信息，以及信用卡信息，如图 6-8 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig8_HTML.jpg](img/489297_1_En_6_Fig8_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig8_HTML.jpg](img/489297_1_En_6_Fig8_HTML.jpg)
 
 图 6-8
 
@@ -386,7 +386,7 @@ Google 用户账户
 
 一旦我们登录到 Google 控制台，有许多选项可以探索，但首先，我们必须启用 Google 提供的免费信用额度，以便免费访问云服务（最高$300）。接下来，我们必须创建一个新的项目或选择一个现有的项目，对于已经拥有 Google 账户的用户，如图 6-9 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig9_HTML.jpg](img/489297_1_En_6_Fig9_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig9_HTML.jpg](img/489297_1_En_6_Fig9_HTML.jpg)
 
 图 6-9
 
@@ -394,13 +394,13 @@ Google 项目
 
 要使用 Kubeflow，最后一步是启用 Kubernetes Engine API。为了启用 Kubernetes Engine API，我们必须前往 API & 服务仪表板（图 6-10）并搜索 Kubernetes Engine API。一旦它在库中显示出来，我们必须启用它，如图 6-11 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig11_HTML.jpg](img/489297_1_En_6_Fig11_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig11_HTML.jpg](img/489297_1_En_6_Fig11_HTML.jpg)
 
 图 6-11
 
 启用 Kubernetes API
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig10_HTML.jpg](img/489297_1_En_6_Fig10_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig10_HTML.jpg](img/489297_1_En_6_Fig10_HTML.jpg)
 
 图 6-10
 
@@ -408,7 +408,7 @@ API 仪表板
 
 下一步是在 GCP 上使用 Kubeflow 部署 Kubernetes 集群。有多种方法可以做到这一点，但我们将通过使用 UI 来部署集群。前往 `https://deploy.kubeflow.cloud/#/` 并提供所需的详细信息，如图 6-12 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig12_HTML.jpg](img/489297_1_En_6_Fig12_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig12_HTML.jpg](img/489297_1_En_6_Fig12_HTML.jpg)
 
 图 6-12
 
@@ -416,7 +416,7 @@ Kubeflow 部署
 
 我们必须输入项目 ID（在 GCP 控制台的“项目”选项卡下查看项目详情），选择所需的部署名称，并选择使用用户名和密码登录的选项，以保持简单。接下来，我们再次输入我们选择的用户名和密码（我们还需要它们来登录到 Kubeflow UI）。我们可以根据可用的区域再次选择 Google Kubernetes Engine 区域，并选择 Kubeflow 版本 0.62。点击创建部署确保所有必需的资源将在大约 30 分钟内启动并运行。我们还可以通过返回 Google 控制台仪表板并选择 Kubernetes Engine 和集群选项来检查 Kubernetes 集群是否启动并运行。在我们可以看到 Kubernetes Engine 集群启动并运行之前可能需要几分钟。现在，Kubeflow 部署已经设置好，我们可以简单地点击 Kubeflow 服务端点按钮，就会有一个新的 UI 页面可用。我们必须使用在部署阶段提供的相同用户名和密码，如图 6-13 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig13_HTML.jpg](img/489297_1_En_6_Fig13_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig13_HTML.jpg](img/489297_1_En_6_Fig13_HTML.jpg)
 
 图 6-13
 
@@ -424,7 +424,7 @@ Kubeflow 登录
 
 一旦我们登录到 Kubeflow UI，我们可以看到 Kubeflow 仪表板，其中包含多个选项，如管道、笔记本服务器等，如图 6-14 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig14_HTML.jpg](img/489297_1_En_6_Fig14_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig14_HTML.jpg](img/489297_1_En_6_Fig14_HTML.jpg)
 
 图 6-14
 
@@ -432,7 +432,7 @@ Kubeflow 仪表板
 
 我们必须选择笔记本服务器，以启动一个新的笔记本服务器。对于一个新的笔记本服务器，我们必须提供一些有关所需配置的详细信息，如图 6-15 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig15_HTML.jpg](img/489297_1_En_6_Fig15_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig15_HTML.jpg](img/489297_1_En_6_Fig15_HTML.jpg)
 
 图 6-15
 
@@ -440,7 +440,7 @@ Kubeflow 笔记本服务器
 
 现在，我们必须提供一些配置细节来启动服务器，例如基础镜像（带有预安装的库和依赖项）、CPU/GPU 的大小以及总内存（5 个 CPU 和 5GB 内存足以满足我们的模型需求）。我们可以选择带有 TensorFlow 2.0 版本的镜像，因为我们是用这个版本构建模型的。我们还必须添加 GCP 凭据，以防我们想要将模型保存到 GCP 的存储桶中并用于服务目的。过了一会儿，笔记本服务器就会启动并运行，我们可以点击连接，打开在 Kubeflow 服务器上运行的 Jupyter Notebook，如图 6-16 所示。
 
-![../images/489297_1_En_6_Chapter/489297_1_En_6_Fig16_HTML.jpg](img/489297_1_En_6_Fig16_HTML.jpg)
+![img/489297_1_En_6_Chapter/489297_1_En_6_Fig16_HTML.jpg](img/489297_1_En_6_Fig16_HTML.jpg)
 
 图 6-16
 

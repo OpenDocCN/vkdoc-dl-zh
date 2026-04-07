@@ -1061,7 +1061,7 @@ Mice Protein Expression 数据集上性能的不同维度
 
 sigmoid 方程 ![σ(x) = 1/(1+e^(-x))] 是从接近某个最小界限的值到另一个接近上限的值的一个很好的方法。在 100 个 epoch 的范围内，我们可以对 sigmoid 函数进行简单的（任意设置但有效的）变换，以获得α从低值到高值的平滑过渡（如图 8-57 中的列表 8-24 所示），其中 t 代表 epoch 编号：
 
-![α = σ((t-50)/10) = 1/(1+e^(-(t-50)/10))] (../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equc.png)
+![α = σ((t-50)/10) = 1/(1+e^(-(t-50)/10))] (img/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equc.png)
 
 ![](img/525591_1_En_8_Fig57_HTML.png)
 
@@ -1086,7 +1086,7 @@ Plotting out our custom α-adjusting curve
 
 一个通用的方程，通过 sigmoid 函数的变换来缩放α通过 t[max]如下：
 
-![α = σ((t-t_max/2)/(t_max/10)) = 1/(1+e^(-(t-t_max/2)/(t_max/10)))] (../images/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equd.png)
+![α = σ((t-t_max/2)/(t_max/10)) = 1/(1+e^(-(t-t_max/2)/(t_max/10)))] (img/525591_1_En_8_Chapter/525591_1_En_8_Chapter_TeX_Equd.png)
 
 在初始条件下，α的值非常小。（为了计算简便，我们在此计算中使用 t=1。）
 

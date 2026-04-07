@@ -6,7 +6,7 @@
 
 让我们回顾一下我们构建的模型。我们使用了 LeNet 架构，它看起来是这样的（图 5-1）：
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig1_HTML.jpg](img/502073_1_En_5_Fig1_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig1_HTML.jpg](img/502073_1_En_5_Fig1_HTML.jpg)
 
 图 5-1
 
@@ -34,7 +34,7 @@ LeNet 模型
 
 数字图像由像素集合组成。每个像素由一个或多个颜色通道的颜色值定义。灰度图像只有一个通道。图像中的每个像素都有一个从 0 到 255 的值，其中 0 表示黑色，255 表示白色（图 5-2）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig2_HTML.jpg](img/502073_1_En_5_Fig2_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig2_HTML.jpg](img/502073_1_En_5_Fig2_HTML.jpg)
 
 图 5-2
 
@@ -42,7 +42,7 @@ LeNet 模型
 
 彩色图像有三个通道——红色、绿色和蓝色，对于 RGB 图像（图 5-3）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig3_HTML.jpg](img/502073_1_En_5_Fig3_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig3_HTML.jpg](img/502073_1_En_5_Fig3_HTML.jpg)
 
 图 5-3
 
@@ -62,7 +62,7 @@ LeNet 模型
 
 为了简单理解卷积是如何工作的，可以想象两个矩阵：输入矩阵和卷积矩阵（图 5-4）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig4_HTML.jpg](img/502073_1_En_5_Fig4_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig4_HTML.jpg](img/502073_1_En_5_Fig4_HTML.jpg)
 
 图 5-4
 
@@ -70,7 +70,7 @@ LeNet 模型
 
 卷积操作是通过卷积矩阵“滑动”在输入矩阵上实现的，从而产生卷积输出（图 5-5）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig5_HTML.jpg](img/502073_1_En_5_Fig5_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig5_HTML.jpg](img/502073_1_En_5_Fig5_HTML.jpg)
 
 图 5-5
 
@@ -86,7 +86,7 @@ LeNet 模型
 
 如果我们尝试使用不同的卷积矩阵进行相同的操作——输入是图像——它们的输出将展示图像特征的多种表示。以下是一些示例（图 5-6）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig6_HTML.jpg](img/502073_1_En_5_Fig6_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig6_HTML.jpg](img/502073_1_En_5_Fig6_HTML.jpg)
 
 图 5-6
 
@@ -104,7 +104,7 @@ LeNet 模型
 
 ReLU 函数可以在图 5-7 中看到。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig7_HTML.jpg](img/502073_1_En_5_Fig7_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig7_HTML.jpg](img/502073_1_En_5_Fig7_HTML.jpg)
 
 图 5-7
 
@@ -120,7 +120,7 @@ Output = max(0, Input)
 
 当应用于特征图时，ReLU 的结果看起来像这样（图 5-8）：
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig8_HTML.jpg](img/502073_1_En_5_Fig8_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig8_HTML.jpg](img/502073_1_En_5_Fig8_HTML.jpg)
 
 图 5-8
 
@@ -132,7 +132,7 @@ Output = max(0, Input)
 
 在最大池化中，我们定义一个窗口（特征图的一个区域）并从该区域的像素中获取最大值（图 5-9）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig9_HTML.jpg](img/502073_1_En_5_Fig9_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig9_HTML.jpg](img/502073_1_En_5_Fig9_HTML.jpg)
 
 图 5-9
 
@@ -156,7 +156,7 @@ Output = max(0, Input)
 
 分类器的目的是将卷积和池化层提取的高级特征结合起来，以便进行最终分类（图 5-10）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig10_HTML.jpg](img/502073_1_En_5_Fig10_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig10_HTML.jpg](img/502073_1_En_5_Fig10_HTML.jpg)
 
 图 5-10
 
@@ -174,7 +174,7 @@ Output = max(0, Input)
 
 对于我们人类来说，因为我们掌握了视觉元素，正方形的定义特征将是“线条”、“长度”和“角度”。我们知道——也就是说，我们的思维已经被训练去知道——哪些特征的组合会导致正方形，以及识别正方形时应该寻找什么（图 5-11）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig11_HTML.png](img/502073_1_En_5_Fig11_HTML.png)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig11_HTML.png](img/502073_1_En_5_Fig11_HTML.png)
 
 图 5-11
 
@@ -186,7 +186,7 @@ Output = max(0, Input)
 
 如您在先前的图表（图 5-12）中看到的，卷积过滤器允许从图像中提取出一些独特的元素。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig12_HTML.jpg](img/502073_1_En_5_Fig12_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig12_HTML.jpg](img/502073_1_En_5_Fig12_HTML.jpg)
 
 图 5-12
 
@@ -198,7 +198,7 @@ Output = max(0, Input)
 
 我们构建的模型使用了多个卷积过滤器来识别数字的共同特征，并试图识别哪些特征的组合有助于哪个数字类别（图 5-13）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig13_HTML.jpg](img/502073_1_En_5_Fig13_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig13_HTML.jpg](img/502073_1_En_5_Fig13_HTML.jpg)
 
 图 5-13
 
@@ -206,7 +206,7 @@ MNIST 数据集数字上的可能学习到的特征
 
 同样的概念也可以应用于识别更复杂的输入，例如更真实的图像。以下图表显示了如何通过 CNN 中的特征提取来识别汽车图像（图 5-14）。
 
-![../images/502073_1_En_5_Chapter/502073_1_En_5_Fig14_HTML.jpg](img/502073_1_En_5_Fig14_HTML.jpg)
+![img/502073_1_En_5_Chapter/502073_1_En_5_Fig14_HTML.jpg](img/502073_1_En_5_Fig14_HTML.jpg)
 
 图 5-14
 

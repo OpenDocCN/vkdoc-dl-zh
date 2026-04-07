@@ -18,7 +18,7 @@
 
 由于模型压缩主要是一个部署问题，我们将使用相应的语言：“服务器端”和“客户端”。大致来说，就本书的目的而言，“服务器端”指的是在服务于客户端的服务器上执行的计算，而“客户端”指的是在客户端的本地资源上执行的计算。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig1_HTML.jpg](img/516104_1_En_4_Fig1_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig1_HTML.jpg](img/516104_1_En_4_Fig1_HTML.jpg)
 
 图 4-1
 
@@ -32,7 +32,7 @@
 
 这些都是在部署模型时必须考虑的模型成本因素，与模型的实际性能并列。一个成本较低但性能不佳的模型在实用应用中无法部署，就像一个性能良好但成本较高的模型一样。神经网络的研究表明，神经网络包含一定量的冗余——对于特定问题来说，根本不需要的额外空间。这是有道理的：一组小的架构设计可以适应大多数深度学习问题，但并非所有深度学习问题在难度上都是相同的，因此我们不应期望每个问题“使用”每个架构的程度相同。去除冗余不会对性能造成任何或可忽略的成本。然而，超过这个冗余，我们面临着性能和成本之间的权衡。随着我们降低模型承担的成本，我们也降低了模型的性能（见图 4-2）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig2_HTML.jpg](img/516104_1_En_4_Fig2_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig2_HTML.jpg](img/516104_1_En_4_Fig2_HTML.jpg)
 
 图 4-2
 
@@ -70,7 +70,7 @@
 
 剪枝通常在网络的训练基本完成之后进行，这样评估参数的重要性才有意义，而不是仅仅基于随机的初始化或训练早期阶段中的值。为了确定哪些神经网络实体（节点、连接、层等）对输出的贡献最大或最小，必须根据某些重要性标准评估每个实体。最不重要的实体被移除（见图 4-3）。在实践中，移除只是将参数设置为零，这比存储要便宜得多。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig3_HTML.jpg](img/516104_1_En_4_Fig3_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig3_HTML.jpg](img/516104_1_En_4_Fig3_HTML.jpg)
 
 图 4-3
 
@@ -80,7 +80,7 @@
 
 因此，剪枝遵循以下一般的迭代过程（见图 4-4）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig4_HTML.jpg](img/516104_1_En_4_Fig4_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig4_HTML.jpg](img/516104_1_En_4_Fig4_HTML.jpg)
 
 图 4-4
 
@@ -387,7 +387,7 @@ Pruning individual layers by adding wrappers around layers. Activations are left
 
 然而，这种方法选择要剪枝的层的缺点是，在剪枝之前你不能进行任何预训练，因为层从定义时起就被包裹在剪枝包装器中。这导致的结果比模型在剪枝前在数据上预训练的要差。为了在已经训练好的模型上选择特定的层进行剪枝，我们需要使用 `keras.models.clone_model(model)` 和一个克隆函数来 *克隆* 模型。克隆函数将每个层映射到另一个层；在这种情况下，我们可以将我们要剪枝的层映射到该层的剪枝版本（见图 4-5）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig5_HTML.jpg](img/516104_1_En_4_Fig5_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig5_HTML.jpg](img/516104_1_En_4_Fig5_HTML.jpg)
 
 图 4-5
 
@@ -466,7 +466,7 @@ Using the cloning function with Keras’ clone_model function
 
 在数学中，量化是将连续值集映射到较小离散值集的过程（见图 4-6）。在深度学习中，量化是指通过类似方法可以用来降低参数精度的广泛方法。通常，这是通过将值分离到信息桶中实现的。在二进制量化中，值被量化到两个桶中；在三元量化中，值被量化到三个桶中。然而，二进制和三元量化可能过于极端，这就是为什么大多数部署的模型采用多比特到多比特的量化方法。这些桶如何放置，每个桶有多大，以及其他执行此映射的参数，取决于所使用的量化策略。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig6_HTML.jpg](img/516104_1_En_4_Fig6_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig6_HTML.jpg](img/516104_1_En_4_Fig6_HTML.jpg)
 
 图 4-6
 
@@ -482,7 +482,7 @@ Using the cloning function with Keras’ clone_model function
 
 在整个量化感知训练过程中，模型本身保持未量化，用标准的 32 位表示其所有参数。然而，引入了量化误差以供考虑：在网络的前馈阶段，网络的输出与网络已经量化的输出相同。也就是说，在做出任何预测之前，网络会经历“模拟量化”——为了预测，其参数被量化。这种模拟量化输出用于更新模型参数，这些参数仍然是未量化的。因此，尽管在量化感知训练过程中模型本身保持未量化，但它学会了开发在模型量化时将成功的参数。模型保持未量化，因为使用更精确的参数更新模型参数要容易得多。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig7_HTML.jpg](img/516104_1_En_4_Fig7_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig7_HTML.jpg](img/516104_1_En_4_Fig7_HTML.jpg)
 
 图 4-7
 
@@ -490,7 +490,7 @@ Using the cloning function with Keras’ clone_model function
 
 在量化感知训练之后，模型正式进行量化——其参数被分类，并使用 8 位整数表示（或根据实现方式的其他表示）。由于量化感知训练的准备，模型应该已经开发出在量化时鲁棒且成功的参数（图 4-8）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig8_HTML.jpg](img/516104_1_En_4_Fig8_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig8_HTML.jpg](img/516104_1_En_4_Fig8_HTML.jpg)
 
 图 4-8
 
@@ -652,7 +652,7 @@ Applying the cloning function to a (pretrained) base model
 
 权重聚类在特性上结合了剪枝和量化——它通过略微调整每个权重值来减少*唯一*权重的数量。给定用户指定的聚类数量*n*，权重聚类算法将每个权重值分配到一个聚类，并将权重值设置为该权重值的质心（图 4-9）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig9_HTML.jpg](img/516104_1_En_4_Fig9_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig9_HTML.jpg](img/516104_1_En_4_Fig9_HTML.jpg)
 
 图 4-9
 
@@ -660,7 +660,7 @@ Applying the cloning function to a (pretrained) base model
 
 属于同一聚类的权重都共享相同的值，从而允许更有效的存储方式。类似于量化，存储需求的减少是一个精度问题；每个参数的精确值可以被关联的质心值的索引所替代。这些精确值可以存储在一个可索引的质心值列表中（图 4-10）。（注意，即使不使用这种质心索引方法，压缩算法也能利用重复值。）
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig10_HTML.jpg](img/516104_1_En_4_Fig10_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig10_HTML.jpg](img/516104_1_En_4_Fig10_HTML.jpg)
 
 图 4-10
 
@@ -718,7 +718,7 @@ Stripping clustering artifacts to realize compression benefits after fitting
 
 通常，使用压缩方法单独使用可以获得良好的结果。然而，当这些压缩方法结合使用时，可以实现更好的性能和更高的压缩率：协同优化的基本思想是压缩方法可以串联起来，这样每种方法都可以以独特的方式压缩模型，从而实现比仅应用一个（按比例缩放）压缩方法更成功的整体压缩（图 4-11）。深度学习的实际部署几乎总是采用协同优化，而不是单独使用一种压缩方法。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig11_HTML.png](img/516104_1_En_4_Fig11_HTML.png)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig11_HTML.png](img/516104_1_En_4_Fig11_HTML.png)
 
 图 4-11
 
@@ -740,7 +740,7 @@ pruning, weight clustering, quantization
 
 这些顺序排列得尽可能减少每种压缩方法对其他压缩方法的干扰。例如，剪枝和权重聚类需要相对高精度的信息，如果首先进行量化，将会严重破坏这个过程。剪枝依赖于存在一个广泛、多样化的参数集来排名和选择；如果在剪枝之前进行权重聚类，将会显著减少值的多样性，从而破坏剪枝的有效性（图 4-12）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig12_HTML.jpg](img/516104_1_En_4_Fig12_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig12_HTML.jpg](img/516104_1_En_4_Fig12_HTML.jpg)
 
 图 4-12
 
@@ -748,7 +748,7 @@ pruning, weight clustering, quantization
 
 然而，在应用协同优化时，你不能简单地逐个应用方法。即使我们有“操作顺序”来优化链式方法的性能，在实践中添加一个额外的压缩方法会严重削弱前一个方法的效果（图 4-13）。例如，考虑权重聚类和剪枝——剪枝将剪枝参数设置为零，但权重聚类将参数设置为它们的质心值。因此，如果在剪枝之后进行权重聚类，许多被剪枝的参数将“未剪枝”，因为它们被设置为非零质心值。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig13_HTML.jpg](img/516104_1_En_4_Fig13_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig13_HTML.jpg](img/516104_1_En_4_Fig13_HTML.jpg)
 
 图 4-13
 
@@ -756,7 +756,7 @@ pruning, weight clustering, quantization
 
 因此，需要专门的量化聚类版本来执行各自的压缩方法，同时保持前一个方法的压缩效果（图 4-14）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig14_HTML.jpg](img/516104_1_En_4_Fig14_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig14_HTML.jpg](img/516104_1_En_4_Fig14_HTML.jpg)
 
 图 4-14
 
@@ -772,7 +772,7 @@ pruning, weight clustering, quantization
 
 在整个模型完成注释后，我们使用`quantize_apply()`函数对注释的模型进行实际量化。在此函数中，我们可以指定保留另一种压缩方法——在这种情况下，剪枝。这是通过传递一个`tfmot.experimental.combine`对象来指定的，该对象表示在“组合”或“协同”时需要保留的压缩方法。然后，可以像往常一样编译和拟合剪枝保留的量化感知训练模型。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig15_HTML.jpg](img/516104_1_En_4_Fig15_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig15_HTML.jpg](img/516104_1_En_4_Fig15_HTML.jpg)
 
 图 4-15
 
@@ -806,7 +806,7 @@ Performing sparsity preserving quantization after pruning
 
 使用在“权重聚类”部分之前讨论的代码和方法，获取一个`clustered_model`。从这里开始，过程几乎与稀疏性保持量化相同：在从`clustered_model`中去除聚类痕迹后，注释模型并使用`quantize_apply`对注释的层进行量化。在指定`quantize_apply`中要保留的压缩方法时，使用`Default8BitClusterPreserveQuantizeScheme`而不是`Default8BitPrunePreserveQuantizeScheme`。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig16_HTML.jpg](img/516104_1_En_4_Fig16_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig16_HTML.jpg](img/516104_1_En_4_Fig16_HTML.jpg)
 
 图 4-16
 
@@ -838,7 +838,7 @@ Defining clustering parameters with sparsity preservation marked
 
 然后，将`cluster_weights`函数应用于去除了剪枝痕迹的模型，并带有聚类参数，然后编译和拟合（代码列表 4-32）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig17_HTML.jpg](img/516104_1_En_4_Fig17_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig17_HTML.jpg](img/516104_1_En_4_Fig17_HTML.jpg)
 
 图 4-17
 
@@ -864,7 +864,7 @@ Performing sparsity preserving clustering after pruning
 
 论文提出了一种三阶段压缩管道：剪枝、权重聚类和量化（作为一个方法组合在一起），以及 Huffman 编码（图 4-18）。此压缩管道逐步压缩了像 AlexNet 和 VGG-16 这样的大型模型，在 ImageNet 数据集上压缩了 35 到 49 倍，而没有损失任何准确度。此外，延迟降低了三到四倍，能效提高了三到七倍。通过按此顺序链式连接压缩方法，压缩方法之间相互干扰最小，从而实现了令人惊讶的大压缩：
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig18_HTML.jpg](img/516104_1_En_4_Fig18_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig18_HTML.jpg](img/516104_1_En_4_Fig18_HTML.jpg)
 
 图 4-18
 
@@ -891,7 +891,7 @@ Performing sparsity preserving clustering after pruning
 
 Han、Mao 和 Dally 对协作优化的动态提供了重要的见解。例如，在量化之前进行剪枝并不会损害量化——经过剪枝和量化的模型性能几乎与仅经过量化的模型（当然，剪枝和量化的模型参数更少）相同（见图 4-19）。这展示了理想协作优化的一项关键特性：在多样化的压缩攻击中找到力量。通过链式连接一系列多样化的压缩方法，每种方法攻击不同的表示冗余，模型从所有“角度”去除了低效的表示，因此实现了更高的压缩率，同时仍然保持了良好性能所必需的基本设施。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig19_HTML.png](img/516104_1_En_4_Fig19_HTML.png)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig19_HTML.png](img/516104_1_En_4_Fig19_HTML.png)
 
 图 4-19
 
@@ -907,7 +907,7 @@ Han、Mao 和 Dally 对协作优化的动态提供了重要的见解。例如，
 
 与在量化感知训练中模拟整个模型的量化不同，量化噪声模拟了*模型的一部分*的量化——在每个前向传递过程中，随机选择的一组权重被模拟量化（图 4-20）。这意味着大多数权重都使用更干净的梯度进行更新。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig20_HTML.png](img/516104_1_En_4_Fig20_HTML.png)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig20_HTML.png](img/516104_1_En_4_Fig20_HTML.png)
 
 图 4-20
 
@@ -948,7 +948,7 @@ Han、Mao 和 Dally 对协作优化的动态提供了重要的见解。例如，
 
 修剪识别的示例（PIEs）是模型中修剪模型和未修剪模型预测之间高度不一致的输入定义。Hooker 等人发现，像测试集准确率这样的通用指标隐藏了有关修剪对模型泛化能力影响的重要信息；模型压缩方法如修剪*并不均匀地影响模型处理数据实例的能力，这些数据实例分布在数据集的分布中*。相反，一小部分数据受到不成比例的影响（见图 4-21）。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig21_HTML.jpg](img/516104_1_En_4_Fig21_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig21_HTML.jpg](img/516104_1_En_4_Fig21_HTML.jpg)
 
 图 4-21
 
@@ -956,7 +956,7 @@ Han、Mao 和 Dally 对协作优化的动态提供了重要的见解。例如，
 
 来自数据集分布长尾的数据实例——即不太常见或更复杂的数据实例——在模型压缩中更常“被牺牲”。Hooker 等人要求受试者对修剪识别的示例的组件进行标记，并发现这些 PIEs 对于人类和模型来说都更难分类；PIEs 通常更复杂，由多个对象、较低质量或模糊性组成（见图 4-22）。修剪迫使压缩模型牺牲对这些特定实例的理解，暴露了压缩模型泛化的脆弱性。
 
-![../images/516104_1_En_4_Chapter/516104_1_En_4_Fig22_HTML.jpg](img/516104_1_En_4_Fig22_HTML.jpg)
+![img/516104_1_En_4_Chapter/516104_1_En_4_Fig22_HTML.jpg](img/516104_1_En_4_Fig22_HTML.jpg)
 
 图 4-22
 

@@ -10,7 +10,7 @@
 
 人体由神经元组成，它们是神经系统的基本构建块。一个神经元由细胞体或称胞体、单个轴突和树突（见图 3-1）组成。神经元通过树突和轴突末端相互连接。一个神经元的信号传递到另一个连接神经元的轴突末端和树突，该神经元接收信号并通过胞体、轴突和末端传递，依此类推。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig1_HTML.jpg](img/489297_1_En_3_Fig1_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig1_HTML.jpg](img/489297_1_En_3_Fig1_HTML.jpg)
 
 图 3-1
 
@@ -22,7 +22,7 @@
 
 人工神经网络试图在最基本的层面上模拟大脑，即神经元。人工神经元的结构与人类神经元相似，并包括以下部分（见图 3-2）：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig2_HTML.jpg](img/489297_1_En_3_Fig2_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig2_HTML.jpg](img/489297_1_En_3_Fig2_HTML.jpg)
 
 图 3-2
 
@@ -44,7 +44,7 @@
 
 如图 3-3 所示，典型的神经网络架构由以下部分组成
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig3_HTML.jpg](img/489297_1_En_3_Fig3_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig3_HTML.jpg](img/489297_1_En_3_Fig3_HTML.jpg)
 
 图 3-3
 
@@ -58,7 +58,7 @@
 
 每个输入都与隐藏层的每个神经元相连，并进一步连接到输出层。如果我们解决回归问题，架构将类似于图 3-3 中所示，其中我们有一个输出`Y`[`p`**,**]，如果预测在输出层，它是连续的。如果我们解决分类（在这种情况下为二分类），我们将有输出`Y`[`class1`]和`Y`[`class2`]，它们是输出层每个二进制类别 1 和 2 的概率值，如图 3-4 所示。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig4_HTML.jpg](img/489297_1_En_3_Fig4_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig4_HTML.jpg](img/489297_1_En_3_Fig4_HTML.jpg)
 
 图 3-4
 
@@ -68,7 +68,7 @@
 
 在全连接神经网络中，当输入通过神经元（从隐藏层到输出层）传递，并在输出层计算最终值时，我们说输入已经*前向传播*（图 3-5）。例如，考虑一个有两个输入`X`[`1`]和`X`[`2`], 一个有三个神经元和一个输出层，输出层有一个输出`Y`[`p`]（数值）的全连接神经网络。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig5_HTML.jpg](img/489297_1_En_3_Fig5_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig5_HTML.jpg](img/489297_1_En_3_Fig5_HTML.jpg)
 
 图 3-5
 
@@ -94,7 +94,7 @@ Yp = W7*H1 + W8*H2 + W9*H3
 
 为了最小化损失值，我们将尝试相应地优化权重，通过将损失函数对前一个权重求导，如图 3-6 所示。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig6_HTML.jpg](img/489297_1_En_3_Fig6_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig6_HTML.jpg](img/489297_1_En_3_Fig6_HTML.jpg)
 
 图 3-6
 
@@ -110,7 +110,7 @@ Yp = W7*H1 + W8*H2 + W9*H3
 
 让我们使用 TensorFlow 2.0 实现一个简单的神经网络。为此，我们将使用 Zalando 的 Fashion-MNIST 数据集（MIT 许可证 [MIT] 版权 © [2017] Zalando SE，[`tech.zalando.com`](https://tech.zalando.com)），该数据集包含 70,000 张图像（灰度），分为 10 个不同的类别。这些图像是 28 `×` 28 像素的单个服装物品，值范围从 0 到 255，如图 3-7 所示。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig7_HTML.jpg](img/489297_1_En_3_Fig7_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig7_HTML.jpg](img/489297_1_En_3_Fig7_HTML.jpg)
 
 图 3-7
 
@@ -118,7 +118,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
 
 在总共 70,000 张图片中，有 60,000 张用于训练，剩余的 10,000 张图片用于测试。标签是范围从 0 到 9 的整数数组。类名不是数据集的一部分；因此，我们必须包括以下映射用于训练/预测：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figa_HTML.jpg](img/489297_1_En_3_Figa_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figa_HTML.jpg](img/489297_1_En_3_Figa_HTML.jpg)
 
 *(来源：[`bit.ly/2xqIwCH`](https://bit.ly/2xqIwCH)*)*
 
@@ -161,7 +161,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
 
 我们将使用 Keras 实现来构建神经网络的不同层。我们将保持简单，只使用一个隐藏层。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figb_HTML.jpg](img/489297_1_En_3_Figb_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figb_HTML.jpg](img/489297_1_En_3_Figb_HTML.jpg)
 
 ```py
 [In]: input_data_shape = (28, 28)
@@ -177,7 +177,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
 
 现在，我们将使用`compile`方法来使用优化函数。可以构建一个 Adam 优化器，其目标函数为`sparse_categorical_crossentropy`，该函数优化准确率指标，如下所示：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figc_HTML.jpg](img/489297_1_En_3_Figc_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figc_HTML.jpg](img/489297_1_En_3_Figc_HTML.jpg)
 
 ```py
 [In]: optimizer = 'adam'
@@ -190,7 +190,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
 
 以下是对模型的评估：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figd_HTML.jpg](img/489297_1_En_3_Figd_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figd_HTML.jpg](img/489297_1_En_3_Figd_HTML.jpg)
 
 1.  训练评估
 
@@ -200,7 +200,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
     [Out]:
     ```
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fige_HTML.jpg](img/489297_1_En_3_Fige_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fige_HTML.jpg](img/489297_1_En_3_Fige_HTML.jpg)
 
 1.  测试评估
 
@@ -215,7 +215,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
 
 当一个简单的神经网络有多个隐藏层时，它被称为深度神经网络（DNN）。图 3-8 显示了典型 DNN 的架构。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Fig8_HTML.jpg](img/489297_1_En_3_Fig8_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Fig8_HTML.jpg](img/489297_1_En_3_Fig8_HTML.jpg)
 
 图 3-8
 
@@ -227,7 +227,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
 
 我们将使用 Keras 实现来构建一个具有三个隐藏层的深度神经网络。在先前的简单神经网络实现中，直到缩放部分，构建深度神经网络的过程是相同的。因此，我们将跳过这些步骤，直接开始构建深度神经网络的输入层、隐藏层和输出层，如下所示：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figf_HTML.jpg](img/489297_1_En_3_Figf_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figf_HTML.jpg](img/489297_1_En_3_Figf_HTML.jpg)
 
 ```py
 [In]: input_data_shape = (28, 28)
@@ -245,7 +245,7 @@ Fashion-MNIST 数据集的样本（来源：[`bit.ly/2xqIwCH`](https://bit.ly/2x
 
 现在，我们将使用 `compile` 方法来帮助使用优化函数。可以构建一个 Adam 优化器，其目标函数为 `sparse_categorical_crossentropy`，该函数优化准确度指标，如下所示：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figg_HTML.jpg](img/489297_1_En_3_Figg_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figg_HTML.jpg](img/489297_1_En_3_Figg_HTML.jpg)
 
 ```py
 [In]: optimizer = 'adam'
@@ -258,7 +258,7 @@ metric = ['accuracy']
 
 以下是对模型的评估：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figh_HTML.jpg](img/489297_1_En_3_Figh_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figh_HTML.jpg](img/489297_1_En_3_Figh_HTML.jpg)
 
 1.  训练评估
 
@@ -268,7 +268,7 @@ metric = ['accuracy']
     [Out]:
     ```
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figi_HTML.jpg](img/489297_1_En_3_Figi_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figi_HTML.jpg](img/489297_1_En_3_Figi_HTML.jpg)
 
 1.  测试评估
 
@@ -322,7 +322,7 @@ return iris_dataset
 
 现在，我们将使用 `compile` 方法来帮助使用优化函数。可以构建一个 Adam 优化器，其损失函数为 `categorical_crossentropy`，如下所示：
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figj_HTML.jpg](img/489297_1_En_3_Figj_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figj_HTML.jpg](img/489297_1_En_3_Figj_HTML.jpg)
 
 ```py
 [In]: loss_function = 'categorical_crossentropy'
@@ -341,7 +341,7 @@ return iris_dataset
 
 训练和评估模型。
 
-![../images/489297_1_En_3_Chapter/489297_1_En_3_Figk_HTML.jpg](img/489297_1_En_3_Figk_HTML.jpg)
+![img/489297_1_En_3_Chapter/489297_1_En_3_Figk_HTML.jpg](img/489297_1_En_3_Figk_HTML.jpg)
 
 ```py
 [In]: estimator_keras_model.train(input_fn=data_input, steps=25)

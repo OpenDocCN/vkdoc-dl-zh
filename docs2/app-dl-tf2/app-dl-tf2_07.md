@@ -472,11 +472,11 @@ array([[ 0., 0., 0., 0., 0., 0., 0., 0.],
 
 在前面的章节中，我们看到了使用单个核应用卷积的一些示例。如何同时应用多个核呢？答案非常简单。最终的张量（现在我们使用“张量”这个词，因为它将不再是一个简单的矩阵）*B* 将有三个维度而不是两个。让我们用 *n*[*c*]（*c* 被使用，因为有时人们会谈论通道）来表示你想要应用的核的数量。*你只需独立地将每个滤波器应用于输入，并将结果堆叠起来即可。* 所以，你不会得到一个维度为 *n*[*B*] × *n*[*B*] 的单个矩阵 *B*，而是得到一个维度为 *n*[*B*] × *n*[*B*] × *n*[*c*] 的最终张量 ![$$ \overset{\sim }{B} $$](img/463356_2_En_7_Chapter_TeX_IEq16.png)。这意味着
 
-![$$ {\overset{\sim }{B}}_{i,j,1}\kern1em \forall i,j\in \left[1,{n}_B\right] $$](../images/463356_2_En_7_Chapter/463356_2_En_7_Chapter_TeX_Equbb.png)
+![$$ {\overset{\sim }{B}}_{i,j,1}\kern1em \forall i,j\in \left[1,{n}_B\right] $$](img/463356_2_En_7_Chapter/463356_2_En_7_Chapter_TeX_Equbb.png)
 
 将是输入图像与第一个核的卷积输出。并且
 
-![$$ {\overset{\sim }{B}}_{i,j,2}\kern1em \forall i,j\in \left[1,{n}_B\right] $$](../images/463356_2_En_7_Chapter/463356_2_En_7_Chapter_TeX_Equbc.png)
+![$$ {\overset{\sim }{B}}_{i,j,2}\kern1em \forall i,j\in \left[1,{n}_B\right] $$](img/463356_2_En_7_Chapter/463356_2_En_7_Chapter_TeX_Equbc.png)
 
 将是第二个核的卷积输出，依此类推。卷积层不过是将输入转换为输出张量的东西。但这个层中的权重是什么？*权重，或者说网络在训练阶段学习的参数，就是核本身的元素.* 我们讨论过，我们有 *n*[*c*] 个核，每个核的维度是 *n*[*K*] × *n*[*K*]。这意味着在一个卷积层中有 ![$$ {n}_K²{n}_c $$](img/463356_2_En_7_Chapter_TeX_IEq17.png) 个 *参数*。
 

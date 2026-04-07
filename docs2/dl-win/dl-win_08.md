@@ -51,7 +51,7 @@
 
 让我们看看在单线程批量模式下（图 8-1）运行训练（包括瓶颈特征和微调）需要多少时间。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig1_HTML.jpg](img/502073_1_En_8_Fig1_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig1_HTML.jpg](img/502073_1_En_8_Fig1_HTML.jpg)
 
 图 8-1
 
@@ -94,7 +94,7 @@
 
 让我们看看这些参数值如何影响我们的训练时间（图 8-2）。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig2_HTML.jpg](img/502073_1_En_8_Fig2_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig2_HTML.jpg](img/502073_1_En_8_Fig2_HTML.jpg)
 
 图 8-2
 
@@ -114,7 +114,7 @@
 
 在 TensorFlow 2.x 的一些 Windows 构建中，当使用多线程运行训练时，你可能会遇到类似于“tensorflow/core/kernels/data/generator_dataset_op.cc:103] 错误发生在最终化 GeneratorDataset 迭代器时：已取消：操作已取消”的错误消息（图 8-3）。这可以安全地忽略，并有望在未来构建中得到修复。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig3_HTML.jpg](img/502073_1_En_8_Fig3_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig3_HTML.jpg](img/502073_1_En_8_Fig3_HTML.jpg)
 
 图 8-3
 
@@ -214,7 +214,7 @@ save_freq="epoch"
 
 由于我们已指定文件名模式为 model-{epoch:02d}-{val_acc:.2f}-{val_loss:.2f}.h5，epoch 编号、验证准确率值和验证损失值将被注入到保存的文件名中（图 8-4）。例如，文件名 model-01-0.80-12.06.h5 将表示 epoch 为 01，验证准确率为 0.80，验证损失为 12.06。这些值允许您仅通过检查文件名就轻松选择最佳检查点。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig4_HTML.jpg](img/502073_1_En_8_Fig4_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig4_HTML.jpg](img/502073_1_En_8_Fig4_HTML.jpg)
 
 图 8-4
 
@@ -257,7 +257,7 @@ save_freq="epoch"
 
 在这里，我们将 save_best_only 参数设置为 True，并将 monitor 设置为 val_loss，mode 设置为 min，以仅当验证损失低于前一个 epoch 时保存检查点（图 8-5）。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig5_HTML.jpg](img/502073_1_En_8_Fig5_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig5_HTML.jpg](img/502073_1_En_8_Fig5_HTML.jpg)
 
 图 8-5
 
@@ -271,7 +271,7 @@ save_freq="epoch"
 
 例如，假设我们保存了以下检查点（图 8-6），并且我们的训练在 epoch 33 之后某时中断。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig6_HTML.jpg](img/502073_1_En_8_Fig6_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig6_HTML.jpg](img/502073_1_En_8_Fig6_HTML.jpg)
 
 图 8-6
 
@@ -487,7 +487,7 @@ save_freq="epoch"
 
 运行此代码，我们将看到训练现在从第 34 个 epoch 开始（图 8-7）。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig7_HTML.jpg](img/502073_1_En_8_Fig7_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig7_HTML.jpg](img/502073_1_En_8_Fig7_HTML.jpg)
 
 图 8-7
 
@@ -586,7 +586,7 @@ restore_best_weights=False,
 
 当使用这些配置运行模型时，你会看到当训练没有改进模型时，训练将自动停止（见图 8-8）。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig8_HTML.jpg](img/502073_1_En_8_Fig8_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig8_HTML.jpg](img/502073_1_En_8_Fig8_HTML.jpg)
 
 图 8-8
 
@@ -970,13 +970,13 @@ restore_best_weights=False,
 
 此脚本现在允许你在训练过程中的任何步骤恢复（见图 8-9 和 8-10）。
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig10_HTML.jpg](img/502073_1_En_8_Fig10_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig10_HTML.jpg](img/502073_1_En_8_Fig10_HTML.jpg)
 
 图 8-10
 
 跳过已完成的训练步骤，并从微调检查点继续
 
-![../images/502073_1_En_8_Chapter/502073_1_En_8_Fig9_HTML.jpg](img/502073_1_En_8_Fig9_HTML.jpg)
+![img/502073_1_En_8_Chapter/502073_1_En_8_Fig9_HTML.jpg](img/502073_1_En_8_Fig9_HTML.jpg)
 
 图 8-9
 

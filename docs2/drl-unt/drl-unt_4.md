@@ -4,7 +4,7 @@
 
 在我们深入相关脚本之前，让我们回顾一下前一章中的一些方面，我们在那里强调了大脑-学院架构。由于大脑主要分为三种类型——内部、启发式和外部——我们将主要关注内部大脑的某些方面，它使用 Barracuda 推理引擎，以及外部大脑，它使用通信对象在 Tensorflow 中实时训练智能体。我们提到了某些脚本的用法，例如行为参数，我们将在本章中深入探讨。我们还将研究当引擎未通过端口 5004 连接到 Python API 进行外部训练时，它是如何配置自己的。从 C# 脚本的角度来看，大脑架构最重要的方面可以在“com.unity.ml-agents”包下的“Runtime”文件夹中找到。整个大脑架构的构建块，它使用多个策略，依赖于推理引擎、传感器、通信器、演示者和模型加载器。这些部分的每一个都构成了大脑的一个独立功能，例如推理引擎，它有助于在 Unity 中运行训练好的 Tensorflow 模型。由于所有这些组件都是 C# 脚本，大脑架构可以如图 4-1 所示进行可视化。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig1_HTML.jpg](img/502041_1_En_4_Fig1_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig1_HTML.jpg](img/502041_1_En_4_Fig1_HTML.jpg)
 
 图 4-1
 
@@ -20,7 +20,7 @@ Unity ML Agents 中大脑架构的部分
 
 传感器是整个 ML Agents 工具包中最重要的方面。这包含观察空间并控制空间的分布。根据这些观察结果，智能体必须选择策略并执行动作。这些传感器本质上是从 Unity 物理引擎中的光线传感器，在碰撞到标记的预制体时收集信息。首先，我们将查看 ISensor.cs 脚本，因为它包含将被光线传感器和摄像头传感器使用的主要方法。然后，我们将查看这个文件夹中存在的一些不同传感器变体。本质上，使用传感器收集观察数据的流程可以如图 4-2 所示进行可视化。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig2_HTML.png](img/502041_1_En_4_Fig2_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig2_HTML.png](img/502041_1_En_4_Fig2_HTML.png)
 
 图 4-2
 
@@ -111,7 +111,7 @@ return (DetectableTags.Count + 2) * Angles.Count;
 
 接下来，我们将了解其他方法，例如“PolarToCartesian3D”和“PolarToCartesian2D”。这些方法将 Unity 场景中极坐标的射线转换转换为笛卡尔坐标。本质上，这把射线从局部空间转换到世界空间。然后使用世界空间坐标来分析传感器射线击中的可检测 GameObject。这可以通过使用变换位置的正弦和余弦变换来完成。图示见图 4-3。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig3_HTML.png](img/502041_1_En_4_Fig3_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig3_HTML.png](img/502041_1_En_4_Fig3_HTML.png)
 
 图 4-3
 
@@ -421,7 +421,7 @@ return output;
 
 这就完成了 RayPerceptionsensor 脚本，它是控制代理发射的射线以获取可检测标签观察的最重要脚本。RayPerceptionsensor 脚本的工作流程如图 4-4 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig4_HTML.jpg](img/502041_1_En_4_Fig4_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig4_HTML.jpg](img/502041_1_En_4_Fig4_HTML.jpg)
 
 图 4-4
 
@@ -686,7 +686,7 @@ DrawRaycastGizmos(debugRay);
 
 “DrawRaycastGizmos”方法使用来自 RayPerceptionSensor 脚本的 DisplayDebugInfo 变量（变量如偏移位置、射线方向、击中分数和击中半径）进行调试。图 4-5 展示了在“FindingBlock-PPO”Unity 场景中使用“RayPerceptionSensorComponent3D”的射线传感器，我们将在本章后面的部分中研究。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig5_HTML.jpg](img/502041_1_En_4_Fig5_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig5_HTML.jpg](img/502041_1_En_4_Fig5_HTML.jpg)
 
 图 4-5
 
@@ -728,7 +728,7 @@ return expectedObservations;
 
 这完成了整个射线传感器类别。代理在 Unity 中使用“RayPerceptionSensorComponent2D”或“RayPerceptionSensorComponent3D”。此脚本反过来调用 RayPerceptionSensorComponentBase 脚本，该脚本实现了 SensorComponent 脚本。后者是 Unity 编辑器中 ISensor 脚本的一个实现。RayPerceptionSensorComponentBase 脚本在检查器窗口中显示，用于控制观察、射线及其属性。此脚本内部调用“RayPerceptionSensor”脚本，其中包含“RayPerceptionInput”和“RayPerceptionOutput”结构。这是大脑中最重要的部分之一，用于从传感器射线收集观察结果。图 4-6 展示了这个架构。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig6_HTML.png](img/502041_1_En_4_Fig6_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig6_HTML.png](img/502041_1_En_4_Fig6_HTML.png)
 
 图 4-6
 
@@ -886,7 +886,7 @@ return new[] { height, width, grayscale ? 1 : 3 };
 
 在 GridWorld 环境中，使用了相机传感器组件。这两个重要的脚本控制来自相机的视觉观察输入，并将此信息传递给神经网络进行训练。这如图 4-7 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig7_HTML.jpg](img/502041_1_En_4_Fig7_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig7_HTML.jpg](img/502041_1_En_4_Fig7_HTML.jpg)
 
 图 4-7
 
@@ -894,7 +894,7 @@ GridWorld 中的相机传感器
 
 另有一个名为“RenderTextureSensor”的类，其中包含在 CameraSensor 脚本中使用的函数和方法初始化，例如创建 Texture 2D 格式并分配高度、宽度、通道、名称和压缩以进行训练。传感器部分控制代理的集中式观察空间，并为代理提供所有基于运行时政策的决策细节。我们已经深入探讨了两种不同的传感器变体：射线传感器和相机传感器。重要的结论是，这两种传感器在较低级别都继承自“ISensor”和“SensorComponent”脚本，并且具有各自的功能。与射线传感器工作流程相比，相机传感器工作流程可以如图 4-8 所示进行可视化。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig8_HTML.png](img/502041_1_En_4_Fig8_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig8_HTML.png](img/502041_1_En_4_Fig8_HTML.png)
 
 图 4-8
 
@@ -1037,7 +1037,7 @@ agent.ReloadPolicy();
 
 如果我们打开 DeepLearning Assets 文件夹中的任何场景，并导航到场景中的任何智能体，我们将看到附加在其上的行为参数脚本。例如，在此情况下，Hallway 的“BehaviorParameter”脚本如图 4-9 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig9_HTML.jpg](img/502041_1_En_4_Fig9_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig9_HTML.jpg](img/502041_1_En_4_Fig9_HTML.jpg)
 
 图 4-9
 
@@ -1212,7 +1212,7 @@ float[] DecideAction();
 
 这完成了策略部分，它涉及到代理的决策步骤。这部分以传感器数据为输入，作为不同类型大脑（内部、外部和启发式）的工作接口，并为代理提供决策。这是大脑的 C#部分，它内部与 Tensorflow 中的深度学习网络连接（我们将在第五章中讨论）。整个策略架构可以总结在图 4-10 中。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig10_HTML.png](img/502041_1_En_4_Fig10_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig10_HTML.png](img/502041_1_En_4_Fig10_HTML.png)
 
 图 4-10
 
@@ -1366,7 +1366,7 @@ m_OrderedAgentsRequestingDecisions.Clear();
 
 总结来说，这个特定的脚本与使用代理的推理模式相关。该流程包括从预训练模型获取处理后的数据，根据生成函数将其划分为 Tensor 数据以实现更平滑的批量处理，将此 Tensor 数据及其 Tensor 名称作为推理输入传递给 Barracuda 引擎（“TensorGenerator”），执行模型，以内存形式提取结果，假设代理在推理输出格式中采取的动作，借助 TensorApplier 将推理输出与每个场景的结果关联起来，并提取下一个场景的最新输出。只要代理在推理训练中达到目标或场景被终止，这个过程就会继续。这可以通过图 4-11 来说明。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig11_HTML.png](img/502041_1_En_4_Fig11_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig11_HTML.png](img/502041_1_En_4_Fig11_HTML.png)
 
 图 4-11
 
@@ -1416,7 +1416,7 @@ visIndex++;
 
 **DemonstrationRecorder** **:** 为了通过启发式控制从智能体记录演示，我们必须将此脚本添加到智能体中。当在游戏过程中勾选“记录”选项时，演示将被记录在位于资产文件夹中的.demo 文件中。这个特定的演示文件包含了执行模仿学习算法的演示细节，根据环境的复杂度，可能需要几分钟到几个小时。图 4-12 显示了 Unity 中的 3D 球环境中的演示文件。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig12_HTML.jpg](img/502041_1_En_4_Fig12_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig12_HTML.jpg](img/502041_1_En_4_Fig12_HTML.jpg)
 
 图 4-12
 
@@ -1506,7 +1506,7 @@ m_Agent.DemonstrationWriters.Add(demoWriter);
 
 这就结束了演示部分及其相关脚本，这些内容非常重要，需要理解。当我们将在后面的章节中深入探讨生成对抗模仿学习（GAIL）时，将单独讨论相关的脚本。模仿学习的工作流程可以查看，如图 4-13 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig13_HTML.png](img/502041_1_En_4_Fig13_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig13_HTML.png](img/502041_1_En_4_Fig13_HTML.png)
 
 图 4-13
 
@@ -1756,7 +1756,7 @@ Communicator.ResetCommandReceived += OnResetCommand;
 
 学院的整体工作流程涉及控制软件包版本、端口号、与 Python 的 API 兼容性，以及在训练过程中控制一集的各个步骤。它还在连接通信者与大脑以进行实时训练中扮演着重要角色，并提供启用或禁用环境步骤选项的选择。它还根据通信者是否发送反馈消息包以确保连接建立来控制大脑运行模型的选择。如果建立了连接，则触发在线训练程序，该程序通过 Python API 使用 Tensorflow 训练代理的外部大脑。如果没有建立连接，则将推理模型分配给大脑。总之，该架构控制了大脑训练其策略所需的所有环境属性。这如图 4-14 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig14_HTML.png](img/502041_1_En_4_Fig14_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig14_HTML.png](img/502041_1_En_4_Fig14_HTML.png)
 
 图 4-14
 
@@ -1906,7 +1906,7 @@ m_Agent?.RequestAction();
 
 这样就完成了大脑、学院和代理的整个架构的深入探讨。我们现在对大脑/学院部分的不同脚本有了相当的了解，并且也研究了它们之间的交互。大脑、学院和代理不同部分之间的联系可以如图 4-15 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig15_HTML.png](img/502041_1_En_4_Fig15_HTML.png)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig15_HTML.png](img/502041_1_En_4_Fig15_HTML.png)
 
 图 4-15
 
@@ -1918,7 +1918,7 @@ m_Agent?.RequestAction();
 
 在本节中，我们将创建一个简单的智能体，其任务是找到场景中存在的目标对象。这一次，我们将使用我们自己的智能体脚本实现来使用 Unity ML Agents 进行训练。为此，我们必须导航到 DeepLearning 文件夹下的 Assets 文件夹，并导航到 FindingBlock-PPO 文件夹。我们必须打开 findingblock Unity 场景文件。在这个场景中，蓝色智能体必须在 ML Agents 和传感器的帮助下定位绿色目标。它被包围在一个边界框平台上。场景的样本预览看起来类似于图 4-16。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig16_HTML.jpg](img/502041_1_En_4_Fig16_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig16_HTML.jpg](img/502041_1_En_4_Fig16_HTML.jpg)
 
 图 4-16
 
@@ -1930,7 +1930,7 @@ Unity ML Agents 中的寻找方块场景
 
 **三维射线感知传感器组件** : 我们将附加此脚本，因为它与大脑的传感器模块相关联，并用于收集场景中的观察数据。我们将保留大部分默认值，例如角度、每个方向上的射线、射线长度等，或者我们可以相应地更改它们。我们必须定义智能体必须观察的可检测标签。在这种情况下，智能体应该只观察目标和平台墙壁边界；相应的可检测标签已列出。图 4-17 显示了在 Unity 中的此设置。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig17_HTML.jpg](img/502041_1_En_4_Fig17_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig17_HTML.jpg](img/502041_1_En_4_Fig17_HTML.jpg)
 
 图 4-17
 
@@ -2146,7 +2146,7 @@ mlagents-learn  --run-id= "newFindingblockagent" --train
 
 在编写此命令时，我们将看到带有 Tensorflow API 版本、Unity 包版本和 Python API 版本的 Unity 标志。当提示时，我们必须在 Unity 编辑器中点击播放按钮以开始训练过程，如图 4-18 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig18_HTML.jpg](img/502041_1_En_4_Fig18_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig18_HTML.jpg](img/502041_1_En_4_Fig18_HTML.jpg)
 
 图 4-18
 
@@ -2154,7 +2154,7 @@ mlagents-learn  --run-id= "newFindingblockagent" --train
 
 我们还将看到默认超参数的列表以及每个训练阶段的输出。现在我们可以内部连接，学院通过通信器（端口：5004）交换信息包以允许训练过程。我们还可以连接外部大脑现在如何使用附加到智能体的“BehaviorParameters”脚本的默认策略进行训练，如图 4-19 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig19_HTML.jpg](img/502041_1_En_4_Fig19_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig19_HTML.jpg](img/502041_1_En_4_Fig19_HTML.jpg)
 
 图 4-19
 
@@ -2162,7 +2162,7 @@ mlagents-learn  --run-id= "newFindingblockagent" --train
 
 在训练过程中，我们还可以切换到场景视图，查看射线传感器如何检测场景中的标记对象，如图 4-20 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig20_HTML.jpg](img/502041_1_En_4_Fig20_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig20_HTML.jpg](img/502041_1_En_4_Fig20_HTML.jpg)
 
 图 4-20
 
@@ -2178,7 +2178,7 @@ tensorboard –logdir=summaries
 
 这让 TensorBoard 知道训练阶段的日志和细节将被记录在“summaries”文件夹中。连接在端口 6006 上，提供了一个包含我们系统设备名称的相应“http”地址。当我们打开 Tensorboard 时，我们将看到环境的累积奖励和阶段长度，如图 4-21 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig21_HTML.jpg](img/502041_1_En_4_Fig21_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig21_HTML.jpg](img/502041_1_En_4_Fig21_HTML.jpg)
 
 图 4-21
 
@@ -2186,7 +2186,7 @@ TensorBoard 中的环境参数
 
 我们还将可视化损失、策略熵、策略外部奖励和价值估计细节，这些都是学习的重要指标，如图 4-22 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig22_HTML.jpg](img/502041_1_En_4_Fig22_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig22_HTML.jpg](img/502041_1_En_4_Fig22_HTML.jpg)
 
 图 4-22
 
@@ -2196,7 +2196,7 @@ TensorBoard 中的策略参数
 
 我们已经在 Unity ML Agents 中构建并训练了我们的智能体。现在我们必须在推理模式下使用这个训练好的模型。我们可以将此模型附加到“BehaviorParameters”脚本的 NNModel 部分，并选择我们想要运行推理的设备。最后，我们可以构建这个 Unity 场景，将训练好的模型作为智能体的内部大脑（用于推理）放置其中，并观察模拟，如图 4-23 所示。
 
-![../images/502041_1_En_4_Chapter/502041_1_En_4_Fig23_HTML.jpg](img/502041_1_En_4_Fig23_HTML.jpg)
+![img/502041_1_En_4_Chapter/502041_1_En_4_Fig23_HTML.jpg](img/502041_1_En_4_Fig23_HTML.jpg)
 
 图 4-23
 

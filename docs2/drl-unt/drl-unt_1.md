@@ -4,7 +4,7 @@
 
 强化学习（RL）学院的基本方面包括智能体和环境的交互。智能体指的是使用学习算法尝试探索奖励的对象。智能体试图通过步骤优化一条合适的路径，以实现奖励的最大化，在这个过程中，它试图避免惩罚状态。环境是智能体周围的一切，包括状态、障碍和奖励。环境可以是静态的，也可以是动态的。在静态环境中，如果智能体有足够的缓冲内存来保留探索不同状态时指向目标的正确轨迹，路径收敛会更快。动态环境对智能体提出了更大的挑战，因为没有确定的轨迹。第二个用例需要足够的深度记忆网络模型，如双向长短期记忆（LSTM），以保留在动态环境中保持静态的关键观察。图示上，通用强化学习可以如图 1-1 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig1_HTML.jpg](img/502041_1_En_1_Fig1_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig1_HTML.jpg](img/502041_1_En_1_Fig1_HTML.jpg)
 
 图 1-1
 
@@ -24,7 +24,7 @@
 
 CartPole 环境可以描述为一个经典的物理仿真系统，其中一根杆连接到一个“非驱动”关节到小车上。小车可以自由地在无摩擦的轨道上移动。系统上的约束包括对小车的 +1 和 -1 力的应用。摆锤开始时是竖直的，目标是防止它倒下。每当杆保持竖直时，都会提供 +1 的奖励。当倾斜角度大于 15 度时，游戏结束（惩罚）。如果小车从中心线向任一方向移动超过 2.4 个单位，游戏结束。图 1-2 描述了该环境。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig2_HTML.jpg](img/502041_1_En_1_Fig2_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig2_HTML.jpg](img/502041_1_En_1_Fig2_HTML.jpg)
 
 图 1-2
 
@@ -52,7 +52,7 @@ OpenAI gym 中的 CartPole 环境
 
 Anaconda Navigator 与 Anaconda 一起安装。这是一个交互式仪表板应用程序，其中提供了下载 Jupyter notebook、Spyder、IPython 和 JupyterLab 的选项。也可以通过点击它们来启动应用程序。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig3_HTML.jpg](img/502041_1_En_1_Fig3_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig3_HTML.jpg](img/502041_1_En_1_Fig3_HTML.jpg)
 
 图 1-3
 
@@ -73,7 +73,7 @@ jupyter notebook
 
 或者，Google Colaboratory（Google Colab）在云端运行 Jupyter 笔记本，并保存在本地 Google Drive 中。这也可以用于笔记本共享和协作。Google Colaboratory 在图 1-4 中展示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig4_HTML.jpg](img/502041_1_En_1_Fig4_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig4_HTML.jpg](img/502041_1_En_1_Fig4_HTML.jpg)
 
 图 1-4
 
@@ -157,7 +157,7 @@ print(env.observation_space.low)
 
 这在图 1-5 中显示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig5_HTML.jpg](img/502041_1_En_1_Fig5_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig5_HTML.jpg](img/502041_1_En_1_Fig5_HTML.jpg)
 
 图 1-5
 
@@ -228,7 +228,7 @@ self.model.fit(np.array(x_batch),np.array(y_batch),batch_size=len(x_batch),verbo
 
 最终结果显示了一个 Tensorboard 图，如图 1-6 所示：
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig6_HTML.jpg](img/502041_1_En_1_Fig6_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig6_HTML.jpg](img/502041_1_En_1_Fig6_HTML.jpg)
 
 图 1-6
 
@@ -240,7 +240,7 @@ self.model.fit(np.array(x_batch),np.array(y_batch),batch_size=len(x_batch),verbo
 
 Unity 引擎是一个跨平台引擎，不仅用于创建游戏，还用于模拟、视觉效果、电影摄影、建筑设计、扩展现实应用，尤其是在机器学习领域的研究。我们将集中精力理解 Unity Technologies 开发的开源机器学习框架——即 Unity ML Toolkit。本书撰写时，最新发布的 1.0 版本有几个新功能和扩展、代码修改以及将在后续章节中深入讨论的模拟。该工具包基于 OpenAI Gym 环境作为包装器，并在 Python API 和 Unity C#引擎之间进行通信，以构建深度学习模型。尽管在最新版本中工具包的工作方式发生了根本性的变化，但 ML 工具包的核心功能保持不变。我们将广泛使用 Tensorflow 库与 Unity ML agents 进行深度推理和模型训练，通过自定义 C#代码，并尝试通过使用基线模型来理解 Gym 环境中的学习，以实现最佳性能指标。ML Agents Toolkit 中的环境预览如图 1-7 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig7_HTML.jpg](img/502041_1_En_1_Fig7_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig7_HTML.jpg](img/502041_1_En_1_Fig7_HTML.jpg)
 
 图 1-7
 
@@ -264,7 +264,7 @@ p (s[i], r[i] | s, a) = P[r] {S[t] = s[i], R[t] = r[i] | S[t-1] = s, A[t-1] = a}
 
 安德烈·安德烈耶维奇·马尔可夫在 1906 年将马尔可夫链的概念引入到随机过程中。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig8_HTML.jpg](img/502041_1_En_1_Fig8_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig8_HTML.jpg](img/502041_1_En_1_Fig8_HTML.jpg)
 
 图 1-8
 
@@ -274,7 +274,7 @@ p (s[i], r[i] | s, a) = P[r] {S[t] = s[i], R[t] = r[i] | S[t-1] = s, A[t-1] = a}
 
 状态转移图提供了一个具有状态 S 和 P 的二进制链模型。状态 S 保持在其自身状态的概率为 0.7，而转移到状态 P 的概率为 0.3。同样，状态 P 转移到 S 的概率为 0.2，而 P 的自转移状态概率为 0.8。根据概率定律，相互和自转移概率的总和将为 1。这使我们能够生成一个 2 X 2 阶的转移矩阵，如图 1-9 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig9_HTML.jpg](img/502041_1_En_1_Fig9_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig9_HTML.jpg](img/502041_1_En_1_Fig9_HTML.jpg)
 
 图 1-9
 
@@ -324,7 +324,7 @@ print(output_values_35)
 
 在第二个例子中，我们提供了一个基于初始和转换概率的如何将三元转换系统迁移到不同状态的可视化。可视化如图 1-10 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig10_HTML.jpg](img/502041_1_En_1_Fig10_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig10_HTML.jpg](img/502041_1_En_1_Fig10_HTML.jpg)
 
 图 1-10
 
@@ -334,7 +334,7 @@ print(output_values_35)
 
 现在，让我们尝试在 Unity 中模拟一个基于马尔可夫状态原理的游戏。我们将使用 Unity 版本 2018.4，它也将与 2019 和 2020 版本兼容。第一步是安装 Unity。从官方 Unity 网站下载 Unity Hub。Unity Hub 是一个仪表板，包含所有版本的 Unity，包括测试版发布以及教程和入门包。下载并安装 Unity Hub 后，我们可以在 2018.4 以上的版本中选择我们想要的版本。接下来，我们继续下载并安装版本，这可能需要一些时间。在 Windows 的 C: 驱动器上应有足够的空间来完成下载，即使我们在单独的驱动器上下载也是如此。安装完成后，我们可以打开 Unity 并开始创建我们的模拟和场景。Unity Hub 如图 1-11 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig11_HTML.jpg](img/502041_1_En_1_Fig11_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig11_HTML.jpg](img/502041_1_En_1_Fig11_HTML.jpg)
 
 图 1-11
 
@@ -366,7 +366,7 @@ pip install mlagents
 
 双击运行，你将能够看到类似图 1-12 的内容。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig12_HTML.jpg](img/502041_1_En_1_Fig12_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig12_HTML.jpg](img/502041_1_En_1_Fig12_HTML.jpg)
 
 图 1-12
 
@@ -378,7 +378,7 @@ MarkovPuppo Unity 场景应用
 
 场景由左侧的场景层次结构和右侧的检查器细节组成，底部是项目、控制台选项卡，中心是场景、游戏视图。在层次结构中，定位到 “Platform” GameObject 并点击下拉菜单。在 GameObject 内部，有一个名为 “CORGI” 的 GameObject。点击它以在场景视图中定位，并在右侧的检查器窗口中打开详细信息。这是 Puppo 预制件，它附有一个名为 “Markov Agent” 的脚本。可以通过点击下拉菜单进一步探索预制件，并将有几个关节和 Rigidbody 组件附加到其中，这将使 Puppo 能够进行物理模拟。场景视图在图 1-13 中显示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig13_HTML.jpg](img/502041_1_En_1_Fig13_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig13_HTML.jpg](img/502041_1_En_1_Fig13_HTML.jpg)
 
 图 1-13
 
@@ -386,7 +386,7 @@ Markov Puppo 场景的视图，包括层次结构和检查器
 
 检查器窗口在图 1-14 中显示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig14_HTML.jpg](img/502041_1_En_1_Fig14_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig14_HTML.jpg](img/502041_1_En_1_Fig14_HTML.jpg)
 
 图 1-14
 
@@ -452,7 +452,7 @@ StartCoroutine(execute_markov(iterations));
 
 在 Unity C#脚本中，在 MonoBehaviour 下，有两个默认存在的方法。这些是无参方法，名为 Start 和 Update。Start 方法通常用于初始化场景变量和为不同对象分配标签；这是在游戏开始时创建场景的预处理步骤。Update 方法每帧运行一次，所有的决策函数和控制逻辑都在这里执行。由于这是每帧更新的，如果我们执行大型复杂操作，它将非常计算密集。其他方法包括 Awake 和 FixedUpdate。Awake 方法在 Start 线程执行之前被调用，而 FixedUpdate 与 Update 方法相比具有规则的均匀帧率。在 Start 方法的第一个部分，我们将 GameObject 分配到相应的标签。标签可以在检查器窗口中创建，在每个选定的 GameObject 下，如图 1-15 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig15_HTML.jpg](img/502041_1_En_1_Fig15_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig15_HTML.jpg](img/502041_1_En_1_Fig15_HTML.jpg)
 
 图 1-15
 
@@ -562,7 +562,7 @@ Agentreset();
 
 在普普达到棒子进行一次迭代后，我们通过调用“yield”方法让他休息一会儿，持续 6 秒。一旦我们理解了代码库的完整功能，我们就可以在编辑器中点击播放。我们可以根据我们的选择更改迭代的值以及脚本中初始值数组的值，以查看分布如何变化。控制台标签中的 Debug.Log 语句提供了有关每次迭代结果数组值的详细信息，以及哪个棒子被激活。游戏预览如图 1-16 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig16_HTML.jpg](img/502041_1_En_1_Fig16_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig16_HTML.jpg](img/502041_1_En_1_Fig16_HTML.jpg)
 
 图 1-16
 
@@ -600,7 +600,7 @@ emission_probability = {
 
 图 1-17 展示了 HMM。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig17_HTML.jpg](img/502041_1_En_1_Fig17_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig17_HTML.jpg](img/502041_1_En_1_Fig17_HTML.jpg)
 
 图 1-17
 
@@ -643,7 +643,7 @@ HMM 位于 Tensorflow Probability 库（命名为“tensorflow_probability”）
 
 让我们尝试使用这个原理，在 Unity 中生成一个使用 HMM 的随机路径算法。目标是训练一个智能体来检测奖励或对象生成的路径。在每个纪元的开始，智能体试图确定一个基于特定时间状态下特定对象/奖励的最高概率值的生产性路径。在 Unity 中打开“HMMAgent”场景并点击播放。控制台会显示立方体智能体在各个时间点达到最高价值奖励或对象的遍历顺序。对于每个学习纪元或周期，立方体智能体会捡起场景中存在的任何奖励。奖励是基于对象在特定时间戳的最高概率。比如说，在时间戳 t[0]时，对象 o[1]具有最高概率，而在 t[1]时，对象 o[2]具有最高概率，那么智能体会捡起 o[1]、o[2]，依此类推。在每个纪元内部，有三个时间戳，并且对于每个纪元可以观察到不同的序列。某些序列可以是 o[2]、o[1]、o[3]，甚至重复的状态，如 o[2]、o[1]、o[1]等。这些序列或路径是由 HMM 的动态规划实现——维特比算法生成的。模拟的预览如图 1-18 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig18_HTML.jpg](img/502041_1_En_1_Fig18_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig18_HTML.jpg](img/502041_1_En_1_Fig18_HTML.jpg)
 
 图 1-18
 
@@ -770,7 +770,7 @@ target_number=path[l];
 
 在我们理解了代码之后，我们可以通过将脚本分配给立方体代理（命名为“AgentCube_Purple”）来在播放模式下测试代码。环境的 Unity 场景视图如图 1-19 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig19_HTML.jpg](img/502041_1_En_1_Fig19_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig19_HTML.jpg](img/502041_1_En_1_Fig19_HTML.jpg)
 
 图 1-19
 
@@ -778,7 +778,7 @@ target_number=path[l];
 
 如果我们紧跟，在检查器窗口中，我们可以根据我们的选择更改迭代的次数或时代/剧集。控制台以目标立方体的索引的形式显示所遵循步骤的详细信息。检查器窗口的预览如图 1-20 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig20_HTML.jpg](img/502041_1_En_1_Fig20_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig20_HTML.jpg](img/502041_1_En_1_Fig20_HTML.jpg)
 
 图 1-20
 
@@ -806,7 +806,7 @@ G[t] = R[t+1] + yR[t+2] + …+ ∑ y^kR[t+k]
 
 现在我们对贝尔曼方程以及值函数和策略函数有了初步的了解，让我们尝试将它们以自顶向下的树形结构在图 1-21 中可视化。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig21_HTML.jpg](img/502041_1_En_1_Fig21_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig21_HTML.jpg](img/502041_1_En_1_Fig21_HTML.jpg)
 
 图 1-21
 
@@ -822,7 +822,7 @@ G[t] = R[t+1] + yR[t+2] + …+ ∑ y^kR[t+k]
 
 我们将在本章的后续部分讨论值迭代和政策迭代方面的更多内容，现在让我们基于奖励和贝尔曼迭代算法创建另一个模拟。打开资产文件夹，导航到“BellmanAgent”文件夹。这里包含一个模拟游戏，其中代理在赛车卡丁车上，有奖励（绿色的大方块）需要代理到达并收集，然后到达对面的终点杆。打开场景时，将如图 1-22 所示：
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig22_HTML.jpg](img/502041_1_En_1_Fig22_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig22_HTML.jpg](img/502041_1_En_1_Fig22_HTML.jpg)
 
 图 1-22
 
@@ -990,7 +990,7 @@ Debug.Log("End Epoch")
 
 当我们熟悉代码库后，我们可以对奖励函数进行修改，并为不同情况添加更多离散奖励。此外，环境也可以沿着垂直轨道扩展，这也会在转移矩阵和价值数组中添加更多状态。代理的运动将由 x 轴和 z 轴共同控制。我们可以通过在字典中取垂直放置的轨道部分 x 值来修改脚本以适应更多状态。一旦环境设置如图 1-23 所示，我们可以在编辑器中点击播放按钮。注意代理如何快速导航到每个迭代的最高奖励状态，并继续这样做，因为价值数组中的更新。价值数组保留了包含最高奖励的状态或轨道部分的信息，并帮助代理在后续时间戳中遵循该路径。这可以被视为一个缓冲内存，保留了具有最高值的状态。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig23_HTML.jpg](img/502041_1_En_1_Fig23_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig23_HTML.jpg](img/502041_1_En_1_Fig23_HTML.jpg)
 
 图 1-23
 
@@ -1010,7 +1010,7 @@ Q(a) = E [ R[t] | A[t] = a ],
 
 由于老虎机的动作主要依赖于奖励的结果，已经实施了几种策略。图 1-24 显示了多臂老虎机环境的预览。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig24_HTML.jpg](img/502041_1_En_1_Fig24_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig24_HTML.jpg](img/502041_1_En_1_Fig24_HTML.jpg)
 
 图 1-24
 
@@ -1028,7 +1028,7 @@ Qt = ∑ 1[(at=a)]. (R[i]) / ∑ 1[(at=a)] ,
 
 Argmax[a] Qt
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig25_HTML.jpg](img/502041_1_En_1_Fig25_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig25_HTML.jpg](img/502041_1_En_1_Fig25_HTML.jpg)
 
 图 1-25
 
@@ -1062,7 +1062,7 @@ Softmax(z) = e^z / (∑ e^z)
 
 打开场景“MAB-Unity”。场景由三个立方体组成，每个立方体有不同的奖励概率。在编辑器中选择播放时，我们看到老虎机选择不同的奖励（即立方体），并总是试图优化其奖励。这是一个纯粹基于动作-奖励的非上下文老虎机，带有反馈，因此我们可以通过 Epsilon-Greedy 算法来控制探索-利用。默认情况下，模拟在 Epsilon-Greedy 模式下运行，还有一个选项可以激活 UCB 算法。在控制台标签中，我们可以看到期望的奖励。环境的预览如图 1-26 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig26_HTML.jpg](img/502041_1_En_1_Fig26_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig26_HTML.jpg](img/502041_1_En_1_Fig26_HTML.jpg)
 
 图 1-26
 
@@ -1197,7 +1197,7 @@ yield return new WaitForSeconds(time_lag);
 
 因此，我们实现了一个基于 Epsilon-Greedy-UCB 的多臂老虎机模拟。我们可以在游戏过程中通过在 Epsilon-Greedy 和 UCB 算法之间切换来调整设置，以查看探索-利用细节如何受到影响。一旦我们理解了代码，我们就可以在 Unity 编辑器中点击“播放”来查看模拟运行。经过多次迭代后，我们会观察到一些立方体被反复选中——这是老虎机利用的经典例子。然后我们可以更改 epsilon 和学习率值，或者切换到 UCB 算法以进行更多探索。图 1-27 是模拟的预览。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig27_HTML.jpg](img/502041_1_En_1_Fig27_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig27_HTML.jpg](img/502041_1_En_1_Fig27_HTML.jpg)
 
 图 1-27
 
@@ -1264,7 +1264,7 @@ agents_prob[which_arm_to_pull] =agents_prob[which_arm_to_pull] + (1/number_of_ar
 
 最后，我们按最佳奖励、Q 值和选择的臂打印每个 epoch 的结果。运行后，输出应类似于图 1-28。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig28_HTML.jpg](img/502041_1_En_1_Fig28_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig28_HTML.jpg](img/502041_1_En_1_Fig28_HTML.jpg)
 
 图 1-28
 
@@ -1296,7 +1296,7 @@ V(s[t]) = V(s[t]) + α [R[t+1] + yV(s[t+1]) - V(s[t])]
 
 其中符号具有其原始含义。让我们尝试通过图 1-29 可视化策略迭代如何帮助获得最大价值函数。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig29_HTML.jpg](img/502041_1_En_1_Fig29_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig29_HTML.jpg](img/502041_1_En_1_Fig29_HTML.jpg)
 
 图 1-29
 
@@ -1332,7 +1332,7 @@ print('Number of actions: {}'.format(enviroment.action_space.n))
 
 运行笔记本或 Colab 后，我们将看到观察空间和动作空间的详细信息，就像在 CartPole 环境中一样，如图 1-30 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig30_HTML.jpg](img/502041_1_En_1_Fig30_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig30_HTML.jpg](img/502041_1_En_1_Fig30_HTML.jpg)
 
 图 1-30
 
@@ -1388,7 +1388,7 @@ state = next_state
 
 每行注释描述了后续步骤中执行的操作。训练完成后，Q 表包含最有利状态的值。这可以通过更新的出租车环境表示，如图 1-31 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig31_HTML.jpg](img/502041_1_En_1_Fig31_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig31_HTML.jpg](img/502041_1_En_1_Fig31_HTML.jpg)
 
 图 1-31
 
@@ -1416,7 +1416,7 @@ total_epochs += epochs
 
 运行该段代码后，我们得到惩罚值和每个 epoch 的轮次，如图 1-32 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig32_HTML.jpg](img/502041_1_En_1_Fig32_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig32_HTML.jpg](img/502041_1_En_1_Fig32_HTML.jpg)
 
 图 1-32
 
@@ -1426,7 +1426,7 @@ total_epochs += epochs
 
 现在我们来创建一个类似的 Q-learning 模板。打开名为“Q-Learning”的场景并点击播放。圆柱形物体是智能体，它试图通过避开红色平面并仅使用绿色平面从顶部移动到底部。这些平面是状态样本，或观察空间，就像 Gym 环境。绿色平面与奖励相关联，而红色平面则与负奖励相关。智能体使用迭代 Q-learning 算法作为策略来更新价值函数并最大化其奖励。场景应该看起来像图 1-33 所示。
 
-![../images/502041_1_En_1_Chapter/502041_1_En_1_Fig33_HTML.jpg](img/502041_1_En_1_Fig33_HTML.jpg)
+![img/502041_1_En_1_Chapter/502041_1_En_1_Fig33_HTML.jpg](img/502041_1_En_1_Fig33_HTML.jpg)
 
 图 1-33
 

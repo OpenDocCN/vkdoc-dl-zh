@@ -16,7 +16,7 @@
 
 图 9-1 展示了一个简单的循环神经元的例子，其中 *x* 是输入，*y* 是输出。在训练的每个时间步 *t*，节点接收一个输入 *X*^(*t*)（序列）和前一个时间步 *t* − 1 的输出（看那个循环吗？）以产生一个新的输出 *y*^(*t*)。因此，由于这种迭代行为，神经元的输出变成了过去输出的函数。所以，我们可以这样说，这个函数有一个内部状态（或记忆），用 *h* 表示，并在数学上定义为 *h*^(*t*) = *f*(*h*^((*t* − 1)), *x*^(*t*)).
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig1_HTML.jpg](img/494424_1_En_9_Fig1_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig1_HTML.jpg](img/494424_1_En_9_Fig1_HTML.jpg)
 
 图 9-1
 
@@ -36,7 +36,7 @@ LSTM 单元有三个门：*遗忘*门、*输入*门和*输出*门。遗忘门决
 
 为了便于理解，图 9-2 展示了原始数据集。x 轴是时间步长 *t*，y 轴是那个时间间隔内所走的步数。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig2_HTML.jpg](img/494424_1_En_9_Fig2_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig2_HTML.jpg](img/494424_1_En_9_Fig2_HTML.jpg)
 
 图 9-2
 
@@ -52,7 +52,7 @@ LSTM 单元有三个门：*遗忘*门、*输入*门和*输出*门。遗忘门决
 
 图 9-3 展示了应用程序的屏幕截图。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig3_HTML.jpg](img/494424_1_En_9_Fig3_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig3_HTML.jpg](img/494424_1_En_9_Fig3_HTML.jpg)
 
 图 9-3
 
@@ -328,13 +328,13 @@ init();
 
 平均损失值（经过 10 次尝试后计算得出）约为 0.02，平均训练时间为 3 分钟（在 MacBook Pro 2018 上）。训练完成后，八个测试按钮应该被激活。三个测试用例（1、2 和 4）的实际值为 0，因此预测值至少应该接近 0。在我的测试中，案例 3（图 9-4）、6（图 9-5）和 7 的结果非常准确，而案例 8 显示的结果最不准确（实际值为 0.90，预测值为 0.51）。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig5_HTML.jpg](img/494424_1_En_9_Fig5_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig5_HTML.jpg](img/494424_1_En_9_Fig5_HTML.jpg)
 
 图 9-5
 
 测试用例 #6
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig4_HTML.jpg](img/494424_1_En_9_Fig4_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig4_HTML.jpg](img/494424_1_En_9_Fig4_HTML.jpg)
 
 图 9-4
 
@@ -483,7 +483,7 @@ initMultiModel();
 
 现在刷新应用程序并开始训练。这次，因为我们有一个更大的模型，所以训练时间更长。此外，你将注意到损失值几乎没有变化（图 9-6）；没有像之前那样的突然下降。它从 0.035 开始，收敛到 0.025——没有显著变化。这种行为表明模型可能存在一些问题。让我们看看一些测试案例。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig6_HTML.jpg](img/494424_1_En_9_Fig6_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig6_HTML.jpg](img/494424_1_En_9_Fig6_HTML.jpg)
 
 图 9-6
 
@@ -491,7 +491,7 @@ initMultiModel();
 
 图 9-7 显示了测试案例 #3。实线是测试数据，虚线是实际值，虚点线是预测值。在这里，预测值与实际数据不太吻合，但总体上遵循相同的模式。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig7_HTML.jpg](img/494424_1_En_9_Fig7_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig7_HTML.jpg](img/494424_1_En_9_Fig7_HTML.jpg)
 
 图 9-7
 
@@ -501,13 +501,13 @@ initMultiModel();
 
 最后，我们有测试案例 #8（图 9-9），这是其中最糟糕的一个。在这个例子中，预测的线条趋势向下，而实际值在增加。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig9_HTML.jpg](img/494424_1_En_9_Fig9_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig9_HTML.jpg](img/494424_1_En_9_Fig9_HTML.jpg)
 
 图 9-9
 
 多模型测试案例 #8
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig8_HTML.jpg](img/494424_1_En_9_Fig8_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig8_HTML.jpg](img/494424_1_En_9_Fig8_HTML.jpg)
 
 图 9-8
 
@@ -521,25 +521,25 @@ initMultiModel();
 
 图 9-10 展示了模型训练五个周期后的损失值。顶部图表 *onBatchEnd* 显示，仅仅经过 50 个批次，损失就下降到几乎为零，而第二个图表 *onEpochEnd* 则表明两个周期就足够了。要查看模型的性能，请参阅图 9-11、9-12 和 9-13。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig13_HTML.jpg](img/494424_1_En_9_Fig13_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig13_HTML.jpg](img/494424_1_En_9_Fig13_HTML.jpg)
 
 图 9-13
 
 测试案例 #5
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig12_HTML.jpg](img/494424_1_En_9_Fig12_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig12_HTML.jpg](img/494424_1_En_9_Fig12_HTML.jpg)
 
 图 9-12
 
 测试案例 #4
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig11_HTML.jpg](img/494424_1_En_9_Fig11_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig11_HTML.jpg](img/494424_1_En_9_Fig11_HTML.jpg)
 
 图 9-11
 
 测试案例 #2
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig10_HTML.jpg](img/494424_1_En_9_Fig10_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig10_HTML.jpg](img/494424_1_En_9_Fig10_HTML.jpg)
 
 图 9-10
 
@@ -555,7 +555,7 @@ initMultiModel();
 
 我们将使用的是 ml5.js 库提供的预训练模型。在其模型库中，^(1) 你可以找到几个在包含莎士比亚和海明威等作家作品的语料库上训练的 LSTM 模型。在这个例子中，我将使用莎士比亚模型。然而，你也可以选择另一个。这个应用程序本身是最简单的。它的目的是生成。界面（图 9-14）由一个用于写入模型“种子”的文本字段组成，这是一个初始文本片段，模型从中生成文本。还有一个输入滑块，用于设置预测 **温度**，这是一个介于 0 和 1 之间的值，用于控制生成文本的“随机性”。低温预测会产生更“保守”或自信的输出，而高温则会产生更多“创意”的内容（Karpathy，2015）。
 
-![../images/494424_1_En_9_Chapter/494424_1_En_9_Fig14_HTML.jpg](img/494424_1_En_9_Fig14_HTML.jpg)
+![img/494424_1_En_9_Chapter/494424_1_En_9_Fig14_HTML.jpg](img/494424_1_En_9_Fig14_HTML.jpg)
 
 图 9-14
 

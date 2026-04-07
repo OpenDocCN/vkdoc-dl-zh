@@ -200,7 +200,7 @@ model = ml5.kmeans(csvUrl, options, visualizeResult);
 
 如果 *k* 为 1（图 3-1），你会注意到所有点都有相同的颜色和形状，因为它们属于同一个簇。换句话说，根据算法，每个观测值都属于同一个类别。
 
-![../images/494424_1_En_3_Chapter/494424_1_En_3_Fig1_HTML.jpg](img/494424_1_En_3_Fig1_HTML.jpg)
+![img/494424_1_En_3_Chapter/494424_1_En_3_Fig1_HTML.jpg](img/494424_1_En_3_Fig1_HTML.jpg)
 
 图 3-1
 
@@ -210,7 +210,7 @@ model = ml5.kmeans(csvUrl, options, visualizeResult);
 
 关于其他 k 的值，如果它是 2，你很可能会在同一个聚类下有两个数据块，剩下的一个作为另一个。如果等于 3，你可能会得到一个“完美”的聚类（在无监督学习中，什么是完美的呢？），其中每个数据块都是自己的聚类，如果 k 是 4，你将看到包含两个类别的数据块（图 3-2）。
 
-![../images/494424_1_En_3_Chapter/494424_1_En_3_Fig2_HTML.jpg](img/494424_1_En_3_Fig2_HTML.jpg)
+![img/494424_1_En_3_Chapter/494424_1_En_3_Fig2_HTML.jpg](img/494424_1_En_3_Fig2_HTML.jpg)
 
 图 3-2
 

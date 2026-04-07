@@ -86,7 +86,7 @@ The Grid World Environment
 
 在数学优化领域，动态规划指的是将计算简化为一系列随时间进行的步骤——也就是说，从上一时间步的值计算当前时间步的值。这是您将用于构建计算状态值 *v*π 的时间索引递归的方法。看看贝尔曼方程，它用策略 π(*a*| *s*), 系统动力学 *p*(*s*^′, *r*| *s*, *a*), 和后续状态的状态值 *v*π 来表示状态 *v*π 的值。
 
-![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equa.png)
+![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equa.png)
 
 这表示状态值 *v*π 是基于其他状态值 *v*π 的，所有这些值都是未知的。如果您能以某种方式获得当前状态的所有后续状态值，您就能计算出 *v*π。这显示了方程的递归性质。
 
@@ -96,25 +96,25 @@ The Grid World Environment
 
 方程 2-18 展示了状态值 *v*π 的递归性质，它基于后续状态值 *v*π，如下所示：
 
-![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ1.png)
+![$$ {v}_{\pi }(s)=\sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\pi}\left({s}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ1.png)
 
 (3-1)
 
 方程 2-21 展示了状态-动作值 *q*π 的递归性质，它基于后续状态-动作值 *q*π，如下所示：
 
-![$$ {q}_{\pi}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ \sum \limits_{a^{\prime }}\pi \left({a}^{\prime }|{s}^{\prime}\right)\ q\left({s}^{\prime },{a}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ2.png)
+![$$ {q}_{\pi}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ \sum \limits_{a^{\prime }}\pi \left({a}^{\prime }|{s}^{\prime}\right)\ q\left({s}^{\prime },{a}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ2.png)
 
 (3-2)
 
 方程式 2-24 展示了状态值 *v*∗ 与后续状态值 *v*∗ 之间的递归关系，如方程式 3-3 所示。我在方程式 3-1 中移除了外层求和，并用一个 *max* 函数替换。这就是贝尔曼最优方程：
 
-![$$ {v}_{\ast }(s)=\underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\ast}\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ3.png)
+![$$ {v}_{\ast }(s)=\underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_{\ast}\left({s}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ3.png)
 
 (3-3)
 
 方程式 2-25 展示了在贝尔曼最优构造下，状态动作值 *q*∗ 与后续状态动作值 *q*∗ 之间的递归关系，其中方程式 3-2 中的内层求和被 *max* 函数替换。
 
-![$$ {q}_{\ast}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma \underset{a^{\prime }}{\mathit{\max}}{q}_{\ast}\left({s}^{\prime },{a}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ4.png)
+![$$ {q}_{\ast}\left(s,a\right)=\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma \underset{a^{\prime }}{\mathit{\max}}{q}_{\ast}\left({s}^{\prime },{a}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ4.png)
 
 (3-4)
 
@@ -170,7 +170,7 @@ The Grid World Environment
 
 相反，我将求助于迭代解法。这是通过在第一次迭代 *k* = 0 时使用一些随机的状态值 *v*0 来实现的，并在方程 3-1 的右侧使用它们来获得下一迭代步骤的状态值。
 
-![$$ {v}_{k+1}(s)\leftarrow \sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ5.png)
+![$$ {v}_{k+1}(s)\leftarrow \sum \limits_a\pi \left(a|s\right)\ \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equ5.png)
 
 (3-6)
 
@@ -250,7 +250,7 @@ Policy Evaluation/Policy Planning: “3.a-policy-evaluation.ipynb”
 
 上一节讨论了一个获取给定策略的状态值 *v**π* 的算法。你可以使用这些信息来改进策略。在网格世界中，你从任何状态都可以采取四种动作。现在，你将分别考虑采取所有四种动作的价值，然后在该步骤之后遵循策略 π。这将给出四个 *q*(*s*, *a*) 动作值，这些是网格世界中采取四个可能动作的动作值。
 
-![ \( q(s,a) = \sum \limits_{s^{\prime },r}p(s^{\prime },r \ |s,a)\ \left[r+\gamma v_{\pi}(s^{\prime})\right] \)](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equg.png)
+![ \( q(s,a) = \sum \limits_{s^{\prime },r}p(s^{\prime },r \ |s,a)\ \left[r+\gamma v_{\pi}(s^{\prime})\right] \)](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equg.png)
 
 注意到 *q*(*s*, *a*) 没有下标 *π*。你在状态 *S* = *s* 下评估所有可能动作的 *q*(*s*, *a*) 值。如果任何 *q*(*s*, *a*) 值大于当前状态值 *v**π*，这意味着当前策略 *π*(*a*| *s*) 没有采取最优动作。你可以通过采取 *q*-值，最大化动作 *A* = *a* 并将其定义为状态 *S* = *s* 下的策略来改进当前状态 *S* = *s* 下的当前策略。这将给出比当前策略 *π*(*a*| *s*) 更高的状态值。这个新策略被定义为 *π*′(*a*| *s*)。换句话说，你定义以下内容：
 
@@ -532,11 +532,11 @@ Value Iteration: 3.c-value-iteration.ipynb
 
 这里是原始更新方程 3-8：
 
-![$$ {v}_{k+1}(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equl.png)
+![$$ {v}_{k+1}(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ {v}_k\left({s}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equl.png)
 
 这里展示了相同操作的就地版本。箭头两边的 *v*(*s*) 数组是相同的。
 
-![$$ v(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ v\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equm.png)
+![$$ v(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r\ \right|s,a\Big)\ \left[r+\gamma\ v\left({s}^{\prime}\right)\right] $$](img/502835_2_En_3_Chapter/502835_2_En_3_Chapter_TeX_Equm.png)
 
 实验表明，就地编辑在值在迭代中途移动时提供了更快的收敛。
 

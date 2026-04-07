@@ -6,7 +6,7 @@ Abhilash Majumder
 
 第 1 版
 
-![../images/502041_1_En_BookFrontmatter_Figa_HTML.png](img/502041_1_En_BookFrontmatter_Figa_HTML.png)出版社的标志
+![img/502041_1_En_BookFrontmatter_Figa_HTML.png](img/502041_1_En_BookFrontmatter_Figa_HTML.png)出版社的标志
 
 ISBN 978-1-4842-6502-4e-ISBN 978-1-4842-6503-1[`doi.org/10.1007/978-1-4842-6503-1`](https://doi.org/10.1007/978-1-4842-6503-1)© Abhilash Majumder 2021 标准 Apress 商标名称、标志和图像可能出现在本书中。我们不会在每个商标名称、标志或图像出现时使用商标符号，我们只以编辑方式使用名称、标志和图像，以商标所有者的利益为重，无意侵犯商标权。在本出版物中使用商标名称、商标、服务标志和类似术语，即使它们没有被标识为这样的，也不应被视为对它们是否受专有权利约束的意见表达。出版商、作者和编辑可以安全地假设，本书中的建议和信息在出版日期被认为是真实和准确的。出版商、作者或编辑不对本书中包含的材料或可能出现的任何错误或遗漏提供明示或暗示的保证。出版商对已出版的地图中的管辖权主张和机构隶属关系保持中立。本书由 Springer Science+Business Media LLC 在全球范围内向书店发行，地址：1 New York Plaza, Suite 4600, New York, NY 10004。电话：1-800-SPRINGER，传真：(201) 348-4505，电子邮件：orders-ny@springer-sbm.com，或访问 www.springeronline.com。Apress Media, LLC 是一家加利福尼亚有限责任公司，唯一成员（所有者）是 Springer Science + Business Media Finance Inc (SSBM Finance Inc)。SSBM Finance Inc 是一家特拉华州公司。
 

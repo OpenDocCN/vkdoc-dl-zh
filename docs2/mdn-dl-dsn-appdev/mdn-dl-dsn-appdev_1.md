@@ -52,7 +52,7 @@ Installing and importing TensorFlow and Keras
 
 当使用 Keras 构建任何模型时，深度学习工作流程通常包括三个步骤：定义架构、编译和拟合及分析（图 1-1）。从最简单到最复杂的模型都遵循这个工作流程。在本节中，我们将详细回顾这个工作流程中的每个步骤。
 
-![../images/516104_1_En_1_Chapter/516104_1_En_1_Fig1_HTML.jpg](img/516104_1_En_1_Fig1_HTML.jpg)
+![img/516104_1_En_1_Chapter/516104_1_En_1_Fig1_HTML.jpg](img/516104_1_En_1_Fig1_HTML.jpg)
 
 图 1-1
 
@@ -62,7 +62,7 @@ Installing and importing TensorFlow and Keras
 
 神经网络架构有三个关键部分（图 1-2）。
 
-![../images/516104_1_En_1_Chapter/516104_1_En_1_Fig2_HTML.jpg](img/516104_1_En_1_Fig2_HTML.jpg)
+![img/516104_1_En_1_Chapter/516104_1_En_1_Fig2_HTML.jpg](img/516104_1_En_1_Fig2_HTML.jpg)
 
 图 1-2
 
@@ -197,7 +197,7 @@ Keras 模型的 `.compile()` 方法需要三个关键参数：
 
 例如，考虑以下损失地形。神经网络的目标是在损失地形中找到具有最小损失值的点。
 
-![../images/516104_1_En_1_Chapter/516104_1_En_1_Fig3_HTML.jpg](img/516104_1_En_1_Fig3_HTML.jpg)
+![img/516104_1_En_1_Chapter/516104_1_En_1_Fig3_HTML.jpg](img/516104_1_En_1_Fig3_HTML.jpg)
 
 图 1-3
 
@@ -414,7 +414,7 @@ Example output for a neural network on the sample dataset when the model is fitt
 
 `history.history` 是一个字典，其中每个键是损失或度量名称，如 `'loss'`、`'mae'` 和 `'accuracy'`，相应的值是每个时代这些值的数组。损失可以可视化，例如如下（列表 1-12，图 1-4）。
 
-![../images/516104_1_En_1_Chapter/516104_1_En_1_Fig4_HTML.jpg](img/516104_1_En_1_Fig4_HTML.jpg)
+![img/516104_1_En_1_Chapter/516104_1_En_1_Fig4_HTML.jpg](img/516104_1_En_1_Fig4_HTML.jpg)
 
 图 1-4
 
@@ -440,7 +440,7 @@ Plotting the history
 
 在构建大型和复杂的神经网络架构时，可能会难以进行概念化。Keras 提供了一个有用的工具来可视化模型的架构，这在构建神经网络时非常有价值。我们可以从绘制我们刚刚构建的模型的架构（列表 1-13，图 1-5）开始。
 
-![../images/516104_1_En_1_Chapter/516104_1_En_1_Fig5_HTML.jpg](img/516104_1_En_1_Fig5_HTML.jpg)
+![img/516104_1_En_1_Chapter/516104_1_En_1_Fig5_HTML.jpg](img/516104_1_En_1_Fig5_HTML.jpg)
 
 图 1-5
 
@@ -455,7 +455,7 @@ Plotting an example model with Keras
 
 Keras 将每个层可视化为一个矩形；每个层都标注为“名称：层类型”。如果用户需要引用特定的层，Keras 会自动将每个层与一个名称关联。然而，通过启用 Keras 显示每个层的形状转换和数据类型，我们可以获取更多关于模型的信息：`plot_model(model, show_shapes=True, show_dtype=True)`。输出在图 1-6 中可视化。
 
-![../images/516104_1_En_1_Chapter/516104_1_En_1_Fig6_HTML.jpg](img/516104_1_En_1_Fig6_HTML.jpg)
+![img/516104_1_En_1_Chapter/516104_1_En_1_Fig6_HTML.jpg](img/516104_1_En_1_Fig6_HTML.jpg)
 
 图 1-6
 
@@ -576,7 +576,7 @@ Rewriting the Sequential model functionally with repeated variable assignment
 
 使用功能 API 构建非线性拓扑非常直观。让我们从拓扑的视觉表示（图 1-7）开始，并使用功能 API 编写代码来创建模型。
 
-![../images/516104_1_En_1_Chapter/516104_1_En_1_Fig7_HTML.jpg](img/516104_1_En_1_Fig7_HTML.jpg)
+![img/516104_1_En_1_Chapter/516104_1_En_1_Fig7_HTML.jpg](img/516104_1_En_1_Fig7_HTML.jpg)
 
 图 1-7
 

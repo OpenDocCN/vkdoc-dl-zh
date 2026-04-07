@@ -104,7 +104,7 @@
 
 这是一种许多参数化模型表示方法之一，其中你明确学习模型动力学，然后丢弃与真实世界的样本交互。然而，还有另一种在 DQN 中使用的方法：非参数化模型。在非参数化模型中，你将交互存储在缓冲区中，然后从缓冲区进行采样。前八个交互的一个示例是将 `(状态，奖励，下一个状态)` 元组存储在列表中（记住在这个例子中，你没有动作，因为它是一个 MRP）。
 
-![$$ D=\left[\left(A,0,B\right),\left(B,0,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,0,T\right)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equd.png)
+![$$ D=\left[\left(A,0,B\right),\left(B,0,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,1,T\right),\left(B,0,T\right)\right] $$](img/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equd.png)
 
 缓冲区 *D* 中的前两个值来自一个转换，即 *A*, 0, *B*, 0\. 缓冲区中剩余的七个条目是前一个示例中的剩余七个转换。
 
@@ -216,7 +216,7 @@ Dyna Q Agent from 10.a-dqnaQ.ipynb
 
 ![$$ R,{S}^{'}\leftarrow Model\left(S,A\right) $$](img/502835_2_En_10_Chapter_TeX_Eque.png)
 
-![$$ Q\left(S,A\right)\to Q\left(S,A\right)+\upalpha \cdotp \left[R+\upgamma \cdotp \max {1}_{a\prime }Q\left({S}^{\prime },{a}^{\prime}\right)\hbox{--} Q\left(S,A\right)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equf.png)
+![$$ Q\left(S,A\right)\to Q\left(S,A\right)+\upalpha \cdotp \left[R+\upgamma \cdotp \max {1}_{a\prime }Q\left({S}^{\prime },{a}^{\prime}\right)\hbox{--} Q\left(S,A\right)\right] $$](img/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equf.png)
 
 这段代码被添加到`train_agent`函数中，该函数用于训练智能体。列表 9-2 展示了该函数的修订版实现。代码的新增部分位于函数的末尾。首先是向智能体的缓冲区添加过渡，以便智能体可以使用先前经验缓冲区来估计模型过渡动力学。第二个变化是使用智能体从先前与真实环境的交互中收集的模拟经验进行*n*步规划。这些变化在列表 10-2 中以粗体突出显示。
 
@@ -385,19 +385,19 @@ Epsilon Schedule for Exploration
 
 时间 *t* 的悲剧，即从非最优策略中选择动作的悲剧，在方程 10-3 中定义。它是遵循最优策略的期望奖励减去遵循特定策略的奖励。
 
-![$$ regret=\upeta ={E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{E}_{a\sim {\pi}_t(s)}\left[r\left(s,a\right)\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ3.png)
+![$$ regret=\upeta ={E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{E}_{a\sim {\pi}_t(s)}\left[r\left(s,a\right)\right] $$](img/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ3.png)
 
 (10-3)
 
 你可以将其对所有时间步进行求和，以获得 *T* 步的总后悔，从而得到方程 10-4 中给出的表达式。
 
-![$$ \eta ={\sum}_{t=1}^T\left({E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{E}_{a\sim {\pi}_t(s)}\left[r\left(s,a\right)\right]\right) $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ4.png)
+![$$ \eta ={\sum}_{t=1}^T\left({E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{E}_{a\sim {\pi}_t(s)}\left[r\left(s,a\right)\right]\right) $$](img/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ4.png)
 
 (10-4)
 
 这是一种非上下文赌博机，其中状态 (*s*) 在每个时间步都保持不变——它保持为初始状态。因此，你可以将方程 10-4 简化为方程 10-5 所示的形式。
 
-![$$ \eta =T.\kern0.5em {E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{\sum}_{t=1}^T\left({E}_{a\sim {\pi}_t(s)}\left[r\left(s,a\right)\right]\right) $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ5.png)
+![$$ \eta =T.\kern0.5em {E}_{a\sim {\pi}^{\ast }(s)}\left[r\left(s,a\right)\right]-{\sum}_{t=1}^T\left({E}_{a\sim {\pi}_t(s)}\left[r\left(s,a\right)\right]\right) $$](img/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ5.png)
 
 (10-5)
 
@@ -515,7 +515,7 @@ UCB Exploration Agent from 10.b-explore-vs-exploit.ipynb
 
 接下来，它执行动作（即调用`pull`函数执行所选动作）并观察结果（成功或失败）。根据结果，它更新所选动作*k*的后验分布![$$ {\hat{\theta}}_k $$](img/502835_2_En_10_Chapter_TeX_IEq14.png)。随着每一步中不同动作*k*的成功和失败次数更新，代理继续更新其在每一步*k*中对特定![$$ {\hat{\theta}}_k $$](img/502835_2_En_10_Chapter_TeX_IEq15.png)的信念。这是在贝叶斯框架下所有动作*k*∈*K*的未知值θ[*k*]的后验分布。
 
-![$$ {\hat{\theta}}_k\sim Beta\left(\alpha ={\alpha}_k+1,\beta ={\beta}_k+1\right)\kern0.75em \forall k\in \left[1..K\right] $$](../images/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ7.png)
+![$$ {\hat{\theta}}_k\sim Beta\left(\alpha ={\alpha}_k+1,\beta ={\beta}_k+1\right)\kern0.75em \forall k\in \left[1..K\right] $$](img/502835_2_En_10_Chapter/502835_2_En_10_Chapter_TeX_Equ7.png)
 
 (10-7)
 

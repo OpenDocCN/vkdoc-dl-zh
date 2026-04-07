@@ -114,7 +114,7 @@ cost_dev_ = sess.run(cost, feed_dict={ X:dev_x, Y: dev_y, learning_rate: 0.001})
 
 以这种方式，我们可以同时检查两个数据集上发生的情况。现在，如果你让代码运行并绘制两个 MSE，一个用于训练，我们将用 *MSE*[*train*] 表示，另一个用于开发数据集，我们将用 *MSE*[*dev*] 表示，我们得到图 5-1。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig1_HTML.jpg](img/463356_1_En_5_Fig1_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig1_HTML.jpg](img/463356_1_En_5_Fig1_HTML.jpg)
 
 图 5-1
 
@@ -122,7 +122,7 @@ cost_dev_ = sess.run(cost, feed_dict={ X:dev_x, Y: dev_y, learning_rate: 0.001})
 
 你会注意到，训练误差下降到零，而开发误差在开始迅速下降后保持在约 20 的常数值。如果你还记得基本的误差分析介绍，你应该知道这意味着我们处于极端过拟合的状态（当 *MSE*[*train*] ≪ *MSE*[*dev*]）。训练数据集上的误差实际上为零，而开发数据集上的误差则不是。当应用于新数据时，模型根本无法泛化。在图 5-2 中，你可以看到预测值与真实值的关系图。你将注意到，在左侧的图中，对于训练数据，预测几乎是完美的，而在右侧的图中，对于开发数据集，预测则不是那么好。你应该记得，一个完美的模型会给出与测量值完全相同的预测值。所以，当将一个与另一个绘制在一起时，它们都会位于图的 45 度线上，就像图 5-2 左侧所示。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig2_HTML.jpg](img/463356_1_En_5_Fig2_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig2_HTML.jpg](img/463356_1_En_5_Fig2_HTML.jpg)
 
 图 5-2
 
@@ -148,7 +148,7 @@ cost_dev_ = sess.run(cost, feed_dict={ X:dev_x, Y: dev_y, learning_rate: 0.001})
 
 在我们开始研究 *ℓ*[1] 和 *ℓ*[2] 正则化是什么之前，我必须介绍 *ℓ*[*p*] 范数的表示法。我们定义向量 ***x*** 的 *ℓ*[*p*] 范数，其中 ***x*** 有 *x*[*i*] 个分量，如下所示：
 
-![$$ \left\Vert {x}_p\right\Vert =\sqrt[p]{\sum \limits_{\kern1.5em i}{\left|{x}_i\right|}^p}\kern2.125em p\in \mathbb{R} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equa.png)
+![$$ \left\Vert {x}_p\right\Vert =\sqrt[p]{\sum \limits_{\kern1.5em i}{\left|{x}_i\right|}^p}\kern2.125em p\in \mathbb{R} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equa.png)
 
 在向量 ***x*** 的所有分量上执行求和。
 
@@ -180,7 +180,7 @@ cost_dev_ = sess.run(cost, feed_dict={ X:dev_x, Y: dev_y, learning_rate: 0.001})
 
 现在我们来尝试直观理解这个项对 GD（梯度下降）算法的影响。让我们考虑权重*w*[*j*]的更新方程。
 
-![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}-\gamma \frac{\partial \tilde{J}\left({w}_{\left[n\right]}\right)}{\partial {w}_j}={w}_{j,\left[n\right]}-\gamma \frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j}-\frac{\gamma \lambda}{m}{w}_{j,\left[n\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Eque.png)
+![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}-\gamma \frac{\partial \tilde{J}\left({w}_{\left[n\right]}\right)}{\partial {w}_j}={w}_{j,\left[n\right]}-\gamma \frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j}-\frac{\gamma \lambda}{m}{w}_{j,\left[n\right]} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Eque.png)
 
 由于
 
@@ -188,7 +188,7 @@ cost_dev_ = sess.run(cost, feed_dict={ X:dev_x, Y: dev_y, learning_rate: 0.001})
 
 这给我们
 
-![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\lambda \frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equg.png)
+![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\lambda \frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equg.png)
 
 这是我们必须用于权重更新的方程。与我们已经从普通 GD 中了解的方程相比，不同之处在于，现在权重*w*[*j*, [*n*]]被乘以一个常数 ![$$ 1-\frac{\gamma \lambda}{m}&lt;1 $$](img/463356_1_En_5_Chapter_TeX_IEq3.png)，因此，这有效地在更新期间将权重值移向零，使网络更简单（直观上），从而对抗过拟合。让我们尝试通过将此方法应用于波士顿房价数据集来查看权重实际上发生了什么变化。
 
@@ -306,7 +306,7 @@ Dev MSE = 21.6406
 
 现在，我们不再处于过拟合状态，因为两个均方误差（MSE）值具有相同的数量级。检查正在发生什么的最有效方法是研究每一层的权重分布。在图 5-3 中，绘制了前 4 层的权重分布。浅灰色直方图表示没有正则化的权重，而较深色（且围绕零更集中）的区域表示有正则化的权重。我忽略了第 5 层，因为它是最外层。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig3_HTML.jpg](img/463356_1_En_5_Fig3_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig3_HTML.jpg](img/463356_1_En_5_Fig3_HTML.jpg)
 
 图 5-3
 
@@ -344,7 +344,7 @@ Dev MSE = 21.6406
 
 但是我们应该如何选择 *λ*？为了有一个概念（跟我重复：在深度学习领域，没有普遍的规则。），当改变参数 *λ* 到你的优化指标（在这种情况下，MSE）时，看看会发生什么是有用的。在图 5-4 中，你可以看到我们的网络在 1000 个 epoch 后 *MSE*[*train*]（连续线）和 *MSE*[*dev*]（虚线）数据集的行为。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig4_HTML.jpg](img/463356_1_En_5_Fig4_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig4_HTML.jpg](img/463356_1_En_5_Fig4_HTML.jpg)
 
 图 5-4
 
@@ -401,7 +401,7 @@ lambd_val = 0.0)
 
 在图 5-5 中，你可以看到我们的数据集，其中白色点属于第一类，黑色点属于第二类。灰色区域是网络将其分类为某一类的区域，白色点属于另一类。你可以看到，网络能够以灵活的方式捕捉到我们数据的复杂结构。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig5_HTML.png](img/463356_1_En_5_Fig5_HTML.png)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig5_HTML.png](img/463356_1_En_5_Fig5_HTML.png)
 
 图 5-5
 
@@ -411,7 +411,7 @@ lambd_val = 0.0)
 
 你可以清楚地看到，在图 5-6 中，决策边界几乎是线性的，并且无法再捕捉到我们数据的复杂结构。这正是我们预期的：正则化项使模型更简单，因此，更难以捕捉到细微结构。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig6_HTML.png](img/463356_1_En_5_Fig6_HTML.png)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig6_HTML.png](img/463356_1_En_5_Fig6_HTML.png)
 
 图 5-6
 
@@ -419,7 +419,7 @@ lambd_val = 0.0)
 
 将我们的网络决策边界与只有一个神经元的逻辑回归结果进行比较是非常有趣的。由于空间考虑，我不会在这里放置代码，但如果你比较图 5-7 中的两个决策边界（来自一个神经元的网络是线性的），你会发现它们几乎相同。*λ* = 0.1 的正则化项实际上与只有一个神经元的网络得到相同的结果。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig7_HTML.png](img/463356_1_En_5_Fig7_HTML.png)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig7_HTML.png](img/463356_1_En_5_Fig7_HTML.png)
 
 图 5-7
 
@@ -444,7 +444,7 @@ tf.reduce_sum(tf.abs(W4))+tf.reduce_sum(tf.abs(W5))
 
 讨论的其余代码保持不变。我们再次可以比较没有正则化项（*λ* = 0）和有正则化（*λ* = 3，图 5-8）的模型之间的权重分布。我们使用了波士顿数据集进行计算。我们使用以下调用训练了模型：
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig8_HTML.jpg](img/463356_1_En_5_Fig8_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig8_HTML.jpg](img/463356_1_En_5_Fig8_HTML.jpg)
 
 图 5-8
 
@@ -479,25 +479,25 @@ lambd_val = 3.0)
 
 ### 权重真的会降到零吗？
 
-观察权重如何降到零是非常有教育意义的。在图 5-9 中，您可以看到权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq6.png)（来自第 3 层）与我们的具有两个特征的合成数据集的纪元数进行绘制，*ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，在 1000 个纪元后。您可以看到它如何迅速下降到零。1000 个纪元后的值是 2 · 10^(−21)，所以，从所有目的来看，它就是零。
+观察权重如何降到零是非常有教育意义的。在图 5-9 中，您可以看到权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq6.png)（来自第 3 层）与我们的具有两个特征的合成数据集的纪元数进行绘制，*ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，在 1000 个纪元后。您可以看到它如何迅速下降到零。1000 个纪元后的值是 2 · 10^(−21)，所以，从所有目的来看，它就是零。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig9_HTML.jpg](img/463356_1_En_5_Fig9_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig9_HTML.jpg](img/463356_1_En_5_Fig9_HTML.jpg)
 
 图 5-9
 
-权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq7.png) 与我们的具有两个特征的合成数据集的纪元进行绘制，*ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个纪元
+权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq7.png) 与我们的具有两个特征的合成数据集的纪元进行绘制，*ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个纪元
 
 如果您想知道，权重几乎以指数级下降到零。理解这种情况的一个方法是考虑单个权重的权重更新方程。
 
-![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\frac{\gamma \partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equk.png)
+![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\frac{\gamma \partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equk.png)
 
 现在假设我们发现自己接近最小值，在一个成本函数 *J* 的导数几乎为零的区域，因此我们可以忽略它。换句话说，假设
 
-![ $${\frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j}\approx 0} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equl.png)
+![ $${\frac{\partial J\left({w}_{\left[n\right]}\right)}{\partial {w}_j}\approx 0} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equl.png)
 
 我们可以将权重更新方程重写为
 
-![ $${w}_{j,\left[n+1\right]}-{w}_{j,\left[n\right]}=-{w}_{j,\left[n\right]}\frac{\gamma \lambda}{m} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equm.png)
+![ $${w}_{j,\left[n+1\right]}-{w}_{j,\left[n\right]}=-{w}_{j,\left[n\right]}\frac{\gamma \lambda}{m} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_Equm.png)
 
 现在可以读作：权重相对于迭代次数的导数与权重本身成正比。对于那些了解微分方程的人来说，你们可能会意识到我们可以将以下方程与之类比：
 
@@ -509,11 +509,11 @@ lambd_val = 3.0)
 
 你现在可以理解为什么权重衰减将与指数函数的衰减相似，通过在这两个方程之间建立平行关系。在图 5-10 中，你可以看到已经讨论过的权重衰减，具有纯指数衰减。两条曲线并不完全相同，正如预期的那样，因为特别是在开始时，成本函数的梯度肯定不是零。但它们的相似性非常显著，并给我们一个关于权重如何快速变为零（读：非常快）的想法。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig10_HTML.jpg](img/463356_1_En_5_Fig10_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig10_HTML.jpg](img/463356_1_En_5_Fig10_HTML.jpg)
 
 图 5-10
 
-权重 ![ $${w}_{12,5}^{\left[3\right]} $$](../images/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq8.png) 与我们的具有两个特征的合成数据集的周期数的关系图，*ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个周期（连续线）以及纯指数衰减（虚线），供说明之用
+权重 ![ $${w}_{12,5}^{\left[3\right]} $$](img/463356_1_En_5_Chapter/463356_1_En_5_Chapter_TeX_IEq8.png) 与我们的具有两个特征的合成数据集的周期数的关系图，*ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个周期（连续线）以及纯指数衰减（虚线），供说明之用
 
 注意，当使用正则化时，你最终会得到包含大量零元素的张量，称为稀疏张量。然后你可以利用针对稀疏张量特别高效的特殊程序。当你开始向更复杂的模型迈进时，这是需要记住的事情，但这个主题过于高级，不适合这本书，并且需要太多的空间。
 
@@ -582,7 +582,7 @@ optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate, beta1 = 0.9, b
 
 现在，让我们分析使用 dropout 时成本函数会发生什么。让我们运行应用于波士顿数据集的模型，并针对 `keep_prob` 变量的两个值：1.0（没有 dropout）和 0.5。在图 5-11 中，你可以看到当应用 dropout 时，成本函数非常不规则。它剧烈波动。两个模型已经通过以下调用进行了评估
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig11_HTML.jpg](img/463356_1_En_5_Fig11_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig11_HTML.jpg](img/463356_1_En_5_Fig11_HTML.jpg)
 
 图 5-11
 
@@ -600,7 +600,7 @@ for keep_prob_val = 1.0 and for 0.5.
 
 在图 5-12 中，你可以看到在 dropout (`keep_prob=0.4`) 的情况下，训练集和验证集的 MSE 的演变。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig12_HTML.jpg](img/463356_1_En_5_Fig12_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig12_HTML.jpg](img/463356_1_En_5_Fig12_HTML.jpg)
 
 图 5-12
 
@@ -608,7 +608,7 @@ for keep_prob_val = 1.0 and for 0.5.
 
 在图 5-13 中，你可以看到相同的图表，但没有 dropout。差异非常明显。非常有趣的是，没有 dropout 时，*MSE*[*dev*] 随着时代增长，而使用 dropout 时，它相对稳定。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig13_HTML.jpg](img/463356_1_En_5_Fig13_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig13_HTML.jpg](img/463356_1_En_5_Fig13_HTML.jpg)
 
 图 5-13
 
@@ -624,7 +624,7 @@ for keep_prob_val = 1.0 and for 0.5.
 
 另一种有时用来对抗过拟合的技术。严格来说，这种方法并没有做任何事情来避免过拟合；它只是在过拟合问题变得太严重之前停止学习。考虑上一节中的例子。在图 5-14 中，你可以看到 *MSE*[*train*] 和 *MSE*[*dev*] 在同一张图上绘制。
 
-![../images/463356_1_En_5_Chapter/463356_1_En_5_Fig14_HTML.jpg](img/463356_1_En_5_Fig14_HTML.jpg)
+![img/463356_1_En_5_Chapter/463356_1_En_5_Fig14_HTML.jpg](img/463356_1_En_5_Fig14_HTML.jpg)
 
 图 5-14
 

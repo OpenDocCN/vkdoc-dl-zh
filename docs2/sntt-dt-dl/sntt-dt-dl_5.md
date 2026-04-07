@@ -425,7 +425,7 @@ Output:
 
 你将看到图 5-7 中所示的图形。
 
-![../images/534235_1_En_5_Chapter/534235_1_En_5_Fig7_HTML.jpg](img/534235_1_En_5_Fig7_HTML.jpg)
+![img/534235_1_En_5_Chapter/534235_1_En_5_Fig7_HTML.jpg](img/534235_1_En_5_Fig7_HTML.jpg)
 
 Friedman 1 函数的三维散点图。它在整个空间中分布。
 
@@ -462,7 +462,7 @@ plt.show()
 
 你将看到图 5-8 中所示的图形。
 
-![../images/534235_1_En_5_Chapter/534235_1_En_5_Fig8_HTML.jpg](img/534235_1_En_5_Fig8_HTML.jpg)
+![img/534235_1_En_5_Chapter/534235_1_En_5_Fig8_HTML.jpg](img/534235_1_En_5_Fig8_HTML.jpg)
 
 Friedman 2 函数的三维散点图。它在整个空间中分布。不同颜色的点层层叠加。
 
@@ -505,7 +505,7 @@ plt.show()
 
 你将看到图 5-9 中所示的图形。
 
-![../images/534235_1_En_5_Chapter/534235_1_En_5_Fig9_HTML.jpg](img/534235_1_En_5_Fig9_HTML.jpg)
+![img/534235_1_En_5_Chapter/534235_1_En_5_Fig9_HTML.jpg](img/534235_1_En_5_Fig9_HTML.jpg)
 
 Friedman 3 函数的三维散点图。它在整个空间中分布。不同颜色的点层层叠加。
 

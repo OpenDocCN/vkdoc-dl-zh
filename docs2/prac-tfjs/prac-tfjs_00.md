@@ -6,7 +6,7 @@ Juan De Dios Santos Rivera
 
 第 1 版
 
-![../images/494424_1_En_BookFrontmatter_Figa_HTML.png](img/494424_1_En_BookFrontmatter_Figa_HTML.png)
+![img/494424_1_En_BookFrontmatter_Figa_HTML.png](img/494424_1_En_BookFrontmatter_Figa_HTML.png)
 
 ISBN 978-1-4842-6272-6e-ISBN 978-1-4842-6273-3[`doi.org/10.1007/978-1-4842-6273-3`](https://doi.org/10.1007/978-1-4842-6273-3)© Juan De Dios Santos Rivera 2020 此作品受版权保护。无论整个作品还是部分内容，所有权利均由出版社保留，具体包括翻译权、重印权、插图的重用权、朗诵权、广播权、在胶片或任何其他物理方式上的复制权，以及传输或信息存储和检索、电子改编、计算机软件或通过现在已知或将来开发的方法或类似方法。在此出版物中使用的一般描述性名称、注册名称、商标、服务标志等，并不表示，即使在缺乏具体声明的情况下，这些名称免于相关保护法律和法规的约束，因此可以自由使用。出版社、作者和编辑可以安全地假设，在出版日期，此书中的建议和信息被认为是真实准确的。出版社、作者或编辑不对所包含的材料或可能出现的任何错误或遗漏提供明示或暗示的保证。出版社对已出版的地图中的管辖权主张和机构隶属关系保持中立。由 Springer Science+Business Media New York 向全球图书贸易发行，地址：1 NY Plaza, New York, NY 10014。电话：1-800-SPRINGER，传真：(201) 348-4505，电子邮件：orders-ny@springer-sbm.com，或访问 www.springeronline.com。Apress Media, LLC 是加利福尼亚有限责任公司，唯一成员（所有者）是 Springer Science + Business Media Finance Inc (SSBM Finance Inc)。SSBM Finance Inc 是特拉华州公司。
 

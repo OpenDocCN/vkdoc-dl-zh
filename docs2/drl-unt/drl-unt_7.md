@@ -20,7 +20,7 @@
 
 这个过程可以在图 7-1 中可视化。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig1_HTML.png](img/502041_1_En_7_Fig1_HTML.png)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig1_HTML.png](img/502041_1_En_7_Fig1_HTML.png)
 
 图 7-1
 
@@ -141,7 +141,7 @@ plt.show()
 
 运行此程序后，我们可以可视化算法生成的代数和相应的适应度分数，如图 7-2 所示。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig2_HTML.jpg](img/502041_1_En_7_Fig2_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig2_HTML.jpg](img/502041_1_En_7_Fig2_HTML.jpg)
 
 图 7-2
 
@@ -289,7 +289,7 @@ plt.show()
 
 在运行此代码后，我们可以通过图 7-3 观察到黄色-橙色光芒所指出的最大值。由于我们使用的是叠加的正弦曲线，最大值可能位于范围 [0,5] 中的任意一个峰值。算法显示的结果是右侧的那个。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig3_HTML.jpg](img/502041_1_En_7_Fig3_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig3_HTML.jpg](img/502041_1_En_7_Fig3_HTML.jpg)
 
 图 7-3
 
@@ -337,7 +337,7 @@ w`[i] = pθ/ pθ**`**
 
 图 7-4 展示了从 Unity Technologies 博客（[`https://blogs.unity3d.com/2019/01/28/obstacle-tower-challenge-test-the-limits-of-intelligence-systems/`](https://blogs.unity3d.com/2019/01/28/obstacle-tower-challenge-test-the-limits-of-intelligence-systems/)）中拍摄的障碍塔挑战的视图。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig4_HTML.jpg](img/502041_1_En_7_Fig4_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig4_HTML.jpg](img/502041_1_En_7_Fig4_HTML.jpg)
 
 图 7-4
 
@@ -375,7 +375,7 @@ Unity ML Agents 中的障碍塔挑战
 
 这就是障碍塔环境是如何创建的，主要使用图配方、形状语法和模板采样来程序化地生成新级别。每个级别的难度也系统地增加，以便代理可以通过课程学习进行学习。由于使用有限数量的初始级别生成了许多这样的级别（100 个），因此对代理的泛化能力有显著要求。图 7-5 展示了不同的主题及其视觉外观，这些信息来自论文。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig5_HTML.jpg](img/502041_1_En_7_Fig5_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig5_HTML.jpg](img/502041_1_En_7_Fig5_HTML.jpg)
 
 图 7-5
 
@@ -393,7 +393,7 @@ Unity ML Agents 中的障碍塔挑战
 
 Unity 团队最初对该挑战进行了基准测试，并将结果与人类玩家玩游戏的结果进行了比较。团队使用了近端策略优化（PPO）和彩虹算法作为算法，发现在没有泛化策略的情况下，智能体只能达到不到 10 级。彩虹算法作为更通用的算法，其性能优于 PPO。对于弱泛化和强泛化，使用不同彩虹算法达到的最大级别分别是 3.4 和 0.8。彩虹算法是 N 步双打斗深度 Q 网络（DQN）的变体，具有优先级经验回放和分布式强化学习。相比之下，人类平均能解决 15 级，最高达到 22 级。Unity 在他们的博客中通过图 7-6 展示了智能体与人类对手在灾难性学习上的鲜明对比。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig6_HTML.jpg](img/502041_1_En_7_Fig6_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig6_HTML.jpg](img/502041_1_En_7_Fig6_HTML.jpg)
 
 图 7-6
 
@@ -433,7 +433,7 @@ git clone https://github.com/Unity-Technologies/obstacle-tower-source
 
 为了修改和尝试五种不同的视觉主题，我们需要导航到 Assets/ObstacleTower/Resources/Prefabs，那里存放着每个主题的预制件。动画、网格和纹理位于 Assets/WorldBuilding 文件夹中。五种主题在图 7-7 中展示。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig7_HTML.jpg](img/502041_1_En_7_Fig7_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig7_HTML.jpg](img/502041_1_En_7_Fig7_HTML.jpg)
 
 图 7-7
 
@@ -520,7 +520,7 @@ switch (environmentParameters.allowedFloorLayouts)
 
 在此之后，我们必须在 Unity 中打开程序化场景，并在层次结构中选择 ObstacleTower-v3.0 GameObject。然后，我们导航到 ObstacleTower Academy 组件，并将重置参数中名为“allowed-rooms”的行更改为枚举的序数值。在这种情况下，我们将“Hazard”房间类型的值设置为 3。这如图 7-8 所示，来自 GitHub 页面。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig8_HTML.jpg](img/502041_1_En_7_Fig8_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig8_HTML.jpg](img/502041_1_En_7_Fig8_HTML.jpg)
 
 图 7-8
 
@@ -582,7 +582,7 @@ GX Go Go
 
 G 代表 PlatformLarge 预制模块，o 代表有 50% 的几率放置一个球体，X 代表没有物品。一个典型的在摩尔主题中解释此模板的示例（来自 Github 文档）如图 7-9 所示。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig9_HTML.jpg](img/502041_1_En_7_Fig9_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig9_HTML.jpg](img/502041_1_En_7_Fig9_HTML.jpg)
 
 图 7-9
 
@@ -665,7 +665,7 @@ env.close()
 
 我们将简要地查看前三名提交的作品，而感兴趣的读者可以阅读整个博客以获取更多详细信息。第一名由 Christine Barron 获得，提交了“煎饼机器人”。项目的目标是训练一个机械臂来制作煎饼——也就是说，让机械臂将煎饼抛到盘子上。创建者使用了课程学习进行训练，并包括了三个可配置关节的刚体臂。所有组件都受到重力和扭矩的影响。初始奖励信号被创建出来，以帮助代理（机器人）将煎饼在其臂上保持更长时间。修改后的奖励信号包括了煎饼与盘子中心（机械臂）的距离，如果煎饼碰到地面，则结束这一幕。为了减少噪声，在关节处应用了运动学和旋转运动。当得分超过 60 分时，这一幕结束，目标再次放置在随机位置。课程学习有助于泛化手臂的学习。基于课程学习，手臂（代理）可以依次从 0.4 单位移动到 0.8 和 1.2 单位（沿 x 和 z 轴）。“传递黄油”是另一个使用射线传感器设计的机器人，用于将“黄油”移动到目标位置。它使用头部“相机”发出的九个射线，如果击中障碍物则返回 1。奖励信号包括完成任务成功时的 +2 单位奖励，如果机器人碰到地板则 -2 单位。机器人根据其接近目标的位置获得 +0.075 单位的少量奖励，并且每帧提供 -0.05 的惩罚。如果机器人碰到障碍物，则获得 -0.15 单位的奖励。图 7-10 展示了博客的预览。更多关于这些机器人的详细信息可以在链接 [`https://connect.unity.com/p/pancake-bot?_ga=2.240054851.151262200.1598121566-630897211.1596987781`](https://connect.unity.com/p/pancake-bot%253F_ga%253D2.240054851.151262200.1598121566-630897211.1596987781) 中找到。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig10_HTML.jpg](img/502041_1_En_7_Fig10_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig10_HTML.jpg](img/502041_1_En_7_Fig10_HTML.jpg)
 
 图 7-10
 
@@ -673,7 +673,7 @@ Christine Barron 在 ML Agents Challenge 中的煎饼机器人
 
 第二名由周志天凭借项目“金属战争”（Metal Warfare）获得。这是一款实时策略（RTS）游戏，创作者希望通过 Unity ML Agents 创建用于发射和射击导弹的 AI 代理，如图 7-11 所示。提到的某些细节是，ML Agents 被用来为发射导弹的代理进行信用评分。根据导弹是否击中目标，给予正或负的奖励。创作者根据导弹是否击中敌方的建筑或目标，为每次成功的操作分配了几个奖励信号，每次成功操作奖励+1 单位。状态数组由五个部分组成：动作 ID、先前动作的奖励（延迟奖励）、是否空闲、可用的动作和学习状态。更多关于使用 ML Agents 创建的这款 RTS 游戏的信息，可以在以下链接中找到：[`https://connect.unity.com/p/metal-warfare-real-time-strategy-game-special-edition-for-ai-ml-challenging?_ga=2.96402396.151262200.1598121566-630897211.1596987781`](https://connect.unity.com/p/metal-warfare-real-time-strategy-game-special-edition-for-ai-ml-challenging%253F_ga%253D2.96402396.151262200.1598121566-630897211.1596987781)。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig11_HTML.jpg](img/502041_1_En_7_Fig11_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig11_HTML.jpg](img/502041_1_En_7_Fig11_HTML.jpg)
 
 图 7-11
 
@@ -681,7 +681,7 @@ Christine Barron 在 ML Agents Challenge 中的煎饼机器人
 
 第三名由大卫·布斯在提交的《隐藏/逃脱：躲避追击敌人》项目中获得。这个项目的目的是创建一个智能 AI 来躲避巡逻代理。在创建奖励信号后，创作者调整了超参数以分析不同参数对代理训练的影响。为了避免游戏无限期地进行，创作者为逃脱代理分配了一个“胜利区域”，逃脱代理必须到达该区域才能获胜。结合广泛的超参数优化和课程学习，产生了能够躲避并从巡逻代理那里逃脱的智能 AI 代理，如图 7-12 所示。关于这个项目的详细信息可以在以下链接中找到：[`https://connect.unity.com/p/hide-escape-avoidance-of-pursuing-enemies?_ga=2.61152876.151262200.1598121566-630897211.1596987781`](https://connect.unity.com/p/hide-escape-avoidance-of-pursuing-enemies%253F_ga%253D2.61152876.151262200.1598121566-630897211.1596987781)。
 
-![../images/502041_1_En_7_Chapter/502041_1_En_7_Fig12_HTML.jpg](img/502041_1_En_7_Fig12_HTML.jpg)
+![img/502041_1_En_7_Chapter/502041_1_En_7_Fig12_HTML.jpg](img/502041_1_En_7_Fig12_HTML.jpg)
 
 图 7-12
 

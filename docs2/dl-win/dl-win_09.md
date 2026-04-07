@@ -6,7 +6,7 @@
 
 在第七章中，我们简要介绍了如何构建一个脚本，使用训练好的模型进行预测（图 9-1）。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig1_HTML.jpg](img/502073_1_En_9_Fig1_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig1_HTML.jpg](img/502073_1_En_9_Fig1_HTML.jpg)
 
 图 9-1
 
@@ -30,7 +30,7 @@ conda install Flask
 
 这将安装 Flask，以及 Werkzeug、Jinja2、MarkupSafe 和 ItsDangerous 包（图 9-2）。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig2_HTML.jpg](img/502073_1_En_9_Fig2_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig2_HTML.jpg](img/502073_1_En_9_Fig2_HTML.jpg)
 
 图 9-2
 
@@ -75,7 +75,7 @@ python flask-sample.py
 
 Flask 将启动一个开发网络服务器进程来服务你的应用。默认情况下，它将在本地主机的 5000 端口上运行。你可以通过 http://127.0.0.1:5000/ 访问应用页面（图 9-3）。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig3_HTML.jpg](img/502073_1_En_9_Fig3_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig3_HTML.jpg](img/502073_1_En_9_Fig3_HTML.jpg)
 
 图 9-3
 
@@ -87,7 +87,7 @@ Flask 示例 Web 应用运行
 
 正如我们在第七章中所做的那样，我们可以使用使用 model.save() 函数保存的模型文件（例如，在我们的鸟类图像分类系统微调示例中的 `bird_classify_finetune_IV3_final.h5` 文件）。通过使用完整的模型文件，我们可以在不重新定义模型结构代码的情况下，加载模型到其训练状态。除了模型文件外，我们还将使用从同一脚本保存的 `class_indices.npy` 文件。class_indices 文件包含类文本标签到其 ID 的字典/映射。我们需要标签映射来显示预测类的文本标签（图 9-4）。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig4_HTML.jpg](img/502073_1_En_9_Fig4_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig4_HTML.jpg](img/502073_1_En_9_Fig4_HTML.jpg)
 
 图 9-4
 
@@ -109,7 +109,7 @@ Flask 示例 Web 应用运行
 
 根据这些考虑，我们将为我们的 Flask 应用程序定义以下结构（图 9-5）：
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig5_HTML.png](img/502073_1_En_9_Fig5_HTML.png)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig5_HTML.png](img/502073_1_En_9_Fig5_HTML.png)
 
 图 9-5
 
@@ -392,7 +392,7 @@ python application.py
 
 应用程序启动时，它将首先从文件中加载模型，然后再启动 web 服务器（图 9-6）。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig6_HTML.jpg](img/502073_1_En_9_Fig6_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig6_HTML.jpg](img/502073_1_En_9_Fig6_HTML.jpg)
 
 图 9-6
 
@@ -400,7 +400,7 @@ Flask 应用程序加载模型
 
 一旦启动了 web 服务器，在浏览器中查看网页，默认情况下它将运行在 http://127.0.0.1:5000（图 9-7）。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig7_HTML.jpg](img/502073_1_En_9_Fig7_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig7_HTML.jpg](img/502073_1_En_9_Fig7_HTML.jpg)
 
 图 9-7
 
@@ -408,7 +408,7 @@ Flask 应用程序加载模型
 
 您现在可以上传一张图片，看看我们的应用程序识别得有多好（图 9-8）。应用程序将返回预测标签及其预测的置信度。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig8_HTML.jpg](img/502073_1_En_9_Fig8_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig8_HTML.jpg](img/502073_1_En_9_Fig8_HTML.jpg)
 
 图 9-8
 
@@ -436,7 +436,7 @@ Flask 应用程序加载模型
 
 考虑到这些因素，这里展示了一种可能的应用程序设计（图 9-9）。
 
-![../images/502073_1_En_9_Chapter/502073_1_En_9_Fig9_HTML.jpg](img/502073_1_En_9_Fig9_HTML.jpg)
+![img/502073_1_En_9_Chapter/502073_1_En_9_Fig9_HTML.jpg](img/502073_1_En_9_Fig9_HTML.jpg)
 
 图 9-9
 

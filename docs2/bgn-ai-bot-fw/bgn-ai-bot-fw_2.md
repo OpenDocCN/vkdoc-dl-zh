@@ -42,7 +42,7 @@
 
 我们需要有一个操作系统来开发和托管 IDE。首选的操作系统是 Windows 10，您可以从[www.microsoft.com/en-in/software-download/windows10](https://www.microsoft.com/en-in/software-download/windows10)下载它。图 2-1 显示了 Windows 10 下载页面。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig1_HTML.jpg](img/457478_1_En_2_Fig1_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig1_HTML.jpg](img/457478_1_En_2_Fig1_HTML.jpg)
 
 图 2-1
 
@@ -54,7 +54,7 @@
 
 你可以从[`https://docs.microsoft.com/en-us/bot-framework/bot-builder-overview-getstarted`](https://docs.microsoft.com/en-us/bot-framework/bot-builder-overview-getstarted)下载模板。滚动到该页面以找到要下载的模板，如图 2-2 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig2_HTML.jpg](img/457478_1_En_2_Fig2_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig2_HTML.jpg](img/457478_1_En_2_Fig2_HTML.jpg)
 
 图 2-2
 
@@ -64,7 +64,7 @@
 
 当我们完成编码后，在托管之前，我们需要在本地测试机器人。我们将使用机器人模拟器来测试所有功能以及机器人的整个流程。你可以从[`https://docs.microsoft.com/en-us/bot-framework/debug-bots-emulator`](https://docs.microsoft.com/en-us/bot-framework/debug-bots-emulator)下载 Bot Framework 模拟器。图 2-3 显示了模拟器的下载页面。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig3_HTML.jpg](img/457478_1_En_2_Fig3_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig3_HTML.jpg](img/457478_1_En_2_Fig3_HTML.jpg)
 
 图 2-3
 
@@ -74,7 +74,7 @@
 
 图 2-4 显示了要下载的正确 EXE 文件。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig4_HTML.jpg](img/457478_1_En_2_Fig4_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig4_HTML.jpg](img/457478_1_En_2_Fig4_HTML.jpg)
 
 图 2-4
 
@@ -88,7 +88,7 @@
 
 要开始，你首先需要启动 Visual Studio IDE 进行开发。当你打开 Visual Studio 时，IDE 屏幕看起来像图 2-5。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig5_HTML.jpg](img/457478_1_En_2_Fig5_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig5_HTML.jpg](img/457478_1_En_2_Fig5_HTML.jpg)
 
 图 2-5
 
@@ -96,7 +96,7 @@
 
 你需要打开一个新的模板来创建项目。点击左上角的文件选项卡，然后点击新建 ➤ 项目，如图 2-6 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig6_HTML.jpg](img/457478_1_En_2_Fig6_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig6_HTML.jpg](img/457478_1_En_2_Fig6_HTML.jpg)
 
 图 2-6
 
@@ -104,7 +104,7 @@
 
 在打开的新项目窗口中，你会看到下载的 Visual Studio C# 模板可用于创建机器人。在 Visual C# 的模板中，你可以找到机器人应用程序模板（见图 2-7）。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig7_HTML.jpg](img/457478_1_En_2_Fig7_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig7_HTML.jpg](img/457478_1_En_2_Fig7_HTML.jpg)
 
 图 2-7
 
@@ -118,7 +118,7 @@ Bot 应用程序模板
 
 随着项目文件的创建，您将关注解决方案资源管理器选项，在那里您可以查看可用文件的层次结构。图 2-8 显示了项目开始时创建的文件。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig8_HTML.jpg](img/457478_1_En_2_Fig8_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig8_HTML.jpg](img/457478_1_En_2_Fig8_HTML.jpg)
 
 图 2-8
 
@@ -128,7 +128,7 @@ Bot 应用程序模板
 
 图 2-9 展示了在 IDE 中访问 XML 文件时的样子。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig9_HTML.jpg](img/457478_1_En_2_Fig9_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig9_HTML.jpg](img/457478_1_En_2_Fig9_HTML.jpg)
 
 图 2-9
 
@@ -148,7 +148,7 @@ web.config file as XML Format
 
 图 2-10 显示了 XML 文件最重要的部分，我们需要在这里进行更改。配置选项卡是我们必须填写所有信息的地方。需要更新 appID、BotID 和 AppPassword。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig10_HTML.jpg](img/457478_1_En_2_Fig10_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig10_HTML.jpg](img/457478_1_En_2_Fig10_HTML.jpg)
 
 图 2-10
 
@@ -258,7 +258,7 @@ Entire Message Reply Code Block
 
 现在让我们运行机器人项目。要运行项目文件，选择带有浏览器选择的绿色播放按钮，如图 2-11 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig11_HTML.jpg](img/457478_1_En_2_Fig11_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig11_HTML.jpg](img/457478_1_En_2_Fig11_HTML.jpg)
 
 图 2-11
 
@@ -266,7 +266,7 @@ Entire Message Reply Code Block
 
 当您运行应用程序时，您会看到它在本地的网页浏览器中打开；见图 2-12。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig12_HTML.jpg](img/457478_1_En_2_Fig12_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig12_HTML.jpg](img/457478_1_En_2_Fig12_HTML.jpg)
 
 图 2-12
 
@@ -274,7 +274,7 @@ Entire Message Reply Code Block
 
 注意本地主机地址。为了测试目的，您必须使用此链接。现在，让我们启动模拟器。图 2-13 显示了机器人框架模拟器启动时的屏幕。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig13_HTML.png](img/457478_1_En_2_Fig13_HTML.png)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig13_HTML.png](img/457478_1_En_2_Fig13_HTML.png)
 
 图 2-13
 
@@ -282,7 +282,7 @@ Entire Message Reply Code Block
 
 您必须提供机器人应用的端点 URL 或本地主机 URL。在提供本地主机地址后，保持其他选项为空，然后单击连接按钮，如图 2-14 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig14_HTML.jpg](img/457478_1_En_2_Fig14_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig14_HTML.jpg](img/457478_1_En_2_Fig14_HTML.jpg)
 
 图 2-14
 
@@ -292,7 +292,7 @@ Entire Message Reply Code Block
 
 现在让我们测试应用程序。首先，发送一条消息“Hi there who are you”。回复消息提供了字符数，如图 2-15 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig15_HTML.jpg](img/457478_1_En_2_Fig15_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig15_HTML.jpg](img/457478_1_En_2_Fig15_HTML.jpg)
 
 图 2-15
 
@@ -300,7 +300,7 @@ Entire Message Reply Code Block
 
 机器人代码和逻辑是三者的组合，如图 2-16 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig16_HTML.png](img/457478_1_En_2_Fig16_HTML.png)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig16_HTML.png](img/457478_1_En_2_Fig16_HTML.png)
 
 图 2-16
 
@@ -333,7 +333,7 @@ Markdown Reply Format
 
 让我们运行这段代码并在模拟器中测试它。当你模拟运行代码时，你会看到它以 Markdown 格式打印消息。添加的文本也会被打印出来。图 2-17 展示了响应。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig17_HTML.jpg](img/457478_1_En_2_Fig17_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig17_HTML.jpg](img/457478_1_En_2_Fig17_HTML.jpg)
 
 图 2-17
 
@@ -354,7 +354,7 @@ Markdown Reply Format
 | 表单流程，或对话流程 | 如果我们想要按顺序启动某些事物，我们需要实现表单流程或对话流程。 |
 | 状态客户端 | 此选项类似于在 .NET 或 MVC 中查看状态或会话状态。 |
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig18_HTML.png](img/457478_1_En_2_Fig18_HTML.png)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig18_HTML.png](img/457478_1_En_2_Fig18_HTML.png)
 
 图 2-18
 
@@ -368,7 +368,7 @@ Markdown Reply Format
 
 现在，让我们专注于对话的代码概念。首先，打开 Visual Studio 并再次选择机器人模板。将其命名为 ManishaBot，如图 2-19 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig19_HTML.jpg](img/457478_1_En_2_Fig19_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig19_HTML.jpg](img/457478_1_En_2_Fig19_HTML.jpg)
 
 图 2-19
 
@@ -376,7 +376,7 @@ Markdown Reply Format
 
 在项目的目录结构中，你需要创建一个 `Dialogs` 文件夹。创建文件夹的过程如图 2-20 所示：点击添加 ➤ 新建文件夹。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig20_HTML.jpg](img/457478_1_En_2_Fig20_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig20_HTML.jpg](img/457478_1_En_2_Fig20_HTML.jpg)
 
 图 2-20
 
@@ -384,7 +384,7 @@ Markdown Reply Format
 
 在 `Dialogs` 文件夹中，你将添加一个类文件。点击添加 ➤ 新建项，如图 2-21 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig21_HTML.png](img/457478_1_En_2_Fig21_HTML.png)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig21_HTML.png](img/457478_1_En_2_Fig21_HTML.png)
 
 图 2-21
 
@@ -392,7 +392,7 @@ Markdown Reply Format
 
 现在，您将添加一个类文件。过程如图 2-22 所示。将类文件命名为 `RandomFactDialog.cs`。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig22_HTML.png](img/457478_1_En_2_Fig22_HTML.png)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig22_HTML.png](img/457478_1_En_2_Fig22_HTML.png)
 
 图 2-22
 
@@ -442,7 +442,7 @@ Chaining Messages
 
 让我们运行代码并查看具体发生了什么。输入 *hi*。在对话链中，响应在机器人中可用，如图 2-23 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig23_HTML.jpg](img/457478_1_En_2_Fig23_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig23_HTML.jpg](img/457478_1_En_2_Fig23_HTML.jpg)
 
 图 2-23
 
@@ -527,7 +527,7 @@ The Class File Showing the Entire Chaining Process
 
 如果现在运行代码，您将得到图 2-24 中显示的结果。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig24_HTML.jpg](img/457478_1_En_2_Fig24_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig24_HTML.jpg](img/457478_1_En_2_Fig24_HTML.jpg)
 
 图 2-24
 
@@ -541,7 +541,7 @@ The Class File Showing the Entire Chaining Process
 
 机器人框架页面如图 2-25 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig25_HTML.jpg](img/457478_1_En_2_Fig25_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig25_HTML.jpg](img/457478_1_En_2_Fig25_HTML.jpg)
 
 图 2-25
 
@@ -549,7 +549,7 @@ The Class File Showing the Entire Chaining Process
 
 在页面顶部，点击图 2-26 中显示的“我的机器人”链接。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig26_HTML.jpg](img/457478_1_En_2_Fig26_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig26_HTML.jpg](img/457478_1_En_2_Fig26_HTML.jpg)
 
 图 2-26
 
@@ -557,7 +557,7 @@ The Class File Showing the Entire Chaining Process
 
 从“我的机器人”页面，点击图 2-27 中显示的“创建机器人”按钮。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig27_HTML.jpg](img/457478_1_En_2_Fig27_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig27_HTML.jpg](img/457478_1_En_2_Fig27_HTML.jpg)
 
 图 2-27
 
@@ -565,7 +565,7 @@ The Class File Showing the Entire Chaining Process
 
 在下一页，点击图 2-28 中显示的“创建”按钮。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig28_HTML.jpg](img/457478_1_En_2_Fig28_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig28_HTML.jpg](img/457478_1_En_2_Fig28_HTML.jpg)
 
 图 2-28
 
@@ -573,7 +573,7 @@ The Class File Showing the Entire Chaining Process
 
 点击图 2-29 中显示的“使用 Bot Builder SDK 注册现有机器人”单选按钮。然后点击“确定”按钮。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig29_HTML.jpg](img/457478_1_En_2_Fig29_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig29_HTML.jpg](img/457478_1_En_2_Fig29_HTML.jpg)
 
 图 2-29
 
@@ -581,7 +581,7 @@ The Class File Showing the Entire Chaining Process
 
 接下来，提供机器人的详细信息，如图 2-30 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig30_HTML.jpg](img/457478_1_En_2_Fig30_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig30_HTML.jpg](img/457478_1_En_2_Fig30_HTML.jpg)
 
 图 2-30
 
@@ -589,7 +589,7 @@ The Class File Showing the Entire Chaining Process
 
 在您提供机器人的详细信息后，您需要生成一个应用程序 ID 和密码。点击“创建 Microsoft 应用 ID 和密码”选项，如图 2-31 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig31_HTML.jpg](img/457478_1_En_2_Fig31_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig31_HTML.jpg](img/457478_1_En_2_Fig31_HTML.jpg)
 
 图 2-31
 
@@ -597,7 +597,7 @@ The Class File Showing the Entire Chaining Process
 
 在下一个窗口中，您的应用程序 ID 将显示，如图 2-32 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig32_HTML.jpg](img/457478_1_En_2_Fig32_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig32_HTML.jpg](img/457478_1_En_2_Fig32_HTML.jpg)
 
 图 2-32
 
@@ -605,7 +605,7 @@ The Class File Showing the Entire Chaining Process
 
 点击“生成应用程序密码以继续”按钮。在 `web.config` 文件中输入应用程序 ID、密码和机器人句柄。新密码将生成，如图 2-33 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig33_HTML.jpg](img/457478_1_En_2_Fig33_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig33_HTML.jpg](img/457478_1_En_2_Fig33_HTML.jpg)
 
 图 2-33
 
@@ -613,7 +613,7 @@ The Class File Showing the Entire Chaining Process
 
 要从 Visual Studio 发布机器人，右键单击它以访问“发布”选项，如图 2-34 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig34_HTML.jpg](img/457478_1_En_2_Fig34_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig34_HTML.jpg](img/457478_1_En_2_Fig34_HTML.jpg)
 
 图 2-34
 
@@ -621,7 +621,7 @@ The Class File Showing the Entire Chaining Process
 
 打开 App Service 屏幕，如图 2-35 所示。点击 Azure 服务的“新建”按钮。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig35_HTML.jpg](img/457478_1_En_2_Fig35_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig35_HTML.jpg](img/457478_1_En_2_Fig35_HTML.jpg)
 
 图 2-35
 
@@ -629,7 +629,7 @@ The Class File Showing the Entire Chaining Process
 
 机器人已准备好发布。您将验证连接并发布，如图 2-36 所示。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig36_HTML.jpg](img/457478_1_En_2_Fig36_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig36_HTML.jpg](img/457478_1_En_2_Fig36_HTML.jpg)
 
 图 2-36
 
@@ -637,7 +637,7 @@ The Class File Showing the Entire Chaining Process
 
 机器人发布后，您需要编辑 Bot 框架门户中的配置。图 2-37 显示了 Azure 网页的样式。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig37_HTML.jpg](img/457478_1_En_2_Fig37_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig37_HTML.jpg](img/457478_1_En_2_Fig37_HTML.jpg)
 
 图 2-37
 
@@ -645,7 +645,7 @@ The Class File Showing the Entire Chaining Process
 
 现在，返回到 Bot 框架门户。您需要编辑机器人的消息端点。它将是 Azure 网站，后面跟着 `/api/messages`。见图 2-38 中的下划线部分。
 
-![../images/457478_1_En_2_Chapter/457478_1_En_2_Fig38_HTML.jpg](img/457478_1_En_2_Fig38_HTML.jpg)
+![img/457478_1_En_2_Chapter/457478_1_En_2_Fig38_HTML.jpg](img/457478_1_En_2_Fig38_HTML.jpg)
 
 图 2-38
 

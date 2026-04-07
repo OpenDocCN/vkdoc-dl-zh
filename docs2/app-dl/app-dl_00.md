@@ -1,6 +1,6 @@
 Umberto Michelucci《应用深度学习》基于案例理解深度神经网络的方法
 
-![../images/463356_1_En_BookFrontmatter_Figa_HTML.png](img/463356_1_En_BookFrontmatter_Figa_HTML.png)
+![img/463356_1_En_BookFrontmatter_Figa_HTML.png](img/463356_1_En_BookFrontmatter_Figa_HTML.png)
 
 ISBN 978-1-4842-3789-2e-ISBN 978-1-4842-3790-8[`doi.org/10.1007/978-1-4842-3790-8`](https://doi.org/10.1007/978-1-4842-3790-8)国会图书馆控制编号：2018955206© Umberto Michelucci 2018 本作品受版权保护。无论整个作品还是部分内容，所有权利均由出版社保留，具体包括翻译权、重印权、插图的重用权、朗诵权、广播权、在胶片或任何其他物理方式上的复制权，以及传输或信息存储和检索权、电子适配、计算机软件或通过类似或不同的方法现在已知或将来开发的方法。在本书中可能出现的商标名称、标志和图像受商标保护。我们不会在每个商标名称、标志或图像出现时使用商标符号，我们仅以编辑方式使用这些名称、标志和图像，以商标所有者的利益为出发点，无意侵犯商标权。在本出版物中使用贸易名称、商标、服务标志和类似术语，即使它们没有被标识为这样的，也不应被视为对它们是否受专有权利约束的意见表达。虽然本书中的建议和信息在出版日期被认为是真实和准确的，但作者、编辑或出版社不能对可能出现的任何错误或遗漏承担任何法律责任。出版社不对本出版物中包含的材料做出任何明示或暗示的保证。本书由 Springer Science+Business Media New York 通过全球书店发行，地址：纽约市 Spring Street 233，第 6 层，邮编 10013。电话：1-800-SPRINGER，传真：(201) 348-4505，电子邮件订单：ny@springer-sbm.com，或访问 www.springeronline.com。Apress Media, LLC 是加利福尼亚州有限责任公司，唯一成员（所有者）是 Springer Science+Business Media Finance Inc (SSBM Finance Inc)。SSBM Finance Inc 是特拉华州公司。
 

@@ -37,7 +37,7 @@ plt.show()
 
 运行此代码后，我们将在 Jupyter Notebook 中得到一个缩放的正弦曲线，如图 5-1 所示，我们已创建了一个激活函数。这在通用机器学习中的二分类中是一个非常重要的函数，我们将简要探讨。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig1_HTML.jpg](img/502041_1_En_5_Fig1_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig1_HTML.jpg](img/502041_1_En_5_Fig1_HTML.jpg)
 
 图 5-1
 
@@ -67,7 +67,7 @@ y= σ (w.x + b)
 
 **反向传播** **:** 这是一个非常重要的步骤，涉及以下更新。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig2_HTML.jpg](img/502041_1_En_5_Fig2_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig2_HTML.jpg](img/502041_1_En_5_Fig2_HTML.jpg)
 
 图 5-2
 
@@ -123,7 +123,7 @@ y= σ (w.x + b)
 
 实际上，我们通过一个简单的感知器模型研究了反向传播，这完成了基本神经网络入门部分，其中包括使用梯度下降算法和反向传播到输入层的 Sigmoid 激活、误差计算和权重更新策略。该模型可以如图 5-3 所示进行说明。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig3_HTML.jpg](img/502041_1_En_5_Fig3_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig3_HTML.jpg](img/502041_1_En_5_Fig3_HTML.jpg)
 
 图 5-3
 
@@ -135,7 +135,7 @@ y= σ (w.x + b)
 
 现在，让我们了解具有感知器单元的隐藏层的密集网络的基本原理。这是我们将会使用最普遍的神经网络模型，可以如图 5-4 所示进行可视化。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig4_HTML.jpg](img/502041_1_En_5_Fig4_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig4_HTML.jpg](img/502041_1_En_5_Fig4_HTML.jpg)
 
 图 5-4
 
@@ -249,7 +249,7 @@ y^l[j] =f (∑w^l[jk] x^(l-1)[k] + b^l[j]),
 
 现在让我们考虑一个示例卷积模型的架构。它由卷积层、池化层和密集网络层组成。尽管还应用了几个其他层，如填充层/展平层，但基本部分保持不变。在这种情况下，图像被作为输入传递到网络，然后进行分析，并传递给密集网络。根据输入的深度（RGB 或灰度），通道可以是 3 或 1。为了说明，卷积模型看起来像图 5-5 中所示的那样。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig5_HTML.png](img/502041_1_En_5_Fig5_HTML.png)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig5_HTML.png](img/502041_1_En_5_Fig5_HTML.png)
 
 图 5-5
 
@@ -265,7 +265,7 @@ y^l[j] =f (∑w^l[jk] x^(l-1)[k] + b^l[j]),
 
 现在，让我们从其组件的角度研究卷积网络。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig6_HTML.png](img/502041_1_En_5_Fig6_HTML.png)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig6_HTML.png](img/502041_1_En_5_Fig6_HTML.png)
 
 图 5-6
 
@@ -448,7 +448,7 @@ train(model, data, labels)
 
 现在如果我们训练这个模型，我们会看到训练的各个阶段、每个步骤的准确率、损失以及相关的详细信息。为了总结模型，它将类似于图 5-7。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig7_HTML.jpg](img/502041_1_En_5_Fig7_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig7_HTML.jpg](img/502041_1_En_5_Fig7_HTML.jpg)
 
 图 5-7
 
@@ -487,7 +487,7 @@ callbacks=[tensorboard_callback])
 
 如果我们现在运行主函数，我们将在 TensorBoard 中看到训练和相应的日志。预览如图 5-8 所示。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig8_HTML.jpg](img/502041_1_En_5_Fig8_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig8_HTML.jpg](img/502041_1_En_5_Fig8_HTML.jpg)
 
 图 5-8
 
@@ -513,7 +513,7 @@ return model
 
 当我们调用“model.summary”方法时，我们可以看到如图 5-9 所示的序列网络。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig9_HTML.jpg](img/502041_1_En_5_Fig9_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig9_HTML.jpg](img/502041_1_En_5_Fig9_HTML.jpg)
 
 图 5-9
 
@@ -565,7 +565,7 @@ return model
 
 通过运行此模型的“model.summary”方法，我们可以看到此模型的架构。由于可训练参数很多，因此展示了模型的样本视图，如图 5-10 所示。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig10_HTML.jpg](img/502041_1_En_5_Fig10_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig10_HTML.jpg](img/502041_1_En_5_Fig10_HTML.jpg)
 
 图 5-10
 
@@ -690,7 +690,7 @@ model.add(Dense(1000, activation="softmax"))
 
 **Resnet-50**：这是另一个用于图像处理的基准模型，是残差网络的缩写。通常在复杂的序列卷积模型中，准确性会逐渐下降，并趋于饱和。为了避免这种饱和的准确性，引入了残差块。我们考虑一个堆叠层在通过函数 F(X)将输入张量 X 传递后产生输出张量 Y。这是一个传统的序列 CNN 模型结构。然而，如果我们添加一个残差网络，而不是得到输出 F(X)，我们将输入张量加到它上面，使得 Y = F(X) + X。现在，在通用的 CNN 模型中，由于退化，很难随着网络深度的增加而保持准确性。这就是残差方程 Y = F(X) + X 出现的地方。本质上，这表示输入张量到输出张量的恒等变换。为了理解这一点，我们可以做一个类比，如果 F(X) = 0，那么通过非线性激活单元后，我们得到一个相同的张量输出(Y)，它与 X 相同。图 5-11 说明了这个残差块。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig11_HTML.png](img/502041_1_En_5_Fig11_HTML.png)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig11_HTML.png](img/502041_1_En_5_Fig11_HTML.png)
 
 图 5-11
 
@@ -715,7 +715,7 @@ resnet_model.summary()
 
 当我们总结模型时，我们会看到模型正在下载，然后可训练参数以及层将一起展示，如图 5-12 所示。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig12_HTML.jpg](img/502041_1_En_5_Fig12_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig12_HTML.jpg](img/502041_1_En_5_Fig12_HTML.jpg)
 
 图 5-12
 
@@ -751,7 +751,7 @@ plt.imshow(img)
 
 运行此代码后，屏幕上会显示如图 5-13 所示的拉布拉多狗的图像。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig13_HTML.jpg](img/502041_1_En_5_Fig13_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig13_HTML.jpg](img/502041_1_En_5_Fig13_HTML.jpg)
 
 图 5-13
 
@@ -817,7 +817,7 @@ table[(obs0, action)] += LEARNING_RATE * Q_error
 
 可以观察到 Q 学习的准确度（奖励）步骤图，如图 5-14 所示。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig14_HTML.jpg](img/502041_1_En_5_Fig14_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig14_HTML.jpg](img/502041_1_En_5_Fig14_HTML.jpg)
 
 图 5-14
 
@@ -833,7 +833,7 @@ table[(state0, action)]+= LEARNING_RATE*(target- predict)
 
 在运行此段代码后，我们可以可视化奖励-步骤图，并比较离散空间中在线策略与离线策略之间的差异，如图 5-15 所示。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig15_HTML.jpg](img/502041_1_En_5_Fig15_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig15_HTML.jpg](img/502041_1_En_5_Fig15_HTML.jpg)
 
 图 5-15
 
@@ -1159,7 +1159,7 @@ ipythondisplay.clear_output(wait=True)
 
 Finally after training is completed, we close the environment. We can also see the CartPole in action as we used the “ipythondisplay” methods, which we saw in the first chapter. Figure 5-16 illustrates this.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig16_HTML.jpg](img/502041_1_En_5_Fig16_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig16_HTML.jpg](img/502041_1_En_5_Fig16_HTML.jpg)
 
 Figure 5-16
 
@@ -1167,7 +1167,7 @@ CartPole environment training using policy gradient algorithm
 
 This code segment can be used for solving the MountainCar problem in the Gym environment where a car is stuck between two slopes of a mountain and has to climb up to reach the destination. By changing the env.make (MountainCar-v0), we can simulate this GAE policy gradient algorithm for this use-case, as shown in Figure 5-17.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig17_HTML.jpg](img/502041_1_En_5_Fig17_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig17_HTML.jpg](img/502041_1_En_5_Fig17_HTML.jpg)
 
 Figure 5-17
 
@@ -1191,7 +1191,7 @@ with the gradient ascent step denoted by
 
 The actor can upgrade its policies to have a better reward. There is also a value estimate that governs the critic in deciding the value of the next state. Depending on the current policy πθ, the critic estimates whether the action to be taken by the actor is most rewarding or not. Hence, the general architecture of actor critic can be visualized as shown in Figure 5-18.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig18_HTML.png](img/502041_1_En_5_Fig18_HTML.png)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig18_HTML.png](img/502041_1_En_5_Fig18_HTML.png)
 
 Figure 5-18
 
@@ -1327,7 +1327,7 @@ Then we have the “discount_rewards” method, which is similar to policy gradi
 
 The rest of the code segment is the same as the policy gradient, and hence methods like “load_weight” and ”save_weight” are similar. On running this in the CartPole environment, we can visualize the training as well as the rewards/loss. Thus we built an A2C agent that uses two neural networks using policy gradient and advantage value-estimate to predict the output actions. This can also be used for training the Acrobot environment in OpenAI Gym. The Acrobot consists of two joints and two links, where the joint between the two links is underactuated. The goal is to swing the end of the lower link to a given height, as shown in Figure 5-19.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig19_HTML.jpg](img/502041_1_En_5_Fig19_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig19_HTML.jpg](img/502041_1_En_5_Fig19_HTML.jpg)
 
 Figure 5-19
 
@@ -1387,7 +1387,7 @@ The “thread_train” method calls the “agent.train()” method inside every 
 
 This completes the A3C modification of the A2C algorithm. As mentioned, there are other variants that are faster and have a greater performance on GPUs, but in this case we are simply using a smaller CPU version. We can train MountainCar with this algorithm as well and compare the results with A2C. To illustrate, the A3C architecture is shown in Figure 5-20.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig20_HTML.png](img/502041_1_En_5_Fig20_HTML.png)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig20_HTML.png](img/502041_1_En_5_Fig20_HTML.png)
 
 Figure 5-20
 
@@ -1477,7 +1477,7 @@ ipythondisplay.display(plt.gcf())
 
 On running this module, we can visualize the training happening on four instances with ACKTR policy, as shown in Figure 5-21.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig21_HTML.jpg](img/502041_1_En_5_Fig21_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig21_HTML.jpg](img/502041_1_En_5_Fig21_HTML.jpg)
 
 Figure 5-21
 
@@ -1607,7 +1607,7 @@ ipythondisplay.display(plt.gcf())
 
 On running the code segment, we can visualize the Pendulum trying to be upright, as shown in Figure 5-22.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig22_HTML.jpg](img/502041_1_En_5_Fig22_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig22_HTML.jpg](img/502041_1_En_5_Fig22_HTML.jpg)
 
 Figure 5-22
 
@@ -1709,7 +1709,7 @@ obs, rewards, dones, info = env.step(action)
 
 Once completed, we will again visualize the four CartPole environments, as shown in Figure 5-23.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig23_HTML.jpg](img/502041_1_En_5_Fig23_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig23_HTML.jpg](img/502041_1_En_5_Fig23_HTML.jpg)
 
 Figure 5-23
 
@@ -1803,7 +1803,7 @@ Open the PPO-A2C.ipynb Notebook, since we will be running PPO on A2C baseline, s
 
 Thus we have seen the PPO algorithm and understood the fundamental concept behind this algorithm, which is the default training algorithm for ML Agents. In the next sections, when we will be building newer agents with ML Agents, we can create our own PPO model like the one mentioned earlier or use the Baseline model as well. In this context, it is important to mention that we can use convolution-2D neural network as well in place of dense networks, and some implementations have been provided with the Pong Atari game (2D) from the Gym environment. This is controlled with the help of image processing where pixels are passed into convolution-2D neural network, and then policy gradient algorithms are applied, as shown in Figure 5-24.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig24_HTML.jpg](img/502041_1_En_5_Fig24_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig24_HTML.jpg](img/502041_1_En_5_Fig24_HTML.jpg)
 
 Figure 5-24
 
@@ -2073,7 +2073,7 @@ return i
 
 On running this model, we will visualize the DQN algorithm performing a value estimated off-policy control for the CartPole environment. We can now understand and relate with the outputs that we achieved in the introductory section of Chapter 1. The TensorBoard visualization is shown in Figure 5-25.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig25_HTML.jpg](img/502041_1_En_5_Fig25_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig25_HTML.jpg](img/502041_1_En_5_Fig25_HTML.jpg)
 
 Figure 5-25
 
@@ -2169,7 +2169,7 @@ y_batch.append(y_next_target[0])
 
 These are the only changes required to make the network DDQN . On running the code segment, we can see the CartPole being trained, as shown in Figure 5-26.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig26_HTML.jpg](img/502041_1_En_5_Fig26_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig26_HTML.jpg](img/502041_1_En_5_Fig26_HTML.jpg)
 
 Figure 5-26
 
@@ -2211,7 +2211,7 @@ self.model.compile(loss=advantage_loss, optimizer=Adam(lr=self.alpha, decay=self
 
 The rest of the code segment being the same , we now train this on our CartPole environment to get an understanding of its performance, as shown in Figure 5-27.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig27_HTML.jpg](img/502041_1_En_5_Fig27_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig27_HTML.jpg](img/502041_1_En_5_Fig27_HTML.jpg)
 
 Figure 5-27
 
@@ -2315,7 +2315,7 @@ ipythondisplay.display(plt.gcf())
 
 On running this model , we get to visualize the CartPoles. We can compare this result with the other variants of actor critic models that we read earlier, as shown in Figure 5-28.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig28_HTML.jpg](img/502041_1_En_5_Fig28_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig28_HTML.jpg](img/502041_1_En_5_Fig28_HTML.jpg)
 
 Figure 5-28
 
@@ -2399,7 +2399,7 @@ ipythondisplay.display(plt.gcf())
 
 After a considerable amount of training, we can see the Pendulum balancing itself in an upright manner, as shown in Figure 5-29.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig29_HTML.jpg](img/502041_1_En_5_Fig29_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig29_HTML.jpg](img/502041_1_En_5_Fig29_HTML.jpg)
 
 Figure 5-29
 
@@ -2433,7 +2433,7 @@ Actor.compile(optimizer=Adam(learning_rate=self.learning_rate), loss=sac_loss)
 
 On training this algorithm, we can see that the MountainCar tries to go to the top of the mountain on the right side of the screen. In this way, it moves back and forth several times to gain necessary momentum, as shown in Figure 5-30.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig30_HTML.jpg](img/502041_1_En_5_Fig30_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig30_HTML.jpg](img/502041_1_En_5_Fig30_HTML.jpg)
 
 Figure 5-30
 
@@ -2455,7 +2455,7 @@ The first term of the equation is the entropy distribution of samples x, that is
 
 The architecture of a GAN can be visualized as shown in Figure 5-31.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig31_HTML.png](img/502041_1_En_5_Fig31_HTML.png)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig31_HTML.png](img/502041_1_En_5_Fig31_HTML.png)
 
 Figure 5-31
 
@@ -2509,7 +2509,7 @@ env.render()
 
 On training with GAIL, we can see the different parameters and the scores of training, as shown in Figure 5-32.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig32_HTML.jpg](img/502041_1_En_5_Fig32_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig32_HTML.jpg](img/502041_1_En_5_Fig32_HTML.jpg)
 
 Figure 5-32
 
@@ -2527,7 +2527,7 @@ where the reward is parameterized by the angular force θ, which is applied alon
 
 We can open the Puppo agent Unity file and observe the components present in the scene. We can see that the component scripts like BehavorialParameters.cs, Decision Requester, and Model Overrider are added to it. This is similar to the previous chapters, where we attached these components to the agents. However, in this case, we will be using the joint drive controller script in addition to all these components. Then we have an associated PuppoAgent.cs script, which is what we will be exploring in this section. This script controls the joint motion of the agent and records observations from the environments with the help of the joint locomotion. Figure 5-33 shows a preview of the environment.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig33_HTML.jpg](img/502041_1_En_5_Fig33_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig33_HTML.jpg](img/502041_1_En_5_Fig33_HTML.jpg)
 
 Figure 5-33
 
@@ -2963,7 +2963,7 @@ mlagents-learn  --run-id=Puppoagent –train,
 
 we can visualize the training starting in the Anaconda prompt. We will also be prompted to run the current Unity scene for training on PPO policy with the help of Tensorflow, as shown in Figure 5-34.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig34_HTML.jpg](img/502041_1_En_5_Fig34_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig34_HTML.jpg](img/502041_1_En_5_Fig34_HTML.jpg)
 
 Figure 5-34
 
@@ -2981,7 +2981,7 @@ This records the observations, actions, and rewards in the summaries folder insi
 
 On running the command, we can see the losses, estimated rewards, cumulative rewards, entropy, and other details on TensorBoard. Once the training is completed, we can close the training and the connection with the external brain. Then we assign the trained PPO neural network to the Puppo agent. We now have an agent that we are ready to build. In the final step, we built the agent and saved it to the environments folder. Inside that folder we have a Puppo Unity simulation with the trained PPO neural network agent. Figure 5-35 shows the Tensorboard visualization of training.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig35_HTML.jpg](img/502041_1_En_5_Fig35_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig35_HTML.jpg](img/502041_1_En_5_Fig35_HTML.jpg)
 
 Figure 5-35
 
@@ -3105,7 +3105,7 @@ For the terminal step we have four attributes:
 
 We can visualize the different attributes in the environment such as the states, observations, and actions through this API in real-time. Figure 5-36 shows the simulation.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig36_HTML.jpg](img/502041_1_En_5_Fig36_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig36_HTML.jpg](img/502041_1_En_5_Fig36_HTML.jpg)
 
 Figure 5-36
 
@@ -3317,7 +3317,7 @@ python –m baseline-dqn-gridworld-train.py
 
 After we run this command, we can see the training happening in the console and the GridWorld environment being trained on a dueling DQN policy. We can see the training while the Unity executable is running, as shown in Figure 5-37.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig37_HTML.jpg](img/502041_1_En_5_Fig37_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig37_HTML.jpg](img/502041_1_En_5_Fig37_HTML.jpg)
 
 Figure 5-37
 
@@ -3333,7 +3333,7 @@ mlagents-learn  --run-id=GridWorldNew –train
 
 The training phase appears as shown in Figure 5-38.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig38_HTML.jpg](img/502041_1_En_5_Fig38_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig38_HTML.jpg](img/502041_1_En_5_Fig38_HTML.jpg)
 
 Figure 5-38
 
@@ -4669,7 +4669,7 @@ LSTMs are modified versions of recurrent neural networks (RNNs) . RNNs are netwo
 
 To counteract this issue of gradients, LSTMs were devised to stabilize the weight updates and the gradient flow during training, along with retaining memory. The typical architecture of a LSTM module looks like that shown in Figure 5-39.
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig39_HTML.png](img/502041_1_En_5_Fig39_HTML.png)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig39_HTML.png](img/502041_1_En_5_Fig39_HTML.png)
 
 Figure 5-39
 
@@ -4853,7 +4853,7 @@ gamma: 0.99
 
 为了训练和理解的方便，我们修改了某些超参数的值，例如 gamma、批量大小、学习率和隐藏单元。虽然通常建议遵循本节中提到的指南来设置超参数，但观察到当隐藏单元为 256 到 512，批量大小为 1024 时，提供了一个合适的学习曲线，具有稳定的更新和适当的收敛。在这种情况下，我们将分析使用 Tiny Agent 的不同训练实例在 TensorBoard 中制作的图表，如图 5-40 所示。
 
-![../images/502041_1_En_5_Chapter/502041_1_En_5_Fig40_HTML.jpg](img/502041_1_En_5_Fig40_HTML.jpg)
+![img/502041_1_En_5_Chapter/502041_1_En_5_Fig40_HTML.jpg](img/502041_1_En_5_Fig40_HTML.jpg)
 
 图 5-40
 

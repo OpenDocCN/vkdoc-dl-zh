@@ -6,7 +6,7 @@
 
 自然语言处理（NLP）是一个庞大的领域，我们将简要介绍在过去几十年中发生的一些基本转变。NLP 研究可以追溯到 20 世纪 50 年代，当时人们开始着手解决与语言翻译相关的问题。自那时起，它不断发展，我们正在见证这一研究领域的突破性工作。如果我们考虑这种演变的历程，我们可以参考论文“跳跃 NLP 曲线”（Cambria and White，2014）中提到的 NLP 曲线图，如图 5-1 所示。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig1_HTML.jpg](img/489297_1_En_5_Fig1_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig1_HTML.jpg](img/489297_1_En_5_Fig1_HTML.jpg)
 
 图 5-1
 
@@ -119,7 +119,7 @@ NLP 曲线
 [Out]:
 ```
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Figa_HTML.jpg](img/489297_1_En_5_Figa_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Figa_HTML.jpg](img/489297_1_En_5_Figa_HTML.jpg)
 
 ```py
 [In]: df.Sentiment.value_counts()
@@ -144,7 +144,7 @@ return re.sub("^\d+\s|\s\d+\s|\s\d+$", " ", text)
 [Out]:
 ```
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Figb_HTML.jpg](img/489297_1_En_5_Figb_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Figb_HTML.jpg](img/489297_1_En_5_Figb_HTML.jpg)
 
 如我们所见，文本看起来现在更干净，并且准备好进行分词。在分词之前，让我们从数据框中创建输入和输出列。如前所述，这个练习的目标不是达到非常高的准确率，而是理解整个过程。因此，我们不会将数据分成训练集和测试集。
 
@@ -156,7 +156,7 @@ return re.sub("^\d+\s|\s\d+\s|\s\d+$", " ", text)
 
 在这里，通过应用`tokenizer`，我们确保我们想要考虑的最大词汇量为 10,000 个单词。对于未见过的单词，我们使用默认标记。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Figc_HTML.jpg](img/489297_1_En_5_Figc_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Figc_HTML.jpg](img/489297_1_En_5_Figc_HTML.jpg)
 
 ```py
 [In]: tokenizer.fit_on_texts(X)
@@ -169,7 +169,7 @@ return re.sub("^\d+\s|\s\d+\s|\s\d+$", " ", text)
 
 因此，文本中有超过 32,000 个独特的单词。我们现在对整个序列应用分词。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Figd_HTML.jpg](img/489297_1_En_5_Figd_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Figd_HTML.jpg](img/489297_1_En_5_Figd_HTML.jpg)
 
 ```py
 [In]: X_seq=tokenizer.texts_to_sequences(X)
@@ -179,7 +179,7 @@ return re.sub("^\d+\s|\s\d+\s|\s\d+$", " ", text)
 
 如我们所见，每个摘要都被转换成了一个向量，但长度不同。我们现在应用填充（`post`），使向量的长度相等（`100`）。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fige_HTML.jpg](img/489297_1_En_5_Fige_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fige_HTML.jpg](img/489297_1_En_5_Fige_HTML.jpg)
 
 ```py
 [In]: X_padded_seq=pad_sequences(X_seq,padding='post',maxlen=100)
@@ -243,7 +243,7 @@ Non-trainable params: 0
 [Out]:
 ```
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Figf_HTML.jpg](img/489297_1_En_5_Figf_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Figf_HTML.jpg](img/489297_1_En_5_Figf_HTML.jpg)
 
 ### 嵌入
 
@@ -313,7 +313,7 @@ vec.close()
 
 现在我们有了数据集的个别嵌入和元数据，我们可以使用 TensorFlow Projector 在 3D 空间中可视化这些嵌入。为了查看嵌入，我们必须首先访问 [`projector.tensorflow.org/`](https://projector.tensorflow.org/)，如图 5-2 所示。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig2_HTML.jpg](img/489297_1_En_5_Fig2_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig2_HTML.jpg](img/489297_1_En_5_Fig2_HTML.jpg)
 
 图 5-2
 
@@ -321,7 +321,7 @@ TensorFlow Projector
 
 下一步是将我们在上一节中保存的嵌入和元数据 `.tsv` 文件上传到页面上的加载选项，如图 5-3 所示。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig3_HTML.jpg](img/489297_1_En_5_Fig3_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig3_HTML.jpg](img/489297_1_En_5_Fig3_HTML.jpg)
 
 图 5-3
 
@@ -329,7 +329,7 @@ TensorFlow Projector
 
 一旦加载，嵌入将在投影仪中可用，我们可以根据每个嵌入的值观察形成的不同集群，如图 5-4 所示。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig4_HTML.jpg](img/489297_1_En_5_Fig4_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig4_HTML.jpg](img/489297_1_En_5_Fig4_HTML.jpg)
 
 图 5-4
 
@@ -337,7 +337,7 @@ TensorFlow Projector
 
 我们还可以观察到每个嵌入在整体上下文中的位置。有些是中性的，有些在正面的，有些在中心的负面，如图 5-5 所示。我们现在将确认正面单词嵌入在可视化中是否彼此更近，反之亦然对于负面单词。从逻辑上讲，中性单词应该与这两个集群都分开。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig5_HTML.jpg](img/489297_1_En_5_Fig5_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig5_HTML.jpg](img/489297_1_En_5_Fig5_HTML.jpg)
 
 图 5-5
 
@@ -345,7 +345,7 @@ TensorFlow Projector
 
 例如，如果我们观察单词 *like* 的嵌入，我们可以清楚地看到，像 *likeable*、*liked*、*likely* 和 *likes* 这样的相似单词都靠近实际的 like 嵌入，而像 *dislike* 和 *disliked* 这样的反义词则位于组的另一端，如图 5-6 所示。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig6_HTML.jpg](img/489297_1_En_5_Fig6_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig6_HTML.jpg](img/489297_1_En_5_Fig6_HTML.jpg)
 
 图 5-6
 
@@ -353,7 +353,7 @@ TensorFlow Projector
 
 让我们再考虑一个例子，以验证嵌入是否捕捉了单词的语义意义。我们以“fanta”作为根词来查看嵌入。我们可以清楚地看到，像*fantastic*、*fantabulous*等单词彼此更接近，而像*fantasy*这样的中性词位于中心，如图 5-7 所示。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig7_HTML.jpg](img/489297_1_En_5_Fig7_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig7_HTML.jpg](img/489297_1_En_5_Fig7_HTML.jpg)
 
 图 5-7
 
@@ -361,7 +361,7 @@ TensorFlow Projector
 
 最后的示例展示了不同嵌入之间的实际距离以及最近的嵌入。如果我们观察嵌入投影中的单词*worse*，我们会看到最近的相似单词是*dangerous*、*lousy*、*poor*、*blah*和*wasted*，如图 5-8 所示。这些单词也聚集在视图的负端。
 
-![../images/489297_1_En_5_Chapter/489297_1_En_5_Fig8_HTML.jpg](img/489297_1_En_5_Fig8_HTML.jpg)
+![img/489297_1_En_5_Chapter/489297_1_En_5_Fig8_HTML.jpg](img/489297_1_En_5_Fig8_HTML.jpg)
 
 图 5-8
 

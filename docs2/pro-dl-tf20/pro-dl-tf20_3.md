@@ -156,7 +156,7 @@ t 函数的 x 函数和 t 函数的 h 函数的二维平面。它表示几个节
 
 一张彩色 RGB 图像是一个二维向量信号，因为每个空间坐标都有一个像素强度的向量。对于一个尺寸为 *N* × *M* × 3 的 RGB 图像，信号可以表示如下：
 
-![$$ x\left({n}_1,{n}_2\right)=\left[{x}_R\left({n}_1,{n}_2\right),{x}_G\left({n}_1,{n}_2\right),{x}_B\left({n}_1,{n}_2\right)\right], 0<{n}_1<M-1,0<{n}_2<N-1 $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equh.png)
+![$$ x\left({n}_1,{n}_2\right)=\left[{x}_R\left({n}_1,{n}_2\right),{x}_G\left({n}_1,{n}_2\right),{x}_B\left({n}_1,{n}_2\right)\right], 0<{n}_1<M-1,0<{n}_2<N-1 $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equh.png)
 
 其中 *x*[*R*]，*x*[*G*]，和 *x*[*B*] 表示红色、绿色和蓝色颜色通道上的像素强度。参见图 3-5a 和 3-5b。
 
@@ -379,7 +379,7 @@ Illustrate 2D convolution of Images through a Toy example¶
 
 均值滤波器或平均滤波器是一种低通滤波器，它计算任何特定点的像素强度的局部平均值。均值滤波器的脉冲响应可以是这里看到的形式之一（见图 3-12）：
 
-![$$ \left[\begin{array}{ccc}1/9 & 1/9 & 1/9\\ 1/9 & 1/9 & 1/9\\ 1/9 & 1/9 & 1/9\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equs.png)
+![$$ \left[\begin{array}{ccc}1/9 & 1/9 & 1/9\\ 1/9 & 1/9 & 1/9\\ 1/9 & 1/9 & 1/9\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equs.png)
 
 ![](img/448418_2_En_3_Fig19_HTML.jpg)
 
@@ -525,7 +525,7 @@ Illustration of Gaussian Filter
 
 为了回顾，二维函数 *I*(*x*, *y*) 的梯度由以下给出：
 
-![$$ \nabla I\left(x,y\right)={\left[\frac{\partial I\left(x,y\right)}{\partial x}\frac{\partial I\left(x,y\right)}{\partial y}\right]}^T $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equt.png)
+![$$ \nabla I\left(x,y\right)={\left[\frac{\partial I\left(x,y\right)}{\partial x}\frac{\partial I\left(x,y\right)}{\partial y}\right]}^T $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equt.png)
 
 其中，水平方向的梯度由以下给出 - ![$$ \frac{\partial I\left(x,y\right)}{\partial x}=\underset{h\to 0}{\lim}\frac{I\left(x+h,y\right)-I\left(x,y\right)}{h} $$](img/448418_2_En_3_Chapter_TeX_IEq2.png) 或 ![$$ \underset{h\to 0}{\lim}\frac{I\left(x+h,y\right)-I\left(x-h,y\right)}{2h} $$](img/448418_2_En_3_Chapter_TeX_IEq3.png)，根据方便性和具体问题而定。
 
@@ -533,7 +533,7 @@ Illustration of Gaussian Filter
 
 ![$$ \frac{\partial I\left(x,y\right)}{\partial x}=I\left(x+1,y\right)-I\left(x,y\right) $$](img/448418_2_En_3_Chapter_TeX_Equu.png)
 
-通过将信号与滤波器核 ![$$ \left[\begin{array}{ccc}0& 0& 0\\ {}0& 1& -1\\ {}0& 0& 0\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq4.png) 卷积，可以实现信号的这种导数。
+通过将信号与滤波器核 ![$$ \left[\begin{array}{ccc}0& 0& 0\\ {}0& 1& -1\\ {}0& 0& 0\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq4.png) 卷积，可以实现信号的这种导数。
 
 同样地，
 
@@ -541,13 +541,13 @@ Illustration of Gaussian Filter
 
 从第二种表示形式开始。
 
-这种导数形式可以通过将信号与滤波器核 ![$$ \left[\begin{array}{ccc}0& 0& 0\\ {}1& 0& -1\\ {}0& 0& 0\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq5.png) 卷积来实现。
+这种导数形式可以通过将信号与滤波器核 ![$$ \left[\begin{array}{ccc}0& 0& 0\\ {}1& 0& -1\\ {}0& 0& 0\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq5.png) 卷积来实现。
 
 对于垂直方向，离散情况下的梯度分量可以表示如下：
 
 ![$$ \frac{\partial I\left(x,y\right)}{\partial y}=I\left(x,y+1\right)-I\left(x,y\right) $$](img/448418_2_En_3_Chapter_TeX_IEq6.png) 或者通过 ![$$ \frac{\partial I\left(x,y\right)}{\partial y}\propto I\left(x,y+1\right)-I\left(x,y-1\right) $$](img/448418_2_En_3_Chapter_TeX_IEq7.png)
 
-通过卷积计算梯度的相应滤波器核分别是 ![$$ \left[\begin{array}{ccc}0& -1& 0\\ 0& 1& 0\\ 0& 0& 0\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq8.png) 和 ![$$ \left[\begin{array}{ccc}0& -1& 0\\ 0& 0& 0\\ 0& 1& 0\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq9.png)。
+通过卷积计算梯度的相应滤波器核分别是 ![$$ \left[\begin{array}{ccc}0& -1& 0\\ 0& 1& 0\\ 0& 0& 0\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq8.png) 和 ![$$ \left[\begin{array}{ccc}0& -1& 0\\ 0& 0& 0\\ 0& 1& 0\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq9.png)。
 
 注意，这些滤波器考虑了 *x* 轴和 *y* 轴的方向，如图 3-16 所示。*x* 轴的方向与矩阵索引 *n*[2] 的增量一致，而 *y* 轴的方向与矩阵索引 *n*[1] 的增量相反。
 
@@ -565,9 +565,9 @@ Illustration of Gaussian Filter
 
 Sobel 边缘检测器沿水平和垂直轴的脉冲响应可以用以下 *H*[*x*] 和 *H*[*y*] 矩阵分别表示。Sobel 检测器是前面展示的水平方向和垂直方向梯度滤波器的扩展。它不仅考虑了点的梯度，还考虑了该点两侧点的梯度之和。它还对感兴趣点的梯度给予双倍权重。见图 3-17。
 
-![$$ Hx=\left[\begin{array}{ccc}1& 0& -1\\ 2& 0& -2\\ 1& 0& -1\end{array}\right] =\left[\begin{array}{c}1\\ 2\\ 1\end{array}\right]\left[1\kern0.5em 0\kern0.5em -1\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equw.png)
+![$$ Hx=\left[\begin{array}{ccc}1& 0& -1\\ 2& 0& -2\\ 1& 0& -1\end{array}\right] =\left[\begin{array}{c}1\\ 2\\ 1\end{array}\right]\left[1\kern0.5em 0\kern0.5em -1\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equw.png)
 
-![$$ Hy=\left[\begin{array}{ccc}-1& -2& -1\\ 0& 0& 0\\ 1& 2& 1\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equx.png)
+![$$ Hy=\left[\begin{array}{ccc}-1& -2& -1\\ 0& 0& 0\\ 1& 2& 1\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equx.png)
 
 ![](img/448418_2_En_3_Fig24_HTML.jpg)
 
@@ -611,7 +611,7 @@ Convolution Using a Sobel Filter
 
 通过卷积进行标准变换的滤波器如下：
 
-![$$ \left[\begin{array}{ccc}0& 0& 0\\ {}0& 1& 0\\ {}0& 0& 0\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equy.png)
+![$$ \left[\begin{array}{ccc}0& 0& 0\\ {}0& 1& 0\\ {}0& 0& 0\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equy.png)
 
 图 3-19 展示了通过卷积进行单位变换。
 
@@ -808,13 +808,13 @@ return layers.MaxPool2D(pool_size=(ksize, ksize),strides=strides,padding=padding
 
 当以矩阵形式排列时，我们得到以下关系；（x）表示交叉相关：
 
-![$$ \left[\begin{array}{cc}\frac{\partial L}{\partial {w}_{22}}& \frac{\partial L}{\partial {w}_{21}}\\ \frac{\partial L}{\partial {w}_{12}}& \frac{\partial L}{\partial {w}_{11}}\end{array}\right]=\left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {a}_{21}& {a}_{22}& {a}_{23}\\ {a}_{31}& {a}_{32}& {a}_{33}\end{array}\right]\left(\textrm{x}\right)\left[\begin{array}{cc}{\delta}_{11}& {\delta}_{12}\\ {\delta}_{21}& {\delta}_{22}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equas.png)
+![$$ \left[\begin{array}{cc}\frac{\partial L}{\partial {w}_{22}}& \frac{\partial L}{\partial {w}_{21}}\\ \frac{\partial L}{\partial {w}_{12}}& \frac{\partial L}{\partial {w}_{11}}\end{array}\right]=\left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {a}_{21}& {a}_{22}& {a}_{23}\\ {a}_{31}& {a}_{32}& {a}_{33}\end{array}\right]\left(\textrm{x}\right)\left[\begin{array}{cc}{\delta}_{11}& {\delta}_{12}\\ {\delta}_{21}& {\delta}_{22}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equas.png)
 
-![$$ \left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {}{a}_{21}& {a}_{22}& {a}_{23}\\ {}{a}_{31}& {a}_{32}& {a}_{33}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq20.png) 与 ![$$ \left[\begin{array}{cc}{\delta}_{11}& {a}_{12}\\ {}{a}_{21}& {a}_{22}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq21.png) 的交叉相关也可以看作是 ![$$ \left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {}{a}_{21}& {a}_{22}& {a}_{23}\\ {}{a}_{31}& {a}_{32}& {a}_{33}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq22.png) 与翻转后的 ![$$ \left[\begin{array}{cc}{\delta}_{11}& {a}_{12}\\ {}{a}_{21}& {a}_{22}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq23.png) 的卷积；即，![$$ \left[\begin{array}{cc}{\delta}_{22}& {\delta}_{21}\\ {}{\delta}_{12}& {\delta}_{11}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq24.png)
+![$$ \left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {}{a}_{21}& {a}_{22}& {a}_{23}\\ {}{a}_{31}& {a}_{32}& {a}_{33}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq20.png) 与 ![$$ \left[\begin{array}{cc}{\delta}_{11}& {a}_{12}\\ {}{a}_{21}& {a}_{22}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq21.png) 的交叉相关也可以看作是 ![$$ \left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {}{a}_{21}& {a}_{22}& {a}_{23}\\ {}{a}_{31}& {a}_{32}& {a}_{33}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq22.png) 与翻转后的 ![$$ \left[\begin{array}{cc}{\delta}_{11}& {a}_{12}\\ {}{a}_{21}& {a}_{22}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq23.png) 的卷积；即，![$$ \left[\begin{array}{cc}{\delta}_{22}& {\delta}_{21}\\ {}{\delta}_{12}& {\delta}_{11}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq24.png)
 
-因此，梯度矩阵的转置是 ![$$ \left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {}{a}_{21}& {a}_{22}& {a}_{23}\\ {}{a}_{31}& {a}_{32}& {a}_{33}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq25.png) 与 ![$$ \left[\begin{array}{cc}{\delta}_{22}& {\delta}_{21}\\ {}{\delta}_{12}& {\delta}_{11}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq26.png) 的卷积；即，
+因此，梯度矩阵的转置是 ![$$ \left[\begin{array}{ccc}{a}_{11}& {a}_{12}& {a}_{13}\\ {}{a}_{21}& {a}_{22}& {a}_{23}\\ {}{a}_{31}& {a}_{32}& {a}_{33}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq25.png) 与 ![$$ \left[\begin{array}{cc}{\delta}_{22}& {\delta}_{21}\\ {}{\delta}_{12}& {\delta}_{11}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq26.png) 的卷积；即，
 
-![$$ \left[\begin{array}{cc}\frac{\partial L}{\partial {w}_{22}}&amp; \frac{\partial L}{\partial {w}_{21}}\\ {}\frac{\partial L}{\partial {w}_{12}}&amp; \frac{\partial L}{\partial {w}_{11}}\end{array}\right]=\left[\begin{array}{ccc}{a}_{11}&amp; {a}_{12}&amp; {a}_{13}\\ {}{a}_{21}&amp; {a}_{22}&amp; {a}_{23}\\ {}{a}_{31}&amp; {a}_{32}&amp; {a}_{33}\end{array}\right]\left({}^{\ast}\right)\left[\begin{array}{cc}{\delta}_{22}&amp; {\delta}_{12}\\ {}{\delta}_{21}&amp; {\delta}_{11}\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equat.png)
+![$$ \left[\begin{array}{cc}\frac{\partial L}{\partial {w}_{22}}&amp; \frac{\partial L}{\partial {w}_{21}}\\ {}\frac{\partial L}{\partial {w}_{12}}&amp; \frac{\partial L}{\partial {w}_{11}}\end{array}\right]=\left[\begin{array}{ccc}{a}_{11}&amp; {a}_{12}&amp; {a}_{13}\\ {}{a}_{21}&amp; {a}_{22}&amp; {a}_{23}\\ {}{a}_{31}&amp; {a}_{32}&amp; {a}_{33}\end{array}\right]\left({}^{\ast}\right)\left[\begin{array}{cc}{\delta}_{22}&amp; {\delta}_{12}\\ {}{\delta}_{21}&amp; {\delta}_{11}\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equat.png)
 
 在层的意义上，可以说梯度矩阵的翻转实际上是(*L* + 1)层梯度与层*L*的特征图输出的互相关。同样，等价地，梯度矩阵的翻转实际上是(*L* + 1)层梯度矩阵翻转与层*L*的特征图输出的卷积。
 
@@ -874,9 +874,9 @@ return layers.MaxPool2D(pool_size=(ksize, ksize),strides=strides,padding=padding
 
 等变性的示例说明
 
-通过一个小例子，我们可以更容易地看到等变性，如图 3-25 所示。我们感兴趣的输入图像或 2D 信号的部分是左上角的块，即![$$ \left[\begin{array}{ccc}44& 47& 64\\ {}9& 83& 21\\ {}70& 88& 88\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq30.png)。为了便于参考，让我们将这个块命名为 A。
+通过一个小例子，我们可以更容易地看到等变性，如图 3-25 所示。我们感兴趣的输入图像或 2D 信号的部分是左上角的块，即![$$ \left[\begin{array}{ccc}44& 47& 64\\ {}9& 83& 21\\ {}70& 88& 88\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq30.png)。为了便于参考，让我们将这个块命名为 A。
 
-当输入与和滤波器卷积时——即![$$ \left[\begin{array}{ccc}1& 1& 1\\ {}1& 1& 1\\ {}1& 1& 1\end{array}\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq31.png)—块 A 将对应于 183 的输出值，这可以被视为 A 的特征检测器。
+当输入与和滤波器卷积时——即![$$ \left[\begin{array}{ccc}1& 1& 1\\ {}1& 1& 1\\ {}1& 1& 1\end{array}\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_IEq31.png)—块 A 将对应于 183 的输出值，这可以被视为 A 的特征检测器。
 
 当将相同的和滤波器与平移后的图像卷积时，移动后的块 A 仍然会产生 183 的输出值。我们还可以看到，如果我们将对原始卷积图像输出应用相同的平移，183 的值将出现在与平移后卷积图像输出相同的位置。
 
@@ -1339,13 +1339,13 @@ Sigmoid 函数具有未饱和区域，底部从-4 到 4 具有良好的梯度，
 
 如果一个层从前一层接收一个输入激活向量*x* = [*x*[1]*x*[2]…*x*[*n*]]^(*T*) ∈ *R*^(*n* × 1)，那么在包含*m*个数据点的每个小批量中，输入激活按以下方式归一化：
 
-![x_i^帽=x_i-E[x_i]/(sqrt(Var[x_i]+in ])](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equaw.png)
+![x_i^帽=x_i-E[x_i]/(sqrt(Var[x_i]+in ])](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equaw.png)
 
 位置
 
 ![B 向量=1/m 求和(1 到 m 的 x_i^(k))](img/448418_2_En_3_Chapter_TeX_Equax.png)
 
-![B 方差=1/m 求和(1 到 m 的(x_i^(k)-E[x_i]))²](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equay.png)
+![B 方差=1/m 求和(1 到 m 的(x_i^(k)-E[x_i]))²](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equay.png)
 
 从统计学的角度看，*u*[B]和σ[B]²不过是样本均值和有偏样本标准差。
 
@@ -1359,9 +1359,9 @@ Sigmoid 函数具有未饱和区域，底部从-4 到 4 具有良好的梯度，
 
 在推理或测试时间，使用总体统计量 *E*[*x*[*i*]]和*Var*[*x*[*i*]]进行归一化，同时保持迷你批统计量的运行平均值。
 
-![$$ E\left[{x}_i\right]=E\left[{u}_B\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equba.png)
+![$$ E\left[{x}_i\right]=E\left[{u}_B\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equba.png)
 
-![$$ Var\left[{x}_i\right]=\left(\frac{m}{m-1}\right)E\left[{\sigma}_B²\right] $$](../images/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equbb.png)
+![$$ Var\left[{x}_i\right]=\left(\frac{m}{m-1}\right)E\left[{\sigma}_B²\right] $$](img/448418_2_En_3_Chapter/448418_2_En_3_Chapter_TeX_Equbb.png)
 
 这个校正因子是获得总体方差的非偏估计所必需的。
 

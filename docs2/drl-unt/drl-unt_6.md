@@ -31,7 +31,7 @@ state=state_1
 
 或者，“discount_reward”方法也可以更改，通过提供增量折扣来定义下一步的奖励。结果可以用 Tensorboard 训练来可视化。如图 6-1 所示，可以看到奖励的对比。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig1_HTML.jpg](img/502041_1_En_6_Fig1_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig1_HTML.jpg](img/502041_1_En_6_Fig1_HTML.jpg)
 
 图 6-1
 
@@ -39,7 +39,7 @@ state=state_1
 
 第二种情况显示了奖励的增加，这也意味着策略函数的梯度上升增加，如图 6-2 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig2_HTML.jpg](img/502041_1_En_6_Fig2_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig2_HTML.jpg](img/502041_1_En_6_Fig2_HTML.jpg)
 
 图 6-2
 
@@ -47,7 +47,7 @@ state=state_1
 
 现在为了获得更好的效果，损失函数内部的超参数（“trpo_ppo_penalty_loss”）也可以进行更改。超参数的逐渐增加或减少会影响智能体的学习，这类似于增加或减少任务的难度。通过在“trpo_ppo_penalty_loss”中更改“prob”超参数，我们可以通过 Tensorboard 可视化地看到损失函数随迭代周期的变化，如图 6-3 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig3_HTML.jpg](img/502041_1_En_6_Fig3_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig3_HTML.jpg](img/502041_1_En_6_Fig3_HTML.jpg)
 
 图 6-3
 
@@ -132,7 +132,7 @@ return Actor
 
 “teacher_memory”方法用于对动作进行 one-hot 编码以及存储奖励、标签和概率，类似于 A2C 中的“memory”方法。“teacher_act”方法用于选择概率最高的动作，类似于原始 A2C 中的“act”方法。在教师网络中，我们有与 A2C 代码（学生网络）类似的方法，我们看到这些方法都是以“teacher_<方法名>”为前缀。在主方法中，初始化学生和教师网络的状态、动作和奖励后，我们分别对它们进行训练。如果教师网络的奖励超过学生网络，它将分配奖励并在新的策略中对其进行训练。在每个训练阶段的交替策略也优化了奖励信号。在没有教师网络监督的正常 A2C 算法中，Tensorboard 图表显示了时代损失（用红色部分表示的价值估计误差减少）和奖励（蓝色部分），如图 6-4 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig4_HTML.jpg](img/502041_1_En_6_Fig4_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig4_HTML.jpg](img/502041_1_En_6_Fig4_HTML.jpg)
 
 图 6-4
 
@@ -140,7 +140,7 @@ return Actor
 
 在教师网络就位的情况下，我们可以看到由于梯度上升策略以及策略的变化，奖励值出现了峰值。这个案例的奖励可以用图 6-5 中显示的橙色部分来表示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig5_HTML.jpg](img/502041_1_En_6_Fig5_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig5_HTML.jpg](img/502041_1_En_6_Fig5_HTML.jpg)
 
 图 6-5
 
@@ -173,7 +173,7 @@ agent.rewards[-1]=teacher_score
 
 图 6-6 提供了这种课程学习形式的 Tensorboard 阶段损失可视化。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig6_HTML.jpg](img/502041_1_En_6_Fig6_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig6_HTML.jpg](img/502041_1_En_6_Fig6_HTML.jpg)
 
 图 6-6
 
@@ -181,7 +181,7 @@ PPO-A2C 与自玩课程学习
 
 现在如果我们将这个（橙色部分）与教师学生课程学习的阶段损失（蓝色部分）进行比较，我们会看到与自玩相比，后者的损失梯度更低，而奖励更高。这是由于自玩中教师和学生网络的对抗性质，这导致了这种情况下的更多奖励。这也意味着比普通的教师学生课程学习有更快的收敛速度。在初始阶段，由于学生网络无法与教师竞争，自玩有更深的损失梯度，但随着级别的增加，这种梯度会减少。这由 Tensorboard 图像展示，如图 6-7 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig7_HTML.jpg](img/502041_1_En_6_Fig7_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig7_HTML.jpg](img/502041_1_En_6_Fig7_HTML.jpg)
 
 图 6-7
 
@@ -189,7 +189,7 @@ PPO-A2C 与自玩课程学习
 
 对抗自玩是我们将在本章详细分析的，当我们在 ML Agents 中分析足球环境时，将看到的主要学习形式。除了这些主要的学习形式外，还有其他变体。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig8_HTML.png](img/502041_1_En_6_Fig8_HTML.png)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig8_HTML.png](img/502041_1_En_6_Fig8_HTML.png)
 
 图 6-8
 
@@ -288,7 +288,7 @@ self.states, self.probs, self.labels, self.rewards=[],
 
 如果我们在 PPO-A2C 策略上训练这个 GAN，那么我们可以清楚地可视化生成器和判别器生成的奖励以及策略求解器（代理）的损失。这如图 6-9 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig9_HTML.jpg](img/502041_1_En_6_Fig9_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig9_HTML.jpg](img/502041_1_En_6_Fig9_HTML.jpg)
 
 图 6-9
 
@@ -304,7 +304,7 @@ self.states, self.probs, self.labels, self.rewards=[],
 
 我们将借助 Unity 中的 Wall Jump 场景来考虑机器学习代理的课程学习。在这种情况下，蓝色代理的目标是通过穿越墙壁到达绿色目标区域。这个墙壁可以通过黄色块进行缩放，黄色块作为一个平台，代理可以跳到墙壁另一侧的目标。根据墙壁的高度，代理必须移动黄色块以缩放墙壁。如果代理最初在一个有大墙壁的环境中训练，它将需要更多的时间通过 PPO 或 SAC 算法来找出这一点。因此，课程学习概念在这里起着重要作用。墙壁的初始高度为 0，然后逐渐增加，这给代理一个原始绿色目标位置的概念。因此，在连续的训练迭代中，随着墙壁高度的增加，代理必须使用黄色平台来穿越它。在初始阶段没有墙壁，在这种情况下，代理必须跳过黄色平台以到达目标；随着级别的提高，墙壁的高度系统地增加。这增加了每个连续级别的累积奖励。两个训练级别的比较如图 6-10(a, b) 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig10_HTML.jpg](img/502041_1_En_6_Fig10_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig10_HTML.jpg](img/502041_1_En_6_Fig10_HTML.jpg)
 
 图 6-10
 
@@ -698,7 +698,7 @@ mlagents-learn  --curriculum= --run-id= --train
 
 运行此命令后，我们可以可视化训练，在这种情况下，我们将使用 BigWallJump 参数进行课程学习，如图 6-11a 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig11_HTML.jpg](img/502041_1_En_6_Fig11_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig11_HTML.jpg](img/502041_1_En_6_Fig11_HTML.jpg)
 
 图 6-11a
 
@@ -706,7 +706,7 @@ mlagents-learn  --curriculum= --run-id= --train
 
 在这种情况下，我们可以看到随着墙壁高度的增加，如图 6-11b 所示的训练。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig12_HTML.jpg](img/502041_1_En_6_Fig12_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig12_HTML.jpg](img/502041_1_En_6_Fig12_HTML.jpg)
 
 图 6-11b
 
@@ -720,7 +720,7 @@ tensorboard --logdir=summaries
 
 这是从 config 文件夹中运行的，并在端口 6006 上启动。然后我们可以评估奖励（累积）、回合长度和纪元损失。使用课程学习提供的训练预览如图 6-12 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig13_HTML.jpg](img/502041_1_En_6_Fig13_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig13_HTML.jpg](img/502041_1_En_6_Fig13_HTML.jpg)
 
 图 6-12
 
@@ -788,7 +788,7 @@ ipythondisplay.display(plt.gcf())
 
 运行此代码后，我们将看到不同的属性，例如参考 Q 均值、滚动 Q 均值，以及训练阶段长度、持续时间、时代、步骤、评论家和演员损失，如图 6-13 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig14_HTML.jpg](img/502041_1_En_6_Fig14_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig14_HTML.jpg](img/502041_1_En_6_Fig14_HTML.jpg)
 
 图 6-13
 
@@ -796,7 +796,7 @@ ipythondisplay.display(plt.gcf())
 
 我们还可以看到汽车试图爬上悬崖以到达旗帜，如图 6-14 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig15_HTML.jpg](img/502041_1_En_6_Fig15_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig15_HTML.jpg](img/502041_1_En_6_Fig15_HTML.jpg)
 
 图 6-14
 
@@ -804,7 +804,7 @@ ipythondisplay.display(plt.gcf())
 
 此算法是一种经典的离线策略算法，也可以用于在 Unity ML Agents 中训练 Reacher 环境。在这种情况下，我们可以使用算法的基线实现。正如我们在第三章节中关于不同环境的阅读中提到的，Reacher 是一个复杂的机器人臂模拟环境，如果机器人保持手臂在绿色球形球内，则机器人会获得奖励。解决此问题的最佳实现之一需要使用 PPO 和 DDPG 进行连续空间的训练。由于 DDPG 使用演员评论机制作为策略网络，PPO 在训练中提供了良好的稳定性。正如上一章所述，我们可以使用 Python API 来接口和运行我们的基线 Gym 模型在 Unity ML Agents 上进行训练。这留给热情的读者尝试使用 DDPG 训练 Reacher 代理。图 6-15 展示了使用 DDPG 训练环境的预览。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig16_HTML.jpg](img/502041_1_En_6_Fig16_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig16_HTML.jpg](img/502041_1_En_6_Fig16_HTML.jpg)
 
 图 6-15
 
@@ -852,7 +852,7 @@ model.save("td3_pendulum")
 
 在这种情况下，我们使用摆锤环境来训练此算法，如图 6-16 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig17_HTML.jpg](img/502041_1_En_6_Fig17_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig17_HTML.jpg](img/502041_1_En_6_Fig17_HTML.jpg)
 
 图 6-16
 
@@ -872,7 +872,7 @@ model.save("td3_pendulum")
 
 这是训练智能体在动态环境中进行游戏的一个重要方面。除了环境中存在的障碍物外，还有一个与玩家智能体奖励信号相反的智能体。这个对抗性智能体控制着玩家。当智能体也把另一个智能体视为环境中的障碍时，就会使用对抗性自我博弈。自我博弈涉及玩家智能体试图赢得过去的状态，这是对抗性游戏的情况。对抗性智能体迫使玩家智能体改变其策略，并取得比之前状态更好的 Q 值估计。然而，在大多数情况下，应该适当地控制难度级别，以防止玩家智能体受到惩罚。这在网球环境中可以观察到，玩家智能体必须与对抗性智能体竞争以获得分数。根据对手的游戏水平，玩家智能体必须相应地调整其策略。在游戏开始时，如果提供了强大的对手，那么玩家智能体可能无法显著学习。相反，如果对手随着训练的进行而变得较弱，这可能会导致玩家智能体学习的不稳定。对于上述两种情况使用相同的策略可能会对玩家造成问题，因为它可能无法显著学习。这使得对抗性游戏非常难以估计。在自我博弈中，如前所述，智能体通过改变其策略来尝试与其过去自我竞争，如果当前自我比过去自我更好，则会获得奖励。智能体的这种改进只能来自游戏难度的提高，包括对手的强度。课程学习在这里起着重要的作用，以调节和控制游戏过程中难度的级别。借助课程学习（特定任务），玩家利用对抗性自我博弈有系统地更新其策略，以达到特定的目标，如图 6-17 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig18_HTML.png](img/502041_1_En_6_Fig18_HTML.png)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig18_HTML.png](img/502041_1_En_6_Fig18_HTML.png)
 
 图 6-17
 
@@ -882,7 +882,7 @@ model.save("td3_pendulum")
 
 在多智能体环境中，合作网络被用于多个智能体在特定组内相互竞争，对抗不同组中的对抗性智能体。组可以超过两个，在这种情况下，我们有一个由具有相同策略和奖励估计的智能体集群，它们被训练以达到相同的目标。在对抗性游戏中，我们有两个或更多的深度强化学习（RL）神经网络，它们相互竞争以实现价值最大化。在合作游戏中，我们有两个或更多的深度强化学习（RL）神经网络，它们的架构、策略和损失函数相似，并且用相同的动机进行训练。然而，在合作智能体之间可以进行修改，以便通过观察对方来学习改变它们的策略。这是另一个重要的指标，其中一个智能体使用 A2C 作为策略梯度技术，而另一个合作智能体可以使用 GAIL 来模仿它。这种基于合作网络的智能体通常出现在基于团队的游戏中，如足球。在足球环境（两名玩家）中，我们有两个不同的队伍，每个队伍都有两名球员。在特定队伍的球员中，其中一名是守门员，而另一名是前锋。这两名球员（智能体）必须相互合作，以击败对方队伍，对方队伍也包含守门员和前锋。这个环境被精心设计，以展示同一队伍中的智能体之间的合作学习，以及不同队伍中的智能体之间的对抗性自我游戏。图 6-18 展示了环境的预览。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig19_HTML.jpg](img/502041_1_En_6_Fig19_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig19_HTML.jpg](img/502041_1_En_6_Fig19_HTML.jpg)
 
 图 6-18
 
@@ -1205,7 +1205,7 @@ ball_touch: [1.0, 0.5, 0.0]
 
 训练场景如图 6-19 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig20_HTML.jpg](img/502041_1_En_6_Fig20_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig20_HTML.jpg](img/502041_1_En_6_Fig20_HTML.jpg)
 
 图 6-19
 
@@ -1221,7 +1221,7 @@ tensorboard --logdir=summaries
 
 这个命令需要从 ML Agents 存储库中的 config 文件夹中调用。我们可以可视化累积奖励、损失和其他训练参数。图 6-20 展示了 Tensorboard 可视化的预览。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig21_HTML.jpg](img/502041_1_En_6_Fig21_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig21_HTML.jpg](img/502041_1_En_6_Fig21_HTML.jpg)
 
 图 6-20
 
@@ -1233,7 +1233,7 @@ Tensorboard 训练可视化
 
 我们现在将使用 ML Agents 构建一个微型卡丁车游戏的自主驾驶代理。我们还将使用 PPO 策略进行训练，但也可以使用其他策略。在这个场景中，代理必须沿着一个小赛道移动以到达目的地。难点在于赛道是弯曲的，代理应该能够无缝地通过它。随着路径长度的增加，训练阶段的长度也会增加。由于我们不会使用视觉观察传感器（没有 CNN），我们将主要关注使用射线感知传感器从代理的当前位置、目标距离以及当前方向获取信息。为此，我们将打开 Tinyagent Unity 场景。这是一个迷你版的赛道卡丁车游戏，其中只有一个代理。如果我们能让代理学会到达目标的轨迹，我们甚至可以扩展它，使用更多这样的竞争性代理（以及课程学习）来创建一个完整的游戏。场景如图 6-21 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig22_HTML.jpg](img/502041_1_En_6_Fig22_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig22_HTML.jpg](img/502041_1_En_6_Fig22_HTML.jpg)
 
 图 6-21
 
@@ -1399,7 +1399,7 @@ mlagents-learn --trainer_config.yaml --run-id=NewTinyAgent --train
 
 调整超参数也可以用来找到影响智能体的不同特征参数。如图 6-22 所示，Kart 智能体的训练过程如下。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig23_HTML.jpg](img/502041_1_En_6_Fig23_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig23_HTML.jpg](img/502041_1_En_6_Fig23_HTML.jpg)
 
 图 6-22
 
@@ -1415,7 +1415,7 @@ tensorboard –logdir=summaries
 
 可视化提供了 Kart 代理的累积奖励和 epoch 损失的估计。典型的可视化如图 6-23 所示。
 
-![../images/502041_1_En_6_Chapter/502041_1_En_6_Fig24_HTML.jpg](img/502041_1_En_6_Fig24_HTML.jpg)
+![img/502041_1_En_6_Chapter/502041_1_En_6_Fig24_HTML.jpg](img/502041_1_En_6_Fig24_HTML.jpg)
 
 图 6-23
 

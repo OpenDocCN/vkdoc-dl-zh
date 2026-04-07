@@ -40,17 +40,17 @@
 
 让我们回顾一下 MC（方程 4-2）和 TD（方程 4-5）的更新方程。我已经修改了方程，使得 MC 和 TD 都使用相同的下标 *t* 表示当前时间，*t* + 1 表示下一个瞬间。这两个方程都执行相同的更新，将 *V**t* 接近其目标，在 MC 更新中是 *G**t*，在 TD(0)更新中是 *R*[*t*] + 1 + *γ* · *V**t*。
 
-![V_{t+1}(s)=V_t(s)+\alpha\ \left[{G}_t(s)-{V}_t(s)\right]](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ2.png)
+![V_{t+1}(s)=V_t(s)+\alpha\ \left[{G}_t(s)-{V}_t(s)\right]](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ2.png)
 
 (5-2)
 
-![V_{t+1}(s)=V_t(s)+\alpha \left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime}\right)-{V}_t(s)\right]](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ3.png)
+![V_{t+1}(s)=V_t(s)+\alpha \left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime}\right)-{V}_t(s)\right]](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ3.png)
 
 (5-3)
 
 这与你在监督学习中所做的类似，特别是在线性最小二乘回归中。你有了输出值/目标 *y*(*t*) 和输入特征 *x*(*t*)，统称为*训练数据*。你可以选择一个模型 *Model*[*w*][*x*(*t*)]，如多项式线性模型、决策树或支持向量，甚至其他非线性模型如神经网络。训练数据用于最小化模型预测值与训练集的实际输出值之间的误差。这是通过最小化以下损失函数来实现的：
 
-![J(w)={\left[y(t)-\hat{y}\left(t;w\right)\right]}²;\mathrm{where}\ \hat{y}\left(t;w\right)={Model}_w\left[x(t)\right]](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ4.png)
+![J(w)={\left[y(t)-\hat{y}\left(t;w\right)\right]}²;\mathrm{where}\ \hat{y}\left(t;w\right)={Model}_w\left[x(t)\right]](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ4.png)
 
 (5-4)
 
@@ -60,7 +60,7 @@
 
 对于方程 5-4 中给出的损失函数，这变成了：
 
-![∇_wJ(w)=-2\cdotp \left[y(t)-\hat{y}\left(t;w\right)\right]\cdotp ∇_w\hat{y}\left(t;w\right)](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equb.png)
+![∇_wJ(w)=-2\cdotp \left[y(t)-\hat{y}\left(t;w\right)\right]\cdotp ∇_w\hat{y}\left(t;w\right)](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equb.png)
 
 如果你记得你的微积分，你会记得 ∇[*w*]*J*(*w*) 是权重空间中的一个向量——也就是说，它有 ∣*w*∣ 个分量。这个向量的方向比分量的实际值更重要。∇[*w*]*J*(*w*) 的方向是 ∣*w*∣ 空间中的方向，这导致 *J*(*w*) 随 *w* 变化的最大变化率。由于 *J*(*w*) 是平方损失——即实际值和预测值之间的差异，你希望尽可能减少 *J*(*w*)，即错误。你可以通过将 *w* 参数移动到 ∇[*w*]*J*(*w*) 的负方向来实现这一点。这将给你一组新的 *w* 参数，使得 *J*(*w*) 的值降低。
 
@@ -166,7 +166,7 @@
 
 沿着这个思路，你现在将尝试扩展监督训练过程，使用由输入和目标组成的训练数据来调整模型。这是在强化学习下使用方程 5-4 中的损失函数和权重更新来进行函数逼近，如方程 5-5 所示。如果你比较方程 5-4 中的损失函数和方程 5-2 和 5-3 中的 MC/TD 更新，你可以通过将 MC 和 TD 更新视为操作来建立平行关系，这些操作试图最小化实际目标 *V*π 和当前估计 *V**t* 之间的误差。你可以将损失函数表示如下：
 
-![$$ J(w)={E}_{\uppi}{\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}² $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ6.png)
+![$$ J(w)={E}_{\uppi}{\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}² $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ6.png)
 
 (5-6)
 
@@ -174,7 +174,7 @@
 
 ![$$ {w}_{t+1}={w}_t-\alpha .{\nabla}_w\ J(w) $$](img/502835_2_En_5_Chapter_TeX_Equc.png)
 
-![$$ {w}_{t+1}={w}_t+\alpha .\left[{V}_{\pi }(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ7.png)
+![$$ {w}_{t+1}={w}_t+\alpha .\left[{V}_{\pi }(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ7.png)
 
 (5-7)
 
@@ -182,13 +182,13 @@
 
 MC 更新：
 
-![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ8.png)
+![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ8.png)
 
 (5-8)
 
 TD(0) 更新：
 
-![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma \bullet {V}_t\left({s}^{\prime };w\right)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ9.png)
+![$$ {w}_{t+1}={w}_t+\alpha .\left[{R}_{t+1}+\gamma \bullet {V}_t\left({s}^{\prime };w\right)-{V}_t\left(s;w\right)\right].{\nabla}_w\ {V}_t\left(s;w\right) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ9.png)
 
 (5-9)
 
@@ -206,7 +206,7 @@ TD(0) 更新：
 
 将方程 5-11 与方程 5-7 结合给出以下结果：
 
-![$$ {w}_{t+1}={w}_t+\alpha .[V_{\pi }(s)-V_t\left(s;w\right)].x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ12.png)
+![$$ {w}_{t+1}={w}_t+\alpha .[V_{\pi }(s)-V_t\left(s;w\right)].x(s) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ12.png)
 
 (5-12)
 
@@ -214,13 +214,13 @@ TD(0) 更新：
 
 MC 更新：
 
-![w_{t+1}=w_t+α.[G_t(s)-V_t(s;w)].x(s)](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ13.png)
+![w_{t+1}=w_t+α.[G_t(s)-V_t(s;w)].x(s)](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ13.png)
 
 (5-13)
 
 TD(0)更新：
 
-![$$ {w}_{t+1}={w}_t+\alpha .[R_{t+1}+\gamma \ast V_t\left({s}^{\prime };w\right)-V_t\left(s;w\right)].x(s) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ14.png)
+![$$ {w}_{t+1}={w}_t+\alpha .[R_{t+1}+\gamma \ast V_t\left({s}^{\prime };w\right)-V_t\left(s;w\right)].x(s) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ14.png)
 
 (5-14)
 
@@ -246,13 +246,13 @@ TD(0)更新：
 
 这里是 MC 更新：
 
-![V_{t+1}(s)=V_t(s)+α.[G_t(s)-V_t(s)], s∈s1, s1, ..., sp](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ15.png)
+![V_{t+1}(s)=V_t(s)+α.[G_t(s)-V_t(s)], s∈s1, s1, ..., sp](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ15.png)
 
 (5-15)
 
 这里是 TD(0)更新：
 
-![V_{t+1}(s)=V_t(s)+α.[R_{t+1}+γ.V_t(s')-V_t(s)], s∈s1, s1, ..., sp](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ16.png)
+![V_{t+1}(s)=V_t(s)+α.[R_{t+1}+γ.V_t(s')-V_t(s)], s∈s1, s1, ..., sp](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ16.png)
 
 (5-16)
 
@@ -260,11 +260,11 @@ TD(0)更新：
 
 在推导更新方程时，我略过的一点是 MC 中的目标估计 *G**t* 和 TD(0) 中的 *R*[*t* + 1] + *γ* · *V**t* 的细节。这些估计不是某个固定的常数值。它们也依赖于策略——对于 MC，直接依赖于样本回放 *G**t* 和 TD(0) 中下一个状态 *V**t* 的值。作为一个例子，让我们回顾方程 5-6，并用 TD 目标替换 *V*π，然后取梯度。
 
-![J(w)={\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}²](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equg.png)
+![J(w)={\left[{V}_{\pi }(s)\hbox{--} {V}_t(s)\right]}²](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equg.png)
 
 将 *V*π 替换为基于模型的预期目标值，你得到：
 
-![J(w)={\left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime };w\right)-{V}_t\left(s;w\right)\right]}²](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equh.png)
+![J(w)={\left[{R}_{t+1}+\gamma \cdotp {V}_t\left({s}^{\prime };w\right)-{V}_t\left(s;w\right)\right]}²](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equh.png)
 
 如果你对 *J*(*w*) 关于 *w* 求导，实际上你会得到两个项，一个是因为 *V**t* 的导数，下一个状态值，另一个是因为 *V**t* 的导数，当前状态值。这种同时考虑梯度贡献 ∇*V**t* 和 ∇*V**t* 的方法会导致目标值的变化，并且已被证明会降低学习的速度。首先，原因是你想让目标值保持不变，因此你需要忽略 ∇*V**t* 的贡献。其次，从概念上讲，使用梯度下降，你试图将当前状态 *V**t* 的值拉向其目标值。取第二个贡献项 ∇*V**t* 意味着你试图将下一个状态 *S* = *s*^′ 的值移动到当前状态 *S* = *s* 的值。
 
@@ -295,7 +295,7 @@ TD(0)更新：
 
 如前所述，你会在目标值和当前值之间形成一个损失函数。这样做是为了根据 q 值的样本，调整模型的参数来估计 q 值。
 
-![公式 $${J(w)={E}_{\pi}\left[{\left({q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right)}²\right]}$$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ18.png)
+![公式 $${J(w)={E}_{\pi}\left[{\left({q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right)}²\right]}$$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ18.png)
 
 (5-18)
 
@@ -305,7 +305,7 @@ TD(0)更新：
 
 其中，
 
-![公式 $${\nabla}_wJ(w)=\left[{q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(s,a;w\right)$$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ19.png)
+![公式 $${\nabla}_wJ(w)=\left[{q}_{\pi}\left(s,a\right)-\hat{q}\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(s,a;w\right)$$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ19.png)
 
 (5-19)
 
@@ -315,13 +315,13 @@ TD(0)更新：
 
 MC 更新：
 
-![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{q}_t\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ20.png)
+![$$ {w}_{t+1}={w}_t+\alpha .\left[{G}_t(s)-{q}_t\left(s,a;w\right)\right].{\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ20.png)
 
 (5-20)
 
 TD(0) 更新：
 
-![$$ {w}_{t+1}={w}_t+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp {q}_t\left({s}^{'},{a}^{'};w\right)\hbox{--} {q}_t\left(s,a;w\right)\right]\cdotp {\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ21.png)
+![$$ {w}_{t+1}={w}_t+\upalpha \cdotp \left[{R}_{t+1}+\upgamma \cdotp {q}_t\left({s}^{'},{a}^{'};w\right)\hbox{--} {q}_t\left(s,a;w\right)\right]\cdotp {\nabla}_w\hat{q}\left(\mathrm{s},\mathrm{a};\mathrm{w}\right) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ21.png)
 
 (5-21)
 
@@ -661,7 +661,7 @@ sarsa-lambda from 5.b-lambda-sarsa.ipynb
 
 如前所述，您可以从状态值 *v*(*s*; *w*) 移动到状态-动作值 *q*(*s*, *a*; *w*)，并对 q 值进行类似的更新。为了再次提醒读者，从状态值移动到状态-动作值的目的在于能够找到给定状态的最优策略。由于您拥有该状态下所有可能动作的 q 值，您可以选择该状态下的最优动作，对所有状态都这样做，然后再次进行 q 值的估计/预测以及最优动作的选择。重复这些操作，直到策略和 q 值达到某种收敛。
 
-![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{q}_{\pi}\left({s}_i,{a}_i\right)-\hat{q}\left({s}_i,{a}_i;w\right)\right].{\nabla}_w\ \hat{q}\left({s}_i,{a}_i;w\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ24.png)
+![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{q}_{\pi}\left({s}_i,{a}_i\right)-\hat{q}\left({s}_i,{a}_i;w\right)\right].{\nabla}_w\ \hat{q}\left({s}_i,{a}_i;w\right) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ24.png)
 
 (5-24)
 
@@ -671,7 +671,7 @@ sarsa-lambda from 5.b-lambda-sarsa.ipynb
 
 在这里，您使用了一个不同的权重向量 ![$$ {w}_t^{-} $$](img/502835_2_En_5_Chapter_TeX_IEq29.png) 来计算目标估计。本质上，您有两个网络，一个称为 *在线* 网络带有权重 *w*，它根据方程 5-24 进行更新，另一个类似的网络称为 *目标网络*，但带有名为 *w*^− 的权重副本。权重向量 *w*^− 的更新频率较低，例如，在在线网络权重 *w* 更新后的每 100 次更新。这种方法使目标网络保持不变，并允许您使用监督学习的机制。此外，请注意，下标 *i* 表示迷你批次的样本，而 *t* 表示权重更新的索引。将所有这些放在一起，最终的更新方程可以写成以下形式：
 
-![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{r}_i+\gamma {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime };{w_t}^{-}\right)-\hat{q}\left({s}_i,{a}_i;{w}_t\right)\right].{\nabla}_{w_t}\ \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ25.png)
+![$$ {w}_{t+1}={w}_t+\alpha .\kern0.5em \frac{1}{N}\sum \limits_{i=1}^N\left[{r}_i+\gamma {\mathit{\max}}_{a_i^{\prime }}\overset{\sim }{q}\left({s}_i^{\prime },{a}_i^{\prime };{w_t}^{-}\right)-\hat{q}\left({s}_i,{a}_i;{w}_t\right)\right].{\nabla}_{w_t}\ \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](img/502835_2_En_5_Chapter/502835_2_En_5_Chapter_TeX_Equ25.png)
 
 (5-25)
 

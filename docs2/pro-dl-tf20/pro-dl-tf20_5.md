@@ -52,7 +52,7 @@
 
 一个更好的方法是取整个不确定性空间上模型的平均值，即基于后验分布取模型的均值，如下所示：
 
-![Model = E[Model/ Data] = ∫ Model P(Model/ Data)d(Model)](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equj.png)
+![Model = E[Model/ Data] = ∫ Model P(Model/ Data)d(Model)](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equj.png)
 
 为了激发似然和后验的概念以及它们如何用于推导模型参数，让我们再次回到硬币问题。
 
@@ -471,13 +471,13 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 现在，让我们看看分母，它与分子看起来相似，只是对所有的可能隐藏状态 *h* 进行了求和。使用 (5.3.6) 中的 ![$$ {e}^{c^Th}{e}^{v^T Wh} $$](img/448418_2_En_5_Chapter_TeX_IEq9.png) 的表达式，分母可以表示如下：
 
-![$$ \sum \limits_h{e}^{c^Th}{e}^{v^T Wh}=\space \sum \limits_h\prod \limits_{j=1}^n{e}^{c_j{h}_j+{v}^TW\left[:,j\right]{h}_j} $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ15.png)
+![$$ \sum \limits_h{e}^{c^Th}{e}^{v^T Wh}=\space \sum \limits_h\prod \limits_{j=1}^n{e}^{c_j{h}_j+{v}^TW\left[:,j\right]{h}_j} $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ15.png)
 
 (5.3.7)
 
 向量的求和意味着对其所有分量组合的求和。每个隐藏单元 *h*[*i*] 可以有一个二进制状态 0 或 1，因此 *h*[*j*] ∈ {0, 1} ∀ *j* ∈ (1, 2, 3, ..*n*}。所以，在 (5.3.7) 中对向量 *h* 的求和可以展开成对应于其每个分量的多个求和：
 
-![$$ {\displaystyle \begin{array}{c}\sum \limits_h{e}^{c^Th}{e}^{v^T Wh}=\sum \limits_{h_1=0}¹\sum \limits_{h_2=0}¹..\sum \limits_{h_n=0}¹\prod \limits_{j=1}^n{e}^{c_j{h}_j+{v}^TW\left[:,j\right]{h}_j}\\ {}=\sum \limits_{h_1=0}¹\sum \limits_{h_2=0}¹..\sum \limits_{h_n=0}¹\left({e}^{c_1{h}_1+{v}^TW\left[:,1\right]{h}_1}\right)\left({e}^{c_2{h}_2+{v}^TW\left[:,2\right]{h}_2}\right)\dots \left({e}^{c_n{h}_n+{v}^TW\left[:,n\right]{h}_n}\right)\end{array}} $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ16.png)
+![$$ {\displaystyle \begin{array}{c}\sum \limits_h{e}^{c^Th}{e}^{v^T Wh}=\sum \limits_{h_1=0}¹\sum \limits_{h_2=0}¹..\sum \limits_{h_n=0}¹\prod \limits_{j=1}^n{e}^{c_j{h}_j+{v}^TW\left[:,j\right]{h}_j}\\ {}=\sum \limits_{h_1=0}¹\sum \limits_{h_2=0}¹..\sum \limits_{h_n=0}¹\left({e}^{c_1{h}_1+{v}^TW\left[:,1\right]{h}_1}\right)\left({e}^{c_2{h}_2+{v}^TW\left[:,2\right]{h}_2}\right)\dots \left({e}^{c_n{h}_n+{v}^TW\left[:,n\right]{h}_n}\right)\end{array}} $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ16.png)
 
 (5.3.8)
 
@@ -485,9 +485,9 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 ![$$ {\displaystyle \begin{array}{c}\sum \limits_{j=1}²\sum \limits_{i=1}³{a}_i{b}_j={a}_1{b}_1+{a}_2{b}_1+{a}_3{b}_1+{a}_1{b}_2+{a}_2{b}_2+{a}_3{b}_2\\ {}={b}_1\left({a}_1+{a}_2+{a}_3\right)+{b}_2\left({a}_1+{a}_2+{a}_3\right)\\ {}\space =\left({a}_1+{a}_2+{a}_3\right)\left({b}_1+{b}_2\right)\\ {}\space =\left(\sum \limits_{i=1}³{a}_i\right)\left(\sum \limits_{j=1}²{b}_j\right)\end{array}} $$](img/448418_2_En_5_Chapter_TeX_Equai.png)
 
-因此，我们看到当我们取具有独立索引的变量的元素时，变量的乘积之和可以表示为变量之和的乘积。类似于这个例子，*h* 的元素（即 *h*[*i*]）通常独立地参与以下乘积 ![$$ \left({e}^{c_1{h}_1+{v}^TW\left[:,1\right]{h}_1}\right)\left({e}^{c_2{h}_2+{v}^TW\left[:,2\right]{h}_2}\right)\dots \left({e}^{c_n{h}_n+{v}^TW\left[:,n\right]{h}_n}\right) $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_IEq10.png)，因此 (5.3.8) 中的表达式可以简化如下：
+因此，我们看到当我们取具有独立索引的变量的元素时，变量的乘积之和可以表示为变量之和的乘积。类似于这个例子，*h* 的元素（即 *h*[*i*]）通常独立地参与以下乘积 ![$$ \left({e}^{c_1{h}_1+{v}^TW\left[:,1\right]{h}_1}\right)\left({e}^{c_2{h}_2+{v}^TW\left[:,2\right]{h}_2}\right)\dots \left({e}^{c_n{h}_n+{v}^TW\left[:,n\right]{h}_n}\right) $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_IEq10.png)，因此 (5.3.8) 中的表达式可以简化如下：
 
-![$$ \sum \limits_h{e}^{c^Th}{e}^{v^T Wh}=\sum \limits_{h_1=0}¹\left({e}^{c_1{h}_1+{v}^TW\left[:,1\right]{h}_1}\right)\sum \limits_{h_1=0}¹\left({e}^{c_2{h}_2+{v}^TW\left[:,2\right]{h}_2}\right)..\sum \limits_{h_n=0}¹\left({e}^{c_n{h}_n+{v}^TW\left[:,n\right]{h}_n}\right) $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equaj.png)
+![$$ \sum \limits_h{e}^{c^Th}{e}^{v^T Wh}=\sum \limits_{h_1=0}¹\left({e}^{c_1{h}_1+{v}^TW\left[:,1\right]{h}_1}\right)\sum \limits_{h_1=0}¹\left({e}^{c_2{h}_2+{v}^TW\left[:,2\right]{h}_2}\right)..\sum \limits_{h_n=0}¹\left({e}^{c_n{h}_n+{v}^TW\left[:,n\right]{h}_n}\right) $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equaj.png)
 
 ![公式](img/448418_2_En_5_Chapter_TeX_Equ17.png)
 
@@ -557,7 +557,7 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 我们需要训练玻尔兹曼机以推导出模型参数*b*、*c*、*W*，其中*b*和*c*分别是可见单元和隐藏单元的偏置向量，而*W*是可见层和隐藏层之间的权重连接矩阵。为了便于参考，可以将模型参数统称为以下内容：
 
-![$$ \theta =\left[b;c;W\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equao.png)
+![$$ \theta =\left[b;c;W\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equao.png)
 
 该模型可以通过最大化输入数据点的对数似然函数相对于模型参数来训练。输入仅仅是每个数据点对应于可见单元的数据。似然函数由以下给出：
 
@@ -627,23 +627,23 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 同样，如果 *f* (*x*) 是一个函数向量，使得 *f* (*x*) =  *f*[1 *f*2]^(*T*)，可以使用与期望相同的表达式。在这里，会得到一个期望向量，如下所示：
 
-![E[f(x)]=∑_xP(x)f(x)=[∑_x_1∑_x_2...∑_x_nP(x_1,x_2,...,x_n)f_1(x_1,x_2,...,x_n)∑_x_1∑_x_2...∑_x_nP(x_1,x_2,...,x_n)f_2(x_1,x_2,...,x_n)]](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ33.png)
+![E[f(x)]=∑_xP(x)f(x)=[∑_x_1∑_x_2...∑_x_nP(x_1,x_2,...,x_n)f_1(x_1,x_2,...,x_n)∑_x_1∑_x_2...∑_x_nP(x_1,x_2,...,x_n)f_2(x_1,x_2,...,x_n)]](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ33.png)
 
 (5.3.25)
 
 为了在期望符号中明确提及概率分布，可以将变量*x*遵循概率分布*P*(x)的函数的期望或函数向量期望重写如下：
 
-![E_P(x)[f(x)]=∑_xP(x)f(x)](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equav.png)
+![E_P(x)[f(x)]=∑_xP(x)f(x)](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equav.png)
 
 由于我们处理的是梯度，它是不同偏导数的向量，并且每个偏导数都是*h*的函数，给定*θ*和*v*的值，因此(5.3.24)中的方程可以用关于概率分布*P*(h/v^(t),θ)的梯度期望∇*θ*), *h*))来表示，如下所示：
 
-![∇_θ(ρ^+)=∑_t=1^mE_P(h/v^(t),θ)[∇_θ(-E(v^(t),h))]](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ34.png)
+![∇_θ(ρ^+)=∑_t=1^mE_P(h/v^(t),θ)[∇_θ(-E(v^(t),h))]](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ34.png)
 
 (5.3.26)
 
-注意，期望![E_P(h/v^(t),θ)[∇_θ(-E(v^(t),h))]](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_IEq14.png)是一个期望向量，如(5.3.25)所示。
+注意，期望![E_P(h/v^(t),θ)[∇_θ(-E(v^(t),h))]](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_IEq14.png)是一个期望向量，如(5.3.25)所示。
 
-现在，让我们求关于*θ*的梯度![ρ^-=mlog∑_v∑_he^(-E(v,h))](img/[ρ^-=mlog∑_v∑_he^(-E(v,h))])(../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_IEq15.png)：
+现在，让我们求关于*θ*的梯度![ρ^-=mlog∑_v∑_he^(-E(v,h))](img/[ρ^-=mlog∑_v∑_he^(-E(v,h))])(img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_IEq15.png)：
 
 ![∇_θ(ρ^-)=m(∑_v∑_he^(-E(v,h))/∇_θ(-E(v,h)))(∑_v∑_he^(-E(v,h)))/(∑_v∑_he^(-E(v,h)))](img/448418_2_En_5_Chapter_TeX_Equ35.png)
 
@@ -651,7 +651,7 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 (5.3.27)中的期望是在*h*和*v*的联合分布上，而(5.3.26)中的期望是在给定已观察*v*的*h*上。结合(5.3.26)和(5.3.27)，我们得到以下结果：
 
-![$$ {\nabla}_{\theta }(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-{mE}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ36.png)
+![$$ {\nabla}_{\theta }(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-{mE}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ36.png)
 
 (5.3.28)
 
@@ -673,39 +673,39 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 使用 (5.3.28) 到 (5.3.31)，关于每个参数集的梯度表达式如下所示：
 
-![$$ {\nabla}_b(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{v}^{(t)}\right]-{mE}_{P\left(h,v/\theta \right)}\left[v\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ40.png)
+![$$ {\nabla}_b(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{v}^{(t)}\right]-{mE}_{P\left(h,v/\theta \right)}\left[v\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ40.png)
 
 (5.3.32)
 
 由于第一项的概率分布是条件于 v^((*t*)) 的，因此 v^((*t*)) 关于 *P*(*h*/*v*^((*t*)), *θ*) 的期望是 v^((*t*)).
 
-![$$ {\nabla}_b(C)=\sum \limits_{t=1}^m{v}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[v\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ41.png)
+![$$ {\nabla}_b(C)=\sum \limits_{t=1}^m{v}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[v\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ41.png)
 
 (5.3.33)
 
-![$$ {\nabla}_c(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[h\right]-{mE}_{P\left(h,v/\theta \right)}\left[h\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ42.png)
+![$$ {\nabla}_c(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[h\right]-{mE}_{P\left(h,v/\theta \right)}\left[h\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ42.png)
 
 (5.3.34)
 
 在概率分布 *P*(*h*/*v*^((*t*)), *θ*) 上对 *h* 的期望可以很容易地计算，因为给定 *v*^((*t*)) 的每个 *h* 的单元（即 *h*[*j*]）都是独立的。每个单元都是一个具有两种可能结果的 Sigmoid 单元，它们的期望仅仅是 Sigmoid 单元的输出，即，
 
-![$$ {E}_{P\left(h/{v}^{(t)},\theta \right)}\left[h\right]={\hat{h}}^{(t)}=\sigma \left(c+{W}^T{v}^{(t)}\right) $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equaw.png)
+![$$ {E}_{P\left(h/{v}^{(t)},\theta \right)}\left[h\right]={\hat{h}}^{(t)}=\sigma \left(c+{W}^T{v}^{(t)}\right) $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equaw.png)
 
 如果我们将期望替换为 *ĥ*，那么 (5.3.34) 中的表达式可以写成以下形式：
 
-![$$ {\nabla}_c(C)=\sum \limits_{t=1}^m{\hat{h}}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[h\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ43.png)
+![$$ {\nabla}_c(C)=\sum \limits_{t=1}^m{\hat{h}}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[h\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ43.png)
 
 (5.3.35)
 
 同样，
 
-![$$ {\displaystyle \begin{array}{l}{\nabla}_W\kern0.5em (C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\kern0.5em \theta \right)}\left[{v}^{(t)}{h}^T\right]-{mE}_{P\left(h,\kern0.5em v/q\right)}\left[h\right]\\ {}\operatorname{}=\sum \limits_{t=1}^m{v}^{(t)}{\hat{h}}^{(t)T}-{mE}_{P\left(h,\kern0.5em v/\theta \right)}\left[h\right]\end{array}} $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ44.png)
+![$$ {\displaystyle \begin{array}{l}{\nabla}_W\kern0.5em (C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\kern0.5em \theta \right)}\left[{v}^{(t)}{h}^T\right]-{mE}_{P\left(h,\kern0.5em v/q\right)}\left[h\right]\\ {}\operatorname{}=\sum \limits_{t=1}^m{v}^{(t)}{\hat{h}}^{(t)T}-{mE}_{P\left(h,\kern0.5em v/\theta \right)}\left[h\right]\end{array}} $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ44.png)
 
 (5.3.36)
 
 因此，(5.3.33)、(5.3.35) 和 (5.3.36) 中的表达式代表了关于三个参数集的梯度。为了便于参考，
 
-![$$ \left\{\begin{array}{l}{\nabla}_b(C)=\sum \limits_{t=1}^m{v}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[v\right]\\ {}{\nabla}_c(C)=\sum \limits_{t=1}^m{\hat{h}}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[h\right]\\ {}{\nabla}_W(C)=\sum \limits_{t=1}^m{v}^{(t)}{\hat{h}}^{(t)^T}-{mE}_{P\left(h,v/\theta \right)}\left[h\right]\end{array}\right. $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ45.png)
+![$$ \left\{\begin{array}{l}{\nabla}_b(C)=\sum \limits_{t=1}^m{v}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[v\right]\\ {}{\nabla}_c(C)=\sum \limits_{t=1}^m{\hat{h}}^{(t)}-{mE}_{P\left(h,v/\theta \right)}\left[h\right]\\ {}{\nabla}_W(C)=\sum \limits_{t=1}^m{v}^{(t)}{\hat{h}}^{(t)^T}-{mE}_{P\left(h,v/\theta \right)}\left[h\right]\end{array}\right. $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equ45.png)
 
 (5.3.37)
 
@@ -739,21 +739,21 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 ![x2/x1~Normal(ρx1,1-p²)](img/448418_2_En_5_Chapter_TeX_Equba.png)
 
-![x1/x2~Normal(ρx2,1-p²)] (../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbb.png)
+![x1/x2~Normal(ρx2,1-p²)] (img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbb.png)
 
 ### 块状吉布斯采样
 
 吉布斯采样有几种变体。块状吉布斯采样是其中之一。在块状吉布斯采样中，多个变量被分组在一起，然后基于其他变量的条件，对变量组进行采样，而不是分别对单个变量进行采样。例如，在受限玻尔兹曼机中，隐藏单元状态变量 *h* = [*h*[1] *h*[2]… *h*[*n*]]^(*T*) 可以在可见单元状态 =[*v*[1] *v*[2]…*v*[*m*]]^(*T*) 的条件下一起采样，反之亦然。因此，为了从联合概率分布 *P*(*v*, *h*) 中采样，通过块状吉布斯采样，可以在条件分布 *P*(*h*/*v*) 的给定下采样所有隐藏状态，并通过条件分布 *P*(*v*/*h*) 采样所有可见单元状态。吉布斯采样的 (*t* + 1) 迭代中的样本可以生成如下：
 
-![h^(t+1)~P(h|v^(t))] (../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbc.png)
+![h^(t+1)~P(h|v^(t))] (img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbc.png)
 
-![v^(t+1)~P(v|h^(t+1))] (../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbd.png)
+![v^(t+1)~P(v|h^(t+1))] (img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbd.png)
 
 因此，(*v*^((*t* + 1)), *h*^((*t* + 1))) 是迭代 (*t* + 1) 的组合样本。
 
 基于上述采样方法收集的样本，函数 *f* (*h*, *v*) 的期望可以计算如下：
 
-![E[f(h,v)]≈1/M∑t=1Mf(h^(t),v^(t))] (../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Eqube.png)
+![E[f(h,v)]≈1/M∑t=1Mf(h^(t),v^(t))] (img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Eqube.png)
 
 其中 *M* 表示从联合概率分布 *P*(*v*, *h*) 生成的样本数量。
 
@@ -767,7 +767,7 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 如方程（5.3.37）中所述，可以使用块 Gibbs 采样来计算相对于联合概率分布 *P*(*v*, *h*/*θ*) 的期望，用于计算相对于模型参数 *b*，*c* 和 *W* 的梯度。以下是方程（5.3.37）的方程，便于参考：
 
-![ {∇}_b(C) = ∑(t=1)^m v^(t) - mE_P(h,v/θ)[v] ; {∇}_c(C) = ∑(t=1)^m ^h - mE_P(h,v/θ)[h] ; {∇}_W(C) = ∑(t=1)^m v^(t) ^h^T - mE_P(h,v/θ)[vh^T] ]](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbf.png)
+![ {∇}_b(C) = ∑(t=1)^m v^(t) - mE_P(h,v/θ)[v] ; {∇}_c(C) = ∑(t=1)^m ^h - mE_P(h,v/θ)[h] ; {∇}_W(C) = ∑(t=1)^m v^(t) ^h^T - mE_P(h,v/θ)[vh^T] ]](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbf.png)
 
 期望 *E*[*P*(*h*,*v*/*θ*)][*v*]，*E*[*P*(*h*,*v*/*θ*)][*h*]，以及 *E*[*P*(*h*,*v*/*θ*)][*vh*^(*T*)]，所有这些都需要从联合概率分布 *P*(*v*, *h*/*θ*) 中进行采样。通过块 Gibbs 采样，可以根据它们的条件概率抽取 (*v*, *h*) 样本，其中 *t* 表示 Gibbs 采样的迭代次数：
 
@@ -807,19 +807,19 @@ Bivariate Gaussian Distribution Through Metropolis Algorithm
 
 在梯度下降的每一步对联合概率分布 *P*(*h*, *v*| *θ*) 进行吉布斯抽样变得具有挑战性，因为像吉布斯抽样这样的马尔可夫链蒙特卡洛方法需要很长时间才能收敛，而这正是产生无偏样本所必需的。这些从联合概率分布中抽取的无偏样本用于计算期望项 *E*[*P*(*h*,*v*/*θ*)][*v*]，*E*[*P*(*h*,*v*/*θ*)][*h*]，和 *E*[*P*(*h*,*v*/*θ*)][*vh*^(*T*)]，这些实际上就是梯度综合表达式中 *E*[*P*(*h*, *v*/*θ*)]∇[*θ*)] 的组成部分，如(5.3.28)中推导出的。
 
-![$$ {\nabla}_{\theta }(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-{mE}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbo.png)
+![$$ {\nabla}_{\theta }(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-{mE}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbo.png)
 
 前一方程中的第二项可以重写为对 *m* 个数据点的求和，因此
 
-![$$ {\nabla}_{\theta }(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-\sum \limits_{t=1}^m{E}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbp.png)
+![$$ {\nabla}_{\theta }(C)=\sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-\sum \limits_{t=1}^m{E}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbp.png)
 
 对比散度通过在通过仅进行几次迭代进行吉布斯抽样的候选样本 ![$$ \left(\overline{v},\overline{h}\right) $$](img/448418_2_En_5_Chapter_TeX_IEq19.png) 上进行点估计来近似整体期望 *E*[*P*(*h*, *v*/*θ*)]∇[*θ*)]。
 
-![$$ {E}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right]\space \approx {\nabla}_{\theta}\left(-E\left(\overline{v},\overline{h}\right)\right) $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbq.png)
+![$$ {E}_{P\left(h,v/\theta \right)}\left[{\nabla}_{\theta}\left(-E\left(v,h\right)\right)\right]\space \approx {\nabla}_{\theta}\left(-E\left(\overline{v},\overline{h}\right)\right) $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbq.png)
 
 这种近似对每个数据点 *v*^((*t*)) 都进行，因此整体梯度的表达式可以重写如下：
 
-![$$ {\nabla}_{\theta }(C)\approx \sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-\sum \limits_{t=1}^m\left[{\nabla}_{\theta}\left(-E\left({\overline{v}}^{(t)},{\overline{h}}^{(t)}\right)\right)\right] $$](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbr.png)
+![$$ {\nabla}_{\theta }(C)\approx \sum \limits_{t=1}^m{E}_{P\left(h/{v}^{(t)},\theta \right)}\left[{\nabla}_{\theta}\left(-E\left({v}^{(t)},h\right)\right)\right]-\sum \limits_{t=1}^m\left[{\nabla}_{\theta}\left(-E\left({\overline{v}}^{(t)},{\overline{h}}^{(t)}\right)\right)\right] $$](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbr.png)
 
 图 5-6 展示了如何对每个输入数据点 *v*^((*t*)) 进行吉布斯抽样，通过点估计来获得联合概率分布的期望近似。吉布斯抽样从 *v*^((*t*)) 开始，并根据条件概率分布 *P*(*h*/*v*^((*t*))) 获得新的隐藏状态 *h*'。如前所述，每个隐藏单元 *h*[*j*] 可以独立采样并组合形成隐藏状态向量 *h* '。然后根据条件概率分布 *P*(*v*/*h*') 采样 *v*'。这个迭代过程通常运行几个迭代，最后采样的 *v* 和 *h* 被作为候选样本 ![$$ \left(\overline{v},\overline{h}\right) $$](img/448418_2_En_5_Chapter_TeX_IEq20.png)。
 
@@ -1280,11 +1280,11 @@ Basic Implementation of DBN
 
 图 5-13 表示了一个具有一个隐藏层以及输入和输出层的简单自动编码器。输入 *x* = [*x*[1] *x*[2]…*x*[6]]^(*T*) ∈ *R*^(6 × 1)，而隐藏层 *h* = [*h*[1] *h*[2] . . *h*[4]]^(*T*) ∈ *R*^(4 × 1)。输出 *y* 被选择为等于 *x*，以便最小化重建输入 ![$$ \hat{y} $$](img/448418_2_En_5_Chapter_TeX_IEq21.png) 之间的误差，从而在隐藏层中获得输入的有意义表示。为了通用性，让我们考虑以下情况：
 
-![x={\left[{x}_1\ {x}_2\dots {x}_n\right]}^T\in {R}^{n\times 1}](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbx.png)
+![x={\left[{x}_1\ {x}_2\dots {x}_n\right]}^T\in {R}^{n\times 1}](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbx.png)
 
-![h={\left[{h}_1\ {h}_2\dots {h}_d\right]}^T\in {R}^{d\times 1}](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equby.png)
+![h={\left[{h}_1\ {h}_2\dots {h}_d\right]}^T\in {R}^{d\times 1}](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equby.png)
 
-![y=x={\left[{y}_1\ {y}_2\dots {y}_6\right]}^T\in {R}^{n\times 1}](../images/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbz.png)
+![y=x={\left[{y}_1\ {y}_2\dots {y}_6\right]}^T\in {R}^{n\times 1}](img/448418_2_En_5_Chapter/448418_2_En_5_Chapter_TeX_Equbz.png)
 
 将*x*到*h*的权重表示为权重矩阵*W* ∈ *R*^(*d* × *n*)，并将隐藏单元的偏差表示为*b* = [*b*[1] *b*[2]…*b*[*d*]]^(*T*) ∈ *R*^(*d* × 1)。
 

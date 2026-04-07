@@ -330,7 +330,7 @@ Latent representation using multiple layers
 
 损失 ![$$ J(W)=L\left(X,\hat{X}\right)+\lambda {\sum}_j KL\left(\rho \Big\Vert {\hat{\rho}}_j\right) $$](img/611710_1_En_11_Chapter_TeX_IEq7.png)
 
-其中！[$$ {\sum}_j KL\left(\rho \Big\Vert {\hat{\rho}}_j\right)={\sum}_j\left[\rho loglog\ \frac{\rho }{{\hat{\rho}}_j}+1-\rho\ loglog\ \frac{1-\rho }{1-{\hat{\rho}}_j}\ \right] $$](../images/611710_1_En_11_Chapter/611710_1_En_11_Chapter_TeX_IEq8.png)
+其中！[$$ {\sum}_j KL\left(\rho \Big\Vert {\hat{\rho}}_j\right)={\sum}_j\left[\rho loglog\ \frac{\rho }{{\hat{\rho}}_j}+1-\rho\ loglog\ \frac{1-\rho }{1-{\hat{\rho}}_j}\ \right] $$](img/611710_1_En_11_Chapter/611710_1_En_11_Chapter_TeX_IEq8.png)
 
 以及！$$ {\hat{\rho}}_j=\frac{1}{m}{\sum}_{i=1}^m{a}_j^h\left({x}_i\right) $$
 

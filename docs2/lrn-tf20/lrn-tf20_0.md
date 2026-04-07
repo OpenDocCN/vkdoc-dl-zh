@@ -4,7 +4,7 @@ Pramod Singh 和 Avinash Manure
 
 ## 使用 Python 实现机器学习和深度学习模型
 
-![../images/489297_1_En_BookFrontmatter_Figa_HTML.png](img/489297_1_En_BookFrontmatter_Figa_HTML.png)
+![img/489297_1_En_BookFrontmatter_Figa_HTML.png](img/489297_1_En_BookFrontmatter_Figa_HTML.png)
 
 ISBN 978-1-4842-5560-5e-ISBN 978-1-4842-5558-2[`doi.org/10.1007/978-1-4842-5558-2`](https://doi.org/10.1007/978-1-4842-5558-2)© Pramod Singh, Avinash Manure 2020Apress StandardTrademarked names, logos, and images may appear in this book. Rather than use a trademark symbol with every occurrence of a trademarked name, logo, or image, we use the names, logos, and images only in an editorial fashion and to the benefit of the trademark owner, with no intention of infringement of the trademark. The use in this publication of trade names, trademarks, service marks, and similar terms, even if they are not identified as such, is not to be taken as an expression of opinion as to whether or not they are subject to proprietary rights.While the advice and information in this book are believed to be true and accurate at the date of publication, neither the authors nor the editors nor the publisher can accept any legal responsibility for any errors or omissions that may be made. The publisher makes no warranty, express or implied, with respect to the material contained herein.Distributed to the book trade worldwide by Springer Science+Business Media New York, 233 Spring Street, 6th Floor, New York, NY 10013\. Phone 1-800-SPRINGER, fax (201) 348-4505, e-mail orders-ny@springer-sbm.com, or visit www.springeronline.com. Apress Media, LLC is a California LLC, and the sole member (owner) is Springer Science+Business Media Finance Inc (SSBM Finance Inc). SSBM Finance Inc is a Delaware corporation.
 

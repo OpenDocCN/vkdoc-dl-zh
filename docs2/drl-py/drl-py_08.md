@@ -150,13 +150,13 @@
 
 遵循策略的预期回报由以下公式给出：
 
-![$$ J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ3.png)
+![$$ J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ3.png)
 
 (8-3)
 
 你想要找到最大化预期回报*J*(*θ*)的*θ*。换句话说，最优的θ = θ^∗由以下表达式给出：
 
-![$$ {\uptheta}^{\ast }={\mathit{\arg}\mathit{\max}}_{\uptheta}{E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ4.png)
+![$$ {\uptheta}^{\ast }={\mathit{\arg}\mathit{\max}}_{\uptheta}{E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[{\sum}_tr\left({s}_t,{a}_t\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ4.png)
 
 (8-4)
 
@@ -172,7 +172,7 @@
 
 接下来，让我们尝试找到最优的 *θ*。为了使符号更容易理解，我将 ∑[*t*]*r*(*s*[*t*], *a*[*t*]) 替换为 *r*(τ)。重写方程 8-3，你得到以下内容：
 
-![J(θ) = E_τ~p_θ(τ)[r(τ)] = ∫p_θ(τ)r(τ) dτ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ6.png)
+![J(θ) = E_τ~p_θ(τ)[r(τ)] = ∫p_θ(τ)r(τ) dτ](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ6.png)
 
 (8-6)
 
@@ -190,13 +190,13 @@
 
 使用对数导数技巧，你知道 ∇[*x*]*f*(*x*) = *f*(*x*)∇[*x*]log*f*(*x*)。利用这一点，你可以将之前的方程 8-8 写成以下形式：
 
-![∇_θJ(θ) = ∫p_θ(τ)[∇_θlogp_θ(τ)r(τ)]dτ](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ9.png)
+![∇_θJ(θ) = ∫p_θ(τ)[∇_θlogp_θ(τ)r(τ)]dτ](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ9.png)
 
 (8-9)对数导数技巧
 
 从一个概率分布 *p*θ 开始，其中 x 是随机变量，θ 代表概率分布的参数。比如说你有这个表达式：
 
-![G(θ) = E_x~p_θ(x)[f(x)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equi.png)
+![G(θ) = E_x~p_θ(x)[f(x)]](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equi.png)
 
 你现在想要计算*G*(θ)相对于θ的导数。为了简化，假设*x*和θ都是单变量。你通过将期望转换为积分来写出*G*(θ)。你可以将*G*(θ)重写为：
 
@@ -236,7 +236,7 @@
 
 现在通过写出从方程 8-2 中得到的*p*θ的完整表达式来展开项∇[*θ*] log *p**θ*。
 
-![$$ {\nabla}_{\theta}\log {p}_{\theta}\left(\tau \right)={\nabla}_{\theta}\mathit{\log}\left[p\left({s}_1\right){\prod}_{t=1}^T{\pi}_{\theta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ11.png)
+![$$ {\nabla}_{\theta}\log {p}_{\theta}\left(\tau \right)={\nabla}_{\theta}\mathit{\log}\left[p\left({s}_1\right){\prod}_{t=1}^T{\pi}_{\theta}\left({a}_t|{s}_t\right)p\left({s}_{t+1}|{s}_t,{a}_t\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ11.png)
 
 (8-11)
 
@@ -248,7 +248,7 @@
 
 将方程 8-12 代入方程 8-11，得到以下结果：
 
-![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\nabla}_{\uptheta}\left[\log p\left({s}_1\right)+{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)+\log p\left({s}_{t+1}|{s}_t,{a}_t\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ13.png)
+![$$ {\nabla}_{\uptheta}\log {p}_{\uptheta}\left(\uptau \right)={\nabla}_{\uptheta}\left[\log p\left({s}_1\right)+{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)+\log p\left({s}_{t+1}|{s}_t,{a}_t\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ13.png)
 
 (8-13)
 
@@ -260,13 +260,13 @@
 
 通过将方程 8-14 代入方程 8-10 中∇[*θ*]*J*(*θ*)的表达式，以及将回报 r(*τ*)展开为∑[*t*]*r*(*s*[*t*], *a*[*t*])，得到以下结果：
 
-![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ15.png)
+![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ15.png)
 
 (8-15)
 
 你现在可以用多个轨迹的估计/平均来替换外层期望，得到以下关于*策略目标梯度*的表达式：
 
-![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ16.png)
+![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ16.png)
 
 (8-16)
 
@@ -298,7 +298,7 @@
 
 通过比较方程 8-17 中的表达式与最大似然的表达式，考虑这种解释。如果你只想对观察到的轨迹的概率进行建模，你会得到最大似然估计——你观察到一些数据（轨迹），你希望构建一个模型，该模型具有产生观察到的数据/轨迹的最高概率。这是最大似然模型构建。在这种情况下，你会得到以下方程：
 
-![$$ {\nabla}_{\uptheta}{J}_{MLE}\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ18.png)
+![$$ {\nabla}_{\uptheta}{J}_{MLE}\left(\uptheta \right)\approx \frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ18.png)
 
 (8-18)
 
@@ -330,7 +330,7 @@ REINFORCE 算法
 
 您可以使用 PyTorch、JAX 或 TensorFlow 等自动微分库。您不需要显式地计算微分。方程 8-16 给出了 ∇[θ]*J*(*θ*) 的表达式。使用 PyTorch 或其他此类库时，您需要一个 *J*(θ) 表达式，在反向传播过程中，将使用自动微分来计算 ∇[θ]*J*(*θ*)，然后使用方程 8-17 更新神经网络权重 θ。神经网络模型将状态 *s* 作为输入，并产生 πθ。因此，您需要使用这个输出并执行进一步计算，以得到 *J*(θ) 的表达式。PyTorch 或 TensorFlow 等自动微分包将自动从 *J*(θ) 的表达式中计算梯度 ∇[θ]*J*(*θ*)。*J*(θ) 的正确表达式如下：
 
-![J(θ)≈1/N∑i=1N[∑t=1Tlogπθ(aTi|st^i)∑t=1T∑t=1^Tr(st^i,at^i)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ19.png)
+![J(θ)≈1/N∑i=1N[∑t=1Tlogπθ(aTi|st^i)∑t=1T∑t=1^Tr(st^i,at^i)]](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ19.png)
 
 (8-19)
 
@@ -340,7 +340,7 @@ REINFORCE 算法
 
 然后你计算对数概率 ![$$ \log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right) $$](img/502835_2_En_8_Chapter_TeX_IEq14.png)，根据轨迹的总奖励 ![$$ {\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right) $$](img/502835_2_En_8_Chapter_TeX_IEq15.png) 来权衡概率，然后计算加权量的负对数似然（NLL，或交叉熵损失），这给出了方程 8-20 中的表达式。这与在监督学习设置中训练多类分类模型的方案类似。唯一的区别是使用轨迹奖励来权衡对数概率。当动作是离散的时，你将采取这种方法。你在 PyTorch 中实现的损失如下：
 
-![$$ {L}_{\mathrm{cross}-\mathrm{entropy}}\left(\uptheta \right)=-1\cdotp \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ20.png)
+![$$ {L}_{\mathrm{cross}-\mathrm{entropy}}\left(\uptheta \right)=-1\cdotp \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ20.png)
 
 (8-20)
 
@@ -372,13 +372,13 @@ REINFORCE 算法
 
 现在您将均方误差与轨迹回报相权衡，这将形成您在 PyTorch 中实现的损失方程，如等式 8-24 所示。
 
-![$$ {L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\left({a}_t^i-{\mu}_{\theta}\right)}²\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ24.png)
+![$$ {L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T{\left({a}_t^i-{\mu}_{\theta}\right)}²\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ24.png)
 
 (8-24)
 
 再次注意，使用 *L**MSE* 的梯度，然后沿着梯度的负方向进行一步，将产生以下表达式：
 
-![$$ -{\nabla}_{\theta }{L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\left({a}_t^i-{\mu}_{\theta}\right)\ {\nabla}_{\theta }\ {\mu}_{\theta}\left({s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ25.png)
+![$$ -{\nabla}_{\theta }{L}_{MSE}\left(\uptheta \right)=\kern0.75em \frac{1}{N}{\sum}_{i=1}^N\left[\left({\sum}_{t=1}^T\left({a}_t^i-{\mu}_{\theta}\right)\ {\nabla}_{\theta }\ {\mu}_{\theta}\left({s}_t^i\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t^i,{a}_t^i\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ25.png)
 
 (8-25)
 
@@ -402,15 +402,15 @@ REINFORCE 算法
 
 从方程 8-15 开始。
 
-![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equs.png)
+![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left({\sum}_{t=1}^Tr\left({s}_t,{a}_t\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equs.png)
 
 现在将奖励项的求和索引从 *t* 改为 *t*^′，并将奖励求和项移到策略 π[θ] 的第一个动作求和内部。这给出了以下表达式：
 
-![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime }=1}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equt.png)
+![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime }=1}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equt.png)
 
 在 *t* 的索引求和内部，您将时间 *t* 之前的奖励项丢弃。在时间 *t*，您采取的动作只能影响时间 *t* 以及之后到来的奖励。这导致第二个内部求和从 *t*^′ = *t* 开始，而不是从 *t*^′ = 1 开始。修正后的表达式如下：
 
-![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equu.png)
+![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T\left({\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right){\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right)\right)\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equu.png)
 
 内部求和 ![$$ {\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](img/502835_2_En_8_Chapter_TeX_IEq23.png) 已不再是轨迹的总奖励。相反，它是从时间 *t* 到 *T* 的剩余轨迹的奖励。如您所回忆的那样，这仅仅是当前策略在状态-动作对 ![$$ \left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](img/502835_2_En_8_Chapter_TeX_IEq24.png) 时的 q 值的样本。一个策略的 q 值是在时间 *t* 从状态 *s*[*t*] 开始采取一步/动作 *a*[*t*] 后，直到结束的预期奖励。您也可以称之为 *剩余奖励*。由于表达式 ![$$ {\sum}_{t^{\prime }=t}^Tr\left({s}_{t^{\prime }},{a}_{t^{\prime }}\right) $$](img/502835_2_En_8_Chapter_TeX_IEq25.png) 仅针对一条轨迹，因此您将其表示为预期剩余奖励的单个样本估计。更新的梯度方程如下：
 
@@ -647,7 +647,7 @@ Training the Agent from 8.a-reinforce.ipynb
 
 将方程 8-15 更新以引入基线。
 
-![${\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left(r\left(\tau \right)-\mathrm{b}\Big({\mathrm{s}}_t\right)\Big)\right]$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equz.png)
+![${\nabla}_{\uptheta}J\left(\uptheta \right)={E}_{\uptau \sim {p}_{\uptheta}\left(\uptau \right)}\left[\left({\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\right)\left(r\left(\tau \right)-\mathrm{b}\Big({\mathrm{s}}_t\right)\Big)\right]$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equz.png)
 
 将*b*(*s*[*t*])项单独列出并评估其期望值。
 
@@ -747,11 +747,11 @@ Training the Agent from 8.a-reinforce.ipynb
 
 从上一节继续，你可以重新写方程 8-32 中给出的梯度更新。以下是方程 8-32 中的原始梯度更新：
 
-![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equam.png)
+![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-b\left({s}_t^i\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equam.png)
 
 代入方程 8-35 中的 ![$$ b\left({s}_t^i\right)=V\left({s}_t^i\right) $$](img/502835_2_En_8_Chapter_TeX_IEq50.png)，你得到以下结果：
 
-![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ38.png)
+![$$ {\nabla}_{\uptheta}J\left(\uptheta \right)=\frac{1}{N}{\sum}_{i=1}^N{\sum}_{t=1}^T{\nabla}_{\uptheta}\log {\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\ \left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-V\left({s}_t^i\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ38.png)
 
 (8-38)
 
@@ -831,11 +831,11 @@ Actor-Critic 算法优势的说明。它包括输入、初始化、循环、拟�
 
 ![$$ Loss\left(\uptheta, \upphi \right)=-J\left(\uptheta, \upphi \right)-H\left({\uppi}_{\uptheta}\left({a}_t^i|{s}_t^i\right)\right) $$](img/502835_2_En_8_Chapter_TeX_Equat.png)
 
-![$$ =-\frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T\left(\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)\left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-{V}_{\phi}\left({s}_t^i\right)\right]\right)-\beta {\sum}_a{\pi}_{\theta}\left(a|{s}_t^i\right).\log {\pi}_{\theta}\left(a|{s}_t^i\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equau.png)
+![$$ =-\frac{1}{N}{\sum}_{i=1}^N\left[{\sum}_{t=1}^T\left(\log {\pi}_{\theta}\left({a}_t^i|{s}_t^i\right)\left[\hat{Q}\left({s}_t^i,{a}_t^i\right)-{V}_{\phi}\left({s}_t^i\right)\right]\right)-\beta {\sum}_a{\pi}_{\theta}\left(a|{s}_t^i\right).\log {\pi}_{\theta}\left(a|{s}_t^i\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equau.png)
 
 就像 REINFORCE 一样，您将在每条轨迹之后执行权重更新。因此，在先前的方程中，N 将等于 1。相反，您将平均它到动作的数量以获得平均损失。您将实现的函数如下：
 
-![$$ Loss\left(\uptheta, \upphi \right)=-\frac{1}{T}\left[{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\left[\hat{Q}\left({s}_t,{a}_t\right)-{V}_{\upphi}\left({s}_t\right)\right]\right)-\upbeta {\sum}_a{\uppi}_{\uptheta}\left(a|{s}_t\right).\log {\uppi}_{\uptheta}\left(a|{s}_t\right)\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equav.png)
+![$$ Loss\left(\uptheta, \upphi \right)=-\frac{1}{T}\left[{\sum}_{t=1}^T\left(\log {\uppi}_{\uptheta}\left({a}_t|{s}_t\right)\left[\hat{Q}\left({s}_t,{a}_t\right)-{V}_{\upphi}\left({s}_t\right)\right]\right)-\upbeta {\sum}_a{\uppi}_{\uptheta}\left(a|{s}_t\right).\log {\uppi}_{\uptheta}\left(a|{s}_t\right)\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equav.png)
 
 现在将您的注意力转向实际的 PyTorch 代码，您可以在`8.b-action_critic.ipynb`中找到它。让我们首先谈谈网络。您将有一个具有共享权重的联合网络，一个产生策略动作概率，另一个产生状态值。对于`CartPole`，它是一个简单的网络，如图 8-10 所示。
 
@@ -991,7 +991,7 @@ KL 散度是概率空间中两个概率分布之间的一种伪度量。连续�
 
 现在将注意力转向你试图最大化的目标。之前的指标 *J*(*θ*) 并没有对新旧策略参数有明确的依赖，比如说 θ[*k* + 1] 和 θ[*k*]。使用重要性采样，可以给出策略目标的另一种表述。你可以像这里一样陈述，而不需要数学推导：
 
-![J(θ, θ_k) = E_{a~π_θ_k(a|s)}[π_θ(a|s)/π_θ_k(a|s)A_π_θ_k(s,a)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ43.png)
+![J(θ, θ_k) = E_{a~π_θ_k(a|s)}[π_θ(a|s)/π_θ_k(a|s)A_π_θ_k(s,a)]](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equ43.png)
 
 (8-43)
 
@@ -1001,7 +1001,7 @@ KL 散度是概率空间中两个概率分布之间的一种伪度量。连续�
 
 ![s.t. D_KL(θ||θ_k) ≤ δ](img/502835_2_En_8_Chapter_TeX_Equbg.png)
 
-![其中，J(θ, θ_k) = E_{a~π_θ_k(a|s)}[π_θ(a|s)/π_θ_k(a|s)A_π_θ_k(s,a)]](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbh.png)
+![其中，J(θ, θ_k) = E_{a~π_θ_k(a|s)}[π_θ(a|s)/π_θ_k(a|s)A_π_θ_k(s,a)]](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbh.png)
 
 优势 ![A_π_θ_k(s,a)](img/502835_2_En_8_Chapter_TeX_IEq62.png) 的定义与之前相同：
 
@@ -1123,7 +1123,7 @@ PPO Agent for CartPole Using a Stable Baselines3 Implementation
 
 常规的策略梯度算法现在不仅训练于环境的外部奖励 *r*^(*e*)，还训练于结合了外部和内在奖励 *r*^(*e*) + *r*^(*i*)。在实践中，通过使用此方程的联合损失，ICM 模块的三个子模块和策略参数一起通过联合损失进行训练：
 
-![$$ \underset{\uptheta_P,{\uptheta}_I,{\uptheta}_F}{\min}\left[-\uplambda {E}_{\uppi \left({s}_t;{\uptheta}_P\right)}\left[{\Sigma}_t{r}_t\right]+\left(1-\upbeta \right){L}_I+\upbeta {L}_F\right] $$](../images/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbt.png)
+![$$ \underset{\uptheta_P,{\uptheta}_I,{\uptheta}_F}{\min}\left[-\uplambda {E}_{\uppi \left({s}_t;{\uptheta}_P\right)}\left[{\Sigma}_t{r}_t\right]+\left(1-\upbeta \right){L}_I+\upbeta {L}_F\right] $$](img/502835_2_En_8_Chapter/502835_2_En_8_Chapter_TeX_Equbt.png)
 
 其中 0 ≤ *β* ≤ 1 是一个标量，用于权衡逆模型损失与前向模型损失，*λ* > 0 是一个标量，用于权衡策略梯度损失与学习内在奖励信号的重要性。
 

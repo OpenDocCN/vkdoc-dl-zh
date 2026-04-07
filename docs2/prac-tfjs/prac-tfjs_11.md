@@ -76,7 +76,7 @@ Tensor
 
 除了可视化数据之外，您还可以使用其他方式创建更专业的图表，例如更美观的模型摘要（图 11-1）。
 
-![../images/494424_1_En_11_Chapter/494424_1_En_11_Fig1_HTML.jpg](img/494424_1_En_11_Fig1_HTML.jpg)
+![img/494424_1_En_11_Chapter/494424_1_En_11_Fig1_HTML.jpg](img/494424_1_En_11_Fig1_HTML.jpg)
 
 图 11-1
 
@@ -88,7 +88,7 @@ tfvis.show.modelSummary({ name: ‘Model’, tab: ‘Summary’}, model);
 
 或者，您可以使用以下方式可视化张量值的分布（图 11-2）。
 
-![../images/494424_1_En_11_Chapter/494424_1_En_11_Fig2_HTML.jpg](img/494424_1_En_11_Fig2_HTML.jpg)
+![img/494424_1_En_11_Chapter/494424_1_En_11_Fig2_HTML.jpg](img/494424_1_En_11_Fig2_HTML.jpg)
 
 图 11-2
 

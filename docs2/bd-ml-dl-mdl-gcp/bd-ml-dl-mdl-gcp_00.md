@@ -4,7 +4,7 @@ Ekaba Bisong
 
 ## 《初学者全面指南》
 
-![../images/463852_1_En_BookFrontmatter_Figa_HTML.png](img/463852_1_En_BookFrontmatter_Figa_HTML.png)
+![img/463852_1_En_BookFrontmatter_Figa_HTML.png](img/463852_1_En_BookFrontmatter_Figa_HTML.png)
 
 ISBN 978-1-4842-4469-2e-ISBN 978-1-4842-4470-8[`doi.org/10.1007/978-1-4842-4470-8`](https://doi.org/10.1007/978-1-4842-4470-8)© Ekaba Bisong 2019 本作品受版权保护。无论整个作品还是部分内容，所有权利均由出版社保留，具体包括翻译权、重印权、插图的使用权、朗诵权、广播权、在胶片或任何其他物理方式上的复制权，以及传输或信息存储和检索、电子改编、计算机软件或通过现在已知或将来开发的方法相似或不同的方法。商标名称、标志和图像可能出现在本书中。我们不会在每个商标名称、标志或图像出现时使用商标符号，我们仅以编辑方式使用名称、标志和图像，以商标所有者的利益为重，无意侵犯商标权。在本出版物中使用贸易名称、商标、服务标志和类似术语，即使它们没有被标识为这样的，也不应被视为对它们是否受专有权利约束的意见表达。虽然本书中的建议和信息在出版日期被认为是真实和准确的，但作者、编辑或出版社不能对可能出现的任何错误或遗漏承担任何法律责任。出版社对本书中包含的材料不提供任何明示或暗示的保证。本书由 Springer Science+Business Media New York 通过全球图书贸易发行，地址：纽约市 Spring Street 233 号，第 6 层，纽约，NY 10013。电话：1-800-SPRINGER，传真：(201) 348-4505，电子邮件：orders-ny@springer-sbm.com，或访问 www.springeronline.com。Apress Media, LLC 是一家加利福尼亚有限责任公司，唯一成员（所有者）是 Springer Science + Business Media Finance Inc（SSBM Finance Inc）。SSBM Finance Inc 是一家特拉华州公司。
 

@@ -42,7 +42,7 @@
 
 这通常不是你在博客、书籍和教程中看到的样子。它相当复杂，并且不太实用，尤其是当你想要绘制包含许多神经元的网络时。在文献中，你可以找到许多神经元的表示。在这本书中，我们将使用图 2-2 中所示的那种，因为它被广泛使用且易于理解。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig2_HTML.png](img/463356_1_En_2_Fig2_HTML.png)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig2_HTML.png](img/463356_1_En_2_Fig2_HTML.png)
 
 图 2-2
 
@@ -60,7 +60,7 @@
 
 ![$$ \widehat{y}=f(z)=f\left({w}_1{x}_1+{w}_2{x}_2+\cdots +{w}_{n_x}{x}_{n_x}+b\right) $$](img/463356_1_En_2_Chapter_TeX_Equc.png)
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig3_HTML.png](img/463356_1_En_2_Fig3_HTML.png)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig3_HTML.png](img/463356_1_En_2_Fig3_HTML.png)
 
 图 2-3
 
@@ -161,7 +161,7 @@ Out2 = np.multiply(list1_np, list2_np)
 
 当我在本章后面讨论单神经元线性回归时，这个简单的函数将非常有用。图 2-4 展示了它的样子。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig4_HTML.jpg](img/463356_1_En_2_Fig4_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig4_HTML.jpg](img/463356_1_En_2_Fig4_HTML.jpg)
 
 图 2-4
 
@@ -182,7 +182,7 @@ return z
 
 它特别适用于我们必须预测概率作为输出的模型（记住，概率只能取 0 到 1 之间的值）。你可以在图 2-5 中看到它的形状。注意，在 Python 中，如果*z*足够大，函数可能会因为舍入误差而返回正好是 0 或 1（取决于*z*的符号）。在分类问题中，我们将非常频繁地计算 log*σ*(*z*)或 log(1 − *σ*(*z*))，因此这可能是 Python 中的错误来源，因为它会尝试计算 log 0，这是未定义的。例如，你可能会在计算成本函数时开始看到`nan`（关于这一点稍后会有更多介绍）。我们将在本章后面看到一个这种现象的实际例子。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig5_HTML.jpg](img/463356_1_En_2_Fig5_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig5_HTML.jpg](img/463356_1_En_2_Fig5_HTML.jpg)
 
 图 2-5
 
@@ -220,7 +220,7 @@ return s
 
 在图 2-6 中，你可以看到它的形状。在 Python 中，这可以很容易地实现，如下所示：
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig6_HTML.jpg](img/463356_1_En_2_Fig6_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig6_HTML.jpg](img/463356_1_En_2_Fig6_HTML.jpg)
 
 图 2-6
 
@@ -237,7 +237,7 @@ ReLU 函数（图 2-7）的公式如下：
 
 ![$$ f(z)=\max \left(0,z\right) $$](img/463356_1_En_2_Chapter_TeX_Equl.png)
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig7_HTML.jpg](img/463356_1_En_2_Fig7_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig7_HTML.jpg](img/463356_1_En_2_Fig7_HTML.jpg)
 
 图 2-7
 
@@ -309,7 +309,7 @@ Leaky ReLU（也称为参数化的修正线性单元）由以下公式给出
 
 其中 *α* 是一个通常为 0.01 数量的参数。在图 2-8 中，你可以看到 *α* = 0.05 的一个示例。这个值被选择是为了使 *x* > 0 和 *x* < 0 之间的差异更加明显。通常，使用较小的 *α* 值，但需要通过测试你的模型来找到最佳值。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig8_HTML.jpg](img/463356_1_En_2_Fig8_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig8_HTML.jpg](img/463356_1_En_2_Fig8_HTML.jpg)
 
 图 2-8
 
@@ -330,7 +330,7 @@ return relu(z) - alpha * relu(-z)
 
 其中 *β* 是一个可学习的参数。在图 2-9 中，你可以看到这个激活函数在三个参数 *β* 的值（0.1、0.5 和 10.0）下的表现。团队的研究表明，仅将 ReLU 激活函数替换为 Swish，就能将 ImageNet 上的分类准确率提高 0.9%。在今天的深度学习世界中，这是一个很大的提升。你可以在 `www.image-net.org`(http://www.image-net.org) `/` 找到更多关于 ImageNet 的信息。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig9_HTML.jpg](img/463356_1_En_2_Fig9_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig9_HTML.jpg](img/463356_1_En_2_Fig9_HTML.jpg)
 
 图 2-9
 
@@ -449,19 +449,19 @@ return w0 + w1*x
 
 在深度学习问题中，每次迭代都会消耗时间，并且你需要多次执行此过程。选择合适的学习率是设计良好模型的关键部分，因为它会使训练速度更快（或者使其变得不可能）。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig12_HTML.jpg](img/463356_1_En_2_Fig12_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig12_HTML.jpg](img/463356_1_En_2_Fig12_HTML.jpg)
 
 图 2-12
 
 当学习率过小时，梯度下降算法的示意图。该方法如此缓慢，以至于需要大量的迭代才能收敛到最小值。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig11_HTML.jpg](img/463356_1_En_2_Fig11_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig11_HTML.jpg](img/463356_1_En_2_Fig11_HTML.jpg)
 
 图 2-11
 
 当学习率过大时，梯度下降算法的示意图。该方法无法收敛到最小值。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig10_HTML.jpg](img/463356_1_En_2_Fig10_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig10_HTML.jpg](img/463356_1_En_2_Fig10_HTML.jpg)
 
 图 2-10
 
@@ -475,7 +475,7 @@ return w0 + w1*x
 
 检查收敛的一个好方法是绘制损失函数与迭代次数的关系图。这样，你可以检查其行为。在先前的例子中，我们三个学习率下的损失函数看起来如何，如图 2-13 所示。你可以清楚地看到，*γ* = 0.8 的情况下降得相当快，表明我们已经达到了最小值。*γ* = 2 的情况甚至没有开始下降。它继续保持在几乎相同的初始值。最后，*γ* = 0.05 的情况开始下降，但它的速度比第一种情况慢得多。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig13_HTML.jpg](img/463356_1_En_2_Fig13_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig13_HTML.jpg](img/463356_1_En_2_Fig13_HTML.jpg)
 
 图 2-13
 
@@ -767,7 +767,7 @@ Reached epoch 10000 cost J = 22.076054
 
 成本函数明显下降，然后达到一个值并保持几乎恒定。您可以在图 2-14 中看到它的图示。这是一个好兆头，表明成本函数已经达到最小值。这并不意味着我们的模型是好的或者它将给出好的预测。这仅仅告诉我们学习已经高效地进行了。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig14_HTML.jpg](img/463356_1_En_2_Fig14_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig14_HTML.jpg](img/463356_1_En_2_Fig14_HTML.jpg)
 
 图 2-14
 
@@ -775,7 +775,7 @@ Reached epoch 10000 cost J = 22.076054
 
 很想能够图形化地展示我们的拟合效果。因为我们有 13 个特征，所以不可能绘制价格与其他特征的对比图。然而，了解模型预测观察值的好坏是有帮助的。这可以通过绘制我们的预测目标变量与观察值的关系图来实现，如图 2-15 所示。如果我们能够完美地预测目标变量，所有点都应该在图中的对角线上。点围绕线的分布越分散，我们的模型在预测方面的表现就越差。让我们检查一下我们的模型表现如何。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig15_HTML.jpg](img/463356_1_En_2_Fig15_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig15_HTML.jpg](img/463356_1_En_2_Fig15_HTML.jpg)
 
 图 2-15
 
@@ -799,7 +799,7 @@ Reached epoch 10000 cost J = 22.076054
 
 我们编写了代码，以便能够用不同的参数运行我们的模型。现在这样做非常有教育意义。以下是成本函数在三个不同学习率（0.1、0.01 和 0.001）下的表现。你可以在图 2-16 中检查不同的行为。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig16_HTML.jpg](img/463356_1_En_2_Fig16_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig16_HTML.jpg](img/463356_1_En_2_Fig16_HTML.jpg)
 
 图 2-16
 
@@ -815,11 +815,11 @@ Reached epoch 10000 cost J = 22.076054
 
 作为代价函数，我们将使用交叉熵。4 该函数对于单个观测值是
 
-![L(^(i)y,y^(i))=-[y^(i) log^(i)y+((1-y^(i)) log(1-^(i)y))]](../images/463356_1_En_2_Chapter/463356_1_En_2_Chapter_TeX_Equab.png)
+![L(^(i)y,y^(i))=-[y^(i) log^(i)y+((1-y^(i)) log(1-^(i)y))]](img/463356_1_En_2_Chapter/463356_1_En_2_Chapter_TeX_Equab.png)
 
 在存在多个观测值的情况下，代价函数是所有观测值的总和
 
-![J(w,b)=1/m∑(i=1)^m L(^(i)y,y^(i))]](../images/463356_1_En_2_Chapter/463356_1_En_2_Chapter_TeX_Equac.png)
+![J(w,b)=1/m∑(i=1)^m L(^(i)y,y^(i))]](img/463356_1_En_2_Chapter/463356_1_En_2_Chapter_TeX_Equac.png)
 
 在第十章中，我将从头开始提供一个完整的逻辑回归推导，但到目前为止，`tensorflow`将处理所有细节——导数、梯度下降实现等。我们只需要构建正确的神经元，然后我们就可以继续前进了。
 
@@ -882,7 +882,7 @@ plt.show()
 
 例如，我们可以随机绘制一个（见图 2-17）。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig17_HTML.jpg](img/463356_1_En_2_Fig17_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig17_HTML.jpg](img/463356_1_En_2_Fig17_HTML.jpg)
 
 图 2-17
 
@@ -937,7 +937,7 @@ ytrain = y_train_shifted
 
 图 2-18 展示了我们正在处理的某些数字。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig18_HTML.jpg](img/463356_1_En_2_Fig18_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig18_HTML.jpg](img/463356_1_En_2_Fig18_HTML.jpg)
 
 图 2-18
 
@@ -1078,7 +1078,7 @@ print(sess.run(accuracy, feed_dict={X:Xtrain, Y: ytrain, learning_rate: 0.05}))
 
 使用这个模型，我们达到了 98.6%的准确率。对于一个只有一个神经元的网络来说，这还不错。
 
-![../images/463356_1_En_2_Chapter/463356_1_En_2_Fig19_HTML.jpg](img/463356_1_En_2_Fig19_HTML.jpg)
+![img/463356_1_En_2_Chapter/463356_1_En_2_Fig19_HTML.jpg](img/463356_1_En_2_Fig19_HTML.jpg)
 
 图 2-19
 

@@ -139,7 +139,7 @@ Replay Buffer (Same in PyTorch or TensorFlow) from 6.a-dqn-pytorch.ipynb
 
 损失函数 L 如下：
 
-![$$ \mathrm{L}=\frac{1}{\mathrm{N}}{\sum}_{i=1}^N{\left[{r}_i+\left(\left(1- don{e}_i\right).\gamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}² $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ3.png)
+![$$ \mathrm{L}=\frac{1}{\mathrm{N}}{\sum}_{i=1}^N{\left[{r}_i+\left(\left(1- don{e}_i\right).\gamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}² $$](img/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ3.png)
 
 (6-3)
 
@@ -147,7 +147,7 @@ Replay Buffer (Same in PyTorch or TensorFlow) from 6.a-dqn-pytorch.ipynb
 
 这个概念可以转化为以下方程：
 
-![$$ {\nabla}_wL=-\frac{1}{N}{\sum}_{i=1}^N\left[{r}_i+\left(\left(1- don{e}_i\right).\gamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]\nabla \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](../images/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ4.png)
+![$$ {\nabla}_wL=-\frac{1}{N}{\sum}_{i=1}^N\left[{r}_i+\left(\left(1- don{e}_i\right).\gamma .\underset{a^{\prime }}{\max}\hat{q}\left({s}_i^{\prime },{a}^{\prime };{w}_t^{-}\right)\right)\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]\nabla \hat{q}\left({s}_i,{a}_i;{w}_t\right) $$](img/502835_2_En_6_Chapter/502835_2_En_6_Chapter_TeX_Equ4.png)
 
 (6-4)
 

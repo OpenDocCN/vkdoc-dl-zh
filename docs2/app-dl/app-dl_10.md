@@ -45,7 +45,7 @@ training_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
 
 $$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}-\gamma \frac{\partial \mathcal{L}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial {w}_j} $$
 
-](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Eque.png)
+](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Eque.png)
 
 和，对于偏差，
 
@@ -61,17 +61,17 @@ $$ {b}_{\left[n+1\right]}={b}_{j,\left[n\right]}-\gamma \frac{\partial \mathcal{
 
 如同 *b* 一样
 
-![$$ \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial b}=\frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial {\widehat{y}}^{\left[i\right]}}\frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}\frac{\partial {z}^{\left[i\right]}}{\partial b} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equh.png)
+![$$ \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial b}=\frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial {\widehat{y}}^{\left[i\right]}}\frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}\frac{\partial {z}^{\left[i\right]}}{\partial b} $$](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equh.png)
 
 现在，计算导数，你可以验证
 
-![$$ \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial {\widehat{y}}^{\left[i\right]}}=-\frac{y^{\left[i\right]}}{{\widehat{y}}^{\left[i\right]}}+\frac{1-{y}^{\left[i\right]}}{1-{\widehat{y}}^{\left[i\right]}} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equi.png)
+![$$ \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial {\widehat{y}}^{\left[i\right]}}=-\frac{y^{\left[i\right]}}{{\widehat{y}}^{\left[i\right]}}+\frac{1-{y}^{\left[i\right]}}{1-{\widehat{y}}^{\left[i\right]}} $$](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equi.png)
 
-![$$ \frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}={\widehat{y}}^{\left[i\right]}\left(1-{\widehat{y}}^{\left[i\right]}\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equj.png)
+![$$ \frac{d{\widehat{y}}^{\left[i\right]}}{d{z}^{\left[i\right]}}={\widehat{y}}^{\left[i\right]}\left(1-{\widehat{y}}^{\left[i\right]}\right) $$](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equj.png)
 
-![$$ \frac{\partial {z}^{\left[i\right]}}{\partial {w}_j}={x}_j^{\left[i\right]} $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equk.png)
+![$$ \frac{\partial {z}^{\left[i\right]}}{\partial {w}_j}={x}_j^{\left[i\right]} $$](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equk.png)
 
-![$$ \frac{\partial {z}^{\left[i\right]}}{\partial b}=1 $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equl.png)
+![$$ \frac{\partial {z}^{\left[i\right]}}{\partial b}=1 $$](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equl.png)
 
 当我们将所有这些放在一起时，我们得到
 
@@ -79,13 +79,13 @@ $$ {b}_{\left[n+1\right]}={b}_{j,\left[n\right]}-\gamma \frac{\partial \mathcal{
 
 $$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}-\gamma \frac{\partial \mathcal{L}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial {w}_j}={w}_{j,\left[n\right]}-\gamma \left(1-{\widehat{y}}^{\left[i\right]}\right){x}_j^{\left[i\right]} $$
 
-](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equm.png)
+](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equm.png)
 
-![$$ {b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial b}={b}_{j,\left[n\right]}-\gamma \left(1-{\widehat{y}}^{\left[i\right]}\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equn.png)
+![$$ {b}_{\left[n+1\right]}={b}_{\left[n\right]}-\gamma \frac{\mathrm{\partial \mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right)}{\partial b}={b}_{j,\left[n\right]}-\gamma \left(1-{\widehat{y}}^{\left[i\right]}\right) $$](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equn.png)
 
 这些方程仅适用于一个训练案例；因此，就像我们已经做的那样，让我们将它们推广到多个训练案例，记住我们定义的成本函数 *J* 对于多个观测值如下
 
-![$$ J\left(\boldsymbol{w},b\right)\kern0.6em =\frac{1}{m}\sum \limits_{i=1}^m\mathrm{\mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right) $$](../images/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equo.png)
+![$$ J\left(\boldsymbol{w},b\right)\kern0.6em =\frac{1}{m}\sum \limits_{i=1}^m\mathrm{\mathcal{L}}\left({\widehat{y}}^{\left[i\right]},{y}^{\left[i\right]}\right) $$](img/463356_1_En_10_Chapter/463356_1_En_10_Chapter_TeX_Equo.png)
 
 其中，通常我们用 *m* 表示观测数的数量。粗体 ***w*** 简单地是一个包含所有权重的向量 ![$$ \boldsymbol{w}=\left({w}_1,{w}_2,\dots, {w}_{n_x}\right) $$](img/463356_1_En_10_Chapter_TeX_IEq6.png)。在这里我们还需要我们喜爱的矩阵形式（你已经在之前的章节中见过几次）
 

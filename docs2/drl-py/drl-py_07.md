@@ -161,7 +161,7 @@ TD Loss with Prioritized Replay from 7.a-dqn-prioritized-replay.ipynb
 
 (7-9)
 
-![$$ L=\frac{1}{N}{\sum}_{i=1}^N{\left[{Y}_i^{DDQN}\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}² $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ10.png)
+![$$ L=\frac{1}{N}{\sum}_{i=1}^N{\left[{Y}_i^{DDQN}\hbox{--} \hat{q}\left({s}_i,{a}_i;{w}_t\right)\right]}² $$](img/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ10.png)
 
 (7-10)
 
@@ -213,9 +213,9 @@ DDQN 在 CartPole 上的训练曲线来自`7.b-ddqn.ipynb`
 
 让我们推导出对抗 DQN 网络执行的计算。你在第二章 2 中的方程 2-9 和 2-10 中看到了状态价值和行动价值的函数定义，这些方程在此处重现：
 
-![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{G}_t|{S}_t=s\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equb.png)
+![$$ {v}_{\uppi}(s)={E}_{\uppi}\left[{G}_t|{S}_t=s\right] $$](img/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equb.png)
 
-![$$ {q}_{\pi}\left(s,a\right)={E}_{\pi }\ \left[\ {G}_t\ \right|\ {S}_t=s,{A}_t=a\ \Big] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ11.png)
+![$$ {q}_{\pi}\left(s,a\right)={E}_{\pi }\ \left[\ {G}_t\ \right|\ {S}_t=s,{A}_t=a\ \Big] $$](img/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ11.png)
 
 (7-11)
 
@@ -257,7 +257,7 @@ DDQN 在 CartPole 上的训练曲线来自`7.b-ddqn.ipynb`
 
 作者建议的一种强制性问题可识别性/唯一性的方法是将优势设置为所选动作的零值，即具有最大优势的动作。
 
-![^Q(s,a;w_1,w_2,w_3) = ^V(s;w_1,w_2) + (^A(s,a;w_1,w_3) - max_a' ^A(s,a';w_1,w_3))] (../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ15.png)
+![^Q(s,a;w_1,w_2,w_3) = ^V(s;w_1,w_2) + (^A(s,a;w_1,w_3) - max_a' ^A(s,a';w_1,w_3))] (img/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equ15.png)
 
 (7-15)
 
@@ -367,7 +367,7 @@ Dueling Network from 7.c-dueling_dqn.ipynb
 
 对于像这里使用的分解网络，作者建议如下初始化权重：
 
-+   μ^(*w*)和μ^(*b*)的每个元素μ[*i*, *j*]都是从范围在![$$ U\left[-\frac{1}{\sqrt{p}},\frac{1}{\sqrt{p}}\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq13.png)的均匀分布中采样的，其中*p*是输入单元的数量。
++   μ^(*w*)和μ^(*b*)的每个元素μ[*i*, *j*]都是从范围在![$$ U\left[-\frac{1}{\sqrt{p}},\frac{1}{\sqrt{p}}\right] $$](img/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_IEq13.png)的均匀分布中采样的，其中*p*是输入单元的数量。
 
 +   同样，σ^(*w*)和σ^(*b*)的每个元素σ[*i*, *j*]被初始化为常数![$$ \frac{\upsigma_0}{\sqrt{p}} $$](img/502835_2_En_7_Chapter_TeX_IEq14.png)，其中超参数σ[0]设置为 0.5。
 
@@ -551,7 +551,7 @@ NoisyNet DQN 训练图
 
 到目前为止，你已经为输入状态 *s* 输出了 *Q*(*s*, *a*) 值。输出单元的数量为 `n_action` 的大小。从某种意义上说，输出值是如这里所示预期的 *Q*(*s*, *a*)：
 
-![$$ Q\left(s,a\right)=E\left[R\left(s,a\right)\right]+\upgamma E\left[Q\left({s}^{'},{a}^{'}\right)\right] $$](../images/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equh.png)
+![$$ Q\left(s,a\right)=E\left[R\left(s,a\right)\right]+\upgamma E\left[Q\left({s}^{'},{a}^{'}\right)\right] $$](img/502835_2_En_7_Chapter/502835_2_En_7_Chapter_TeX_Equh.png)
 
 在实践中，你一直使用蒙特卡洛技术，通过平均单个样本或多个样本来估计实际的期望值 *E*[*Q*(*s*, *a*)]，正如在关于 TD 学习的章节中之前讨论的那样。
 

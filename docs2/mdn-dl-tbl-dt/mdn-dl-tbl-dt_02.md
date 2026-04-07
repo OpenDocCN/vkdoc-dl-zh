@@ -438,13 +438,13 @@ Template code to evaluate models on small datasets with scikit-learn’s k-fold 
 
 给定一个参数 *θ* 的点估计值 ![$$ \hat{\theta} $$](img/525591_1_En_1_Chapter_TeX_IEq1.png)（简单来说，是针对总体中未知参数值的估计）时，偏差可以定义为参数期望值与真实值之间的差异：
 
-![偏差=期望值[估计值]-真实值](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equa.png)
+![偏差=期望值[估计值]-真实值](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equa.png)
 
-如果参数的期望值等于真实值 (![$$ E\left[\hat{\theta}\right]=\theta $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_IEq2.png))，则偏差误差项为 0（因此是完美的）。我们可以将模型解释为“无偏”的——参数的真实值反映了它“应该”具有的值。
+如果参数的期望值等于真实值 (![$$ E\left[\hat{\theta}\right]=\theta $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_IEq2.png))，则偏差误差项为 0（因此是完美的）。我们可以将模型解释为“无偏”的——参数的真实值反映了它“应该”具有的值。
 
 方差定义为期望估计参数值与真实参数值之间差异的期望值，平方：
 
-![方差=期望值[期望值[估计值]-估计值]²](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equb.png)
+![方差=期望值[期望值[估计值]-估计值]²](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equb.png)
 
 如果参数值差异波动剧烈，方差将会很高。另一方面，如果差异更加一致，方差将会较低。
 
@@ -649,7 +649,7 @@ Plotting sample difference in distance of two selected points on a hypercube as 
 
 我们可以找到 ![$$ \underset{n\to \infty }{\lim}\sqrt{n}-\sqrt{n-1}=\underset{n\to \infty }{\lim}\frac{n-\left(n-1\right)}{\sqrt{n}+\sqrt{n-1}}=\underset{n\to \infty }{\lim}\frac{1}{\sqrt{n}+\sqrt{n-1}}\to \frac{1}{\infty}\to 0 $$](img/525591_1_En_1_Chapter_TeX_IEq11.png). 因此，随着超立方体维度的增加，超立方体最远和第二远角的相邻两点与原点的距离基本相同。实际上，在更高维度中，原点与 *所有其他角* 之间的距离趋近于相同的值，因为在我们这个背景下，一般化 ![$$ \underset{n\to \infty }{\lim}\sqrt{n}-\sqrt{n-k}=0 $$](img/525591_1_En_1_Chapter_TeX_IEq12.png) 是成立的 (*k* < *n*，表示原点到 *k* + 1 个最远角之间的距离)。这影响了在传统直观定义的几何形状中距离分布的极化和扭曲。
 
-虽然欧几里得距离是我们对几何距离最直观的感觉，但我们可以将其推广到不同的范数（表 1-2，列表 1-13，图 1-29）。第 *k* 个范数距离是 ![$$ \sqrt[k]{\sum \limits_{i=1}^n{\left|{a}_i-{b}_i\right|}^k} $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_IEq13.png)。*曼哈顿距离* 使用 L1 范数 (*k* = 1) 并表现为每个维度绝对差分的总和。其名称来源于纽约曼哈顿的网格状布局——我们严格沿着与维度平行的路径测量距离，就像在繁忙都市的街区中导航一样。*切比雪夫距离*，在另一极端，使用 L-无穷范数 (*k* = ∞)，它只返回任何维度的最长距离，因为将最大差分项提高到“无穷大”将“超过”所有其他项。切比雪夫距离通常用于计算其他范数距离成本过高的情境中（即，只有非常高维的空间）。
+虽然欧几里得距离是我们对几何距离最直观的感觉，但我们可以将其推广到不同的范数（表 1-2，列表 1-13，图 1-29）。第 *k* 个范数距离是 ![$$ \sqrt[k]{\sum \limits_{i=1}^n{\left|{a}_i-{b}_i\right|}^k} $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_IEq13.png)。*曼哈顿距离* 使用 L1 范数 (*k* = 1) 并表现为每个维度绝对差分的总和。其名称来源于纽约曼哈顿的网格状布局——我们严格沿着与维度平行的路径测量距离，就像在繁忙都市的街区中导航一样。*切比雪夫距离*，在另一极端，使用 L-无穷范数 (*k* = ∞)，它只返回任何维度的最长距离，因为将最大差分项提高到“无穷大”将“超过”所有其他项。切比雪夫距离通常用于计算其他范数距离成本过高的情境中（即，只有非常高维的空间）。
 
 ![](img/525591_1_En_1_Fig29_HTML.png)
 
@@ -1737,27 +1737,27 @@ S 型函数
 
 让我们将导数代入回去：
 
-![$$ \frac{\delta }{\delta \beta}\ c\left(\beta, \varepsilon \right)=-\left[\frac{y}{s\left(\beta, \varepsilon \right)}+\frac{1-y}{1-s\left(\beta, \varepsilon \right)}\right]\bullet s\left(\beta, \varepsilon \right)\bullet \left[1-s\left(\beta, \varepsilon \right)\right]\bullet X $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equar.png)
+![$$ \frac{\delta }{\delta \beta}\ c\left(\beta, \varepsilon \right)=-\left[\frac{y}{s\left(\beta, \varepsilon \right)}+\frac{1-y}{1-s\left(\beta, \varepsilon \right)}\right]\bullet s\left(\beta, \varepsilon \right)\bullet \left[1-s\left(\beta, \varepsilon \right)\right]\bullet X $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equar.png)
 
 这里是我们的最终导数：
 
-![$$ -\left[s\left(\beta, \varepsilon \right)-y\right]\bullet X=-\left[\frac{1}{1+{e}^{-\left( X\beta +\varepsilon \right)}}-y\right]\bullet X $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equas.png)
+![$$ -\left[s\left(\beta, \varepsilon \right)-y\right]\bullet X=-\left[\frac{1}{1+{e}^{-\left( X\beta +\varepsilon \right)}}-y\right]\bullet X $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equas.png)
 
 这里是偏差项的微分：
 
 ![$$ \frac{\delta }{\delta \varepsilon}\ c\left(\beta, \varepsilon \right)=\frac{\delta }{\delta s}\ c\left(\beta, \varepsilon \right)\frac{\delta }{\delta p}\ s\left(\beta, \varepsilon \right)\frac{\delta }{\delta \varepsilon}\ p\left(\beta, \varepsilon \right) $$](img/525591_1_En_1_Chapter_TeX_Equat.png)
 
-![$$ \frac{\delta }{\delta s}\ c\left(\beta, \varepsilon \right)=-\left[\frac{y}{s\left(\beta, \varepsilon \right)}+\frac{1-y}{1-s\left(\beta, \varepsilon \right)}\right] $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equau.png)
+![$$ \frac{\delta }{\delta s}\ c\left(\beta, \varepsilon \right)=-\left[\frac{y}{s\left(\beta, \varepsilon \right)}+\frac{1-y}{1-s\left(\beta, \varepsilon \right)}\right] $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equau.png)
 
-![$$ \frac{\delta }{\delta p}s\left(\beta, \varepsilon \right)=\frac{e^{-p}}{{\left(1+{e}^{-p}\right)}²}=\frac{1}{1+{e}^{-p}}\left(1-\frac{1}{1+{e}^{-p}}\right)=s\left(\beta, \varepsilon \right)\bullet \left[1-s\left(\beta, \varepsilon \right)\right] $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equav.png)
+![$$ \frac{\delta }{\delta p}s\left(\beta, \varepsilon \right)=\frac{e^{-p}}{{\left(1+{e}^{-p}\right)}²}=\frac{1}{1+{e}^{-p}}\left(1-\frac{1}{1+{e}^{-p}}\right)=s\left(\beta, \varepsilon \right)\bullet \left[1-s\left(\beta, \varepsilon \right)\right] $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equav.png)
 
 ![$$ \frac{\delta }{\delta \varepsilon}\ p\left(\beta, \varepsilon \right)=1 $$](img/525591_1_En_1_Chapter_TeX_Equaw.png)
 
-![$$ \frac{\delta }{\delta \varepsilon}c\left(\beta, \varepsilon \right)=-\left[\frac{y}{s\left(\beta, \varepsilon \right)}+\frac{1-y}{1-s\left(\beta, \varepsilon \right)}\right]\bullet s\left(\beta, \varepsilon \right)\bullet \left[1-s\left(\beta, \varepsilon \right)\right]\bullet 1 $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equax.png)
+![$$ \frac{\delta }{\delta \varepsilon}c\left(\beta, \varepsilon \right)=-\left[\frac{y}{s\left(\beta, \varepsilon \right)}+\frac{1-y}{1-s\left(\beta, \varepsilon \right)}\right]\bullet s\left(\beta, \varepsilon \right)\bullet \left[1-s\left(\beta, \varepsilon \right)\right]\bullet 1 $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equax.png)
 
 偏差的导数变为
 
-![$$ -\left[s\left(\beta, \varepsilon \right)-y\right]\bullet 1=-\left[\frac{1}{1+{e}^{-\left( X\beta +\varepsilon \right)}}-y\right] $$](../images/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equay.png)
+![$$ -\left[s\left(\beta, \varepsilon \right)-y\right]\bullet 1=-\left[\frac{1}{1+{e}^{-\left( X\beta +\varepsilon \right)}}-y\right] $$](img/525591_1_En_1_Chapter/525591_1_En_1_Chapter_TeX_Equay.png)
 
 我们可以根据梯度下降的方程更新权重和偏差：
 

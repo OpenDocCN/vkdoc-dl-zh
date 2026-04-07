@@ -12,7 +12,7 @@
 
 在本节中，您将创建您的第一个应用。从 Wit.ai 网站，点击快速开始，如图 3-1 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig1_HTML.jpg](img/457478_1_En_3_Fig1_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig1_HTML.jpg](img/457478_1_En_3_Fig1_HTML.jpg)
 
 图 3-1
 
@@ -20,7 +20,7 @@
 
 这将打开一个页面，展示使用 GitHub 或 Facebook 创建第一个应用的选项，如图 3-2 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig2_HTML.jpg](img/457478_1_En_3_Fig2_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig2_HTML.jpg](img/457478_1_En_3_Fig2_HTML.jpg)
 
 图 3-2
 
@@ -28,7 +28,7 @@
 
 登录后，您将可以选择创建您的新应用，如图 3-3 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig3_HTML.jpg](img/457478_1_En_3_Fig3_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig3_HTML.jpg](img/457478_1_En_3_Fig3_HTML.jpg)
 
 图 3-3
 
@@ -36,7 +36,7 @@
 
 让我们创建一个简单的应用。您可以将应用命名为 *TestStories*。在应用描述部分，输入 *Demo*。为应用数据选择私有选项。然后点击创建应用按钮，如图 3-4 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig4_HTML.jpg](img/457478_1_En_3_Fig4_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig4_HTML.jpg](img/457478_1_En_3_Fig4_HTML.jpg)
 
 图 3-4
 
@@ -46,7 +46,7 @@
 
 点击创建应用按钮将打开下一页，该页面提供了“故事”选项。随后，您将转到“理解”选项；此页面如图 3-5 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig5_HTML.jpg](img/457478_1_En_3_Fig5_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig5_HTML.jpg](img/457478_1_En_3_Fig5_HTML.jpg)
 
 图 3-5
 
@@ -56,7 +56,7 @@
 
 在“用户说”文本框中，输入*I want some cheese pizza*，如图 3-6 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig6_HTML.jpg](img/457478_1_En_3_Fig6_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig6_HTML.jpg](img/457478_1_En_3_Fig6_HTML.jpg)
 
 图 3-6
 
@@ -64,7 +64,7 @@
 
 现在，您已准备好创建一个意图。您将意图的值添加为 pizza，如图 3-7 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig7_HTML.jpg](img/457478_1_En_3_Fig7_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig7_HTML.jpg](img/457478_1_En_3_Fig7_HTML.jpg)
 
 图 3-7
 
@@ -72,7 +72,7 @@
 
 你添加了一个带有奶酪的披萨选项，然后点击验证按钮，如图 3-8 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig8_HTML.jpg](img/457478_1_En_3_Fig8_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig8_HTML.jpg](img/457478_1_En_3_Fig8_HTML.jpg)
 
 图 3-8
 
@@ -80,7 +80,7 @@
 
 在验证了创建实体选项之后，现在你有两个实体被创建，如图 3-9 所示被突出显示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig9_HTML.jpg](img/457478_1_En_3_Fig9_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig9_HTML.jpg](img/457478_1_En_3_Fig9_HTML.jpg)
 
 图 3-9
 
@@ -92,7 +92,7 @@
 
 在本节中，你将尝试添加一个句子。图 3-10 展示了如何添加一个用于识别的句子。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig10_HTML.jpg](img/457478_1_En_3_Fig10_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig10_HTML.jpg](img/457478_1_En_3_Fig10_HTML.jpg)
 
 图 3-10
 
@@ -100,7 +100,7 @@
 
 接下来，点击验证。现在你需要选择一个实体。选择披萨并点击与之相关的箭头（见图 3-11）。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig11_HTML.jpg](img/457478_1_En_3_Fig11_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig11_HTML.jpg](img/457478_1_En_3_Fig11_HTML.jpg)
 
 图 3-11
 
@@ -108,7 +108,7 @@
 
 当你点击披萨箭头时，你会进入包含关键词和同义词的页面，如图 3-12 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig12_HTML.jpg](img/457478_1_En_3_Fig12_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig12_HTML.jpg](img/457478_1_En_3_Fig12_HTML.jpg)
 
 图 3-12
 
@@ -116,7 +116,7 @@
 
 在这里，你将添加新关键词。结果如图 3-13 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig13_HTML.jpg](img/457478_1_En_3_Fig13_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig13_HTML.jpg](img/457478_1_En_3_Fig13_HTML.jpg)
 
 图 3-13
 
@@ -126,7 +126,7 @@
 
 让我们从辣味披萨开始。为了理解辣味披萨的意图流程，输入 *我想吃辣味披萨*，我们展示了如何使机器人能够按照图 3-14 所示订购特定的披萨。然后点击验证。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig14_HTML.jpg](img/457478_1_En_3_Fig14_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig14_HTML.jpg](img/457478_1_En_3_Fig14_HTML.jpg)
 
 图 3-14
 
@@ -134,7 +134,7 @@
 
 现在你将添加蔬菜披萨，如图 3-15 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig15_HTML.jpg](img/457478_1_En_3_Fig15_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig15_HTML.jpg](img/457478_1_En_3_Fig15_HTML.jpg)
 
 图 3-15
 
@@ -142,7 +142,7 @@
 
 现在添加一个大型披萨选项。为此，您需要进行一些更改，如图 3-16 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig16_HTML.jpg](img/457478_1_En_3_Fig16_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig16_HTML.jpg](img/457478_1_En_3_Fig16_HTML.jpg)
 
 图 3-16
 
@@ -150,7 +150,7 @@
 
 删除披萨选项，因为你想要调整披萨的大小。点击交叉选项来删除披萨值，如图 3-17 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig17_HTML.jpg](img/457478_1_En_3_Fig17_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig17_HTML.jpg](img/457478_1_En_3_Fig17_HTML.jpg)
 
 图 3-17
 
@@ -160,7 +160,7 @@
 
 在本节中，您将创建一个名为*pizzaSize*的实体，如图 3-18 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig18_HTML.jpg](img/457478_1_En_3_Fig18_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig18_HTML.jpg](img/457478_1_En_3_Fig18_HTML.jpg)
 
 图 3-18
 
@@ -168,7 +168,7 @@
 
 创建意图后，机器人页面看起来如图 3-19 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig19_HTML.jpg](img/457478_1_En_3_Fig19_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig19_HTML.jpg](img/457478_1_En_3_Fig19_HTML.jpg)
 
 图 3-19
 
@@ -180,7 +180,7 @@
 
 首先，创建一个新的应用，就像您之前做的那样。这次，将其命名为 Test1，如图 3-20 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig20_HTML.jpg](img/457478_1_En_3_Fig20_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig20_HTML.jpg](img/457478_1_En_3_Fig20_HTML.jpg)
 
 图 3-20
 
@@ -188,7 +188,7 @@
 
 现在回到 Facebook 开发者网站[`developers.facebook.com/`](https://developers.facebook.com/)。您需要使用您的 Facebook 凭据登录。页面如图 3-21 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig21_HTML.jpg](img/457478_1_En_3_Fig21_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig21_HTML.jpg](img/457478_1_En_3_Fig21_HTML.jpg)
 
 图 3-21
 
@@ -196,7 +196,7 @@ Facebook 开发者页面
 
 现在您需要创建一个新的应用。点击右上角的“我的应用”选项，以访问创建新应用的下拉菜单，如图 3-22 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig22_HTML.jpg](img/457478_1_En_3_Fig22_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig22_HTML.jpg](img/457478_1_En_3_Fig22_HTML.jpg)
 
 图 3-22
 
@@ -204,7 +204,7 @@ Facebook 开发者页面
 
 命名为*SampleApp*，并通过点击“添加产品”按钮添加一个产品，如图 3-23 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig23_HTML.jpg](img/457478_1_En_3_Fig23_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig23_HTML.jpg](img/457478_1_En_3_Fig23_HTML.jpg)
 
 图 3-23
 
@@ -212,7 +212,7 @@ Facebook 开发者页面
 
 对于一个产品，您需要添加一个消息传递者，如图 3-24 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig24_HTML.jpg](img/457478_1_En_3_Fig24_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig24_HTML.jpg](img/457478_1_En_3_Fig24_HTML.jpg)
 
 图 3-24
 
@@ -220,7 +220,7 @@ Facebook 开发者页面
 
 在“消息传递者”选项中点击“设置”按钮。您将使用 Wit.ai 的自然语言处理 (NLP) 而不是 Facebook 的（这非常基础），尽管它们两者可以完美地一起工作。现在您必须设置一个带有创建的应用名称的页面；xxxxxx，如图 3-25 所示。您的目标是创建一个官方 Facebook 页面的聊天机器人。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig25_HTML.jpg](img/457478_1_En_3_Fig25_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig25_HTML.jpg](img/457478_1_En_3_Fig25_HTML.jpg)
 
 图 3-25
 
@@ -228,7 +228,7 @@ Facebook 开发者页面
 
 网站将要求进行身份验证，然后创建令牌。现在您需要快速设置 Webhooks。点击图 3-26 所示的“设置 Webhooks”按钮。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig26_HTML.jpg](img/457478_1_En_3_Fig26_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig26_HTML.jpg](img/457478_1_En_3_Fig26_HTML.jpg)
 
 图 3-26
 
@@ -236,7 +236,7 @@ Facebook 开发者页面
 
 点击此选项将打开一个分配详细信息的页面。在使用 Webhooks 之前，您需要配置 ngrock。转到图 3-27 所示的 ngrock 网站 `https://ngrok.com/`。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig27_HTML.jpg](img/457478_1_En_3_Fig27_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig27_HTML.jpg](img/457478_1_En_3_Fig27_HTML.jpg)
 
 图 3-27
 
@@ -244,7 +244,7 @@ ngrock 网站
 
 通过点击“下载 Ngrok”链接来下载 ngrock，访问图 3-28 所示的下载选项。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig28_HTML.jpg](img/457478_1_En_3_Fig28_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig28_HTML.jpg](img/457478_1_En_3_Fig28_HTML.jpg)
 
 图 3-28
 
@@ -258,7 +258,7 @@ F:\ngrock>ngrok.exe http -host-header=rewrite localhost:4040
 
 如果 ngrock 的网络服务器正在运行，您将看到图 3-29 所示的窗口。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig29_HTML.jpg](img/457478_1_En_3_Fig29_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig29_HTML.jpg](img/457478_1_En_3_Fig29_HTML.jpg)
 
 图 3-29
 
@@ -266,7 +266,7 @@ ngrock 的状态
 
 让我们转到图 3-30 所示的本地主机页面，网址为 `http://7c9cc892.ngrok.io/inspect/http` *.*
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig30_HTML.jpg](img/457478_1_En_3_Fig30_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig30_HTML.jpg](img/457478_1_En_3_Fig30_HTML.jpg)
 
 图 3-30
 
@@ -274,7 +274,7 @@ ngrock 的状态
 
 当页面启动时，您可以在命令提示符窗口中看到统计信息，如图 3-31 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig31_HTML.jpg](img/457478_1_En_3_Fig31_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig31_HTML.jpg](img/457478_1_En_3_Fig31_HTML.jpg)
 
 图 3-31
 
@@ -296,7 +296,7 @@ ngrock 的状态
 
 创建聊天机器人的 Dialogflow 网站如图 3-32 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig32_HTML.jpg](img/457478_1_En_3_Fig32_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig32_HTML.jpg](img/457478_1_En_3_Fig32_HTML.jpg)
 
 图 3-32
 
@@ -304,7 +304,7 @@ Dialogflow 网站
 
 从这个 Dialogflow 页面，你可以免费注册，或者如果你已经有了账户，你可以进入控制台。如果你有 Google 账户，你需要验证它并登录，如图 3-33 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig33_HTML.jpg](img/457478_1_En_3_Fig33_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig33_HTML.jpg](img/457478_1_En_3_Fig33_HTML.jpg)
 
 图 3-33
 
@@ -312,7 +312,7 @@ Dialogflow 网站
 
 允许访问，如图 3-34 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig34_HTML.jpg](img/457478_1_En_3_Fig34_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig34_HTML.jpg](img/457478_1_En_3_Fig34_HTML.jpg)
 
 图 3-34
 
@@ -320,7 +320,7 @@ Dialogflow 网站
 
 下一页是一个欢迎屏幕。Dialogflow 中的应用程序被称为 *代理*。你将需要通过点击创建代理，如图 3-35 所示来创建一个。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig35_HTML.jpg](img/457478_1_En_3_Fig35_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig35_HTML.jpg](img/457478_1_En_3_Fig35_HTML.jpg)
 
 图 3-35
 
@@ -330,7 +330,7 @@ Dialogflow 网站
 
 在本节中，你将使用 Dialogflow 创建一个简单的披萨机器人。命名为 PizzaBot，如图 3-36 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig36_HTML.jpg](img/457478_1_En_3_Fig36_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig36_HTML.jpg](img/457478_1_En_3_Fig36_HTML.jpg)
 
 图 3-36
 
@@ -342,7 +342,7 @@ Dialogflow 网站
 
 你将为机器人的交互使用 Small Talk。你将使用 Small Talk 进行类似 Hi、Hello 等交互。然后你将允许用户订购披萨。Dialogflow 有一个很棒的内置 API，可以为我们完成所有的小对话。你只需要像图 3-37 所示那样启用它。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig37_HTML.png](img/457478_1_En_3_Fig37_HTML.png)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig37_HTML.png](img/457478_1_En_3_Fig37_HTML.png)
 
 图 3-37
 
@@ -354,7 +354,7 @@ Dialogflow 网站
 
 在本节中，您将了解如何将您的机器人集成到 Google 项目中。您可以链接到 Google 项目或创建一个新的项目，如图 3-38 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig38_HTML.jpg](img/457478_1_En_3_Fig38_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig38_HTML.jpg](img/457478_1_En_3_Fig38_HTML.jpg)
 
 图 3-38
 
@@ -362,7 +362,7 @@ Dialogflow 网站
 
 在链接到 Google 项目或命名一个新的项目之后，为 PizzaBot 应用程序启用 Small Talk，如图 3-39 所示。Small Talk 将极大地帮助我们。Small Talk 为我们提供了所有基本的对话流程，并使我们更容易进行沟通。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig39_HTML.jpg](img/457478_1_En_3_Fig39_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig39_HTML.jpg](img/457478_1_En_3_Fig39_HTML.jpg)
 
 图 3-39
 
@@ -374,7 +374,7 @@ Dialogflow 网站
 
 现在您将创建一个意图。现在用户可能会想到的一个参数是饥饿。所以您将添加一个名为 Hungry 的意图。我们将创建一个新的意图，如图 3-40 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig40_HTML.jpg](img/457478_1_En_3_Fig40_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig40_HTML.jpg](img/457478_1_En_3_Fig40_HTML.jpg)
 
 图 3-40
 
@@ -382,7 +382,7 @@ Dialogflow 网站
 
 然后添加训练参数或示例，如图 3-41 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig41_HTML.png](img/457478_1_En_3_Fig41_HTML.png)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig41_HTML.png](img/457478_1_En_3_Fig41_HTML.png)
 
 图 3-41
 
@@ -394,7 +394,7 @@ Dialogflow 网站
 
 在本节中，您将在创建新实体的同时构建机器人。点击“实体”选项，然后点击“创建实体”，如图 3-42 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig42_HTML.png](img/457478_1_En_3_Fig42_HTML.png)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig42_HTML.png](img/457478_1_En_3_Fig42_HTML.png)
 
 图 3-42
 
@@ -402,7 +402,7 @@ Dialogflow 网站
 
 这为您创建了一个包含所需详细信息的字段。对于披萨，实体将是 Topping，如图 3-43 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig43_HTML.jpg](img/457478_1_En_3_Fig43_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig43_HTML.jpg](img/457478_1_En_3_Fig43_HTML.jpg)
 
 图 3-43
 
@@ -420,7 +420,7 @@ Dialogflow 网站
 
 现在保存 Topping 参数..然后机器人 UI 将看起来如图 3-44 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig44_HTML.jpg](img/457478_1_En_3_Fig44_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig44_HTML.jpg](img/457478_1_En_3_Fig44_HTML.jpg)
 
 图 3-44
 
@@ -430,7 +430,7 @@ Topping 选项
 
 你已经导入了 Small Talk 代理。现在你将导入一个新的代理。让我们将代理命名为 Questionbot。添加的代理越多，对话流程就越容易。你创建了一个 Questionbot，现在你将尝试在其中使用预构建的代理，如图 3-45 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig45_HTML.jpg](img/457478_1_En_3_Fig45_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig45_HTML.jpg](img/457478_1_En_3_Fig45_HTML.jpg)
 
 图 3-45
 
@@ -438,7 +438,7 @@ Topping 选项
 
 你必须选择所有可用的意图，以便机器人流程完美；见图 3-46。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig46_HTML.jpg](img/457478_1_En_3_Fig46_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig46_HTML.jpg](img/457478_1_En_3_Fig46_HTML.jpg)
 
 图 3-46
 
@@ -446,7 +446,7 @@ Small Talk 代理
 
 然后你需要通过点击来复制意图，在复制相关实体上放置勾选标记，并命名目标代理（在这种情况下，它是 Questionbot）。然后点击开始，如图 3-47 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig47_HTML.jpg](img/457478_1_En_3_Fig47_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig47_HTML.jpg](img/457478_1_En_3_Fig47_HTML.jpg)
 
 图 3-47
 
@@ -454,7 +454,7 @@ Small Talk 代理
 
 如果你现在访问 Questionbot，你会看到所有的意图和机器人中的所有内容。尝试将*are you a bot*作为参数，如图 3-48 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig48_HTML.jpg](img/457478_1_En_3_Fig48_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig48_HTML.jpg](img/457478_1_En_3_Fig48_HTML.jpg)
 
 图 3-48
 
@@ -464,7 +464,7 @@ Small Talk 代理
 
 在本节中，你将致力于实现 Web 的集成。我们现在将尝试将应用集成到某些平台，让我们在 Web 演示中尝试。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig49_HTML.jpg](img/457478_1_En_3_Fig49_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig49_HTML.jpg](img/457478_1_En_3_Fig49_HTML.jpg)
 
 图 3-49
 
@@ -472,7 +472,7 @@ Small Talk 代理
 
 将滑块向右移动以测试链接，如图 3-50 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig50_HTML.jpg](img/457478_1_En_3_Fig50_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig50_HTML.jpg](img/457478_1_En_3_Fig50_HTML.jpg)
 
 图 3-50
 
@@ -480,7 +480,7 @@ Small Talk 代理
 
 通过在 HTML 页面中使用 iframe 来集成机器人的 Web 链接，以便机器人按预期工作，如图 3-51 所示。
 
-![../images/457478_1_En_3_Chapter/457478_1_En_3_Fig51_HTML.jpg](img/457478_1_En_3_Fig51_HTML.jpg)
+![img/457478_1_En_3_Chapter/457478_1_En_3_Fig51_HTML.jpg](img/457478_1_En_3_Fig51_HTML.jpg)
 
 图 3-51
 

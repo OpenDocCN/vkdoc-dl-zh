@@ -14,7 +14,7 @@
 
 发光测量的典型设置如图 9-1 所示。该设置被用于获取验证数据集的数据。一个含有发光染料物质的样品被来自发光二极管或激光的激发光（图中的蓝色光）照亮，激发光通过透镜聚焦。发出的发光（图右侧的红色光）通过另一个透镜由探测器收集。样品夹包含染料和气体，如图中的样品所示，我们想要测量该样品的氧气浓度。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig1_HTML.jpg](img/463356_1_En_9_Fig1_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig1_HTML.jpg](img/463356_1_En_9_Fig1_HTML.jpg)
 
 图 9-1
 
@@ -30,7 +30,7 @@
 
 在现实生活中，情况不幸地更加复杂。光的相位移动不仅取决于气体的调制频率*ω*和氧气浓度*O*2，而且非线性地取决于染料分子的周围环境的温度和化学组成。此外，很少只有一种衰减时间可以描述光强度的衰减。最常见的情况是，至少需要两个衰减时间，这进一步增加了描述系统所需的参数数量。给定一个激光调制频率*ω*，一个摄氏度的温度*T*，以及氧气浓度*O*2（以空气中含氧量的百分比表示），系统返回相位*θ*。在图 9-2 中，你可以看到对于*T* = 45^∘ *C*和*O*2 = 4%的典型测量 tan*θ*的图表。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig2_HTML.jpg](img/463356_1_En_9_Fig2_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig2_HTML.jpg](img/463356_1_En_9_Fig2_HTML.jpg)
 
 图 9-2
 
@@ -120,7 +120,7 @@ data_dev[i,:] = L(x, A_v_dev[i])
 
 在图 9-3 中，你可以看到我们将用作输入的函数的四个随机示例。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig3_HTML.jpg](img/463356_1_En_9_Fig3_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig3_HTML.jpg](img/463356_1_En_9_Fig3_HTML.jpg)
 
 图 9-3
 
@@ -169,7 +169,7 @@ print("Reached epoch",epoch,"cost J =", cost_)
 
 模型收敛非常快。MSE（损失函数）从最初的 1.1 下降到 10,000 个 epoch 后的约 2.5 · 10^(−4)。在 20,000 个 epoch 后，MSE 达到 10^(−6)。我们可以绘制预测值与实际值，以直观检查系统的工作情况。在图 9-4 中，你可以看到系统工作得有多好。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig4_HTML.jpg](img/463356_1_En_9_Fig4_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig4_HTML.jpg](img/463356_1_En_9_Fig4_HTML.jpg)
 
 图 9-4
 
@@ -177,7 +177,7 @@ print("Reached epoch",epoch,"cost J =", cost_)
 
 顺便说一下，开发集上的 MSE 是 3 · 10^(−5)，所以我们可能略微过度拟合了训练数据集。其中一个原因是我们在考虑一个相对较窄的*x*范围：仅从 0 到 5。因此，当你处理非常大的*A*值（例如 2.5 的数量级）时，系统往往表现不佳。如果你检查与图 9-4 相同的图表，但针对开发数据集（图 9-5），你可以看到模型在处理大的*A*值时存在哪些问题。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig5_HTML.jpg](img/463356_1_En_9_Fig5_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig5_HTML.jpg](img/463356_1_En_9_Fig5_HTML.jpg)
 
 图 9-5
 
@@ -301,7 +301,7 @@ get_df(files[2]).head()
 
 你可以在图 9-6 中看到索引为 2 的文件的前五条记录。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig6_HTML.jpg](img/463356_1_En_9_Fig6_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig6_HTML.jpg](img/463356_1_En_9_Fig6_HTML.jpg)
 
 图 9-6
 
@@ -414,7 +414,7 @@ KSV2inter = interp1d(wred, KSV2, kind = 'cubic')
 
 注意，`finter`、`KSVinter` 和 `KSV2inter` 是接受 *ω* 值作为输入的函数，作为一个 NumPy 数组，并分别返回 *f*、*KSV*[1] 和 *KSV*[2] 的值。图 9-8 中的连续线显示了由图 9-7 中的点获得的插值函数。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig8_HTML.jpg](img/463356_1_En_9_Fig8_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig8_HTML.jpg](img/463356_1_En_9_Fig8_HTML.jpg)
 
 图 9-8
 
@@ -462,7 +462,7 @@ data[i,:] = fitfunc2(w_, float(targets[i]), finter, KSVinter, KSV2inter)
 
 在图 9-9 中，你可以看到我们生成的一些随机数据示例。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig9_HTML.jpg](img/463356_1_En_9_Fig9_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig9_HTML.jpg](img/463356_1_En_9_Fig9_HTML.jpg)
 
 图 9-9
 
@@ -551,7 +551,7 @@ print("Reached epoch",epoch,"cost J =", cost_)
 
 大体来说，一个训练良好的网络的输出将永远无法超过目标变量的准确性。请记住，始终检查你目标变量上的错误，以估计它们的准确性。在先前的例子中，因为我们的 *O*2 目标值的最大绝对误差为 ±1%（即实验误差），因此网络结果的预期误差将是这个数量级。**注意**：网络将学习在给定特定输入时产生一定输出的函数。如果输出错误，学习到的函数也会错误。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig10_HTML.jpg](img/463356_1_En_9_Fig10_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig10_HTML.jpg](img/463356_1_En_9_Fig10_HTML.jpg)
 
 图 9-10
 
@@ -561,7 +561,7 @@ print("Reached epoch",epoch,"cost J =", cost_)
 
 你应该记住，我们的开发集很小，这使得振荡更加明显。在图 9-11 中，你可以看到 *O*2 的预测值与测量值。如你所见，它们完美地位于对角线上。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig11_HTML.jpg](img/463356_1_En_9_Fig11_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig11_HTML.jpg](img/463356_1_En_9_Fig11_HTML.jpg)
 
 图 9-11
 
@@ -569,7 +569,7 @@ print("Reached epoch",epoch,"cost J =", cost_)
 
 在图 9-12 中，你可以看到在 *O*2 ∈ [0,100] 上对开发集计算的绝对误差。
 
-![../images/463356_1_En_9_Chapter/463356_1_En_9_Fig12_HTML.jpg](img/463356_1_En_9_Fig12_HTML.jpg)
+![img/463356_1_En_9_Chapter/463356_1_En_9_Fig12_HTML.jpg](img/463356_1_En_9_Fig12_HTML.jpg)
 
 图 9-12
 

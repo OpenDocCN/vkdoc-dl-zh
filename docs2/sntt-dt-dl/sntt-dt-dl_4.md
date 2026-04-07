@@ -1595,7 +1595,7 @@ Gumbel Copula 是一种用于建模系统失效时间分布的特定类型的 Co
 
 当进行数学变换时，得到以下方程。
 
-![$$ {C}_{\theta}\left(u,v\right)=\mathit{\exp}\left[-{\left(\left(\mathit{\ln}(u)\right)\right)}^{\theta }+{\left({\left(\left(-\mathit{\ln}(v)\right)}^{\theta}\right)}^{1/\theta}\right],\theta \in \left[1,\infty \right] $$](../images/534235_1_En_4_Chapter/534235_1_En_4_Chapter_TeX_Equi.png)
+![$$ {C}_{\theta}\left(u,v\right)=\mathit{\exp}\left[-{\left(\left(\mathit{\ln}(u)\right)\right)}^{\theta }+{\left({\left(\left(-\mathit{\ln}(v)\right)}^{\theta}\right)}^{1/\theta}\right],\theta \in \left[1,\infty \right] $$](img/534235_1_En_4_Chapter/534235_1_En_4_Chapter_TeX_Equi.png)
 
 在金融中，通常假设多个资产之间存在强或弱的相关性。人类经济活动之间始终存在相关性。这些相关性被用来预测价格和价值变动。然而，如何检测和测量这些相关性是一个大问题。
 

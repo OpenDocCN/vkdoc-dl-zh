@@ -107,7 +107,7 @@ return 10.0+tmp1+0.5*tmp2
 
 在图 7-1 中，你可以看到 *f*(*x*) 的样子。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg](img/463356_1_En_7_Fig1_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig1_HTML.jpg](img/463356_1_En_7_Fig1_HTML.jpg)
 
 图 7-1
 
@@ -147,7 +147,7 @@ array([ 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 3
 
 在图 7-2 中，您可以看到函数 *f*(*x*) 作为一条连续线；交叉点标记了我们在网格搜索中采样的点；黑色方块标记了函数的精确最大值。右侧的图显示了最大值周围的放大视图。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg](img/463356_1_En_7_Fig2_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig2_HTML.jpg](img/463356_1_En_7_Fig2_HTML.jpg)
 
 图 7-2
 
@@ -194,7 +194,7 @@ flistg.append(m)
 
 在图 7-3 中，我们绘制了结果分布。黑色垂直线是最大值的正确值。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg](img/463356_1_En_7_Fig3_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig3_HTML.jpg](img/463356_1_En_7_Fig3_HTML.jpg)
 
 图 7-3
 
@@ -202,7 +202,7 @@ flistg.append(m)
 
 如你所见，结果差异很大，可能非常远离正确值，甚至达到 10。这告诉我们，使用错误数量的点可能会导致非常错误的结果。正如你可以想象的那样，最好的结果是步长 Δ*x* 最小的结果，因为它更有可能接近最大值。在图 7-4 中，你可以看到找到的最大值如何随着步长 Δ*x* 的变化而变化。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg](img/463356_1_En_7_Fig4_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig4_HTML.jpg](img/463356_1_En_7_Fig4_HTML.jpg)
 
 图 7-4
 
@@ -241,7 +241,7 @@ array([ 0.84639256, 66.45122608, 74.12903502, 36.68827838, 61.71538757, 69.29592
 
 根据您使用的种子，您得到的确切数字可能会有所不同。正如我们在网格搜索中所做的，您可以在图 7-5 中看到 *f*(*x*) 的图像，其中交叉点标记了采样点，黑色方块标记了最大值。在右侧的图像中，您可以看到围绕最大值的放大图。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg](img/463356_1_En_7_Fig5_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig5_HTML.jpg](img/463356_1_En_7_Fig5_HTML.jpg)
 
 图 7-5
 
@@ -249,7 +249,7 @@ array([ 0.84639256, 66.45122608, 74.12903502, 36.68827838, 61.71538757, 69.29592
 
 这种方法的潜在风险是，如果您非常不幸，随机选择的点与真实最大值相去甚远。但这种概率相当低。请注意，如果您为随机点选择一个恒定的概率分布，那么在各个地方得到点的概率是相同的。看看这种方法的表现很有趣。让我们考虑 200 个不同的随机集合，每个集合包含 40 个点，这些点是通过在代码中改变随机种子获得的。最大值 ![$$ \tilde{f} $$](img/463356_1_En_7_Chapter_TeX_IEq7.png) 的分布绘制在图 7-6 中。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg](img/463356_1_En_7_Fig6_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig6_HTML.jpg](img/463356_1_En_7_Fig6_HTML.jpg)
 
 图 7-6
 
@@ -257,7 +257,7 @@ array([ 0.84639256, 66.45122608, 74.12903502, 36.68827838, 61.71538757, 69.29592
 
 正如您所看到的，无论使用的是哪种随机集合，在大多数情况下，您得到的值都非常接近真实最大值。在图 7-7 中，您可以看到通过随机搜索找到的最大值的分布，样本点数量从 10 到 80 变化。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg](img/463356_1_En_7_Fig7_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig7_HTML.jpg](img/463356_1_En_7_Fig7_HTML.jpg)
 
 图 7-7
 
@@ -265,7 +265,7 @@ array([ 0.84639256, 66.45122608, 74.12903502, 36.68827838, 61.71538757, 69.29592
 
 如果你将其与网格搜索进行比较，你可以看到随机搜索始终能更好地得到接近真实最大值的结果。在图 7-8 中，你可以看到使用随机和网格搜索时，使用不同数量的采样点 *n* 得到的最大值 ![$$ \tilde{f} $$](img/463356_1_En_7_Chapter_TeX_IEq10.png) 的分布比较。在两种情况下，图表都是使用 38 个不同的集合生成的，因此总计数相同。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg](img/463356_1_En_7_Fig8_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig8_HTML.jpg](img/463356_1_En_7_Fig8_HTML.jpg)
 
 图 7-8
 
@@ -320,7 +320,7 @@ x = randomsearch[i]
 
 这给出了结果 69.189 和 15.027。相当精确的结果，只对函数进行了 20 次评估。如果我们用 *500*（比我们刚才做的多 25 倍）个采样点进行简单的随机搜索，我们得到 *x*[1] = 69.08 和 *f*[1] = 15.022。这个结果展示了这个技巧如何真正有用。但记住风险：如果你的最大值不在你的区域 *R*[*i*] 中，你将永远找不到它，因为你仍在处理随机数。所以，总是选择相对较大的区域 (*x*[*i*] − *δx*[*i*]，*x*[*i*] + *δx*[*i*]) 是一个好主意，以确保它们包含你的最大值。大小取决于，就像深度学习世界中的几乎所有事情一样，你的数据集和问题，这些可能事先无法知道。不幸的是，需要进行测试。在图 7-9 中，你可以看到函数 *f*(*x*) 上的采样点。在左侧的图中，你可以看到前 10 个点，在右侧，有额外的 10 个点的区域 *R*[2]。左侧图中的小矩形标记了 *x* 区域 *R*[2]。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg](img/463356_1_En_7_Fig9_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig9_HTML.jpg](img/463356_1_En_7_Fig9_HTML.jpg)
 
 图 7-9
 
@@ -328,7 +328,7 @@ x = randomsearch[i]
 
 现在选择最初应该采样多少个点至关重要。在这里我们很幸运。让我们考虑在选择最初的 10 个随机点时使用不同的种子，然后看看会发生什么（见图 7-10）。选择错误的初始点会导致灾难！
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg](img/463356_1_En_7_Fig10_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig10_HTML.jpg](img/463356_1_En_7_Fig10_HTML.jpg)
 
 图 7-10
 
@@ -336,7 +336,7 @@ x = randomsearch[i]
 
 注意，在图 7-10 中，算法是如何在约 16 处找到最大值的，因为在初始采样点中，最大值大约是 *x* = 16，如图 7-10 左边的图中所示。没有点接近实际的最大值，大约是 *x* = 69。算法非常成功地找到了一个最大值，只是不是绝对最大值。这就是使用这个技巧时面临的风险。事情甚至可能比这更糟。考虑图 7-11，其中最初只采样了一个点。你可以在图[7-11]左边的图中看到算法是如何完全错过任何最大值的。它只是给出了右侧图中标记交叉点的点的最高值：(58.4, 9.78)。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg](img/463356_1_En_7_Fig11_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig11_HTML.jpg](img/463356_1_En_7_Fig11_HTML.jpg)
 
 图 7-11
 
@@ -392,7 +392,7 @@ x = randomsearch[i]
 
 为了简化，我们在这里只考虑平稳过程。一个随机过程是平稳的，如果其联合概率分布不随时间变化。这也意味着均值和方差在时间平移时不会改变。我们还将考虑一个其分布只依赖于点之间相对位置的进程。这导致以下条件
 
-![$$ {\displaystyle \begin{array}{l}K\left({x}_1,{x}_2\right)=\tilde{K}\left({x}_1-{x}_2\right)\\ {} Var\left[f(x)\right]=\tilde{K}(0)\end{array}} $$](../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equp.png)
+![$$ {\displaystyle \begin{array}{l}K\left({x}_1,{x}_2\right)=\tilde{K}\left({x}_1-{x}_2\right)\\ {} Var\left[f(x)\right]=\tilde{K}(0)\end{array}} $$](img/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_Equp.png)
 
 注意，要应用我们描述的方法，首先您必须将数据转换为平稳的，如果尚未这样做，则消除时间序列中的季节性或趋势，例如。
 
@@ -450,7 +450,7 @@ return x**2-x**3+3+10*x+0.07*x**4
 
 让我们考虑范围(0, 12)内的函数。在图 7-12 中，你可以看到函数的外观。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg](img/463356_1_En_7_Fig12_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig12_HTML.jpg](img/463356_1_En_7_Fig12_HTML.jpg)
 
 图 7-12
 
@@ -465,7 +465,7 @@ f_ = f(randompoints)
 
 其中我们使用了随机数种子 42：`np.random.seed(42)`。在图 7-13 中，你可以看到用十字标记的随机点。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg](img/463356_1_En_7_Fig13_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig13_HTML.jpg](img/463356_1_En_7_Fig13_HTML.jpg)
 
 图 7-13
 
@@ -513,7 +513,7 @@ sigmabayes = np.asarray(sigmabayes_)
 
 在图 7-14 中，你可以看到这种方法是如何工作的。虚线是预测函数，通过绘制 *μ*(*x*) 得到，如代码中计算的那样，当我们有五个可用点时 (*n* = 5)。灰色区域是估计函数和 +/- *σ* 之间的区域。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg](img/463356_1_En_7_Fig14_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig14_HTML.jpg](img/463356_1_En_7_Fig14_HTML.jpg)
 
 图 7-14
 
@@ -521,7 +521,7 @@ sigmabayes = np.asarray(sigmabayes_)
 
 考虑到我们拥有的点很少，这不是一个坏的结果。现在请记住，你仍然需要一些点，才能得到一个合理的近似。在图 7-15 中，你可以看到如果我们只有两个可用点时的结果。结果并不那么好。灰色区域是估计函数周围的区域和 +/- *σ*。你可以看到，我们离我们拥有的点越远，预测函数的不确定性或方差就越高。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg](img/463356_1_En_7_Fig15_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig15_HTML.jpg](img/463356_1_En_7_Fig15_HTML.jpg)
 
 图 7-15
 
@@ -630,7 +630,7 @@ ybayes1, sigmabayes1 = get_surrogate(randompoints1)
 
 在图 7-16 中，你可以看到结果。虚线是获取函数*a**UCB*，已归一化以适应图表。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq20.png](img/463356_1_En_7_Chapter_TeX_IEq20.png)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Chapter_TeX_IEq20.png](img/463356_1_En_7_Chapter_TeX_IEq20.png)
 
 图 7-16
 
@@ -638,7 +638,7 @@ ybayes1, sigmabayes1 = get_surrogate(randompoints1)
 
 代理函数还不够好，因为我们没有足够的数据点，大的方差（灰色区域）使得这一点很明显。唯一被很好地近似的是*x* ≳ 35 的区域。你可以看到当代理函数没有很好地近似黑盒函数时，获取函数很大，而当它做到了，例如*x* ≳ 35 时，获取函数很小。所以，直观地选择*a**UCB*最大的点作为新点，相当于选择函数被较差近似的点，或者说，用更数学的语言来说，方差较大的点。相比之下，在图 7-17 中，你可以看到与图 7-16 相同的图表，但带有获取函数![${\tilde{a}}_{UCB}(x)$](img/463356_1_En_7_Chapter_TeX_IEq22.png)和*η* = 3.0。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg](img/463356_1_En_7_Fig17_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig17_HTML.jpg](img/463356_1_En_7_Fig17_HTML.jpg)
 
 图 7-17
 
@@ -656,7 +656,7 @@ ybayes2, sigmabayes2 = get_surrogate(randompoints2)
 
 为了简化，我为每个步骤分别命名了每个数组，而不是创建一个列表。但，通常，你应该使这些迭代自动进行。在图 7-18 中，你可以看到带有额外点的结果，用黑色圆圈标记。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg](img/463356_1_En_7_Fig18_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig18_HTML.jpg](img/463356_1_En_7_Fig18_HTML.jpg)
 
 图 7-18
 
@@ -664,7 +664,7 @@ ybayes2, sigmabayes2 = get_surrogate(randompoints2)
 
 新点位于 *x* ≈ 27 附近。让我们继续添加点。在图 7-19 中，你可以看到添加五个点后的结果。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg](img/463356_1_En_7_Fig19_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig19_HTML.jpg](img/463356_1_En_7_Fig19_HTML.jpg)
 
 图 7-19
 
@@ -674,7 +674,7 @@ ybayes2, sigmabayes2 = get_surrogate(randompoints2)
 
 现在我们来看看获取函数 ![$$ {\tilde{a}}_{UCB}(x) $$](img/463356_1_En_7_Chapter_TeX_IEq32.png) 会发生什么，并检查我们多快能找到最大值。在这种情况下，我们将使用 *η* = 3.0，以获得代理函数最大值和其方差之间的更好平衡。在图 7-20 中，你可以看到仅添加一个额外点（用黑色圆圈标记）后的结果。我们已经得到了一个相当好的真实最大值的近似！
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg](img/463356_1_En_7_Fig20_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig20_HTML.jpg](img/463356_1_En_7_Fig20_HTML.jpg)
 
 图 7-20
 
@@ -682,7 +682,7 @@ ybayes2, sigmabayes2 = get_surrogate(randompoints2)
 
 现在让我们再添加一个额外的点。你可以在图 7-21 中看到，额外的点现在仍然接近最大值，但方向上偏向于 30 附近具有高方差的区域。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg](img/463356_1_En_7_Fig21_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig21_HTML.jpg](img/463356_1_En_7_Fig21_HTML.jpg)
 
 图 7-21
 
@@ -690,7 +690,7 @@ ybayes2, sigmabayes2 = get_surrogate(randompoints2)
 
 如果我们选择使 *η* 更小，点会更接近最大值，如果我们选择使其更大，点会更接近具有最高方差（大约在 25 到 32 之间）的点。现在让我们添加一个额外的点，看看会发生什么。在图 7-22 中，你可以看到方法现在选择了一个接近另一个具有高方差区域（大约在 10 到 22 之间）的点，同样用黑色圆圈标记。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg](img/463356_1_En_7_Fig22_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig22_HTML.jpg](img/463356_1_En_7_Fig22_HTML.jpg)
 
 图 7-22
 
@@ -698,7 +698,7 @@ ybayes2, sigmabayes2 = get_surrogate(randompoints2)
 
 最后，方法在 15 附近细化了最大区域，如图 7-23 所示，添加了一个标记为黑色圆圈的点。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg](img/463356_1_En_7_Fig23_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig23_HTML.jpg](img/463356_1_En_7_Fig23_HTML.jpg)
 
 图 7-23
 
@@ -728,7 +728,7 @@ ybayes2, sigmabayes2 = get_surrogate(randompoints2)
 
 在不太有趣的范围内，你得到了更多的点，而在你想要的地方得到零点。在图 7-24 中，你可以看到点的分布。请注意，在*x*轴上，我使用了对数刻度。你可以清楚地看到，对于较大的学习率值，你得到了更多的点。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg](img/463356_1_En_7_Fig24_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig24_HTML.jpg](img/463356_1_En_7_Fig24_HTML.jpg)
 
 图 7-24
 
@@ -748,7 +748,7 @@ points2 = 10**r
 
 在图 7-25 中，你现在可以看到包含在数组`points2`中的点的分布是完全平坦的，正如我们希望的那样。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg](img/463356_1_En_7_Fig25_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig25_HTML.jpg](img/463356_1_En_7_Fig25_HTML.jpg)
 
 图 7-25
 
@@ -946,7 +946,7 @@ print('Number of neurons:',nn_,'Acc. Train:', acc_train, 'Acc. Test', acc_test)
 
 并不出奇，更多的神经元可以提供更好的准确率，没有训练数据集过拟合的迹象，因为开发数据集的准确率几乎等于训练数据集。在图 7-26 中，你可以看到测试数据集准确率与隐藏层中神经元数量关系的图表。注意，x 轴使用对数尺度，以便更明显地显示变化。
 
-![../images/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg](img/463356_1_En_7_Fig26_HTML.jpg)
+![img/463356_1_En_7_Chapter/463356_1_En_7_Fig26_HTML.jpg](img/463356_1_En_7_Fig26_HTML.jpg)
 
 图 7-26
 

@@ -62,7 +62,7 @@
 
 偏差可以理解为潜在模型预测值的能力。偏差的正式定义如下：
 
-![$$ Bias=E\left[{f}^{\prime }(x)-f(x)\right], $$](../images/611710_1_En_5_Chapter/611710_1_En_5_Chapter_TeX_Equa.png)
+![$$ Bias=E\left[{f}^{\prime }(x)-f(x)\right], $$](img/611710_1_En_5_Chapter/611710_1_En_5_Chapter_TeX_Equa.png)
 
 其中 *f*^′(*x*) 是模型的平均预测值，*f*(*x*) 是潜在函数。高偏差表示模型无法拟合训练数据。可能的原因之一是模型过于简化。高偏差导致训练集和测试集的错误率都较高。
 
@@ -72,7 +72,7 @@
 
 方差的正式定义如下：
 
-![$$ Variance=E{\left[{f}^{\prime }(x)-f(x)\right]}²\. $$](../images/611710_1_En_5_Chapter/611710_1_En_5_Chapter_TeX_Equb.png)
+![$$ Variance=E{\left[{f}^{\prime }(x)-f(x)\right]}²\. $$](img/611710_1_En_5_Chapter/611710_1_En_5_Chapter_TeX_Equb.png)
 
 ## 超参数调整
 

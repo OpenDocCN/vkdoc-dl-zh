@@ -4,7 +4,7 @@
 
 在本章中，你将实现一个具有**PoseNet**模型的游戏功能。PoseNet 是一种能够在图像和视频中实时进行人体姿态估计的神经网络。在这个上下文中，估计姿态是指识别一个人体关节和其他部分在画面中出现的任务。例如，图 5-1 是应用程序的截图，在位于中心的画布上，你可以看到算法识别的身体部位骨骼叠加。
 
-![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig1_HTML.jpg](img/494424_1_En_5_Fig1_HTML.jpg)
+![img/494424_1_En_5_Chapter/494424_1_En_5_Fig1_HTML.jpg](img/494424_1_En_5_Fig1_HTML.jpg)
 
 图 5-1
 
@@ -22,7 +22,7 @@ PoseNet 是一种用于估计人体姿态的卷积神经网络模型。这些姿
 
 使用 PoseNet 估计姿态涉及两个关键步骤：计算**热图**和**偏移向量**。热图是大小为 RESOLUTION x RESOLUTION x 17 的三维张量（算法自动将图像平方），其中数字 17 代表关键点。热图中的每个值都是对应关键点在该位置存在的置信度或概率。图 5-2 展示了“右膝”关键点热图的简化示例。
 
-![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig2_HTML.jpg](img/494424_1_En_5_Fig2_HTML.jpg)
+![img/494424_1_En_5_Chapter/494424_1_En_5_Fig2_HTML.jpg](img/494424_1_En_5_Fig2_HTML.jpg)
 
 图 5-2
 
@@ -30,7 +30,7 @@ PoseNet 是一种用于估计人体姿态的卷积神经网络模型。这些姿
 
 在第二步中，PoseNet 计算一组偏移向量，这些向量测量像素与关键点位置之间的距离，并产生，正如模型背后的论文之一所引用的，“更精确地估计对应的关键点位置”（Papandreou 等人，2017）。在创建这些张量之后，网络将它们聚合起来，产生高度局部化的激活图，精确地定位关键点的位置（图 5-3)。
 
-![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig3_HTML.jpg](img/494424_1_En_5_Fig3_HTML.jpg)
+![img/494424_1_En_5_Chapter/494424_1_En_5_Fig3_HTML.jpg](img/494424_1_En_5_Fig3_HTML.jpg)
 
 图 5-3
 
@@ -297,7 +297,7 @@ requestAnimationFrame(getPose);
 
 在继续教程的下一部分和最后一部分之前，让我们快速回顾一下模型的输出。PoseNet 预测（图 5-4）是一个由两个属性组成的对象 `pose`：`score` 和 `keypoints`。第二个属性 `keypoints` 对应于长度为 17 的数组，其中每个元素都是关键点之一。这些元素包含一个对象，包含关键点置信度分数、部分的名称及其位置。预测的第一个属性 `score` 是关键点置信度的平均值。
 
-![../images/494424_1_En_5_Chapter/494424_1_En_5_Fig4_HTML.jpg](img/494424_1_En_5_Fig4_HTML.jpg)
+![img/494424_1_En_5_Chapter/494424_1_En_5_Fig4_HTML.jpg](img/494424_1_En_5_Fig4_HTML.jpg)
 
 图 5-4
 

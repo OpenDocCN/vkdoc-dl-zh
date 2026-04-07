@@ -72,13 +72,13 @@
 
 其中，*c**i* 和 *q**i* 是约束函数，它们定义了一些需要满足的方程和不等式。在神经网络的情况下，你可能会有这样的约束，即输出（假设一下，![$$ {\hat{y}}_i $$](img/463356_2_En_1_Chapter_TeX_IEq16.png) 只是一个数字）必须位于区间 [0, 1] 内。或者它必须始终大于零或小于某个特定值。或者你可能会遇到的另一个典型约束是，当你想让网络只输出有限数量的输出时，例如，在分类问题中。
 
-让我们考虑一个例子。假设我们希望我们的网络输出 ![$$ {\hat{y}}_i\in \left[0,1\right] $$](../images/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_IEq17.png)。我们的学习问题可以表述如下
+让我们考虑一个例子。假设我们希望我们的网络输出 ![$$ {\hat{y}}_i\in \left[0,1\right] $$](img/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_IEq17.png)。我们的学习问题可以表述如下
 
 ![最小化函数的数学表达式](img/463356_2_En_1_Chapter_TeX_Equd.png)
 
 或者甚至更一般地
 
-![最小化 $L\left(f\left(\theta, x\right),y\right)$，其中 $\theta \in {\mathbb{R}}^N$，且 $f\left(\theta, x\right)\in \left[0,1\right]$，对所有 $\theta, x$ 成立](../images/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Eque.png)
+![最小化 $L\left(f\left(\theta, x\right),y\right)$，其中 $\theta \in {\mathbb{R}}^N$，且 $f\left(\theta, x\right)\in \left[0,1\right]$，对所有 $\theta, x$ 成立](img/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Eque.png)
 
 这显然是一个 *约束优化* 问题。在处理神经网络时，这个问题通常通过设计神经网络使其自动满足约束条件，并将学习重新带回无约束优化问题。
 
@@ -102,7 +102,7 @@
 
 许多最小化函数的算法，按设计，只能找到所谓的“局部”最小值，换句话说，是一个点 *x*[0]，在这个点上，要最小化的函数值比在 *x*[0] 任何**邻近**点都要小。从数学上讲，如果以下条件满足（在一维情况下），*x*[0] 是 *f* 的局部最小值
 
-![$$ \exists \eta \in \mathbb{R}\ \mathrm{such}\ \mathrm{that}\ f(x)\le f\left({x}_0\right)\kern0.5em \forall x\in \left[{x}_0-\eta, {x}_0+\eta \right] $$](../images/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Equg.png)
+![$$ \exists \eta \in \mathbb{R}\ \mathrm{such}\ \mathrm{that}\ f(x)\le f\left({x}_0\right)\kern0.5em \forall x\in \left[{x}_0-\eta, {x}_0+\eta \right] $$](img/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Equg.png)
 
 从原则上讲，我们希望找到**全局最小值**，换句话说，就是函数值在所有可能点中最小的点。在神经网络的情况下，由于网络函数的复杂性，确定最小值是局部还是全局最小值是不可能的。这是（尽管不是唯一一个）训练大型神经网络如此具有挑战性的数值问题之一。在下一章中，我们将详细讨论哪些因素^(2)可能会使找到全局最小值更容易或更具挑战性。
 
@@ -347,13 +347,13 @@ SGD 是 GD 的一个非常常见的版本，它简单地是 *m* = 1 的迷你批
 
 ### [高级章节] SGD 和分形
 
-在前面的章节中，我们讨论了选择错误的学习率如何使收敛速度变慢甚至发散。但讨论的是一维情况，因此非常简单。本节将向您展示使用 SGD 时隐藏的复杂性。您将看到特定范围的学习率如何使收敛变得混沌（在数学意义上的词）。这是在处理优化问题时可以找到的许多隐藏的宝石之一。让我们考虑一个问题^(11)，其中 *M* 个输入 *x*^([*i*]) 是二维的，换句话说 ![$$ {x}^{\left[i\right]}=\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)\in {\mathbb{R}}² $$](../images/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_IEq29.png)。我们称目标变量为 *y*^([*i*])。我们试图解决的优化问题涉及最小化这个函数
+在前面的章节中，我们讨论了选择错误的学习率如何使收敛速度变慢甚至发散。但讨论的是一维情况，因此非常简单。本节将向您展示使用 SGD 时隐藏的复杂性。您将看到特定范围的学习率如何使收敛变得混沌（在数学意义上的词）。这是在处理优化问题时可以找到的许多隐藏的宝石之一。让我们考虑一个问题^(11)，其中 *M* 个输入 *x*^([*i*]) 是二维的，换句话说 ![$$ {x}^{\left[i\right]}=\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)\in {\mathbb{R}}² $$](img/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_IEq29.png)。我们称目标变量为 *y*^([*i*])。我们试图解决的优化问题涉及最小化这个函数
 
-![损失函数 \( L=\frac{1}{2}\sum \limits_{i=1}^M{\left(f\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)-{y}^{\left[i\right]}\right)}² \)](../images/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Equy.png)
+![损失函数 \( L=\frac{1}{2}\sum \limits_{i=1}^M{\left(f\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)-{y}^{\left[i\right]}\right)}² \)](img/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Equy.png)
 
 与
 
-![函数 \( f\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)={w}_1{x}_1^{\left[i\right]}+{w}_2\ {x}_2^{\left[i\right]} \)](../images/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Equz.png)
+![函数 \( f\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)={w}_1{x}_1^{\left[i\right]}+{w}_2\ {x}_2^{\left[i\right]} \)](img/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_Equz.png)
 
 这是对输入的简单线性组合。问题很简单，对吧？我们最小化均方误差（MSE）并尝试找到最小化 *L* 的最佳参数 *w*[1] 和 *w*[2]。考虑 *M* = 3 个输入。特别是，为了使其更具体，考虑以下输入矩阵^(12)。
 
@@ -385,7 +385,7 @@ SGD 是 GD 的一个非常常见的版本，它简单地是 *m* = 1 的迷你批
 
 1.  在{1,2,3}之间选择一个随机值并将其分配给 *i*。
 
-1.  通过使用 ![$$ {l}_i=\frac{1}{2}{\left(f\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)-{y}^{\left[i\right]}\right)}² $$](../images/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_IEq32.png) 更新参数 *w*[1], *w*[2]；换句话说，使用 *l*[*i*] 来计算导数，并根据梯度下降规则更新权重 *w*[*j*] → *w*[*j*] − *α∂l*[*i*]/*∂w*[*j*] 对于 *j* = 1, 2。每次，保存 *w*[1], *w*[2] 的值，例如在一个 Python 列表中。
+1.  通过使用 ![$$ {l}_i=\frac{1}{2}{\left(f\left({x}_1^{\left[i\right]},{x}_2^{\left[i\right]}\right)-{y}^{\left[i\right]}\right)}² $$](img/463356_2_En_1_Chapter/463356_2_En_1_Chapter_TeX_IEq32.png) 更新参数 *w*[1], *w*[2]；换句话说，使用 *l*[*i*] 来计算导数，并根据梯度下降规则更新权重 *w*[*j*] → *w*[*j*] − *α∂l*[*i*]/*∂w*[*j*] 对于 *j* = 1, 2。每次，保存 *w*[1], *w*[2] 的值，例如在一个 Python 列表中。
 
 1.  重复步骤 2 和 3 一定次数，*N*。
 

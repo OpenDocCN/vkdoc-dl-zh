@@ -217,7 +217,7 @@ pip 是一个 Python 软件包管理器。要了解如何安装它，请访问 [
 
 在训练过程中，一旦你在终端上看到日志消息，切换到 TensorBoard（图 8-1）以跟踪准确度和损失。如果它们不在那里，要么等待几秒钟直到训练器写入日志，要么点击刷新按钮。
 
-![../images/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg](img/494424_1_En_8_Fig1_HTML.jpg)
+![img/494424_1_En_8_Chapter/494424_1_En_8_Fig1_HTML.jpg](img/494424_1_En_8_Fig1_HTML.jpg)
 
 图 8-1
 

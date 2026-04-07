@@ -162,9 +162,9 @@ MARL 分类法
 
 ### 值迭代
 
-单智能体的值迭代在第三章中介绍。图 12-6 重新生成了第三章中值迭代算法的伪代码。需要做一些小的修改来扩展此算法到 MARL 场景。计算 *v*^′(*s*) 的步骤需要改变——即 ![$$ {v}^{\prime }(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r|s,a\right)\left[r+\upgamma v\left({s}^{\prime}\right)\right] $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_IEq3.png) 是需要改变的步骤。需要对此步骤进行两个修改。首先，为每个智能体 *i* 计算右侧表达式并将其存储在中间动作值向量 *M*[*i*, *s*] 中，如方程 12-5 所示。
+单智能体的值迭代在第三章中介绍。图 12-6 重新生成了第三章中值迭代算法的伪代码。需要做一些小的修改来扩展此算法到 MARL 场景。计算 *v*^′(*s*) 的步骤需要改变——即 ![$$ {v}^{\prime }(s)\leftarrow \underset{a}{\max}\sum \limits_{s^{\prime },r}p\left({s}^{\prime },r|s,a\right)\left[r+\upgamma v\left({s}^{\prime}\right)\right] $$](img/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_IEq3.png) 是需要改变的步骤。需要对此步骤进行两个修改。首先，为每个智能体 *i* 计算右侧表达式并将其存储在中间动作值向量 *M*[*i*, *s*] 中，如方程 12-5 所示。
 
-![$$ {M}_{i,s}(a)\leftarrow \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r|s,a\right)\left[{r}_i+\gamma {v}_i\left({s}^{\prime}\right)\right],\mathrm{for}\ \mathrm{state}\ s\in S,\mathrm{joint}\ \mathrm{action}\ a\in A $$](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ5.png)
+![$$ {M}_{i,s}(a)\leftarrow \sum \limits_{s^{\prime },r}p\left({s}^{\prime },r|s,a\right)\left[{r}_i+\gamma {v}_i\left({s}^{\prime}\right)\right],\mathrm{for}\ \mathrm{state}\ s\in S,\mathrm{joint}\ \mathrm{action}\ a\in A $$](img/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ5.png)
 
 (12-5)
 
@@ -222,7 +222,7 @@ MARL 分类法
 
 就像你在第八章和第九章中读到的单代理强化学习中的基于策略的算法一样，多智能体强化学习（MARL）也有一个基于策略的算法系列。你直接学习策略，而不是学习*V*或*Q*值，然后使用这些值来找到策略。这些都是基于梯度上升来推动环境中所有代理的动作，以实现每个代理更高的期望回报。让我们通过一个例子来说明。首先，考虑一个有两个动作的两个代理的场景。看看一个非重复的正常形式博弈，这意味着只有一个状态，并且两个代理都采取行动后，回合结束。让我们写出两个代理的奖励矩阵，如方程 12-6 所示。如果代理*i*选择动作 2，代理*j*选择动作 1，代理*i*的奖励将是*r*[2,1]，代理*j*的奖励将是*u*[2,1]。
 
-![R_i= \left[\begin{array}{cc}r_{1,1}& r_{1,2}\\ r_{2,1}& r_{2,2}\end{array}\right],\kern0.36em R_j= \left[\begin{array}{cc}m_{1,1}& m_{1,2}\\ m_{2,1}& m_{2,2}\end{array}\right] ](../images/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ6.png)
+![R_i= \left[\begin{array}{cc}r_{1,1}& r_{1,2}\\ r_{2,1}& r_{2,2}\end{array}\right],\kern0.36em R_j= \left[\begin{array}{cc}m_{1,1}& m_{1,2}\\ m_{2,1}& m_{2,2}\end{array}\right] ](img/502835_2_En_12_Chapter/502835_2_En_12_Chapter_TeX_Equ6.png)
 
 (12-6)
 

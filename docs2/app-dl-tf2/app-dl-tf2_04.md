@@ -547,17 +547,17 @@ hist_reg, model_reg = create_and_train_reg_model_L1(train_x, train_y, dev_x, dev
 
 ### 权重真的会降至零吗？
 
-看看权重为什么会降至零是有教育意义的。为了说明目的，在图 4-9 中，你可以看到权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](../images/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_IEq4.png)（来自第 3 层）与我们的具有两个特征的合成数据集的 epoch 数的关系图，使用 *ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，在 1000 个 epoch 后。你可以看到它如何迅速降至零。1000 个 epoch 后的值是 2 · 10^(−21)，所以从所有意义上讲都是零。
+看看权重为什么会降至零是有教育意义的。为了说明目的，在图 4-9 中，你可以看到权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](img/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_IEq4.png)（来自第 3 层）与我们的具有两个特征的合成数据集的 epoch 数的关系图，使用 *ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，在 1000 个 epoch 后。你可以看到它如何迅速降至零。1000 个 epoch 后的值是 2 · 10^(−21)，所以从所有意义上讲都是零。
 
 ![](img/463356_2_En_4_Fig9_HTML.jpg)
 
 图 4-9
 
-权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](../images/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_IEq5.png) 与我们的具有两个特征的合成数据集的 epoch 数的关系图，使用 *ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个 epoch
+权重 ![$$ {w}_{12,5}^{\left[3\right]} $$](img/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_IEq5.png) 与我们的具有两个特征的合成数据集的 epoch 数的关系图，使用 *ℓ*[2] 正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个 epoch
 
 如果你在想，权重几乎以指数的方式降至零。理解原因的一种方法是通过考虑单个权重的权重更新方程
 
-![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\frac{\gamma \partial L\left({\boldsymbol{w}}_{\left[n\right]}\right)}{\partial {w}_j} $$](../images/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_Equk.png)
+![$$ {w}_{j,\left[n+1\right]}={w}_{j,\left[n\right]}\left(1-\frac{\gamma \lambda}{m}\right)-\frac{\gamma \partial L\left({\boldsymbol{w}}_{\left[n\right]}\right)}{\partial {w}_j} $$](img/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_Equk.png)
 
 现在假设我们发现自己接近最小值，在一个成本函数 *J* 的导数几乎为零的区域，因此我们可以忽略它。换句话说，让我们假设
 
@@ -581,7 +581,7 @@ hist_reg, model_reg = create_and_train_reg_model_L1(train_x, train_y, dev_x, dev
 
 图 4-10
 
-权重![w_{12,5}^{[3]}](../images/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_IEq6.png)与我们的具有两个特征的合成数据集的周期作图，*ℓ*[2]正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个周期（实线），以及为了说明目的的纯指数衰减（虚线）
+权重![w_{12,5}^{[3]}](img/463356_2_En_4_Chapter/463356_2_En_4_Chapter_TeX_IEq6.png)与我们的具有两个特征的合成数据集的周期作图，*ℓ*[2]正则化，*γ* = 10^(−3)，*λ* = 0.1，训练了 1000 个周期（实线），以及为了说明目的的纯指数衰减（虚线）
 
 注意，当使用正则化时，你最终会得到包含大量零元素的张量，称为稀疏张量。然后你可以利用针对稀疏张量非常高效的特殊程序。当你开始向更复杂的模型迈进时，这是需要记住的事情，但这个主题对于这本书来说过于高级。
 

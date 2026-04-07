@@ -22,7 +22,7 @@
 
 假设我们有一个向量 ![公式](img/489297_1_En_1_Chapter_TeX_IEq1.png)，如图 1-1 所示。这个向量目前没有考虑任何坐标系，但我们大多数人已经熟悉笛卡尔坐标系（x、y、z 轴）。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig1_HTML.jpg](img/489297_1_En_1_Fig1_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig1_HTML.jpg](img/489297_1_En_1_Fig1_HTML.jpg)
 
 图 1-1
 
@@ -30,7 +30,7 @@
 
 如果向量 ![公式](img/489297_1_En_1_Chapter_TeX_IEq2.png) 在三维空间中表示，它看起来就像图 1-2 中所示的那样。这个向量 ![公式](img/489297_1_En_1_Chapter_TeX_IEq3.png) 也可以借助基础向量来表示。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig2_HTML.jpg](img/489297_1_En_1_Fig2_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig2_HTML.jpg](img/489297_1_En_1_Fig2_HTML.jpg)
 
 图 1-2
 
@@ -40,7 +40,7 @@
 
 一旦有了基向量，我们就可以使用坐标系来找到表示原始向量 ![$$ \hat{\mathrm{A}} $$](img/489297_1_En_1_Chapter_TeX_IEq8.png) 的分量。为了简单起见，并且为了更好地理解向量的分量，让我们将坐标系从三维降低到二维。因此，现在向量 ![$$ \hat{\mathrm{A}} $$](img/489297_1_En_1_Chapter_TeX_IEq9.png) 看起来就像图 1-3 中所示的那样。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig3_HTML.jpg](img/489297_1_En_1_Fig3_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig3_HTML.jpg](img/489297_1_En_1_Fig3_HTML.jpg)
 
 图 1-3
 
@@ -48,7 +48,7 @@
 
 要找到向量 ![$$ \hat{\mathrm{A}} $$](img/489297_1_En_1_Chapter_TeX_IEq10.png) 在 x 轴上的第一个分量，我们将它投影到 x 轴上，如图 1-4 所示。现在，投影与 x 轴相交的点就是向量的 x 分量，或第一个分量。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig4_HTML.jpg](img/489297_1_En_1_Fig4_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig4_HTML.jpg](img/489297_1_En_1_Fig4_HTML.jpg)
 
 图 1-4
 
@@ -66,7 +66,7 @@
 
 最后，张量也是一个数学实体，用于表示不同的属性，类似于标量、向量或矩阵。确实，张量是标量或向量的推广。简而言之，张量是多维数组，具有一些动态属性。向量是一维张量，而二维张量是矩阵（如图 1-5 所示）。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig5_HTML.jpg](img/489297_1_En_1_Fig5_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig5_HTML.jpg](img/489297_1_En_1_Fig5_HTML.jpg)
 
 图 1-5
 
@@ -92,7 +92,7 @@
 
 接下来是 TensorFlow 的第二部分：流。这基本上是一个底层图计算框架，它使用张量进行执行。一个典型的图由两个实体组成：节点和边，如图 1-6 所示。节点也被称为顶点。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig6_HTML.jpg](img/489297_1_En_1_Fig6_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig6_HTML.jpg](img/489297_1_En_1_Fig6_HTML.jpg)
 
 图 1-6
 
@@ -100,7 +100,7 @@
 
 边实际上是节点/顶点之间的连接，数据通过这些连接流动，而节点是实际计算发生的地方。现在，一般来说，图可以是循环的或非循环的，但在 TensorFlow 中，它始终是非循环的。它不能从同一个节点开始和结束。让我们考虑一个简单的计算图，如图 1-7 所示，并探讨其一些属性。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig7_HTML.jpg](img/489297_1_En_1_Fig7_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig7_HTML.jpg](img/489297_1_En_1_Fig7_HTML.jpg)
 
 图 1-7
 
@@ -316,7 +316,7 @@ TensorFlow 的开发团队还声称，新的更改在产品性能上超过了早
 
 1.  前往[`https://colab.research.google.com`](https://colab.research.google.com)。您会看到控制台有多个选项，如图 1-8 所示。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig8_HTML.jpg](img/489297_1_En_1_Fig8_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig8_HTML.jpg](img/489297_1_En_1_Fig8_HTML.jpg)
 
 图 1-8
 
@@ -336,7 +336,7 @@ Python Notebook Colaboratory (Colab)控制台
 
 1.  点击“新建 Python 3 笔记本”，一个新的 Colab 笔记本就会出现，如图 1-9 所示。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig9_HTML.jpg](img/489297_1_En_1_Fig9_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig9_HTML.jpg](img/489297_1_En_1_Fig9_HTML.jpg)
 
 图 1-9
 
@@ -357,19 +357,19 @@ Python Notebook Colaboratory (Colab)控制台
 
 使用 TensorFlow 的另一种方式是通过 Databricks 平台。以下展示了在 Databricks 上安装 TensorFlow 的方法，使用的是社区版账户，但同样的步骤也可以用于商业账户的使用。第一步是登录到 Databricks 账户并启动一个所需大小的集群（图 1-10–1-12）。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig12_HTML.jpg](img/489297_1_En_1_Fig12_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig12_HTML.jpg](img/489297_1_En_1_Fig12_HTML.jpg)
 
 图 1-12
 
 集群设置
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig11_HTML.jpg](img/489297_1_En_1_Fig11_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig11_HTML.jpg](img/489297_1_En_1_Fig11_HTML.jpg)
 
 图 1-11
 
 集群
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig10_HTML.jpg](img/489297_1_En_1_Fig10_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig10_HTML.jpg](img/489297_1_En_1_Fig10_HTML.jpg)
 
 图 1-10
 
@@ -377,7 +377,7 @@ Databricks
 
 一旦集群启动并运行，我们通过操作选项进入集群的库选项，如图 1-13 所示。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig13_HTML.jpg](img/489297_1_En_1_Fig13_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig13_HTML.jpg](img/489297_1_En_1_Fig13_HTML.jpg)
 
 图 1-13
 
@@ -385,7 +385,7 @@ Databricks
 
 在库选项卡中，如果集群已经预装了一套库，它们将被列出；或者，如果是新集群，则不会安装任何包。然后我们点击“安装新包”按钮（如图 1-14）。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig14_HTML.jpg](img/489297_1_En_1_Fig14_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig14_HTML.jpg](img/489297_1_En_1_Fig14_HTML.jpg)
 
 图 1-14
 
@@ -393,13 +393,13 @@ Databricks
 
 这将打开一个新窗口，其中包含多个选项，用于在 Databricks 中导入或安装新的库（如图 1-15）。我们选择 PyPI，并在包选项中说明要安装的 TensorFlow 所需的版本，如图 1-16 所示。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig16_HTML.jpg](img/489297_1_En_1_Fig16_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig16_HTML.jpg](img/489297_1_En_1_Fig16_HTML.jpg)
 
 图 1-16
 
 TensorFlow 包
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig15_HTML.jpg](img/489297_1_En_1_Fig15_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig15_HTML.jpg](img/489297_1_En_1_Fig15_HTML.jpg)
 
 图 1-15
 
@@ -407,13 +407,13 @@ PyPI 源
 
 这将需要一些时间，然后我们可以在 Databricks 的库中看到 TensorFlow 成功安装。现在我们可以使用相同的集群打开一个新的或现有的笔记本（如图 1-17 和 1-18）。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig18_HTML.jpg](img/489297_1_En_1_Fig18_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig18_HTML.jpg](img/489297_1_En_1_Fig18_HTML.jpg)
 
 图 1-18
 
 新笔记本
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig17_HTML.jpg](img/489297_1_En_1_Fig17_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig17_HTML.jpg](img/489297_1_En_1_Fig17_HTML.jpg)
 
 图 1-17
 
@@ -421,7 +421,7 @@ PyPI 源
 
 最后一步是在笔记本中导入 TensorFlow 并验证版本。我们可以打印 TensorFlow 版本，如图 1-19 所示。
 
-![../images/489297_1_En_1_Chapter/489297_1_En_1_Fig19_HTML.jpg](img/489297_1_En_1_Fig19_HTML.jpg)
+![img/489297_1_En_1_Chapter/489297_1_En_1_Fig19_HTML.jpg](img/489297_1_En_1_Fig19_HTML.jpg)
 
 图 1-19
 

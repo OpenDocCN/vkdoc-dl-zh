@@ -153,7 +153,7 @@ plot_color_image(flower_sc)
 
 对于本课，前往本书的 URL，点击 *chapter7*，点击 *images*，点击 *fish.jpg*，点击 *下载* 按钮，在图片内部右键点击，并点击 *另存为…* 以将其保存到您的计算机上。将图片拖放到您的 Google Drive *Colab 笔记本* 文件夹中。为 *happy_moon.jpg* 图片重复相同的步骤。
 
-![../images/501128_1_En_7_Chapter/501128_1_En_7_Figa_HTML.jpg](img/501128_1_En_7_Figa_HTML.jpg)![../images/501128_1_En_7_Chapter/501128_1_En_7_Figb_HTML.jpg](img/501128_1_En_7_Figb_HTML.jpg)
+![img/501128_1_En_7_Chapter/501128_1_En_7_Figa_HTML.jpg](img/501128_1_En_7_Figa_HTML.jpg)![img/501128_1_En_7_Chapter/501128_1_En_7_Figb_HTML.jpg](img/501128_1_En_7_Figb_HTML.jpg)
 
 ## 挂载 Google Drive
 
