@@ -1,3 +1,5 @@
++   [三维成像技术—多维信号处理与深度学习](docs/3D成像技术/README.md)
++   [3D点云分析](docs/3D点云分析/README.md)
 +   [深度学习高级应用指南](docs/adv-app-dl/README.md)
 +   [面向医疗保健的 Keras 和 TensorFlow2 人工智能教程](docs/ai-health-keras-tf2/README.md)
 +   [联合国可持续发展目标的AI解决方案](docs/ai-solutions-for-the-united-nations-sustainable-development-/README.md)
@@ -83,3 +85,4 @@
 +   [Dialogflow 和 Google Cloud 对话式 AI 权威指南](docs/the-definitive-guide-to-conversational-ai-with-dialogflow-an/README.md)
 +   [可信人工智能实施指南](docs/trustworthy-artificial-intelligence-implementation/README.md)
 +   [生成式AI商业应用理解指南](docs/understanding-generative-ai-business-applications/README.md)
++   [施普林格应用科学与技术简报：法医和医学生物信息学](docs/癌症诊断中的深度学习/README.md)
