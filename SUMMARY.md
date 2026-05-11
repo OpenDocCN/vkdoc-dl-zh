@@ -85,4 +85,5 @@
 +   [Dialogflow 和 Google Cloud 对话式 AI 权威指南](docs/the-definitive-guide-to-conversational-ai-with-dialogflow-an/README.md)
 +   [可信人工智能实施指南](docs/trustworthy-artificial-intelligence-implementation/README.md)
 +   [生成式AI商业应用理解指南](docs/understanding-generative-ai-business-applications/README.md)
-+   [施普林格应用科学与技术简报：法医和医学生物信息学](docs/癌症诊断中的深度学习/README.md)
++   [从相关滤波到深度学习的视觉对象跟踪](docs/从相关性过滤到深度学习的视觉目标检测/README.md)
++   [癌症诊断中的深度学习：基于特征的迁移学习评估](docs/癌症诊断中的深度学习/README.md)

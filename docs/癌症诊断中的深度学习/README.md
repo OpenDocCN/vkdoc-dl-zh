@@ -1,10 +1,10 @@
 
+# 癌症诊断中的深度学习：基于特征的迁移学习评估
 
-# 施普林格应用科学与技术简报：法医和医学生物信息学
+
+## 施普林格应用科学与技术简报：法医和医学生物信息学
 
 Mohd Hafiz Arzmi · Anwar P. P. Abdul Majeed · Rabiu Muazu Musa · Mohd Azraai Mohd Razman · Hong-Seng Gan · Ismail Mohd Khairuddin · Ahmad Fakhri Ab. Nasir
-
-## 癌症诊断中的深度学习：基于特征的迁移学习评估
 
 ---
 
