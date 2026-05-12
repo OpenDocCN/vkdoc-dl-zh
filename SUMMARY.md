@@ -60,6 +60,7 @@
 +   [现代深度学习设计与应用开发](docs/mdn-dl-dsn-appdev/README.md)
 +   [表格数据的现代深度学习](docs/mdn-dl-tbl-dt/README.md)
 +   [Microsoft 对话式 AI 平台开发者指南](docs/microsoft-conversational-ai-platform-für-entwickler/README.md)
++   [MindSpore 深度学习实践](docs/MindSpore_深度学习实践/README.md)
 +   [面向经济和金融的 TensorFlow2 机器学习](docs/ml-eco-fin-tf2/README.md)
 +   [自然语言处理项目](docs/natural-language-processing-projects/README.md)
 +   [Unity 神经网络实战](docs/neural-networks-in-unity/README.md)
