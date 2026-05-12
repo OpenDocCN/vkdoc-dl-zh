@@ -87,6 +87,7 @@
 +   [可信人工智能实施指南](docs/trustworthy-artificial-intelligence-implementation/README.md)
 +   [生成式AI商业应用理解指南](docs/understanding-generative-ai-business-applications/README.md)
 +   [从相关滤波到深度学习的视觉对象跟踪](docs/从相关性过滤到深度学习的视觉目标检测/README.md)
++   [使用 R 的机器和深度学习中的超参数调优](docs/使用 R 的机器和深度学习中的超参数调优/README.md)
 +   [智能系统中的学习与分析技术 23](docs/基于机器学习和深度学习的技术中的进展/README.md)
 +   [基于深度学习的语音质量预测](docs/基于深度学习的语音质量预测/README.md)
 +   [基于深度学习的高速铁路接触网支撑部件缺陷与故障检测](docs/基于深度学习的高速铁路接触网支撑部件缺陷与故障检测/README.md)
