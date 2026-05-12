@@ -88,6 +88,7 @@
 +   [生成式AI商业应用理解指南](docs/understanding-generative-ai-business-applications/README.md)
 +   [从相关滤波到深度学习的视觉对象跟踪](docs/从相关性过滤到深度学习的视觉目标检测/README.md)
 +   [智能系统中的学习与分析技术 23](docs/基于机器学习和深度学习的技术中的进展/README.md)
++   [基于深度学习的高速铁路接触网支撑部件缺陷与故障检测](docs/基于深度学习的高速铁路接触网支撑部件缺陷与故障检测/README.md)
 +   [多元化深度学习](docs/多元化深度学习/README.md)
 +   [大数据分析和深度学习应用](docs/大数据分析和深度学习应用/README.md)
 +   [大数据和深度学习的近期进展](docs/大数据和深度学习的近期进展/README.md)
