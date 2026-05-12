@@ -87,6 +87,7 @@
 +   [可信人工智能实施指南](docs/trustworthy-artificial-intelligence-implementation/README.md)
 +   [生成式AI商业应用理解指南](docs/understanding-generative-ai-business-applications/README.md)
 +   [从相关滤波到深度学习的视觉对象跟踪](docs/从相关性过滤到深度学习的视觉目标检测/README.md)
++   [多元化深度学习](docs/多元化深度学习/README.md)
 +   [大数据分析和深度学习应用](docs/大数据分析和深度学习应用/README.md)
 +   [大数据和深度学习的近期进展](docs/大数据和深度学习的近期进展/README.md)
 +   [带有性能保障的深度强化学习](docs/带有性能保障的深度强化学习/README.md)
