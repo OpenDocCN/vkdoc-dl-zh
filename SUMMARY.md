@@ -87,6 +87,7 @@
 +   [Dialogflow 和 Google Cloud 对话式 AI 权威指南](docs/the-definitive-guide-to-conversational-ai-with-dialogflow-an/README.md)
 +   [可信人工智能实施指南](docs/trustworthy-artificial-intelligence-implementation/README.md)
 +   [生成式AI商业应用理解指南](docs/understanding-generative-ai-business-applications/README.md)
++   [云雾计算、深度学习和大数据分析的研究方向](docs/云雾计算、深度学习和大数据分析的研究方向/README.md)
 +   [人工心理学导论](docs/人工心理学导论/README.md)
 +   [人工智能和机器人中的关键数字趋势](docs/人工智能和机器人中的关键数字趋势/README.md)
 +   [人工智能的直觉探索](docs/人工智能的直觉探索/README.md)
