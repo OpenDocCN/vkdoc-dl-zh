@@ -78,6 +78,7 @@
 +   [PyTorch 秘籍](docs/pytorch-recipes/README.md)
 +   [深度神经网络实时物联网成像](docs/real-time-iot-imaging-with-deep-neural-networks/README.md)
 +   [强化学习](docs/reinforcement-learning/README.md)
++   [R 深度学习](docs/R_深度学习/README.md)
 +   [深度学习的数据合成指南](docs/sntt-dt-dl/README.md)
 +   [TensorFlow SOTA 深度学习模型](docs/sota-dl-mdl-tf/README.md)
 +   [协作云上的 TensorFlow 2.x 指南](docs/tf2x-colab-cld/README.md)
