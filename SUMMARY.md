@@ -129,6 +129,7 @@
 +   [深度学习应用卷四](docs/深度学习应用卷四/README.md)
 +   [深度学习方法和应用](docs/深度学习方法和应用/README.md)
 +   [深度学习概念与实时应用](docs/深度学习概念与实时应用/README.md)
++   [深度学习概念和架构](docs/深度学习概念和架构/README.md)
 +   [深度学习的几何](docs/深度学习的几何/README.md)
 +   [深度学习的演化](docs/深度学习的演化/README.md)
 +   [深度学习的计算方法](docs/深度学习的计算方法/README.md)
