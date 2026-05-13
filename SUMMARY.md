@@ -87,6 +87,7 @@
 +   [可信人工智能实施指南](docs/trustworthy-artificial-intelligence-implementation/README.md)
 +   [生成式AI商业应用理解指南](docs/understanding-generative-ai-business-applications/README.md)
 +   [人工心理学导论](docs/人工心理学导论/README.md)
++   [人工智能和机器人中的关键数字趋势](docs/人工智能和机器人中的关键数字趋势/README.md)
 +   [人工智能的直觉探索](docs/人工智能的直觉探索/README.md)
 +   [从相关滤波到深度学习的视觉对象跟踪](docs/从相关性过滤到深度学习的视觉目标检测/README.md)
 +   [使用 R 的机器和深度学习中的超参数调优](docs/使用 R 的机器和深度学习中的超参数调优/README.md)
