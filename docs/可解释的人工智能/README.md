@@ -1,8 +1,8 @@
 
+# 可解释AI：解释和可视化深度学习
+
 
 Wojciech Samek · Grégoire Montavon · Andrea Vedaldi · Lars Kai Hansen · Klaus-Robert Müller（编辑）
-
-# 可解释AI：解释和可视化深度学习
 
 ![](img/bb7b5581e69368f8fded39a3f4065c5d_0_0.png)
 
