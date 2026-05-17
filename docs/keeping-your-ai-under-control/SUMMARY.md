@@ -8,6 +8,6 @@
 +   [7. 风险缓解的系统性方法](keeping-your-ai-under-control_06.md)
 +   [8. 精心教导，严格测试](keeping-your-ai-under-control_07.md)
 +   [第三部分 缓解措施](keeping-your-ai-under-control_08.md)
-+   [红队：AI 监督之道](keeping-your-ai-under-control_09.md)
++   [9. 红队：AI 监督之道](keeping-your-ai-under-control_09.md)
 +   [10. 处理残余风险](keeping-your-ai-under-control_10.md)
 +   [11. 当与新兴技术打交道时](keeping-your-ai-under-control_11.md)
