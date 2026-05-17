@@ -16,8 +16,6 @@
 
 我现在介绍在 Python 调试器 `pdb`^(²⁹) 背景下的调试实现模式语言。这种模式语言并非该调试器所特有；同样的模式语言也适用于许多其他命令行^(³⁰)和 IDE 的 Python 调试器，甚至适用于像 `GDB` 和 `WinDbg` 这样的原生操作系统调试器。当然，为了实现这些模式，调试器的命令会有所不同。
 
-
-
 ### 中断
 
 调试的基本操作之一就是中断进程或线程的执行，以便检查其进程或线程状态。对于 Python 代码，这种**中断**可以通过两种方式实现：一种是在代码内部放置 `breakpoint()` 函数，另一种是在调试器下执行脚本，然后通过键盘中断（`^C`）或异常从外部中断。某些调试器（如 GDB）允许在程序独立启动后进行外部**中断**。
@@ -25,6 +23,7 @@
 为了演示第一种方式，请在 Linux 上执行代码清单 5-1 中的代码（在 Windows 上，你应该会得到类似的结果）。
 
 ```
+
 ### test-breakpoint.py
 def main():
     foo()
@@ -80,6 +79,7 @@ bdb.BdbQuit
 对于外部**中断**，你需要在执行脚本时指定 `pdb` 模块。为了演示这种方式，请在 Linux 上执行代码清单 5-2 中的代码（在 Windows 上，你应该会得到类似的结果）。
 
 ```
+
 ### test-pdb.py
 import time
 class cls:
@@ -238,8 +238,6 @@ Num Type         Disp Enb   Where
 -> time.sleep(1)
 (Pdb)
 ```
-
-
 
 ### 作用域
 
@@ -531,13 +529,12 @@ Program interrupted. (Use 'cont' to resume).
 
 该脚本非常小，它使用一个字典来保存先前存在的进程信息一段时间，然后将其删除。**内存泄漏（进程堆）** 是这里显而易见的假设。对于更复杂的脚本和程序，尤其是那些使用第三方模块的脚本和程序，需要进行一些真正的内存分析来区分不同类型的泄漏：进程堆、虚拟内存和句柄。
 
-
-
 ## 调试实现模式
 
 要进行调试，你可以在 `pdb` 下通过启动清单 5-3 中的 `process-monitoring.py` 脚本，从外部执行**中断**。
 
 ```
+
 ### process-monitoring.py
 import processes
 import filemon
@@ -556,6 +553,7 @@ time.sleep(1)
 files.process_files()
 if __name__ == "__main__":
 main()
+
 ### processes.py
 class Processes:
 _singleton = None
@@ -572,6 +570,7 @@ def add_process(self, pid, info):
 Processes._procinfo[pid] = info
 def remove_process(self, pid):
 del Processes._procinfo[pid]
+
 ### filemon.py
 import processes
 class Files:
@@ -799,5 +798,9 @@ Program interrupted. (Use 'cont' to resume).
 
 你可以看到 ADD 操作的数量是 REMOVE 操作的两倍。此外，来自 `filemon.py` 模块的 ADD 操作没有任何对应的 REMOVE 操作。这解释了**内存泄漏**调试分析模式，并表明需要对文件监控部分进行修改。
 
+# 总结
 
+在本章中，你了解了在 Python 命令行调试器环境下的调试实现模式。下一章将介绍在各种 Python IDE 环境下的相同模式。
+
+脚注 1 2
 

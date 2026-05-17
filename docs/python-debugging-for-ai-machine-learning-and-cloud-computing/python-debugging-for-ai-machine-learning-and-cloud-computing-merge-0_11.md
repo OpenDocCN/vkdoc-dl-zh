@@ -130,6 +130,7 @@ WaitCompletionPacket      5
 ntdll!NtWaitForSingleObject+0x14:
 00007ff8`6f0eedd4 ret
 0:585> kc
+
 ### Call Site
 00 ntdll!NtWaitForSingleObject
 01 KERNELBASE!WaitForSingleObjectEx
@@ -187,8 +188,6 @@ main()
 ```
 
 **清单 11-1** 一个说明句柄泄漏的简单脚本
-
-
 
 ## 调试实现
 
@@ -279,6 +278,7 @@ Thread ID = 0x000000000000bed8, Process ID = 0x00000000000083f0
 
 ```
 0:000> ~~[bed8]kc
+
 ### Call Site
 00 ntdll!NtWaitForMultipleObjects
 01 KERNELBASE!WaitForMultipleObjectsEx
@@ -318,6 +318,7 @@ Thread ID = 0x000000000000bed8, Process ID = 0x00000000000083f0
 你可以通过不保留线程引用并在线程任务完成后立即退出线程函数来解决此问题，从而允许线程对象被垃圾回收并关闭句柄（列表 11-2）。
 
 ```
+
 ### handle-leak-fix.py
 import time
 import threading

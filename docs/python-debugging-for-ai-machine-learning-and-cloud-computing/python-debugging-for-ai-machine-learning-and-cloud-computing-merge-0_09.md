@@ -77,8 +77,6 @@ import pandas
 
 由于数据处理系统已冻结，决定按照第 3 章“如何在 Windows 上生成进程内存转储”一节所述，保存其进程内存转储。
 
-
-
 ### 分析
 
 为了分析内存转储文件及其**堆栈跟踪集合**，并找到问题**堆栈跟踪**，最终定位到**原始模块**，工程师使用了微软调试器 `WinDbg`。
@@ -90,6 +88,7 @@ import pandas
 ```
 0:000> ~*kcL
 11  Id: 5bb0.7818 Suspend: 1 Teb: 000000dc`e1f28000 Unfrozen
+
 ### Call Site
 00 ntdll!NtWaitForSingleObject
 01 KERNELBASE!WaitForSingleObjectEx
@@ -326,8 +325,6 @@ Information from resource tables:
 
 看起来这个 DLL 来自 NumPy Python 库。同时还发现，这个问题看起来像是导入 NumPy 时的一个已知问题^(⁵⁸)。通过导入其他依赖 NumPy 的包也证实了这个问题；程序同样会卡死。
 
-
-
 ### 架构
 
 为了加速调试过程并避免频繁发送内存转储，工程师们提出使用`In Vivo JIT Code`调试方法，即在程序冻结后，将`WinDbg`调试器^(⁵⁹)附加到进程上，然后分析其`软件状态`。
@@ -339,4 +336,10 @@ Information from resource tables:
 ### 实现
 
 调试实现模式涉及`中断`和`断点操作`来打印堆栈跟踪。最终，在尝试了不同 Python 版本和具有类似接口的库多次之后，决定使用 Polars^(⁶⁰)库来替代 Pandas。
+
+# 总结
+
+在本章中，你探讨了一些案例研究和基本的调试模式。下一章将研究语用学：调试使用模式，这是最后一类调试模式。
+
+脚注 1 2 3 4 5
 
