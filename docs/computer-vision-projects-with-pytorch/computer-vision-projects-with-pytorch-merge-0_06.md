@@ -78,8 +78,6 @@
 
 *   `productDisplayName`：网页上的显示名称
 
-
-
 ### 安装与导入库
 
 我们将使用 `OpenCV` 和 `PyTorch vision` 来解决此问题。现在开始安装它们。
@@ -88,28 +86,38 @@
 !pip install swifter
 !pip install torchvision
 !pip install opencv-python
+
 # 导入 matplotlib 用于绘图
 import matplotlib.pyplot as plt
+
 # 导入 numpy 用于数值运算
 import numpy as np
+
 # 导入 pandas 用于预处理
 import pandas as pd
+
 # 导入 joblib 用于转储和加载嵌入数据框
 import joblib
+
 # 导入 cv2 用于读取图像
 import cv2
+
 # 导入 cosine_similarity 用于查找图像间的相似度
 from sklearn.metrics.pairwise import cosine_similarity
+
 # 从 pandas 导入 flatten 用于展平二维数组
 from pandas.core.common import flatten
+
 # 导入以下库用于模型构建
 #import torch
 import torch
 import torch.nn as nn
+
 # 导入 cv 模型
 import torchvision.models as models
 import torchvision.transforms as transforms
 from torch.autograd import Variable
+
 # 导入图像处理库
 from PIL import Image
 import warnings
@@ -132,8 +140,10 @@ warnings.filterwarnings("ignore")
 输入数据快照
 
 ```
+
 # 导入元数据
 df = pd.read_csv('../fashion-product-images-small/styles.csv',error_bad_lines=False,warn_bad_lines=False)
+
 # 显示前 10 行
 df.head(10)
 ```
@@ -143,8 +153,10 @@ df.head(10)
 让我们查看不同的 `articleType`（商品类型）及其出现频率。
 
 ```
+
 # 设置样式
 plt.style.use('ggplot')
+
 # 理解数据：统计有多少种不同的 articleType 并了解其频率
 plt.figure(figsize=(7,28))
 df.articleType.value_counts().sort_values().plot(kind='barh')
@@ -171,8 +183,10 @@ df.articleType.value_counts().sort_values().plot(kind='barh')
 数据快照
 
 ```
+
 # 创建列以存储图像位置 ID
 df['image'] = df.apply(lambda row: str(row['id']) + ".jpgs, axis=1)
+
 # 重置索引
 df = df.reset_index(drop=True)
 df.head()
@@ -181,9 +195,11 @@ df.head()
 如图 5-4 所示，数据集中增加了一个额外的列（`image`），其中存储了图像的名称。我们将在代码的下一部分创建一个函数，该函数将帮助我们轻松获取每张图像的路径。
 
 ```
+
 # 图像路径
 def image_location(img):
 return '../input/fashion-product-images-small/images/'  + img
+
 # 加载图像的函数
 def import_img(image):
 image = cv2.imread(image_location(image))
@@ -194,17 +210,22 @@ return image
 
 ```
 def show_images(images, rows = 1, cols=1,figsize=(12, 12)):
+
 # 定义图形
 fig, axes = plt.subplots(ncols=cols, nrows=rows,figsize=figsize)
+
 # 循环处理图像
 for index,name in enumerate(images):
 axes.ravel()[index].imshow(cv2.cvtColor(images[name], cv2.COLOR_BGR2RGB))
 axes.ravel()[index].set_title(name)
 axes.ravel()[index].set_axis_off()
+
 # 绘图
 plt.tight_layout()
+
 # 生成 {索引, 图像} 字典
 figures = {'im'+str(i): import_img(row.image) for i, row in df.sample(6).iterrows()}
+
 # 在图形中绘制图像，设置 2 行 3 列
 show_images(figures, 2, 3)
 ```
@@ -224,8 +245,6 @@ show_images(figures, 2, 3)
 绘制图像是为了更好地理解，但正如我们多次讨论过的，我们需要使用像素将图像转换为数字。图像需要转换为嵌入向量。我们可以训练自己的嵌入向量，也可以使用预训练的图像模型以获得更好的性能。在本例中，我们使用 `ResNet18` PyTorch 模型将图像转换为特征向量。
 
 首先，让我们花些时间来理解 `ResNet` 的作用。
-
-
 
 ### ResNet18
 
@@ -248,13 +267,17 @@ show_images(figures, 2, 3)
 卷积块
 
 ```
+
 # Defining the input shape
 width = 224
 height = 224
+
 # Loading the pretrained model
 resnetmodel = models.resnet18(pretrained=True)
+
 # selecting the layer
 layer = resnetmodel._modules.get('avgpool')
+
 # evaluation
 resnetmodel.eval()
 ```
@@ -262,15 +285,20 @@ resnetmodel.eval()
 图 5-7 展示了模型的架构。现在，让我们提取图像的嵌入向量并将其保存到一个对象中。
 
 ```
+
 # scaling the data
 s_data = transforms.Scale((224, 224))
+
 # normalizing
 standardize = transforms.standardize(mean=[0.7, 0.6, 0.3],
                                      std=[0.2, 0.3, 0.1])
+
 # converting to tensor
 convert_tensor = transforms.ToTensor()
+
 # creating the missing image object
 missing_img = []
+
 # function to get embeddings
 def vector_extraction(resnetmodel, image_id):
     # exception handling to ignore missing images
@@ -298,8 +326,10 @@ def vector_extraction(resnetmodel, image_id):
 让我们将此函数应用于一个示例图像并查看输出。
 
 ```
+
 # Testing if our vector_extraction function works well on sample image
 sample_embedding_0 = vector_extraction(resnetmodel, df.iloc[0].image)
+
 # Plotting the sample image and its embeddings
 img_array = import_img(df.iloc[0].image)
 plt.imshow(cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB))
@@ -324,8 +354,10 @@ print(sample_embedding_0)
 从图像中提取的输出张量
 
 ```
+
 # Testing if our vector_extraction function works well on sample image
 sample_embedding_1 = vector_extraction(resnetmodel, df.iloc[1000].image)
+
 # Plotting the sample image and its embeddings
 img_array = import_img(df.iloc[1000].image)
 plt.imshow(cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB))
@@ -352,10 +384,12 @@ print(sample_embedding_1)
 现在，让我们获取这些嵌入向量，并使用余弦相似度计算它们之间的距离。这将帮助我们根据数值确定项目的相似程度。
 
 ```
+
 # Finding the similarity between those two images
 cos_sim = cosine_similarity(sample_embedding_0.unsqueeze(0),
                             sample_embedding_1.unsqueeze(0))
 print('\nCosine similarity: {0}\n'.format(cos_sim))
+
 # output
 Cosine similarity: [[0.8811257]]
 ```
@@ -367,10 +401,13 @@ Cosine similarity: [[0.8811257]]
 ```
 %%time
 import swifter
+
 # Applying embeddings on subset of this huge dataset
 df_embeddings = df[:5000]  # We can apply on entire df, like: df_embeddings = df
+
 # looping through images to get embeddings
 map_embeddings = df_embeddings['image'].swifter.apply(lambda img: vector_extraction(resnetmodel, img))
+
 # convert to series
 df_embs = map_embeddings.apply(pd.Series)
 print(df_embs.shape)
@@ -385,19 +422,21 @@ df_embs.head()
 *   使用 joblib 的 `joblib.dump()` 函数
 
 ```
+
 # export the embeddings
 df_embs.to_csv('df_embs.csv')
+
 # importing the embeddings
 df_embs = pd.read_csv('df_embs.csv')
 df_embs.drop(['Unnamed: 0', 'index'], axis=1, inplace=True)
 df_embs.dropna(inplace=True)
+
 # exporting as pkl
 joblib.dump(df_embs, 'df_embs.pkl', 9)
+
 # importing the pkl
 df_embs = joblib.load('df_embs.pkl')
 ```
-
-
 
 ### 计算相似度与排序
 
@@ -412,8 +451,10 @@ df_embs = joblib.load('df_embs.pkl')
 **图 5-12** 余弦相似度计算公式
 
 ```
+
 # 计算图像之间的相似度（使用嵌入值）
 cosine_sim = cosine_similarity(df_embs)
+
 # 预览前 4 行和前 4 列的相似度，以检查 cosine_sim 的结构
 cosine_sim[:4, :4]
 #输出
@@ -430,21 +471,29 @@ array([[1.0000007 , 0.76683545, 0.5455518 , 0.779508  ],
 *   所需推荐数量
 
 ```
+
 # 将索引值存储在一个序列 index_vales 中，用于推荐
 index_vales = pd.Series(range(len(df)), index=df.index)
 index_vales
+
 # 定义一个基于余弦相似度分数给出推荐结果的函数
 def recommend_images(ImId, df, top_n = 6):
+
 # 将参考图像的索引赋值给 sim_ImId
 sim_ImId    = index_vales[ImId]
+
 # 将所有其他图像与用户请求图像的余弦相似度存储为列表 sml_scr
 sml_scr = list(enumerate(cosine_sim[sim_ImId]))
+
 # 对 sml_scr 列表进行排序
 sml_scr = sorted(sml_scr, key=lambda x: x[1], reverse=True)
+
 # 从 sml_scr 中提取前 n 个值
 sml_scr = sml_scr[1:top_n+1]
+
 # ImId_rec 将返回相似图像的索引
 ImId_rec    = [i[0] for i in sml_scr]
+
 # ImId_sim 将返回相似度分数的值
 ImId_sim    = [i[1] for i in sml_scr]
 return index_vales.iloc[ImId_rec].index, ImId_sim
@@ -455,6 +504,7 @@ return index_vales.iloc[ImId_rec].index, ImId_sim
 当我们向此函数传递这三个参数时，它会返回前 *n* 个相似图像的索引及其相似度分数。
 
 ```
+
 # 示例如下
 recommend_images(3810, df, top_n = 5)
 #输出
@@ -470,14 +520,19 @@ recommend_images(3810, df, top_n = 5)
 
 ```
 def Rec_viz_image(input_imageid):
+
 # 获取推荐结果
 idx_rec, idx_sim = recommend_images(input_imageid, df, top_n = 6)
+
 # 打印相似度分数
 print (idx_sim)
+
 # 绘制用户请求的图像
 plt.imshow(cv2.cvtColor(import_img(df.iloc[input_imageid].image), cv2.COLOR_BGR2RGB))
+
 # 生成一个 { 索引, 图像 } 的字典
 figures = {'im'+str(i): import_img(row.image) for i, row in df.loc[idx_rec].iterrows()}
+
 # 在图形中绘制相似图像，布局为 2 行 3 列
 show_images(figures, 2, 3)
 ```
@@ -522,8 +577,6 @@ Rec_viz_image(2518)
 
 到目前为止，我们测试的都是数据集中已有的图像。接下来，我们将接收用户输入的图像，并尝试找到与其图像相似的项目。
 
-
-
 ### 从用户处获取图像输入并推荐相似产品
 
 在此功能中，我们将从用户提供的路径加载图像，并使用`ResNet50`模型获取其特征向量。接着，我们将计算用户图像与数据集中其余特征向量之间的余弦相似度。
@@ -534,6 +587,7 @@ Rec_viz_image(2518)
 
 ```
 def recm_user_input(image_id):
+
 # 加载图像并调整其大小
 img = Image.open('../input/testset-for-image-similarity/' + image_id).convert('RGB')
 t_img = Variable(standardize(convert_tensor(s_data(img))).unsqueeze(0))
@@ -544,13 +598,16 @@ hlayer = layer.register_forward_hlayer(select_d)
 resnetmodel(t_img)
 hlayer.remove()
 emb = embeddings
+
 # 计算余弦相似度
 cs = cosine_similarity(emb.unsqueeze(0),df_embs)
 cs_list = list(flatten(cs))
 cs_df = pd.DataFrame(cs_list,columns=['Score'])
 cs_df = cs_df.sort_values(by=['Score'],ascending=False)
+
 # 打印余弦相似度
 print(cs_df['Score'][:10])
+
 # 提取前 10 个相似项目/图像的索引
 top10 = cs_df[:10].index
 top10 = list(flatten(top10))
@@ -559,11 +616,14 @@ for i in top10:
 image_id = df[df.index==i]['image']
 images_list.append(image_id)
 images_list = list(flatten(images_list))
+
 # 绘制用户请求项目的图像
 img_print = Image.open('../input/testset-for-image-similarity/' + image_id)
 plt.imshow(img_print)
+
 # 生成一个字典 { 索引, 图像 }
 figures = {'im'+str(i): Image.open('../input/fashion-product-images-small/images/' + i) for i in images_list}
+
 # 在图形中绘制相似图像，2 行 5 列
 fig, axes = plt.subplots(2, 5, figsize = (8,8) )
 for index,name in enumerate(figures):

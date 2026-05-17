@@ -1,3 +1,25 @@
+# 9. 视频分析
+
+机器学习之旅始于很久以前的结构化数据，并发展到提取有意义的预测的过程。随着数据的增长，机器学习也开始探索其他数据类型。如今，可以处理的数据类型已没有限制。
+
+从结构化数据开始，我们开始分析文本数据。我们开始理解文本，并利用文本中的特征进行预测。然后我们也转向了图像。尽管这个过程有时充满挑战，但得益于 GPU 和 TPU 处理能力的进步，一切开始步入正轨。
+
+接下来是音频处理。这包括使用频率处理音频，或者将音频转换为文本，然后进行预测。
+
+所有这些概念的结合被称为*视频分析*。
+
+现有的视频数据量是巨大的。世界每时每刻都在创造视频内容。娱乐和体育产业依赖视频运行，安全摄像头也在捕捉每一个动作。如图 9-1 所示，仅 YouTube 就有超过 20 亿用户。想想从视频中产生的数据量。随着我们看到更多的数据，更多的问题将会浮现，人工智能将被用来解决这些问题。
+
+![](img/520381_1_En_9_Fig1_HTML.jpg)
+
+一个条形图显示了 2006 年至 2020 年每月的 YouTube 使用量。随着时间的推移，YouTube 的使用量在增加。2020 年的月活跃用户数最高，达到 20 亿。2006 年的用户数最低，甚至不到 10 亿。
+
+图 9-1
+
+YouTube
+
+视频内容分析，也称为视频分析，是自动分析视频以检测和确定时空事件的能力。
+
 # 问题陈述
 
 在讨论问题陈述之前，我们先列举一些视频分析可能的数据来源。
@@ -84,9 +106,11 @@
 我们还使用 `FaceLib` 库进行人脸检测，这样我们就可以尝试预测年龄和性别。对于图像处理和其他任何操作，我们使用 `OpenCV`。
 
 ```
+
 # 安装所需包
 !pip install git+https://github.com/sajjjadayobi/FaceLib.git
 !git clone https://github.com/Pongpisit-Thanasutives/Variations-of-SFANet-for-Crowd-Counting #仅模型
+
 # 导入包
 import cv2
 from PIL import Image
@@ -124,6 +148,7 @@ from facelib import FaceDetector, AgeGenderEstimator
 下一步，我们需要将视频上传到 Google Colab。
 
 ```
+
 # 上传视频
 from google.colab import files
 #上传
@@ -150,9 +175,11 @@ files.upload()
 #生成图像的函数
 def video_to_image(path, folder):
 global exp_fld
+
 # 导入视频
 vidcap=cv2.VideoCapture(path)
 exp_fld=folder
+
 # 错误处理
 try:
 if not os.path.exists(exp_fld):
@@ -167,6 +194,7 @@ vidcap.set(cv2.CAP_PROP_POS_MSEC,sec*1000)
 hasFrames,image = vidcap.read()
 sec = sec + frameRate
 sec = round(sec, 2)
+
 # 导出图像
 if hasFrames:
 name='./' + exp_fld +'/frame'+str(Count) + '.jpg'
@@ -184,15 +212,15 @@ return print("Image Exported")
 ```
 #设置路径
 os.chdir('/content')
+
 # 为第一个视频提取并存储图像
 video_to_image('HD CCTV Camera video 3MP 4MP iProx CCTV HDCCTVCameras.net retail store.mp4', 'crowd')
+
 # 为停车场视频提取图像
 video_to_image('AI Security Camera with IR Night Vision (Bullet IP Camera).mp4', 'movement')
 Image Exported
 Image Exported
 ```
-
-
 
 ### 数据准备
 
@@ -201,19 +229,24 @@ Image Exported
 以下是调整图像大小的函数。
 
 ```
+
 # 调整图像大小
 def img_re_sizing(dnst_mp, image):
+
 # 归一化
 dnst_mp = 255*dnst_mp/np.max(dnst_mp)
 dnst_mp= dnst_mp[0][0]
 image= image[0]
+
 # 创建空图像
 result_img = np.zeros((dnst_mp.shape[0]*2, dnst_mp.shape[1]*2))
+
 # 遍历每张图像
 for i in range(result_img.shape[0]):
 for j in range(result_img.shape[1]):
 result_img[i][j] = dnst_mp[int(i / 2)][int(j / 2)] / 4
 result_img  = result_img.astype(np.uint8, copy=False)
+
 # 输出
 return result_img
 ```
@@ -247,52 +280,70 @@ return result_img
 让我们编写几个函数来生成热力图并统计人数。以下函数将接收图像并生成热力图。
 
 ```
+
 # 生成热力图的函数
 def generate_dstys_map(o, dsty, cc, image_location):
+
 # 定义图形
 fgr_im=plt.fgr_imure()
+
 # 定义尺寸
 col = 2
 rws = 1
 X = o
+
 # 求和
 add = int(np.sum(dsty))
 dsty = image_re_sizing(dsty, o)
+
 # 添加原始图像和新生成的热力图图像
 for i in range(1, col*rws +1):
+
 # 生成原始图像
 if i == 1:
 image = X
 fgr_im.add_subplot(rws, col, i)
+
 # 设置坐标轴
 plt.gca().set_axis_off()
 plt.margins(0,0)
+
 # 定位器
 plt.gca().xaxis.set_major_locator(plt.NullLocator())
 plt.gca().yaxis.set_major_locator(plt.NullLocator())
+
 # 调整子图
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+
 # 显示图像
 plt.imshow(image)
+
 # 生成密度图像
 if i == 2:
 image = dsty
 fgr_im.add_subplot(rws, col, i)
+
 # 设置坐标轴
 plt.gca().set_axis_off()
 plt.margins(0,0)
+
 # 定位器
 plt.gca().xaxis.set_major_locator(plt.NullLocator())
 plt.gca().yaxis.set_major_locator(plt.NullLocator())
+
 # 调整子图
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+
 # 添加计数
 plt.text(1, 80, 'M-SegNet* 估计值: '+str(add)+', 真实值:'+str(cc), fontsize=7, weight="bold", color = 'w')
+
 # 显示图像
 plt.imshow(image)#, cmap=CM.jet)
+
 # 带位置信息的图像名称
 image_nm = image_location.split('/')[-1]
 image_nm = image_nm.replace('.jpg', '_heatpmap.png')
+
 # 保存图像
 plt.savefgr_im(image_location.split(image_nm)[0]+'seg_'+image_nm, transparent=True, bbox_inches='tight', pad_inches=0.0, dpi=200)
 ```
@@ -300,31 +351,41 @@ plt.savefgr_im(image_location.split(image_nm)[0]+'seg_'+image_nm, transparent=Tr
 以下函数将接收图像作为输入并统计人数。它还会触发我们刚刚创建的热力图函数。最后，它会输出人数、图像密度以及密度图。
 
 ```
+
 # 统计人数
 def get_count_people(image):
+
 # 简单预处理。
 trans = transforms.Compose([transforms.ToTensor(),
 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
+
 # 获取图像的高度和宽度
 img = Image.open(image).convert('RGB')
 height, width = img.size[1], img.size[0]
 height = round(height / 16) * 16
 width = round(width / 16) * 16
+
 # 调整图像大小
 img_den = cv2.resize(np.array(img), (width,height), cv2.INTER_CUBIC)
+
 # 变换
 img = trans(Image.fromarray(img_den))[None, :]
+
 # 定义模型
 model = M_SFANet_UCF_QNRF.Model()
+
 # 加载模型
 model.load_state_dict(torch.load('/content/best_M-SFANet__UCF_QNRF.pth',
 map_location = torch.device('cpu')))
+
 # 评估模型
 model.eval()
 dnst_mp = model(img)
+
 # 最终计数
 count = torch.sum(dnst_mp).item()
+
 # 返回计数、密度和密度图
 return count,img_den,dnst_mp
 ```
@@ -336,9 +397,11 @@ return count,img_den,dnst_mp
 ### 导入图像
 
 ```
+
 # 从路径中获取所有图像
 image_location = []
 path_sets = ['/content/crowd']
+
 # 加载所有图像
 for path in path_sets:
 for img_path in glob.glob(os.path.join(path, '*.jpg')):
@@ -349,23 +412,26 @@ image_location[:3]
 '/content/crowd/frame26.jpg']
 ```
 
-
-
 ### 获取人群计数
 
 让我们遍历之前通过函数导入的每一张图像。最后，我们将计数和图像 ID 附加起来，创建一个作为输出的数据框。
 
 ```
+
 # 获取每张图像中的人数
+
 # 定义空列表
 list_df = []
+
 # 遍历每张图像
 for i in image_location :
     count, img_den, dnst_mp = get_count_people(i)
     generate_dens_map(img_den, dnst_mp.cpu().detach().numpy(), 0, i)
     list_df = list_df + [[i,count]]
+
 # 创建包含图像 ID 和计数的数据框
 df = pd.DataFrame(list_df,columns=['image','count'])
+
 # 排序并显示
 df.sort_values(['image']).head()
 ```
@@ -446,14 +512,17 @@ sns.histplot(data=df['count'])
 让我们看看我们上传的第二个视频，并检测其中的移动。
 
 ```
+
 # 从路径中获取所有图像
 image_location = []
 path_sets = ['/content/movement']
+
 # 加载停车场视频的所有图像
 for path in path_sets:
     for img_path in glob.glob(os.path.join(path, '*.jpg')):
         image_location.append(img_path)
 image_location[:3]
+
 # 获取每张图像中的人数
 list_df = []
 ```
@@ -463,11 +532,13 @@ list_df = []
 让我们将这个“是否有人”的信息捕获到数据框的一个新列中，命名为 `movement`。
 
 ```
+
 # 检查视频的每一帧是否有任何移动
 for i in image_location :
     count, img_den, dnst_mp = get_count_people(i)
     generate_dens_map(img_den, dnst_mp.cpu().detach().numpy(), 0, i)
     list_df = list_df + [[i,count]]
+
 # 将数据保存到数据框
 detected_df = pd.DataFrame(list_df,columns=['image','count'])
 detected_df['movement'] = np.where(detected_df['count'] > 3 ,'yes','no')
@@ -489,6 +560,7 @@ detected_df.filter(items = [45,56,53], axis=0)
 让我们看几个观察到移动的例子。
 
 ```
+
 # 打印移动为‘yes’的图像
 image = '/content/movement/frame25.jpg'
 Image.open(image)
@@ -517,8 +589,6 @@ Image.open(image)
 
 输出结果
 
-
-
 ### 识别人口统计特征（年龄与性别）
 
 大多数营销活动都依赖于目标客户的人口统计特征。如果我们能从商场中的实时视频中确定年龄和性别，就可以利用这些信息来定位合适的营销活动。
@@ -526,9 +596,11 @@ Image.open(image)
 让我们尝试使用之前提取的图像来检测年龄和性别。
 
 ```
+
 # 导入函数
 face_detector = FaceDetector()
 age_gender_detector = AgeGenderEstimator()
+
 # 读取图像
 img = '/content/movement/frame0.jpg'
 image = cv2.imread(img, cv2.IMREAD_UNCHANGED)
@@ -546,6 +618,7 @@ Image.open(img)
 输入图像
 
 ```
+
 # 检查性别
 faces, boxes, scores, landmarks = face_detector.detect_align(image)
 genders, ages = age_gender_detector.detect(faces)

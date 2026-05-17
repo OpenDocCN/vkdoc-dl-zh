@@ -1,3 +1,56 @@
+# 2. 图像分类
+
+上一章讨论了计算机视觉中的几个重要概念。还讨论了一些计算机视觉领域的最佳实践，现在是时候将它们付诸实践了。本章为计算机视觉领域的多个应用奠定了基础。我们首先从基本解释开始，说明如何开始使用 Torch 组件来构建模型、定义损失函数并进行训练。
+
+需要通过名称识别的对象涉及分类过程。我们在数据科学的所有方面都遇到过涉及分类需求的问题。它可以简单到对手机上的图像进行分类，判断它是山还是海的图片，或者是鸟还是狗。分类是最基本但也是最强大的概念之一。让我们看看计算机视觉模型是如何设置分类的：
+
+1. 检测边缘
+2. 检测梯度
+3. 识别纹理
+4. 识别模式
+5. 形成对象的部件
+
+模型需要将名称与图像中的特定对象关联起来。它通过遵循结构化的知识提取机制，然后为其决策过程重新生成输入来实现这一点。
+
+## 涵盖主题
+
+1. 数据准备方法
+2. 数据增强技术
+3. 使用批量归一化和丢弃法
+4. 比较激活函数
+5. 设置模型及其变体
+6. 训练过程
+7. 运行推理并比较模型结果
+
+### 定义问题
+
+我们将借助计算机视觉建模技术检查肺部 X 光图像，并将其分类为患有肺炎或正常。由于这是一个医疗保健问题，最好让模型过度预测。我们需要以最高的准确率进行预测，并且如果可能的话，应达到接近 100% 的召回率，同时也要有高精确率。我们需要确保诊断出任何可能的感染病例，并且不要因为微小的误差而将受感染的肺部错误分类为健康肺部。通常可以使用 Softmax 对数几率来确定预测，而不是由 Softmax 函数来决定类别。这是一个基于对数据的经验以及模型行为的关键决策。
+
+困扰这类图像分类问题的一个主要问题是正确标注数据的可用性。通过卷积神经网络进行图像分类有助于处理多个下游任务。在某个数据上训练的模型可以用于微调其他类似数据，并用于预测目的。有多个开源图像存储库，但对于大多数工业用途而言，它们为我们提供了一个起点。我们还需要使用我们特定任务的图像。
+
+# 方法概述
+
+我们将使用卷积神经网络来解决分类问题。我们会尝试调整流程中的变量，以追求更高的准确率和稳定的结果。在此过程中，将大量运用第 1 章学到的概念。这严格来说是一项实验，我们仅为需要迭代的方法设定基线标准。
+
+该方法包含以下步骤：
+
+1.  从数据源下载数据并将其放置在根目录中。
+2.  检查数据完整性、可配置信息，如图像的形状、大小和分布。
+3.  初始化用于训练和测试的数据加载器功能。
+4.  定义模型架构并进行验证。
+5.  定义训练和测试函数。
+6.  定义训练优化器及其他训练信息，如正则化器、周期、批次等。
+7.  训练并检查损失和准确率模式，以了解架构和模型训练过程的稳定性。
+8.  在多个改进或变更阶段中，决定选择哪一个进行进一步调优或投入生产。
+
+该方法的图形概览如图 2-1 所示，可作为解决方案的参考。
+
+![](img/520381_1_En_2_Fig1_HTML.png)
+
+流程图展示了图像分类的机制。数据流如下：数据摄取、数据检查、创建数据加载器、考虑数据增强、定义模型、验证模型架构、定义训练和测试函数、定义训练过程、运行训练迭代、检查验证结果。
+
+**图 2-1** 图像分类流水线
+
 # 创建图像分类流水线
 
 处理一个简单的分类问题可以有多种方法。由于我们使用的是能够从空间模式中提取特征的深度学习模型，深入网络结构会有所帮助。我们还需要考虑其他策略，如学习率调节和正则化技术，以帮助模型。让我们看看在考虑问题复杂性时可以应用的策略：
@@ -80,8 +133,6 @@ drive.mount('/content/gdrive')
 ```python
 data_path = '/content/chest_xray'
 ```
-
-
 
 ### 数据探索
 
@@ -183,8 +234,6 @@ Testing  images available: 624
 
 我们使用数据加载器来转换数据中的功能，并在后续的训练函数中使用它们。当图像根据文件夹中的类别名称排列时，通常使用 `ImageFolder`。
 
-
-
 ### 定义模型
 
 我们将使用卷积块定义模型架构，并采用`ReLU`作为激活层。基线模型包含 12 个卷积块，其中包括一个用于设置输入的卷积块和一个用于输出的卷积块。前三个卷积块各有一个最大池化函数，通过过滤信息将图像从高维度降至低维度。
@@ -195,6 +244,7 @@ Testing  images available: 624
 class Net(nn.Module):
 def __init__(self):
 super(Net, self).__init__()
+
 # Input Block
 self.convblock1 = nn.Sequential(
 nn.Conv2d(in_channels=3, out_channels=8, kernel_size=(3, 3),
@@ -203,6 +253,7 @@ nn.ReLU(),
 #nn.BatchNorm2d(4)
 )
 self.pool11 = nn.MaxPool2d(2, 2)
+
 # CONVOLUTION BLOCK
 self.convblock2 = nn.Sequential(
 nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(3, 3),
@@ -210,6 +261,7 @@ padding=0, bias=False),
 nn.ReLU(),
 #nn.BatchNorm2d(16)
 )
+
 # TRANSITION BLOCK
 self.pool22 = nn.MaxPool2d(2, 2)
 self.convblock3 = nn.Sequential(
@@ -218,6 +270,7 @@ nn.Conv2d(in_channels=16, out_channels=10, kernel_size=(1, 1), padding=0, bias=F
 nn.ReLU()
 )
 self.pool33 = nn.MaxPool2d(2, 2)
+
 # CONVOLUTION BLOCK
 self.convblock4 = nn.Sequential(
 nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(3, 3), padding=0, bias=False),
@@ -259,6 +312,7 @@ nn.Conv2d(in_channels=14, out_channels=16, kernel_size=(3, 3), padding=0, bias=F
 nn.ReLU(),
 #nn.BatchNorm2d(16),
 )
+
 # OUTPUT BLOCK
 self.gap = nn.Sequential(
 nn.AvgPool2d(kernel_size=4)
@@ -317,8 +371,6 @@ model = Net().to(device)
 summary(model, input_size=(3, 224, 224))
 Available processor cuda
 ```
-
-
 
 ```text
 Layer (type)               Output Shape         Param #
@@ -446,8 +498,6 @@ def test(model, device, test_loader):
 
 5.  我们从前向传播中计算出预测结果，并将其放入一个变量中。完成后，我们根据模型的预测结果计算损失。
 
-
-
 6.  计算出的损失有助于反向传播，并帮助优化器根据最陡上升/下降的方向更新模型的权重。
 
 7.  预测类别是通过对数`softmax`函数计算得出的，即取索引的最大值并据此计算相应的值。
@@ -573,8 +623,6 @@ transforms.Normalize([0.485, 0.456, 0.406],
 
 准确率在饱和时仍然很低，并且考虑到波动性，模型行为不能被认为是稳定的。我们需要进行进一步的更改，寻找一个更好、更稳定的模型。
 
-
-
 ### 模型的第三种变体
 
 在本节中，我们将审视已建立的工作流程并对其进行改进。该模型架构运行着 11 个卷积块和 3 个最大池化层。各层之间可能存在分布变化，即所谓的内部协变量偏移。现在，我们可以尝试在网络架构中应用批归一化。
@@ -595,6 +643,7 @@ transforms.Normalize([0.485, 0.456, 0.406],
 class Net(nn.Module):
 def __init__(self):
 super(Net, self).__init__()
+
 # 输入块
 self.convblock1 = nn.Sequential(
 nn.Conv2d(in_channels=3, out_channels=8, kernel_size=(3, 3),
@@ -603,6 +652,7 @@ nn.ReLU(),
 nn.BatchNorm2d(8)
 )
 self.pool11 = nn.MaxPool2d(2, 2)
+
 # 卷积块 1
 self.convblock2 = nn.Sequential(
 nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(3, 3),
@@ -617,6 +667,7 @@ nn.ReLU(),
 nn.BatchNorm2d(10),
 )
 self.pool33 = nn.MaxPool2d(2, 2)
+
 # 卷积块 2
 self.convblock4 = nn.Sequential(
 nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(3, 3), padding=0, bias=False),
@@ -658,6 +709,7 @@ nn.Conv2d(in_channels=14, out_channels=16, kernel_size=(3, 3), padding=0, bias=F
 nn.ReLU(),
 nn.BatchNorm2d(16)
 )
+
 # 输出块
 self.gap = nn.Sequential(
 nn.AvgPool2d(kernel_size=4)
@@ -689,7 +741,6 @@ return F.log_softmax(x, dim=-1)
 一旦我们将批归一化添加到模型块中，准确率便随之提升。测试准确率在第十个 epoch 达到峰值，接近 90%。此后，准确率一直保持在 85%左右，直到第十五个 epoch。这对于理解不同类别之间的差异来说，是一个巨大的进步。
 
 还有一点需要检查。对于相同的处理器，我们预计每个 epoch 的时间消耗会更高，但考虑到它所带来的准确率提升幅度，这种增加不应显著到足以造成麻烦。让我们来看看由`torch`的 summary 函数描述的模型定义。
-
 
 ```text
 Layer (type)               Output Shape         Param #
@@ -792,5 +843,4 @@ loss = loss+lambda1*l1
 在本章中，我们从定义基础模型并对数据进行迭代开始。我们介绍了一些基本的数据增强技术，这些技术有助于创建与未来测试数据可能呈现的分布相似的分布。这有助于构建和训练鲁棒的模型。我们探索了归一化和正则化，以提高模型的准确率和稳定性。
 
 在下一章中，我们将研究基于本章所学概念的目标检测框架。图像分类网络构成了各种目标检测网络的基础。
-
 
