@@ -393,3 +393,9 @@ Depicting the Nelson-Aalen Additive Model’s Baseline Survival Hazard
 
 本章阐释了执行一种流行的生存回归器（即 Nelson-Aalen 加性模型）的基本原理。该方法通过对生存删失数据进行建模，利用风险函数合理预测研究对象的生存率，从而能够预测患者随时间变化的生存状态概率。生存回归还有其他方法，包括 Cox 比例风险模型和 Weibull 加性模型。
 
+## 参考文献
+
+1. 芝加哥大学比林斯医院。(1999). *Haberman 生存数据*. 芝加哥大学比林斯医院。
+
+脚注 1
+

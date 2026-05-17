@@ -6,7 +6,6 @@
 +   [5. 通过执行人工神经网络对磁共振成像和 X 光片进行建模](artificial-intelligence-in-medical-sciences-and-psychology_05.md)
 +   [6. COVID-19 CT 扫描分割案例研究](artificial-intelligence-in-medical-sciences-and-psychology_06.md)
 +   [7. 临床试验数据建模](artificial-intelligence-in-medical-sciences-and-psychology_07.md)
-+   [参考文献](artificial-intelligence-in-medical-sciences-and-psychology_08.md)
 +   [8. 医疗记录分类](artificial-intelligence-in-medical-sciences-and-psychology_09.md)
 +   [9. 心理学案例：人格维度的因子分析与聚类](artificial-intelligence-in-medical-sciences-and-psychology_10.md)
 +   [索引](artificial-intelligence-in-medical-sciences-and-psychology_11.md)
