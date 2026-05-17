@@ -1,4 +1,4 @@
-# 强化学习基础
+# 1. 强化学习基础
 
 Abhishek Nandy¹ 和 Manisha Biswas²  
 (1) 印度西孟加拉邦加尔各答 Swaranika Co-Opt HSG 大楼 HIG L-2/4 室  
