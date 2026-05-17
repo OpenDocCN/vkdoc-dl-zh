@@ -1,7 +1,5 @@
 +   [Prescriptive AI 入门指南](README.md)
 +   [引言](introduction-to-prescriptive-ai_01.md)
-+   [致谢](introduction-to-prescriptive-ai_02.md)
-+   [关于作者 关于技术审稿人](introduction-to-prescriptive-ai_03.md)
 +   [1. 决策智能概述](introduction-to-prescriptive-ai_04.md)
 +   [2. 决策智能需求](introduction-to-prescriptive-ai_05.md)
 +   [3. 决策智能方法论](introduction-to-prescriptive-ai_06.md)
