@@ -1,6 +1,5 @@
 +   [AIOps 实用指南](README.md)
 +   [前言](hands-on-aiops_01.md)
-+   [排版后的文本](hands-on-aiops_02.md)
 +   [1. 什么是 AIOps？](hands-on-aiops_03.md)
 +   [2. AIOps 架构与方法论](hands-on-aiops_04.md)
 +   [3. AIOps 挑战](hands-on-aiops_06.md)
