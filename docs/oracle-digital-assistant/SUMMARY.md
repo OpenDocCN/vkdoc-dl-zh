@@ -1,6 +1,5 @@
 +   [Oracle Digital Assistant](README.md)
 +   [引言](oracle-digital-assistant_00.md)
-+   [致谢](oracle-digital-assistant_01.md)
 +   [第一部分：基础](oracle-digital-assistant_02.md)
 +   [第 1 章 Oracle 数字助手简介](oracle-digital-assistant_03.md)
 +   [第二部分设计与用户体验](oracle-digital-assistant_04.md)
