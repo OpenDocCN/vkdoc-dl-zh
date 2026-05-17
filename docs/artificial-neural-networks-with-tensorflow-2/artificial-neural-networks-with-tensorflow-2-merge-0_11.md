@@ -53,8 +53,6 @@ from PIL import Image
 
 ## 下载数据
 
-
-
 本项目需要下载两种类型的数据库——图像及其对应的描述文本。正如我之前提到的，Flickr 已将该数据库（`http://academictorrents.com/details/9dea07ba660a722ae1008c4c8afdd303b6f6e53b`）向公众开放。该数据库包含图像和描述文本。请使用以下代码下载描述文本数据：
 
 ```
@@ -260,8 +258,6 @@ image_features_extract_model = tf.keras.Model
 (new_input, hidden_layer)
 ```
 
-
-
 ### 该输出层的形状为 `8x8x2048`，这是 `InceptionV3` 模型的最后一个卷积层。我们使用到最后一个卷积层为止的层，是因为将对从该层提取的特征应用注意力机制。
 
 ## 准备数据集
@@ -442,8 +438,6 @@ class Inception_Encoder(tf.keras.Model):
 
 1.  **Bahdanau 注意力机制** – 确定性的“软”注意力
 2.  **Luong 注意力机制** – 随机性的“硬”注意力
-
-
 
 我们使用确定性软注意力机制，即 Bahdanau 注意力。该注意力机制基本上为每个`input_vector`（即图像的提取特征）计算注意力权重和上下文向量。简单来说，上下文向量是图像在时间`t`时相关部分的动态表示。我们定义了一个注意力机制，它从输入向量中计算上下文向量，这些输入向量代表了在不同图像位置提取的特征。对于图像中的每个位置，我们称之为`loc`；该机制会生成一个正权重，在我们的代码中也称为`score`。该分数可以解释为位置`loc`是生成下一个单词的正确关注点的概率，或者我们是否应该给予`loc`一定的相对重要性。每个输入向量的注意力权重由一个注意力模型计算，为了计算这些注意力权重，我们使用一个多层感知器层，该层将先前的解码器隐藏状态和当前输入向量的隐藏状态作为输入。这个隐藏状态是编码器的输出。
 
@@ -649,8 +643,6 @@ return tf.zeros((batch_size, self.units))
 
 解码器实现的完整代码在清单 10-1 中给出，供您快速参考。
 
-
-
 ```python
 class RNN_Decoder(tf.keras.Model):
     def __init__(self, embedding_dim, units, vocab_size):
@@ -836,8 +828,6 @@ loss_ *= mask
 ```
 
 这将得到最终的损失张量。
-
-
 
 ```python
 loss  tf.Tensor(
@@ -1043,8 +1033,6 @@ Image.open(path)
 
 完整源代码见代码清单 10-2，供您随时参考。
 
-
-
 ```python
 import os
 import time
@@ -1190,7 +1178,7 @@ class Inception_Encoder(tf.keras.Model):
         super(Inception_Encoder, self).__init__()
         self.fc = tf.keras.layers.Dense(embedding_dim)
 
-    def call(self, x):
+def call(self, x):
         x = self.fc(x)
         x = tf.nn.relu(x)
         return x
@@ -1211,7 +1199,7 @@ class RNN_Decoder(tf.keras.Model):
         self.W2 = tf.keras.layers.Dense(units)
         self.V = tf.keras.layers.Dense(1)
 
-    def call(self, x, features, hidden):
+def call(self, x, features, hidden):
         hidden_with_time_axis = tf.expand_dims(hidden, 1)
         score = tf.nn.tanh(self.W1(features) + self.W2(hidden_with_time_axis))
         attention_weights = tf.nn.softmax(self.V(score), axis=1)
@@ -1227,7 +1215,7 @@ class RNN_Decoder(tf.keras.Model):
         x = self.fc2(x)
         return x, state, attention_weights
 
-    def reset_state(self, batch_size):
+def reset_state(self, batch_size):
         return tf.zeros((batch_size, self.units))
 ```
 
@@ -1340,5 +1328,9 @@ Image.open(path)
 
 **列表 10-2** 图像描述生成
 
+# 总结
 
+在本章中，你学习了自然语言处理的另一个重要应用。你创建了一个为任意给定图像生成标题的应用。图像描述包含两个重要部分：一是提取图像特征，二是将这些特征映射为文本描述。提取图像特征是一项简单的工作，有许多预训练网络可用于此目的。你使用了`InceptionV3`网络来提取特征。为了将其转换为描述文本，你使用了带有 Bahdanau 注意力机制的 RNN。本章深入介绍了 Bahdanau 注意力机制及其实现。
+
+在下一章中，你将学习另一项重要技术：时间序列预测。
 

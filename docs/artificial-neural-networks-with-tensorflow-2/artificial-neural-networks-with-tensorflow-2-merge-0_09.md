@@ -1,3 +1,122 @@
+# 8. 语言翻译
+
+## 引言
+
+我第一次在法兰克福国际机场转机时，因为不懂德语，很难看懂机场的指示牌。那是很多年前的事了。如今，你只需将手机对准这些指示牌，手机里的应用程序就会为你提供英语或你选择的语言的翻译。这些翻译是如何完成的呢？这些翻译背后涉及不止一种技术。其核心是一个机器学习模型，它利用一个包含大量预定义词汇的庞大词库进行逐词翻译。显然，这种逐词翻译，或者用机器学习的术语来说，序列到序列的翻译，在机场和道路指示牌的情况下准确率很高，但在自然语言句子中可能无法产生可接受的翻译。举个例子，像“How are you today?”这样的问句，不能简单地通过独立翻译句子中的每个单词来完成。为了执行此类翻译，人们构建了复杂的模型。谷歌最初使用统计语言翻译；2016 年，他们开始使用 NMT（神经机器翻译）。在本章中，你将学习如何开发这样一个模型。
+
+# 序列到序列建模
+
+在上一章中，你学习了 RNN 和 LSTM。我们将使用这些网络模型，结合编码器/解码器与注意力机制，来创建一个神经机器翻译模型。在阅读过程中，我会向你解释什么是编码器、解码器和注意力机制。编码器/解码器模型是一类通用的序列到序列建模方法，广泛应用于情感分析、神经机器翻译、聊天机器人、命名实体识别，甚至文本生成等多个领域。例如，向聊天机器人提问“How are you today?”，它可能会回答“I am fine, thank you! How are you doing today?”。这显然不是逐词翻译及其对应回复。这类翻译需要对庞大的词汇库进行模型训练，并使用神经网络模型，这与你在本书中迄今为止学到的传统机器学习模型有很大不同。
+
+在本章中，我们将只关注神经机器翻译。我们的模型会将英语短语翻译成对应的西班牙语单词，如图 8-1 所示。
+
+![../images/495303_1_En_8_Chapter/495303_1_En_8_Fig1_HTML.jpg](img/495303_1_En_8_Fig1_HTML.jpg)
+
+图 8-1
+
+使用 seq2seq 建模进行英西翻译
+
+英语短语“How are you?”被翻译成“¿Cómo estás?”。输出序列的长度不必与输入序列相同。为了理解这是如何实现的，我先解释一下编码器和解码器的架构。
+
+## 编码器/解码器
+
+编码器和解码器是序列到序列模型的两个主要组成部分。两者都使用 LSTM。你会记得，LSTM 能够记住长序列，并且不会出现梯度消失问题；因此，它们是语言翻译模型的理想选择。编码器和解码器是同一 LSTM 架构的两组不同实例。首先，我将描述编码器架构。
+
+### 编码器
+
+编码器架构如图 8-2 所示。
+
+![../images/495303_1_En_8_Chapter/495303_1_En_8_Fig2_HTML.jpg](img/495303_1_En_8_Fig2_HTML.jpg)
+
+图 8-2
+
+编码器架构
+
+我们将整个输入句子按单词级别拆分，并在每个时间步将其输入到编码器中。以我们的示例语句“Peter is a good boy”为例，我们将按五个时间步将输入送入 LSTM，如下所示：
+
+`X1` = “Peter”, `X2` = “is”, `X3` = “a”, `X4` = “good”, `X5` = “boy”
+
+LSTM 计算隐藏状态值`h[i]`。这些隐藏状态与下一个单词一起，在下一个时间步被送入解码器。这就是网络捕获输入序列上下文信息的方式。编码器的初始状态通常是一个零向量。编码器的最终状态，也称为“思维向量”，被用作解码器的输入。
+
+### 解码器
+
+解码器架构如图 8-3 所示，其中包含了我们示例输入句子的时间戳。
+
+![../images/495303_1_En_8_Chapter/495303_1_En_8_Fig3_HTML.jpg](img/495303_1_En_8_Fig3_HTML.jpg)
+
+图 8-3
+
+解码器架构
+
+解码器通过将解码器 LSTM 单元的隐藏状态从前一个单元馈送到下一个单元，来训练根据前一个单词预测下一个单词。在将目标序列送入解码器之前，会在序列的开头和结尾添加特殊标记`<START>`和`<END>`。
+
+在解码测试序列时，目标序列是未知的。因此，我们通过将第一个单词（始终是`<start>`标记）传入解码器来开始预测目标序列。`<end>`标记表示句子的结束。
+
+我现在将讨论推理过程中的解码步骤。
+
+### 推理
+
+推理过程中的时间步骤如下所示：
+
+*   解码器的初始输入是`<start>`标记。
+*   在推理过程中，解码器 LSTM 会在一个循环中被多次调用，以在每个时间步/迭代中生成一个输出单词。
+*   解码器的初始状态等于编码器的最终状态。
+*   在每个时间步，解码器状态被保留，并用作下一个时间步/迭代的初始状态。
+*   每个时间步的预测输出被作为输入馈送到下一个时间步/迭代。
+*   循环在遇到`<end>`标记时终止。
+
+我们示例文本的整个推理过程如图 8-4 所示。
+
+![../images/495303_1_En_8_Chapter/495303_1_En_8_Fig4_HTML.jpg](img/495303_1_En_8_Fig4_HTML.jpg)
+
+图 8-4
+
+编码器/解码器中的推理过程
+
+这就是序列到序列（seq2seq）模型的工作原理。我现在将讨论 seq2seq 模型的缺点。
+
+## seq2seq 模型的缺点
+
+seq2seq 模型由编码器-解码器架构组成，其中编码器处理输入序列并将信息编码成一个上下文向量。这个上下文向量有时被称为“思维向量”，并且是固定长度的。这个思维向量被期望能够很好地概括整个输入序列。解码器随后用这个思维向量进行初始化，并被要求执行转换。这些固定长度的思维向量有一个明显的缺点：无法记住长序列。通常，对于长序列，当它们处理完整个序列时，已经忘记了序列的前面部分。为了解决这个问题，提出了注意力机制。
+
+# 注意力模型
+
+人类在观看或聆听时，会有意识地将注意力集中在图像或文本的某一部分。以图 8-5 所示的照片为例。
+
+![../images/495303_1_En_8_Chapter/495303_1_En_8_Fig5_HTML.jpg](img/495303_1_En_8_Fig5_HTML.jpg)
+
+图 8-5
+
+一幅将注意力引向马匹和女士的图像。图片来源：[`http://www.clker.com/clipart-man-riding-a-rearing-horse.html`](http://www.clker.com/clipart-man-riding-a-rearing-horse.html)
+
+当你看到这张照片的瞬间，你的注意力会集中在一匹马和一位女士身上。因此，如果你需要为这张照片生成描述，你可能会说“一位女士在骑马”。同样，如果有人问“你最喜欢哪项运动？”，你的注意力会立刻集中在“运动”和“你”这两个词上。我们的编码器/解码器模型缺少这种关注输入序列中特定关键词的特性。因此，注意力机制的直觉在于：在时间戳 `t` 生成一个词时，我们需要对每个词投入多少注意力？所以，注意力机制的基本思想是在生成目标词时，增加输入序列中特定词的重要性。
+
+注意力模型的创建是为了帮助记忆输入源中的长句。注意力模型并非仅从编码器的最后一个隐藏状态构建单个上下文向量，而是为整个输入序列创建一个上下文向量。如图 8-6 所示。
+
+![../images/495303_1_En_8_Chapter/495303_1_En_8_Fig6_HTML.jpg](img/495303_1_En_8_Fig6_HTML.jpg)
+
+图 8-6
+
+带有注意力模块的编码器/解码器架构
+
+此处，输入序列是“Peter is a good boy.”。该序列被拆分为单个单词。解码器按时间步从编码器输出中获取输入。如果使用这种简单的序列到序列建模，翻译质量将不佳。因此，我们在中间引入一个注意力层。现在，解码器在每个时间步的输入将是其先前状态加上输入序列的注意力上下文。例如，在生成单词“buen”时，解码器将更多地关注像 Peter、good 和 boy 这样的词。注意力网络为输入词分配不同的权重，以生成一个注意力上下文，解码器在预测下一个词时会使用该上下文。
+
+在任意给定时间步 `t[s]`，网络的注意力权重（`α`）可以用数学公式表示如下：
+
+![$$ {\alpha}_{t_s}=\frac{\mathit{\exp}\ \left( score\left({h}_t,{\overline{h}}_s\right)\right)}{\sum_{s^{\prime }=1}^s\mathit{\exp}(score){h}_t,{\overline{h}}_{s\prime}\left)\right)} $$](img/495303_1_En_8_Chapter_TeX_Equa.png)
+
+然后，上下文向量可以表示为：
+
+![$$ {c}_t=\sum \limits_s{\propto}_{ts}{\overline{h}}_s $$](img/495303_1_En_8_Chapter_TeX_Equb.png)
+
+其中 `c[t]` 表示时间步 `t` 的上下文，alpha 和 `h` 分别表示权重和隐藏状态。最终的注意力向量，它是所有 `c[t]` 和 `h[t]` 的函数，计算如下：
+
+![$$ {a}_t=f\left({c}_t,{h}_t\right)=\mathit{\tanh}\left({W}_c\left[{h}_t,{h}_t\right]\right) $$](images/495303_1_En_8_Chapter/495303_1_En_8_Chapter_TeX_Equc.png)
+
+`a[t]` 与解码器自身的先前状态一起作为输入传入解码器。当你查看下一节项目中提供的实现时，你将能更好地理解这个注意力网络。
+
+通过以上对神经机器翻译的介绍，让我们进入实际实现环节。
+
 # 英语到西班牙语翻译器
 
 我们将使用本章迄今学到的 NMT 技术创建一个英语到西班牙语的翻译器。你将使用带有注意力模块的编码器/解码器模型。为了训练此类模型，你需要一组两种语言之间的句子映射。幸运的是，有人已经创建了这样的映射。你可以在以下网站找到这些映射：[`www.manythings.org/anki/`](http://www.manythings.org/anki/)。这些是制表符分隔的双语句子对。数据集数量非常详尽，你可以找到世界上许多流行语言之间的映射。文件中的每一行格式如下：
@@ -37,8 +156,6 @@ import matplotlib.pyplot as plt
 import wget
 url = 'https://raw.githubusercontent.com/Apress/artificial-neural-networks-with-tensorflow-2/main/ch08/spa.txt'wget.download(url,'spa.txt')
 ```
-
-
 
 ## 创建数据集
 
@@ -274,8 +391,6 @@ print (k,v)
 
 利用这两个数据集，你将训练你的编码器/解码器模型。用户将能够使用你的模型对数据集中出现的这些标准短语进行翻译。如果用户输入的短语不在标准数据集中，该短语将被拆分为单词，每个单词将使用这些集合进行翻译。每次翻译后，模型将借助注意力模块尝试猜测下一个单词。请注意此处注意力模块的重要性。解码器接收两个输入——编码器的先前状态和来自注意力模块的上下文向量。然后，解码器基于这两个输入预测概率最大的单词。
 
-
-
 ## 创建输入序列
 
 现在，你将通过调用 `texts_to_sequences` 方法将输入文本转换为序列。这显然是将数据输入模型所必需的。
@@ -360,6 +475,7 @@ output_vocab_size
 我们在输出上使用教师强制（teacher forcing），以便训练收敛得更快。在教师强制中，我们向解码器提示下一个单词，减少其猜测工作，使其学习更快。请注意，教师强制仅在训练模型时使用，在测试或推理模式下不使用。
 
 ```
+
 ### 教师强制
 for i in range(len(tokenized_output)) :
 tokenized_output[i] = tokenized_output[i][1:]
@@ -379,6 +495,7 @@ padding='post' )
 我们将输出数据转换为 numpy 数组，使其与机器学习兼容。
 
 ```
+
 #### 转换为 numpy
 decoder_input_data = np.array( padded_output )
 ```
@@ -444,8 +561,6 @@ array([[0., 0., 0., ..., 0., 0., 0.],
 
 在开始项目之前，你下载了词向量数据集。这个数据集提供了词与词之间共现概率的比率。换句话说，对于任何给定的单词，它会告诉你在这个世界中所有其他单词出现在该给定单词旁边的概率。例如，单词“cream”出现在单词“ice”旁边的概率可能是最高的。这个数据集实际上是在一个巨大的词汇表上创建的。这些概率的知识有助于对输入语句进行某种形式的意义编码。我们将基于这个数据集为我们的输入英语词汇构建一个词典。我们将把输入序列输入到一个嵌入层，该层将输入单词转换为词向量。这些词向量将作为输入传递给编码器。我们将在程序中加载这个词向量词典。
 
-
-
 ### 索引词向量
 
 `glove` 词嵌入提供了四种维度的映射：50、100、200 和 300。在我们的程序中，将使用 200 维的文件。使用的维度越高，翻译效果越好，但代价是处理时间和资源消耗的增加。
@@ -465,8 +580,10 @@ more 0.87943 -0.11176 0.4338 -0.42919 0.41989 0.2183 -0.3674 -0.60889 -0.41072 0
 #creating dictionary of words corresponding to vectors
 print('Indexing word vectors.')
 embeddings_index = {}
+
 #### Use this open command in case of downloading using wget above
 #f = open('glove.6B.200d.txt', encoding='utf-8')
+
 #### we can choose any dimensions 50 100 200 300
 f = open('drive/My Drive/tfbookdata/glove.6B.200d.txt',
 encoding='utf-8')
@@ -659,8 +776,6 @@ name='decoder_dense')
 
 我们现在将开始为我们的注意力网络定义模型。
 
-
-
 #### 定义 Softmax
 
 我们的注意力上下文在每个时间步计算，并为网络分配不同的注意力权重集。任意给定时间步 `t[s]` 的注意力权重（`α`）可以用数学公式表示如下：
@@ -670,6 +785,7 @@ name='decoder_dense')
 我们在以下名为 `softmax_attention` 的方法中实现 alpha 的计算：
 
 ```
+
 ##### Computing alphas
 import tensorflow.keras.backend as k
 def softmax_attention(x):
@@ -766,6 +882,7 @@ return context
 `context_attention` 的完整函数代码见代码清单 8-1。
 
 ```
+
 ##### computing attention context
 def context_attention(h, st_1)
 st_1=attention_repeat(st_1)
@@ -777,8 +894,6 @@ return context
 Listing 8-1
 Function for computing the attention context
 ```
-
-
 
 ### 收集输出
 
@@ -1232,8 +1347,6 @@ return ' '.join(output_sentence)
 def decode_sequence(input_seq):
 ```
 
-
-
 ##### 将输入编码为状态向量。
 `enc_out = encoder_model.predict(input_seq)`
 
@@ -1536,8 +1649,6 @@ dense2_layer = Dense(1, activation=softmax_attention)
 dot_layer = Dot(axes=1)
 ```
 
-
-
 ### 计算注意力上下文
 
 ```python
@@ -1616,11 +1727,14 @@ tf.keras.utils.plot_model(encoder_model)
 ```
 
 ```python
+
 ### 由于双向结构，输入的长度将是潜在维度的两倍
 encoder_outputs_as_input = Input(shape=(maxlen_input, LATENT_DIM * 2,))
+
 ### 我们将一次预测一个词，输入也只有一个词
 decoder_input_embedding = Input(shape=(1,))
 decoder_input_ = decoder_embedding(decoder_input_embedding)
+
 ### 计算上下文
 context = context_attention(encoder_outputs_as_input, initial_s)
 decoder_lstm_input = context_last_word_concat_layer([context, decoder_input_])
@@ -1631,6 +1745,7 @@ decoder_model = Model(
     outputs=[decoder_outputs, s, c]
 )
 decoder_model.summary()
+
 ### tf.keras.utils.plot_model(decoder_model, to_file='decoder_model.jpg')
 tf.keras.utils.plot_model(decoder_model)
 ```
@@ -1638,8 +1753,10 @@ tf.keras.utils.plot_model(decoder_model)
 ```python
 word2index_input = tokenizer_in.word_index
 word2index_output = tokenizer_out.word_index
+
 ### 将整数反向映射为英文单词
 idx2word_eng = {v: k for k, v in word2index_input.items()}
+
 ### 将整数反向映射为西班牙语单词
 idx2word_trans = {v: k for k, v in word2index_output.items()}
 ```
@@ -1681,8 +1798,6 @@ def decode_sequence(input_seq):
 
         # 更新解码器输入
 ```
-
-
 
 ### `which` 只是刚刚生成的单词
 

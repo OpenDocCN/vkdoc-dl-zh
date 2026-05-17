@@ -64,8 +64,6 @@
 
 **图 14-3** 合并模型架构
 
-
-
 #### 使用八层编码器提取中层表征
 
 采用八层编码器来提取中层表征。第六层的输出被分叉，并送入另一个七层网络以提取全局特征。随后，一个融合网络将这两个输出拼接起来，并馈送到解码器。
@@ -121,6 +119,7 @@ from tensorflow.keras import backend as K
 #api_token = {"username":"Your UserName", "key":"Your key"}
 #import json
 #with open('/root/.kaggle/kaggle.json', 'w') as file:
+
 ### json.dump(api_token, file)
 #!chmod 600 ~/.kaggle/kaggle.json
 #!kaggle datasets download -d thedownhill/art-images-drawings-painting-sculpture-engraving
@@ -242,8 +241,6 @@ def create_training_batches(dataset=X_train, batch_size = 20):
 ## 定义模型
 
 现在，我们将定义自动编码器模型。模型配置基于论文“Let there be Color!”（[`http://iizuka.cs.tsukuba.ac.jp/projects/colorization/data/colorization_sig2016.pdf`](http://iizuka.cs.tsukuba.ac.jp/projects/colorization/data/colorization_sig2016.pdf)）中提出的建议。
-
-
 
 ```python
 ### 编码器层的输入
@@ -449,8 +446,6 @@ plt.axis('off')
 
 完整源代码见清单 14-1，供你参考。
 
-
-
 ```python
 import numpy as np
 import pandas as pd
@@ -480,6 +475,7 @@ from tensorflow.keras import backend as K
 #api_token = {"username":"Your UserName", "key":"Your key"}
 #import json
 #with open('/root/.kaggle/kaggle.json', 'w') as file:
+
 ### json.dump(api_token, file)
 #!chmod 600 ~/.kaggle/kaggle.json
 #!kaggle datasets download -d thedownhill/art-images-drawings-painting-sculpture-engraving
@@ -544,32 +540,41 @@ def create_training_batches(dataset=X_train, batch_size=20):
 inputs1 = Input(shape=(IMG_WIDTH, IMG_HEIGHT, 1,))
 
 ### 编码器
+
 ### 使用 Conv2d 减小特征图和图像尺寸
+
 ### 将图像转换为 128x128
 encoder_output = Conv2D(64, (3,3), activation="relu", padding='same', strides=2)(inputs1)
 encoder_output = Conv2D(128, (3,3), activation='relu', padding='same')(encoder_output)
+
 ### 将图像转换为 64x64
 encoder_output = Conv2D(128, (3,3), activation='relu', padding="same", strides=2)(encoder_output)
 encoder_output = Conv2D(256, (3,3), activation='relu', padding='same')(encoder_output)
+
 ### 将图像转换为 32x32
 encoder_output = Conv2D(256, (3,3), activation='relu', padding="same", strides=2)(encoder_output)
 encoder_output = Conv2D(512, (3,3), activation='relu', padding="same")(encoder_output)
+
 ### 中层特征提取
 encoder_output = Conv2D(512, (3,3), activation='relu', padding='same')(encoder_output)
 encoder_output = Conv2D(256, (3,3), activation='relu', padding='same')(encoder_output)
 
 ### 解码器
+
 ### 为灰度图像添加颜色并放大尺寸
 decoder_output = Conv2D(128, (3,3), activation='relu', padding='same')(encoder_output)
 decoder_output = UpSampling2D((2, 2))(decoder_output)
+
 ### 图像尺寸 64x64
 decoder_output = Conv2D(64, (3,3), activation="relu", padding='same')(decoder_output)
 decoder_output = Conv2D(64, (3,3), activation="relu", padding='same')(decoder_output)
 decoder_output = UpSampling2D((2, 2))(decoder_output)
+
 ### 图像尺寸 128x128
 decoder_output = Conv2D(32, (3,3), activation="relu", padding='same')(decoder_output)
 decoder_output = Conv2D(2, (3, 3), activation="tanh", padding='same')(decoder_output)
 decoder_output = UpSampling2D((2, 2))(decoder_output)
+
 ### 图像尺寸 256x256
 
 ### 编译模型
@@ -634,10 +639,9 @@ plt.imshow(img)
 plt.axis('off')
 
 ### 列表 14-1
+
 ### AutoEncoder_Custom
 ```
-
-
 
 ### 使用预训练模型进行特征提取
 
@@ -826,8 +830,6 @@ plt.axis('off')
 
 完整的源码见列表 14-2，供你参考。
 
-
-
 ```python
 import numpy as np
 import pandas as pd
@@ -873,6 +875,7 @@ from tensorflow.keras import backend as K
 #api_token = {"username":"","key":""}
 #import json
 #with open('/root/.kaggle/kaggle.json', 'w') as file:
+
 ### json.dump(api_token, file)
 #!chmod 600 ~/.kaggle/kaggle.json
 #!kaggle datasets download -d thedownhill/art-images-drawings-painting-sculpture-engraving
@@ -916,10 +919,13 @@ zoom_range=0.2,
 rotation_range=20,
 horizontal_flip=True)
 def image_a_b_gen(dataset=X_train):
+
 ### 对每张图像进行迭代
 for batch in datagen.flow(dataset, batch_size=542):
+
 ### 从 rgb 转换为灰度
 X_batch = rgb2gray(batch)
+
 ### 将 rgb 转换为 Lab 格式
 lab_batch = rgb2lab(batch)
 X_batch = lab_batch[:,:,:,1:] /128
@@ -1012,5 +1018,7 @@ plt.axis('off')
 AutoEncoder_TransferLearning
 ```
 
+# 总结
 
+使用深度神经网络可以为黑白图像添加色彩。你学习了如何创建`AutoEncoders`（自编码器），并用它们为黑白图像着色。`AutoEncoder`包含一个用于提取图像特征的`Encoder`（编码器），以及一个利用编码器提取的表示来重建图像的`Decoder`（解码器）。你还学习了如何使用预训练的图像分类器来提取图像特征，并将其作为`Encoder`的一部分。
 

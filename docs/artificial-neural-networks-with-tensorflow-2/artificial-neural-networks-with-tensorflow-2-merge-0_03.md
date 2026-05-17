@@ -50,8 +50,6 @@ http://colab.research.google.com
 
 我们简单的程序将需要三个导入——TensorFlow 2.x、用于处理数据的 `numpy` 库，以及用于绘制图表的 `matplotlib`。
 
-
-
 #### 导入 TensorFlow 2.x
 
 要在 Python 笔记本中导入 TensorFlow，你需要使用以下程序语句：
@@ -125,6 +123,7 @@ number_of_datapoints = 100
 要生成 `x` 和 `y` 坐标，你需要使用 NumPy 中的 `random` 模块。要生成 `x` 值，请使用以下程序语句：
 
 ```
+
 #### 生成范围在 -5 到 +5 之间的随机 x 值
 x = np.random.uniform(low = -5 , high = 5 ,
 size = (number_of_datapoints, 1))
@@ -206,8 +205,6 @@ model = tf.keras.Sequential([keras.layers.Dense(units=1, input_shape=[1])])
 `units` 参数定义了输出空间的维度。在这里，通过指定值为 1，你定义了一个单层网络，其中包含一个输出单一值的神经元。`Dense` 函数接受多个参数，允许你创建复杂的 ANN 架构。在本书中，你将使用 `keras.Sequential` API 创建许多复杂的架构。
 
 模型定义完成后，我们需要编译它，并使其准备好在我们数据集上进行训练。
-
-
 
 ### 编译模型
 
@@ -348,14 +345,14 @@ Predicted z for x=2, y=3 ---> [[36.99]]
 现在，让我们检查一下预测值是否足够接近预期输出。要查看预期输出，请运行以下代码：
 
 ```
+
 #### Checking from equation
+
 #### z = 7*x + 6*y + 5
 print("Expected output: ", 7*2 + 6*3 + 5)
 ```
 
 执行后会在屏幕上打印 37。我们模型的预测值是 36.99，与预期值非常接近。请注意，如果你运行代码，预测输出每次都会不同，因为模型的准确率每次都会变化。你可以用更多的 `x` 和 `y` 值来测试模型的预测，以验证模型的训练效果。
-
-
 
 ## 完整源代码
 
@@ -387,6 +384,7 @@ input = np.column_stack((x,y))
 input[:2,:].round(2)
 #### Create a Keras sequential model consisting of single layer with a single neuron .
 model = tf.keras.Sequential([tf.keras.layers.Dense(units=1)])
+
 # Compile the model with the spcified optimizier, loss function and error metrics.
 model.compile(optimizer = 'sgd' , loss = 'mean_squared_error' , metrics = ['mse'] )
 #### Import History module to record loss and accuracy on each epoch during training
@@ -509,8 +507,6 @@ Mounted at /content/drive
 ```
 
 现在，您已准备好通过程序代码访问您驱动器中的内容。
-
-
 
 ### 加载数据
 
@@ -681,8 +677,6 @@ X = pd.get_dummies(X, drop_first=True, columns=['Geography'])
 
 在将数据输入网络之前，我们还需要做一件事，就是将所有的数值缩放到 -1 到 1 的范围内。
 
-
-
 ### 缩放数值
 
 由于真实数据中的特征可能具有很宽的数据值范围，如果我们将所有这些数据点标准化到同一尺度，机器学习的效果会更好。理想情况下，为了使机器学习获得更好的结果，每列的平均值应为 0，标准差应为 1。因此，我们使用以下方程对所有数据点进行变换：
@@ -706,6 +700,7 @@ X = scaler.fit_transform(X)
 为了将数据分成两部分，我们使用 `sklearn` 的 `train_test_split` 方法，如下面的程序语句所示：
 
 ```
+
 #### 将数据集分割为训练集和测试集
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3)
@@ -842,8 +837,6 @@ callbacks = [tensorboard_callback])
 训练期间的程序输出
 
 训练结束后，你可以使用收集到的指标来评估模型是否训练到了你期望的准确率。
-
-
 
 ### 性能评估
 
@@ -1013,8 +1006,6 @@ Customer will stay
 值为 0 表示该客户不太可能离开银行。请注意，此预测的准确率仍约为之前计算的 83%。
 
 在模型完全训练到令你满意之后，你可以将其保存到磁盘，并部署到生产服务器上进行实际应用。具体如何操作将在下一章深入讨论 `tf.keras` 实现时进行说明。
-
-
 
 ## 完整源代码
 
