@@ -1,6 +1,5 @@
 +   [Python AI 项目实战指南](README.md)
-+   [致谢](practical-python-ai-projects_01.md)
-+   [目录](practical-python-ai-projects_02.md)
++   [引言](practical-python-ai-projects_01.md)
 +   [1. 引言](practical-python-ai-projects_03.md)
 +   [2. 线性连续模型](practical-python-ai-projects_04.md)
 +   [3. 隐式线性连续模型](practical-python-ai-projects_05.md)
