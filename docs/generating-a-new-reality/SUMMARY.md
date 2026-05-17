@@ -9,6 +9,6 @@
 +   [6. 残差网络生成对抗网络](generating-a-new-reality_08.md)
 +   [7. 注意力即一切！](generating-a-new-reality_09.md)
 +   [8. 高级生成器](generating-a-new-reality_10.md)
-+   [深度伪造与换脸技术](generating-a-new-reality_11.md)
++   [9. 深度伪造与换脸技术](generating-a-new-reality_11.md)
 +   [10. 破解深度伪造](generating-a-new-reality_12.md)
 +   [索引](generating-a-new-reality_13.md)
