@@ -9,7 +9,7 @@
 +   [3. 手动神经网络处理](artificial-neural-networks-with-java_08.md)
 +   [第二部分：神经网络 Java 开发环境](artificial-neural-networks-with-java_09.md)
 +   [4. 配置你的开发环境](artificial-neural-networks-with-java_10.md)
-+   [使用 Java Encog 框架进行神经网络开发](artificial-neural-networks-with-java_11.md)
++   [5. 使用 Java Encog 框架进行神经网络开发](artificial-neural-networks-with-java_11.md)
 +   [6. 训练范围外的神经网络预测](artificial-neural-networks-with-java_12.md)
 +   [7. 处理复杂周期函数](artificial-neural-networks-with-java_13.md)
 +   [8. 近似非连续函数](artificial-neural-networks-with-java_14.md)
