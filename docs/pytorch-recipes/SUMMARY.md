@@ -1,6 +1,5 @@
 +   [PyTorch 秘籍](README.md)
 +   [引言](pytorch-recipes_01.md)
-+   [致谢](pytorch-recipes_02.md)
 +   [1. PyTorch、张量及张量运算简介](pytorch-recipes_03.md)
 +   [2. 使用 PyTorch 的概率分布](pytorch-recipes_04.md)
 +   [3. 使用 PyTorch 的 CNN 与 RNN](pytorch-recipes_05.md)
