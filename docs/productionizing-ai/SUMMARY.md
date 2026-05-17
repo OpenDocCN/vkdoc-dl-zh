@@ -8,6 +8,6 @@
 +   [5. 神经网络与深度学习](productionizing-ai_07.md)
 +   [6. AutoML、AutoAI 与 NoLo UI 的兴起](productionizing-ai_08.md)
 +   [7. AI 全栈：应用开发](productionizing-ai_09.md)
-+   [AI 案例研究](productionizing-ai_10.md)
++   [8. AI 案例研究](productionizing-ai_10.md)
 +   [9. 部署 AI 解决方案（生产化与容器化）](productionizing-ai_11.md)
 +   [10. 自然语言处理](productionizing-ai_12.md)
