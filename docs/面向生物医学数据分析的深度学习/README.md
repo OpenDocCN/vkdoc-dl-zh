@@ -54,13 +54,13 @@ C dric Wemmert, Jonathan Weber, Friedrich Feuerha ke和Germain Forestier
 
 # 创新的深度学习方法用于生物医学数据
 
-实例化和可视化 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 171
+实例化和可视化 . . 171
 
 Ryad Zemouri和Daniel Racocceanu
 
 # 卷积神经网络在高级生物医学图像应用中的应用
 
-图像应用 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 197
+图像应用 . 197
 
 Daniel A. Greenfield, Germ n Gonz lez和Conor L. Evans
 
@@ -78,7 +78,7 @@ Abedalrhman Alkhateeb, Ashraf Abou Tabl和Luis Rueda
 
 # 使用深度学习与加拿大初级保健数据进行
 
-# 疾病诊断 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 273
+# 疾病诊断 . . . . 273
 
 Hasan Zafari, Leanne Kosowan, Jason T. Lam, William Peeler,
 
@@ -86,13 +86,13 @@ Mohammad Gasmallah, Farhana Zulkernine和Alexander Singer
 
 # 使用深度人工智能进行脑肿瘤分割和监测
 
-# 神经网络 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 311
+# 神经网络 . . . 311
 
 Asim Waqas, Dimah Dera, Ghulam Rasool, Nidhal Carla Bouaynay
 
 a和Hassan M. Fathallah-Shaykh
 
-索引 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 351
+索引 . . 351
 
 # 第一部分
 

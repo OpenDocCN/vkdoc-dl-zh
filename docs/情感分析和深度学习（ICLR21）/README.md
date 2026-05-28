@@ -433,7 +433,7 @@ Monika Mehra, Pradeep Jha, Himanshu Arora, Khushboo Verma, 和 Himalaya Singh
 Maitreyi Pitale, Riya Kale, Manasi Khamkar, 和 Ujwala Ravale
 1009
 
-作者索引. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1027
+作者索引. . 1027
 
 ## # 编辑和贡献者
 

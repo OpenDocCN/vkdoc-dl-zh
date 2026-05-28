@@ -132,8 +132,8 @@ Gudur和Perepu的《面向资源受限的异构标签和模型的联邦学习》
 - 单次运行的视频流动作检测器 - 一种隐私 保护方法 (Anbumalar Saravanan, Justin Sanchez, Hassan Ghasemzadeh, Aurelia Macabasco-O’Connell和Hamed Tabkhi)
 - 模型微调在个性化动态手势识别中的有效性 姿势识别 (郭俊尧, Unmesh Kurup和Mohak Shah)
 - 由词编码和嵌入引导的全卷积网络 和智能家居中的活动识别 (Damien Bouchabou, Sao Mai Nguyen, Christophe Lohr, Benoit LeDuc, 和Ioannis Kanellos)
-- 使用实体增强的用户友好药物映射 双塔神经网络 . . . . . . . . . . . . . . . . . . . . . . . . . . . 126 (袁少庆, Parminder Bhatia, Busra Celikkaya, Haiyang Liu, 和 Kyunghwan Choi)
-- 作者索引 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 139
+- 使用实体增强的用户友好药物映射 双塔神经网络 . . 126 (袁少庆, Parminder Bhatia, Busra Celikkaya, Haiyang Liu, 和 Kyunghwan Choi)
+- 作者索引 . 139
 
 ## 利用可穿戴传感器进行人类活动识别: 综述、挑战和评估基准
 Reem Abdel-Salam, Rana Mostafa, and Mayada Hadhood

@@ -5979,7 +5979,7 @@ W <= S;
 F_i^f = \begin{bmatrix} f_{1i}^f \\ \vdots \\ f_{ki}^f \end{bmatrix}
 ```
 
-对于i = 1, . . . . . ., k, 以及“垂直”向量:
+对于i = 1, ., k, 以及“垂直”向量:
 
 $$I_j^b = \begin{bmatrix} x_{bj} \\ \vdots \\ x_{(b+k-1)j} \end{bmatrix}$$
 

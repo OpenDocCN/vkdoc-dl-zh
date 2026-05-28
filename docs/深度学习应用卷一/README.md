@@ -137,10 +137,10 @@ Hiranmayi Ranganathan, Hemanth Venkateswara, Shayok Chakraborty 和Sethuraman Pa
 Anneliese Schweigert, Christian Blesing 和 Christoph M. Friedrich
 
 - 实现物流中的稳健自主材料处理
-通过应用深度学习算法. . . . . . . . . . . . . . . . . . . . . . . . . . . . 155
+通过应用深度学习算法. . . 155
 Christian Poss, Thomas Irrenhauser, Marco Prueglmeier, Daniel Goehring, Vahid Salehi 和 Firas Zoghlami
 
-- 作者索引 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 177
+- 作者索引 177
 
 ### 关于编辑
 

@@ -332,34 +332,34 @@ Mehdi Moradi
 
 第三届医学图像分析深度学习国际研讨会（DLMIA 2017）
 
-使用深度学习进行同时多表面分割 . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+使用深度学习进行同时多表面分割 . 3
 Abhay Shah, Michael D. Abramoff, 和 Xiaodong Wu
 
-一种用于HEp-2细胞分类的深度残差Inception网络 . . . . . . . . . . . . . . . 12
+一种用于HEp-2细胞分类的深度残差Inception网络 12
 Yuexiang Li和Linlin Shen
 
-CT图像中多个胸腔器官的联合分割使用两个协同深度架构 . . . . . . . . . . . . . . 21
+CT图像中多个胸腔器官的联合分割使用两个协同深度架构 . . . . 21
 Roger Trullo, Caroline Petitjean, Dong Nie, Dinggang Shen, 和Su Ruan
 
-通过对抗神经网络加速磁共振成像神经网络 . . . . . . . . . . . . . . . . . . . . . . 30
+通过对抗神经网络加速磁共振成像神经网络 . . 30
 Ohad Shitrit和Tammy Riklin Raviv
 
-使用完全卷积网络在CT体积中进行左心房分割卷积网络 . . . . . . . . . . . . . . . 39
+使用完全卷积网络在CT体积中进行左心房分割卷积网络 39
 Honghui Liu, Jianjiang Feng, Zishun Feng, Jiwen Lu和Jie Zhou
 
-基于图推理的3D随机连接网络 . . . . . . . . . . . . . . . . . . . . . . . . . . 47
+基于图推理的3D随机连接网络 . 47
 Siqi Bao, Pei Wang和Albert C.S. Chung
 
-对抗训练和扩张卷积用于脑部MRI分割 . . . . . . . . . . . . . . . . . . . . . . 56
+对抗训练和扩张卷积用于脑部MRI分割 . . 56
 Pim Moeskops, Mitko Veta, Maxime W. Lafarge, Koen A.J. Eppenhof, 和Josien P.W. Pluim
 
-卷积神经网络能够准确快速地分割光学中的Drusen相干断层扫描 . . . . . . . . . . . . . . . 65
+卷积神经网络能够准确快速地分割光学中的Drusen相干断层扫描 65
 Shekoufeh Gorgi Zadeh, Maximilian W.M. Wintergerst, Vitalis Wiens, Sarah Thiele, Frank G. Holz, Robert P. Finger和Thomas Schultz
 
-面向颈椎的区域感知深度定位框架在X射线图像中 . . . . . . . . . . . . . . . . . . 74
+面向颈椎的区域感知深度定位框架在X射线图像中 . . . 74
 S.M. Masudur Rahman Al Arif, Karen Knapp和Greg Slabaugh
 
-领域对抗神经网络以解决外观问题组织病理学图像的可变性 . . . . . . . . . . . . . . . 83
+领域对抗神经网络以解决外观问题组织病理学图像的可变性 83
 Maxime W. Lafarge, Josien P.W. Pluim, Koen A.J. Eppenhof, Pim Moeskops和Mitko Veta## 第七届临床决策支持多模态学习国际研讨会（ML-CDS 2017）
 
 - 通过网络智能训练实现准确的肺部分割：卷积网络

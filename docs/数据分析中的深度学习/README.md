@@ -138,36 +138,36 @@ Noor Zaman
 ### 深度学习理论和分析的理论基础
 
 使用深度情感进行离散动作序列的研究
-智能. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+智能. . . 3
 R. Santhoshkumar和M. Kalaiselvi Geetha
 
 受深度影响的一种新型噪声去除技术
-乳腺X光图像上的卷积自编码器. . . . . . . . . . . . . . . . . . . 25
+乳腺X光图像上的卷积自编码器. . . . 25
 Swarup Kr Ghosh, Biswajit Biswas和Anupam Ghosh
 
 通过算法利用人脑进行高安全性框架
-混合模型深度学习算法. . . . . . . . . . . . . . . . . . . . . . . 45
+混合模型深度学习算法. . . 45
 S. Balakrishnan, J. P. Ananth, L. Ramanathan, R. Sachinkanith kar和S. Rajkumar
 
 深度学习的知识框架：先天性心脏病
-疾病. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 61
+疾病61
 Ritu Chauhan和Harleen Kaur
 
 ### 计算系统和机器学习
 
 基于排名的SVM自动图像分割
-在糖尿病视网膜图像上的卷积神经网络中. . . . . . . . . . . . 77
+在糖尿病视网膜图像上的卷积神经网络中. . 77
 Biswajit Biswas, Swarup Kr Ghosh和Anupam Ghosh
 
-医疗保健中的深度学习. . . . . . . . . . . . . . . . . . . . . . . 97
+医疗保健中的深度学习. . . 97
 Deeksha Kaul, Harika Raju和B. K. Tripathy
 
 关于机器学习算法的研究
-医疗保健应用. . . . . . . . . . . . . . . . . . . . . . . . . . . . . 117
+医疗保健应用. . . . 117
 Shanmuganathan Harinee和Anand Mahendran
 
 一种预测性数据分析方法来获取医疗洞察
-数据库. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 131
+数据库. . . 131
 Ritu Chauhan和Harleen Kaur
 
 # 深度学习算法

@@ -159,7 +159,7 @@ Kalanit Grill-Speaker, Kendrick Kay和Kevin S. Weiner
 基于提升哈希森林的实时人脸识别．．．．．．．．．．．．．．．．． 33
 Yury Vizilter, Vladimir Gorbatsevich, Andrey Vorotnikov和Nikita Kostromov
 
-- 3 CMS-RCNN：基于上下文多尺度区域卷积神经网络的无约束人脸检测 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+- 3 CMS-RCNN：基于上下文多尺度区域卷积神经网络的无约束人脸检测 . . 57
 朱晨晨, 郑宇通, Khoa Luu和Marios Savvides
 
 ### 第二部分：指纹、指静脉和虹膜识别的深度学习
@@ -169,7 +169,7 @@ Yury Vizilter, Vladimir Gorbatsevich, Andrey Vorotnikov和Nikita Kostromov
 Jude Ezeobiejesi和Bir Bhanu
 
 - 5 使用卷积神经网络进行指静脉识别
-和监督离散哈希 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 109
+和监督离散哈希 . . . . 109
 谢慈辉和Ajay Kumar
 
 - 6 使用完全卷积编码器-解码器的虹膜分割

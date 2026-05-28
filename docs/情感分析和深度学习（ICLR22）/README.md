@@ -360,24 +360,24 @@ Jalpesh Vasa, Hemant Yadav, Bimal Patel和Ravi Patel
 - 采用批判性教育学 .................. 875
 Ashraf Alam和Atasi Mohanty
 - 面向客户的网络安全系统结构
-运营中心. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 901
+运营中心. . 901
 Taslina Akter, Kuraish Bin Quader Chowdhury, Md Tamimur Rahman和Shatabdee Bala
 - 使用无监督特征预测信用卡违约者 .................. 909
 Thomaskutty Reji, Andrea Rodrigues和Jossy P. George
 - 使用社交媒体挖掘检测心理健康障碍
-机器学习. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 923
+机器学习. . 923
 Udaipurwala Rashida和K. Suresh Kumar
-- 使用深度学习模型进行作物和杂草分类在早期. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 931
+- 使用深度学习模型进行作物和杂草分类在早期. . 931
 Akshay Dheeraj和Satish Chand
-- 使用音乐特征的新型推荐系统用户. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 943
+- 使用音乐特征的新型推荐系统用户. . 943
 A. Bharath Kumar Reddy, K. Sai Ruthwik, G. Pavan Kumar, 和 N. Damodhar
-- 使用多模型超级进行糖尿病视网膜病变预测调整的机器学习. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 961
+- 使用多模型超级进行糖尿病视网膜病变预测调整的机器学习. . 961
 B. V. Baiju, S. Priyadharshini, S. Haripriya, 和 A. Aarthi
-- 使用机器进行口罩检测和社交距离使用Haar级联算法学习. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 987
+- 使用机器进行口罩检测和社交距离使用Haar级联算法学习. . 987
 T. Sangeetha, V. Miruthula, C. Kavimalar和V. Aakash
-- 自动编码器在图像数据集上的效果. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1001
+- 自动编码器在图像数据集上的效果. . 1001
 S. Anupama Kumar, Andhe Dharani和Chandrani Chakravorty
-- 作者索引. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1011
+- 作者索引. . 1011
 
 # 关于编辑
 

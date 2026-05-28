@@ -1295,11 +1295,11 @@ $$\mathbf{W}_{t+1} = \left( \mathbf{I} + \frac{\eta}{2} A_t \right)^{-1} \left( 
 ```
 算法8.1通用块归一化梯度（BNG）下降
 1: 参数:步数 T, 块数 B
-2: 将 θ 分成 B 个块, 使 θ = (θ^1, θ^2, . . . . . . . . . , θ^B)。 初始化 θ_0 ∈ ℝ^D。
+2: 将 θ 分成 B 个块, 使 θ = (θ^1, θ^2, . . . . , θ^B)。 初始化 θ_0 ∈ ℝ^D。
 3: 对于 t = 1, 2, . . . T 执行以下操作
 4: 从数据中随机抽取一个小批量 X_t 并计算每个块的归一化随机梯度
    g_t^i = ∂L/∂θ^i / ||∂L/∂θ^i||_2, i = 1, 2, . . . . , B
-5: 令 g_t = (g_t^1, g_t^2, . . . . . . . . . . , g_t^B) 并选择步长 τ_t ∈ ℝ^D。
+5: 令 g_t = (g_t^1, g_t^2, , g_t^B) 并选择步长 τ_t ∈ ℝ^D。
 6:  θ_t = θ_{t-1} - τ_t · g_t
 7: end for
 ```
@@ -1380,7 +1380,7 @@ BN确保连接到输出神经元的权重向量是一个尺度不变的参数。
 
 从实践者的角度来看，训练深度神经网络时存在两种不稳定现象: (1)训练损失首先显著增加，然后发散；或者(2)训练损失与初始条件相比几乎没有变化。前者主要是由于权重更新过大（例如梯度爆炸或使用较大的学习率）引起的。后者是由于权重更新较少（梯度消失或使用较小的学习率）引起的。在下面的定理中，我们将展示未归一化的修正线性单元神经网络很可能遇到这两种现象。
 
-**定理9.3** 给定具有非线性 $\phi(\alpha \mathbf{x}) = \alpha \phi(\mathbf{x})$ ($\alpha > 0$)的整流神经网络，如果每层的权重都乘以 $\mathbf{W}_l = \alpha_l \mathbf{W}_l$ ($l = 1, . . . . . . . . . . . . ., L$ 且 $\alpha_l > 0$)，我们有缩放后的层输入：$x_l = (\prod_{i=1}^l \alpha_i) x_{l_0}$。假设 $\frac{\partial \mathcal{L}}{\partial h_L} = \mu \frac{\partial \mathcal{L}}{\partial h_L}$，我们有输出梯度：$\frac{\partial \mathcal{L}}{\partial h_l} = \mu (\prod_{i=l+1}^L \alpha_i) \frac{\partial \mathcal{L}}{\partial h_L}$，以及权重梯度：$\frac{\partial \mathcal{L}}{\partial w_l} = (\mu \prod_{i=1, i \neq l}^L \alpha_i) \frac{\partial \mathcal{L}}{\partial w_L}$，对于所有的$l = 1, \dots, L$。 证明见附录A.3。根据定理9.3，我们观察到层$l$中权重的缩放因子$\alpha_l$将影响所有其他层的权重梯度。具体来说，如果所有的$\alpha_l > 1$（$\alpha_l < 1$），权重梯度将指数级增加（减少）一次迭代。此外，由于更新导致的权重幅度增加，这种指数级增加的权重梯度将在后续迭代中持续增强。这就是为什么未标准化的神经网络在训练损失连续几次迭代增加后会发散的原因。我们证明了基于以下定理的BN可以缓解这种不稳定性。
+**定理9.3** 给定具有非线性 $\phi(\alpha \mathbf{x}) = \alpha \phi(\mathbf{x})$ ($\alpha > 0$)的整流神经网络，如果每层的权重都乘以 $\mathbf{W}_l = \alpha_l \mathbf{W}_l$ ($l = 1, . . ., L$ 且 $\alpha_l > 0$)，我们有缩放后的层输入：$x_l = (\prod_{i=1}^l \alpha_i) x_{l_0}$。假设 $\frac{\partial \mathcal{L}}{\partial h_L} = \mu \frac{\partial \mathcal{L}}{\partial h_L}$，我们有输出梯度：$\frac{\partial \mathcal{L}}{\partial h_l} = \mu (\prod_{i=l+1}^L \alpha_i) \frac{\partial \mathcal{L}}{\partial h_L}$，以及权重梯度：$\frac{\partial \mathcal{L}}{\partial w_l} = (\mu \prod_{i=1, i \neq l}^L \alpha_i) \frac{\partial \mathcal{L}}{\partial w_L}$，对于所有的$l = 1, \dots, L$。 证明见附录A.3。根据定理9.3，我们观察到层$l$中权重的缩放因子$\alpha_l$将影响所有其他层的权重梯度。具体来说，如果所有的$\alpha_l > 1$（$\alpha_l < 1$），权重梯度将指数级增加（减少）一次迭代。此外，由于更新导致的权重幅度增加，这种指数级增加的权重梯度将在后续迭代中持续增强。这就是为什么未标准化的神经网络在训练损失连续几次迭代增加后会发散的原因。我们证明了基于以下定理的BN可以缓解这种不稳定性。
 
 ## **定理9.4**
 在与定理9.3相同的条件下，对于具有标准化网络的$h_l = W_l x_{l-1}$和$s_l = BN(h_l)$，我们有：$\hat{x}_l = x_l$，$\frac{\partial \mathcal{L}}{\partial h_l} = \frac{1}{\alpha_l} \frac{\partial \mathcal{L}}{\partial h_l'}$，$\frac{\partial \mathcal{L}}{\partial w_l} = \frac{1}{\alpha_l} \frac{\partial \mathcal{L}}{\partial w_l'}$对于所有的$l = 1, \dots, L$。 证明在附录A.3中给出。根据定理9.4，权重的缩放因子$\alpha_l$不会影响其他层的激活/梯度。权重梯度的大小与缩放因子成反比。这种机制将稳定权重的增长/减少，如文献[19, 20]所示。

@@ -100,43 +100,43 @@ Aboul Ella Hassanien
 
 ## 大数据和自动驾驶
 
-- 具有计算模型的大数据技术使用Hadoop解决调度挑战 . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+- 具有计算模型的大数据技术使用Hadoop解决调度挑战 . . . 3
 E. B. Priyanka, S. Thangavel, B. Meenakshipriya, D. Venkatesa Prabu, 和N. S. Sivakumar
 
-- 用于自动驾驶的大数据 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+- 用于自动驾驶的大数据 . 21
 Rinki Sharma
 
 ## 深度学习和目标检测用于安全驾驶
 
-- 智能视觉的目标检测和跟踪分析系统 . . . . . . . . . . . . . . . . . . . . . . . 51
+- 智能视觉的目标检测和跟踪分析系统 . . . 51
 K. Kalirajan, K. Balaji, D. Venugopal和V. Seethalakshmi
 
-- 使用深度卷积网络的增强型自动驾驶端到端系统 . . . . . . . . . . . . . . . 81
+- 使用深度卷积网络的增强型自动驾驶端到端系统 81
 
-- 深度学习技术减少鹿车碰撞 . . . . . . . . . . . . . . . . . . . . . . . . . . . . 103
+- 深度学习技术减少鹿车碰撞 . . . 103
 Md. Jawad Siddique和Khaled R. Ahmed
 
-- 使用具有结构相似性损失的生成对抗网络进行夜间到白天道路场景转换以提升驾驶安全 . . . . . . . . . . . . . . . . . . . . . . . . . . . . 119
+- 使用具有结构相似性损失的生成对抗网络进行夜间到白天道路场景转换以提升驾驶安全 . . . 119
 Igi Ardiyanto, Indah Soesanti和Dwiyan Cahya Qairawan
 
-- 更安全的驾驶：应用深度迁移学习构建智能交通系统 . . . . . . . . . . . . . . . . 135
+- 更安全的驾驶：应用深度迁移学习构建智能交通系统 . 135
 Ramazan Ünlü
 
-- 利用CNN深度学习模型进行智能停车场 . . . . . . . . . . . . . . . . . . . . . . . . 151
+- 利用CNN深度学习模型进行智能停车场 . . . . 151
 Guruvareddiyur Rangaraju Karpagam, Abishek Ganapathy, Aadhavan Chellamuthu Kavin Raj, Saravanan Manigandan, J. R. Neeraj Julian和S. Raaja Vignesh
 
-- 使用深度学习估计公共场所监控的人群规模 . . . . . . . . . . . . . . . 175
+- 使用深度学习估计公共场所监控的人群规模 175
 Deevesh Chaudhary， Sunil Kumar和Vijaypal Singh Dhaka
 
 ## 智能交通的深度学习和大数据技术以及未来趋势
 
-- 基于物联网的智能标志牌区域限速系统 . . . . . . . . . . . . . . . 201
+- 基于物联网的智能标志牌区域限速系统 201
 P. Madhumathy， H. K. Nitish Kumar， Pankhuri和D. S. Supreeth Narayan
 
-- 物联网与云计算、人工智能和区块链的协同作用赋予自动驾驶汽车更强大的能力 . . . . . . . . . . . . . . . . . . . . . . . . . 225
+- 物联网与云计算、人工智能和区块链的协同作用赋予自动驾驶汽车更强大的能力 225
 C. Muralidharan， Y. Mohamed Sirajudeen和R. Anitha
 
-- 将人工智能与机器人流程自动化相结合——智能自动化方法 . . . . . . . 245
+- 将人工智能与机器人流程自动化相结合——智能自动化方法 . . 245
 Nishant Jha， Deepak Prashar和Amandeep Nagpal
 
 ## 大数据和自动驾驶
