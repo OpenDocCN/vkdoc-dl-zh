@@ -1,0 +1,6 @@
++   [深度学习的数据合成指南](README.md)
++   [1. 合成数据简介](sntt-dt-dl_1.md)
++   [2. 合成数据的基础](sntt-dt-dl_2.md)
++   [3. GANs 简介](sntt-dt-dl_3.md)
++   [4. 使用 R 进行合成数据生成](sntt-dt-dl_4.md)
++   [5. 使用 Python 进行合成数据生成](sntt-dt-dl_5.md)

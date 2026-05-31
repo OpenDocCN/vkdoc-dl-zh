@@ -1,0 +1,5 @@
++   [人工智能的数据织构和数据网格方法](README.md)
++   [第一部分 数据编织和数据网格基础](dt-fbc-dt-msh-aprc-ai_1.md)
++   [第二部分：关键数据编织和数据网格能力与概念](dt-fbc-dt-msh-aprc-ai_2.md)
++   [第三部分在特定环境中部署数据编织和数据网格](dt-fbc-dt-msh-aprc-ai_3.md)
++   [第四部分 当前产品和服务及未来展望](dt-fbc-dt-msh-aprc-ai_4.md)
