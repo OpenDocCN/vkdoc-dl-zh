@@ -1,0 +1,39 @@
+
+
++   [Oracle Digital Assistant](README.md)
+
++   [引言](oracle-digital-assistant_00.md)
+
++   [第一部分：基础](oracle-digital-assistant_02.md)
+
++   [1. Oracle 数字助手简介](oracle-digital-assistant_03.md)
+
++   [第二部分设计与用户体验](oracle-digital-assistant_04.md)
+
++   [2. 设计对话式用户体验](oracle-digital-assistant_05.md)
+
++   [3. 用例](oracle-digital-assistant_06.md)
+
++   [第三部分 实现您的数字助手](oracle-digital-assistant_07.md)
+
++   [4. 设计与实现的交汇点](oracle-digital-assistant_08.md)
+
++   [5. 深入实现细节](oracle-digital-assistant_09.md)
+
++   [第四部分：增强您的数字助理](oracle-digital-assistant_10.md)
+
++   [6. 通过渠道发布你的数字助手](oracle-digital-assistant_11.md)
+
++   [7. 在数字助手中支持多种语言](oracle-digital-assistant_12.md)
+
++   [8. 使用 Webview 组件](oracle-digital-assistant_13.md)
+
++   [9. 将常见问题解答集成到您的数字助理中](oracle-digital-assistant_14.md)
+
++   [第五部分：高级主题](oracle-digital-assistant_15.md)
+
++   [10. 使用自定义组件扩展您的数字助手](oracle-digital-assistant_16.md)
+
++   [11. 为您的数字助手添加语音和情感](oracle-digital-assistant_17.md)
+
++   [索引](oracle-digital-assistant_18.md)
