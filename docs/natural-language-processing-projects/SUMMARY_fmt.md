@@ -1,0 +1,20 @@
+
+# 自然语言处理项目
+
+## 目录
+
+- [自然语言处理项目](README.md)
+- [致谢](natural-language-processing-projects_01.md)
+- [1. 自然语言处理与人工智能概述](natural-language-processing-projects_02.md)
+- [2. Product360：情感与情绪检测器](natural-language-processing-projects_05.md)
+- [3. 使用机器学习进行 TED 演讲分割与主题提取](natural-language-processing-projects_06.md)
+- [4. 利用高级搜索引擎和推荐系统增强电子商务](natural-language-processing-projects_07.md)
+- [5. 创建简历解析、筛选与入围系统](natural-language-processing-projects_09.md)
+- [6. 使用深度学习创建电子商务产品分类模型](natural-language-processing-projects_12.md)
+- [7. 预测 Quora 中的重复问题](natural-language-processing-projects_13.md)
+- [8. 使用 CRF 和 BERT 进行命名实体识别](natural-language-processing-projects_14.md)
+- [9. 使用迁移学习构建聊天机器人](natural-language-processing-projects_16.md)
+- [10. 新闻标题摘要](natural-language-processing-projects_17.md)
+- [11. 文本生成：下一个词预测](natural-language-processing-projects_19.md)
+- [12. 结论与未来趋势](natural-language-processing-projects_20.md)
+- [索引](natural-language-processing-projects_21.md)
