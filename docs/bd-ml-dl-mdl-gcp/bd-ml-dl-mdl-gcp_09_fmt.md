@@ -1,0 +1,629 @@
+
+### 索引
+
+### A
+- 准确度激活函数
+- 双曲正切（tanh）
+- Leaky ReLU
+- Maxout
+- 非线性函数
+- ReLU
+- sigmoid
+- 自适应学习率
+- Alpine Linux 软件包
+- append()方法
+- 接收器操作
+- 特征曲线下面积（AUC-ROC）
+- argparse.ArgumentParser()方法
+- 人工神经网络（ANN）
+- assign 方法
+- 自编码器架构
+- 定义
+- 去噪
+- 欠完备
+- AutoML NLP
+- 自定义语言分类模型
+- See 自定义语言分类模型数据集
+- 训练
+- GCP
+
+### B
+- 反向传播算法
+- 时间反向传播（BPTT）
+- 条形图
+- 批量梯度下降算法
+- 批量学习
+- 批量归一化
+- 束编程
+- 数据处理流程
+- 构建/运行
+- 创建预处理流程
+- 转换 I/O
+- 转换 PcollectionP
+- 转换偏差*与*方差权衡
+- 隐藏层
+- 高偏差
+- 高方差
+- 机器学习质量/性能
+- BigQuery 定义
+- 首次查询
+- census_bureau_international 查询
+- 编辑器
+- 不适用于公共数据集
+- web
+- UIBigQuery
+- 加载数据
+- bq 实用工具
+- bq load 命令
+- 删除数据集
+- 新数据集
+- 表模式
+- CSV 文件
+- GCS
+- web UI
+- 创建数据集
+- 创建表
+- 数据集参数
+- 作业历史记录
+- 已加载的表%bigquery
+- 魔法命令
+- BigQueryML
+- BigQuery 数据集
+- FROM 字段
+- Google AI VM
+- 超参数调整
+- LEAD()函数
+- RMSE 指标
+- 标准SQL
+- BigQuery SQL 聚合
+- 过滤
+- 连接数据
+- SELECT ∗命令
+- 标准SQL 子查询
+- 二值化
+- 自下而上/聚合方法
+- 箱线图
+- bq 命令行实用工具
+- bq load 命令
+- 构建估算器函数
+
+### C
+- CIFAR-10
+- 分类和回归树（CART）
+- Scikit-learn 的优点和缺点
+- 分类评估指标
+- AUC-ROC
+- AUC-ROC
+- 空间漏损
+- 不平衡类别
+- ROC
+- 空间
+- TNR
+- 混淆矩阵
+- 示例
+- 网格状细胞
+- 主要值
+- clean_dataset()方法
+- 客户端代码
+- clipnorm
+- clipvalue
+- 云计算类别
+- 定义
+- 模型
+- IaaSPaaSSaaS
+- 云原生计算基金会（CNCF）
+- 云壳
+- 聚类定义
+- 分层聚类
+- 簇形成
+- SciPy 包
+- 技术
+- k-means
+- 质心
+- elbow 方法
+- 初始 K 点
+- Scikit-learn
+- CNN 在 MLP 上
+- 复杂图像
+- 权重数量
+- 彩色图像
+- 命令行界面（CLI）
+- 逗号分隔值
+- .compile()方法
+- 组件
+- 卷积神经网络（CNN）
+- 卷积
+- See 卷积层
+- 定义
+- FCN 层
+- 建模流程
+- 池化层
+- 卷积层
+- 特征图
+- 滤波器
+- 输入大小
+- 过程
+- 滑动窗口
+- 滤波器步长
+- 滤波器上的权重
+- 零填充
+- 相关性
+- 相关性矩阵图
+- 成本/损失函数
+- C 参数
+- cross_val_score 方法
+- csv_serving_input_fn 方法
+- 自定义图像识别模型
+- 自定义语言分类模型
+- 构建
+- 清洁单词数据集
+- 创建
+- 评估图
+- 导入文本文档
+- 导入文本项
+- 模型评估
+- 模型名称
+- 新数据集
+- 预测服务
+- 有毒词汇
+- 训练
+
+### D
+- 数据聚合
+- 数据增强
+- 数据清洗/预处理
+- DataFrame 操作
+- 行/列添加
+- 合并数据集
+- 数据对齐
+- 移除数据索引列
+- 选择数据框
+- 多行和多列行选择
+- 切片单元格
+- 数据归一化
+- Dataprep 流程
+- 数据科学挑战
+- 定义
+- 机会
+- 流程
+- Dataset API
+- Dataset 包（tf.data）
+- data_transform()方法
+- 数据可视化
+- DatetimeIndex
+- 选择日期
+- 选择月份
+- 选择年份
+- 衰减参数
+- 决策树
+- 使用 CART 进行分类
+- 增长
+- 分类
+- 回归
+- 说明
+- 修剪深度
+- 前馈神经网络（DFN）
+- 深度学习
+- 深度神经网络
+- 回归网络
+- 描述函数
+- 描述性统计
+- Docker 容器
+- Alpine Linux 包
+- 构建镜像命令
+- 创建管理容器
+- 管理镜像
+- 运行容器
+- date-script.sh
+- 定义
+- 部署
+- Google Cloud Shell
+- 文件系统
+- 运行
+- drop 函数
+- dropna()函数
+- Dropout 技术
+
+### E
+- 提前停止
+- 弹性容器服务（EKS）
+- 肘部方法
+- 集成方法
+- 估计类
+- evaluate()方法
+- 评估指标
+- 探索性数据分析（EDA）
+- pandas 分析结果
+- 变量分布
+- export_savedmodel()方法
+
+### F
+- feature_column
+- 350
+- 特征工程
+- 定义
+- 特征 _importances **_** 属性
+- RFESelectKBest 模块
+- 特征缩放
+- FeatureUnion
+- fillna()函数
+- fit()方法
+- fit_transform()方法
+- 忘记门
+- 全连接网络（FCN）层
+
+### G
+- 门控循环单元（GRU）
+- GCP 云壳
+- Google AutoML
+- 验证账户
+- 构建自定义图像模型
+- 混淆矩阵
+- 创建数据集
+- 删除
+- F1 评估矩阵
+- 导入图像模型
+- 评估预测服务
+- 返回仪表板
+- 训练视觉模型
+- 配置
+- 在 GCPtraining 数据集
+- 欢迎页面
+- Google Cloud AI
+- 大数据/分析
+- 云存储
+- 计算需求服务
+- Google Cloud Dataprep 仪表板
+- 定义流程
+- 数据转换
+- 完成作业
+- 创建流程
+- 创建食谱
+- 数据集筛选行流程页面
+- 移除列
+- 运行作业
+- 查看作业结果
+- 查看转换食谱
+- GCS 位置设置
+- 通过 GCP 仪表板打开
+- Trifacta 许可协议
+- Google Cloud MLE
+- 批量预测
+- 部署训练模型
+- 训练目录
+- 训练器
+- GCP 项目
+- hptuning_config.yaml
+- __init__.py
+- jobmodel.py
+- outputtask.py
+- Google Cloud Platform (GCP)架构
+- CLI 定义
+- IAM & 管理资源
+- SDK 身份验证命令行工具
+- sgcloud 配置
+- 安装
+- 选择 Google 账户
+- 工具服务设置
+- 账户创建
+- 仪表板
+- 登录页面
+- Google Cloud Storage (GCS)
+- BigQuery 桶
+- 创建
+- 删除
+- 上传命令行
+- 定义原始数据
+- Google Colaboratory
+- 更改运行时间步
+- 存储笔记本
+- 上传笔记本
+- Google Compute Engine (GCE)
+- 命令行连接 VM 实例
+- 删除
+- SSH 到终端窗口
+- 访问 gcloud 实例
+- 创建
+- 选择 VM 实例
+- 创建部署过程
+- 机器类型选项
+- Google Kubernetes engine (GKE)
+- 集群创建
+- 删除集群
+- SDK
+- gcloud
+- 梯度裁剪
+- 梯度下降
+- 凸函数定义
+- 特征缩放
+- 学习率类型
+- 灰度图像
+- 网格搜索
+- GridSearchCV 模块
+- 分组功能
+
+### H
+- 层次聚类
+- 层次结构
+- 直方图和密度图
+- 混合云
+- 双曲正切（tanh）函数
+- 超参数
+- 超平面
+- 最优边缘分类器
+- 支持向量
+
+### I
+- 忽略索引
+- iloc 属性
+- 图像识别
+- 卷积神经网络
+- AlexNet
+- CIFAR-10
+- model.summary()
+- Tensorboard
+- TensorFlow 2.0
+- 图像
+- input_fn 方法
+- 输入门
+
+### J
+- JOIN 命令
+- JupyterLab 笔记本实例
+- 命令行
+- 深度学习虚拟机
+- GCP AI 平台
+- 启动器
+- 新窗口
+- Python 3
+- 关机/删除
+
+### K
+- Keras 程序结构
+- 功能性 API
+- LSTM 模型
+- 测试神经网络模型
+- 序列 API
+- TensorBoard 可视化
+- 核函数
+- 线性
+- 多项式
+- 径向
+- k 折交叉验证
+- k 均值聚类
+- Kubeflow 组件
+- 部署
+- GCP 凭据选项卡
+- GKE 集群主页
+- kfctl.sh
+- OAuth 客户端 ID
+- OAuth 同意屏幕
+- Kubeflow 管道
+- 分配实验
+- 分配名称
+- 云机器学习组件
+- 容器定义
+- 领域特定语言（DSL）
+- 仪表板
+- 数据流
+- 删除集群
+- 删除部署
+- 实验创建
+- 图形平台
+- 运行
+- 选择上传管道
+- Kubernetes 架构
+- CNCF 组件
+- 定义
+- 部署文件
+- 特性
+- 主节点（s）
+- 工作节点（s）
+
+### L
+- LabelEncoder
+- Lambda 表达式层（tf.keras.layers）
+- LEAD() 函数
+- Leaky ReLU 函数
+- 学习率
+- 留一法交叉验证（LOOCV）
+- 线性方法
+- 线性回归
+- 线图
+- 局部最小值
+- 局部感受野
+- 位置不变性
+- loc 属性
+- 对数损失
+- 长短期记忆（LSTM）
+- 长期循环卷积网络（LRCN）
+
+### M
+- 机器学习算法
+- 数据成本
+- 数据定义
+- 开发工作
+- 生产流程
+- 机器学习工程解决方案
+- 机器学习引擎（MLE）API
+- 应用程序逻辑
+- 代码包
+- 创建预测服务
+- 数据文件到 GCS
+- 分布式训练作业
+- hptuning_config.yaml 文件
+- 超参数训练
+- 超参数调整
+- 在线预测
+- Scikit-learn 模型
+- 运行批量预测
+- 运行分布式训练作业
+- 运行单个实例训练作业
+- Scikit-learn 模型
+- Scikit-learn 随机森林模型
+- tensorflow 模型
+- label_string_tensormodel.pypipeline
+- 基于方法训练/部署过程
+- 训练模型
+- GPU 训练脚本
+- make_pipeline 方法
+- Matplotlib
+- Maxout 函数
+- 平均绝对误差（MAE）
+- 平均归一化
+- 均方误差（MSE）
+- 微服务优势挑战 *vs.* 单体应用程序
+- REST
+- 小批量梯度下降
+- MinMaxScaler 模块
+- 缺失数据
+- dropna() 函数
+- fillna() 函数
+- isnull() 方法
+- thresh 属性
+- 模型每轮准确度
+- model.fit() 方法
+- 模型拟合，数据
+- Binarizer 模块
+- 数据缩放
+- fit() 方法
+- Imputer 模块
+- LabelEncoder 归一化模块
+- OneHotEncoder 多项式特征模块
+- StandardScaler 模块
+- transform() 方法
+- 模型每轮损失
+- Momentum 多类分类
+- OVA
+- OVO
+- 多层感知器 (MLP)
+- Kerascodedataset 层
+- 多变量绘图
+- 相关矩阵绘图
+- 成对散点图
+- 散点图
+
+### N
+- NaN
+- 神经网络
+- 数据集
+- 特征
+- 前馈学习算法
+- 目标
+- 信息流
+- 神经元
+- 权重
+- 噪声注入
+- 非线性激活函数
+- 非线性方法
+- normalize_and_scale() 方法
+- 笔记本，BigQuery
+- 条形图
+- %%bigquery
+- GCP AI
+- Google Colab
+- Pandas DataFrame
+- NumPy 1-D 数组
+- 数据类型
+- 定义
+- 高维数组
+- 创建 2-D 数组
+- 创建 3-D 数组
+- 索引/切片
+- 索引 + 精美索引 (1-D)
+- 布尔掩码
+- 整数掩码
+- 切片
+- 数学运算
+- 矩阵运算，线性代数
+- 矩阵元素运算
+- 矩阵的逆
+- 矩阵乘法（点积）
+- 标量运算
+- 转置
+- 重新塑形
+- 广播
+- 加载数据
+- 调整大小方法
+- 数组堆叠
+
+### O
+- 离线学习
+- OneHotEncoder
+- One-hot 编码
+- One-vs.-all (OVA)
+- One-vs.-one (OVO)
+- 在线学习
+- 原始序列 *vs.* RNN 生成的序列
+- 正常数据值
+- 缩放数据值
+- 输出门
+
+### P, Q
+- 配对散点图
+- Pandas DataFrame 数据类型
+- NumPy 操作
+- Series 2-D 数组
+- 定义 Series 数据结构
+- pandas.plotting 函数
+- Pandas 绘图方法
+- pandas profiling
+- Pandas，时间序列
+- 数据列和摘要
+- DatetimeIndex
+- head() 方法
+- parse_dates
+- resample
+- tail() 方法
+- PCollection
+- Peephole 连接
+- Pipelines
+- feature_union
+- fit_predict 方法
+- make_pipeline 方法
+- 缩放转换
+- Scikit-learn 转换方法
+- 平台即服务 (PaaS)
+- 绘图方法
+- 池化层
+- 聚合函数
+- 层的过滤器
+- 位置不变性
+- MaxPool
+- 精度
+- predict() 方法
+- 主成分分析 (PCA)
+- 协方差矩阵
+- 数据可视化
+- 维度降低
+- 特征向量
+- 特征缩放
+- 均值归一化
+- Scikit-learn 私有云
+- pyplot 模块
+- Python 控制结构
+- break 语句
+- if/elif (else-if) 语句
+- 列表推导式
+- for 循环
+- while 循环
+- 数据结构
+- 数据类型
+- 算术运算
+- 布尔运算
+- 字典
+- 函数
+- 列表
+- print() 语句
+- 字符串
+- 元组
+- 定义
+- 函数
+- 用户定义的包/模块
+- from 语句
+- import 语句
+- 变量
+
+### R
+- 随机森林 (RF)预测
+- Scikit-learn 分类回归

@@ -1,0 +1,1254 @@
+# 十四、强化学习
+
+> 人工智能=深度学习+强化学习
+>
+> —大卫·西尔弗
+
+强化学习是除了监督学习和非监督学习之外的另一个机器学习领域。它主要使用智能体与环境进行交互，以便学习能够取得良好效果的策略。与监督学习不同，强化学习的动作没有明确的标签信息。它只有来自环境反馈的奖励信息。通常具有一定的滞后性，用于反映动作的“好与坏”。
+
+随着深度神经网络的兴起，强化学习领域也蓬勃发展。2015 年，英国公司 DeepMind 提出了一种基于深度神经网络的强化学习算法 DQN，在《太空入侵者》、《砖块》、《乒乓球》等 49 款雅达利游戏中取得了人类水平的性能[1]。2017 年，DeepMind 提出的 AlphaGo 程序以 3:0 的比分击败了当时排名第一的围棋选手柯洁。同年，AlphaGo 的新版本 AlphaGo Zero 用没有任何人类知识的自玩训练 100:0 击败 alpha go[3]。2019 年，OpenAI Five 计划 2:0 击败 Dota2 世界冠军 OG 战队。虽然这个游戏的游戏规则受到限制，但是对于 Dota2 来说，它需要一个超个人的智力水平。凭借一场出色的团队合作比赛，这场胜利无疑坚定了人类对 AGI 的信念。
+
+本章将介绍强化学习中的主流算法，包括《太空入侵者》等游戏中达到类人水平的 DQN 算法，以及 Dota2 获胜的 PPO 算法。
+
+## 14.1 不久后见
+
+强化学习算法的设计不同于传统的监督学习，包含了大量新的数学公式推导。在进入强化学习算法的学习过程之前，让我们先通过一个简单的例子来体验一下强化学习算法的魅力。
+
+在这一部分，你不需要掌握每一个细节，但应该注重直观体验，获得第一印象。
+
+### 平衡杆游戏
+
+平衡杆游戏系统包含三个对象:滑轨、小车和杆子。如图 14-1 所示，小车可以在滑轨上自由移动，杆的一侧通过轴承固定在小车上。在初始状态下，小车位于滑轨的中心，杆立在小车上。代理通过控制小车的左右移动来控制杆的平衡。当拉杆与垂线的夹角大于一定角度或小车偏离滑轨中心一定距离后，视为比赛结束。游戏时间越长，游戏给予的奖励越多，代理的控制水平也越高。
+
+为了简化环境的表示，我们直接将高层环境特征向量 *s* 作为智能体的输入。它总共包含四个高级特征，即汽车位置、汽车速度、杆角度和杆速度。代理的输出动作 *a* 是向左或向右移动。应用到平衡杆系统的动作会生成一个新的状态，系统也会返回一个奖励值。这个奖励值可以简单记为 1，也就是瞬间增加 1 个单位时间。在每个时间戳 *t* ，代理通过观察环境状态 *s*<sub>*t*</sub> 产生一个动作 *a*<sub>*t*</sub> 。环境收到动作后，状态变为 *s*<sub>*t*+1</sub> 并返回奖励 *r*<sub>*t*</sub> 。
+
+![img/515226_1_En_14_Fig1_HTML.png](img/515226_1_En_14_Fig1_HTML.png)
+
+图 14-1 平衡杆游戏系统
+
+### 健身房平台
+
+在强化学习中，机器人可以直接与真实环境进行交互，更新的环境状态和奖励可以通过传感器获得。但是，考虑到真实环境的复杂性和实验成本，一般倾向于在虚拟软件环境中测试算法，然后考虑迁移到真实环境中。
+
+强化学习算法可以通过大量的虚拟游戏环境进行测试。为了方便研究人员调试和评估算法模型，OpenAI 开发了一个健身房游戏交互平台。用户只需少量代码，就可以使用 Python 语言完成游戏创作和交互。很方便。
+
+OpenAI 健身房环境包括很多简单经典的控制游戏，比如平衡杆、过山车(图 14-2 )。它还可以调用 Atari 游戏环境和复杂的 MuJoCo 物理环境模拟器(图 14-4 )。在雅达利的游戏环境中，有大家熟悉的迷你游戏，比如太空入侵者、碎砖机(图 14-3 )和赛车。这些游戏虽然规模不大，但对决策能力要求很高，非常适合评估算法的智能。
+
+![img/515226_1_En_14_Fig4_HTML.jpg](img/515226_1_En_14_Fig4_HTML.jpg)
+
+图 14-4 步行机器人
+
+![img/515226_1_En_14_Fig3_HTML.jpg](img/515226_1_En_14_Fig3_HTML.jpg)
+
+图 14-3 碎砖机
+
+![img/515226_1_En_14_Fig2_HTML.png](img/515226_1_En_14_Fig2_HTML.png)
+
+图 14-2 过山车
+
+目前你在 Windows 平台上安装健身房环境可能会遇到一些问题，因为有些软件库对 Windows 平台并不友好。建议您使用 Linux 系统进行安装。本章用到的平衡杆游戏环境在 Windows 平台上可以完美使用，其他复杂的游戏环境就不一定了。
+
+运行 `pip install gym` 命令只会安装 `gym` 环境的基本库，而平衡杆游戏已经包含在基本库中了。如果您需要使用 Atari 或 MuJoCo 模拟器，则需要额外的安装步骤。让我们以安装 Atari 模拟器为例:
+
+```py
+git clone https://github.com/openai/gym.git # Pull the code
+cd gym # Go to directory
+pip install -e '.[all]' # Install Gym
+```
+
+一般来说，创建一个游戏并在健身房环境中进行交互主要包括五个步骤:
+
+1.  创建一个游戏。通过 `gym.make(name)` 可以创建一个指定名称的游戏，并返回游戏对象 `env`。
+2.  重置游戏状态。一般游戏环境都有一个初始状态。您可以通过调用 `env.reset()` 来重置游戏状态，并返回到游戏的初始状态观察。
+3.  显示游戏画面。每个时间戳的游戏画面可以通过调用 `env.render()` 来显示，一般用于测试。在训练期间渲染图像会引入一定的计算成本，因此在训练期间可能不会显示图像。
+4.  与游戏环境互动。动作可以通过 `env.step(action)` 执行，系统可以返回新的状态观察、当前奖励、游戏结束标志 `done` 和附加信息载体。通过循环这个步骤，你可以继续与环境互动，直到游戏结束。
+5.  破坏游戏。只需调用 `env.close()`。
+
+下面演示了平衡杆游戏 `CartPole-v1` 的一段交互式代码。每次交互时，在动作空间随机采样一个动作:{left，right}，与环境交互，直到游戏结束。
+
+```py
+import gym # Import gym library
+env = gym.make("CartPole-v1") # Create game environment
+observation = env.reset() # Reset game state
+for _ in range(1000): # Loop 1000 times
+  env.render() # Render game image
+  action = env.action_space.sample() # Randomly select an action
+  # Interact with the environment, return new status, reward, end flag, other information
+  observation, reward, done, info = env.step(action)
+  if done:# End of game round, reset state
+    observation = env.reset()
+env.close() # End game environment
+```
+
+### 政策网络
+
+我们来讨论一下强化学习中最关键的环节:如何判断和决策？我们称之为判断和决策政策。策略的输入是状态 *s* ，输出是具体的动作 *a* 或动作的分布 *π*<sub>*θ*</sub>(*a*|*s*)，其中 *θ* 是策略函数 *π* 的参数。*π*<sub>*θ*</sub> 神经网络的输入是平衡杆系统的状态 *s* ，即一个长度为 4 的向量，输出是所有动作的概率 *π*<sub>*θ*</sub>(*a*|*s*):向左的概率 *P* (所有行动概率之和为 1):
+
+![$$ {\sum}_{a\in A}{\pi}_{\theta}\left(a|s\right)=1 $$](img/515226_1_En_14_Chapter_TeX_Equa.png)
+
+其中 *A* 是所有动作的集合。*π*<sub>*θ*</sub> 网络代表代理的策略，称为策略网络。自然地，我们可以将策略函数体现为一个神经网络，它有四个输入节点，中间有多个全连接的隐含层，输出层有两个输出节点，表示这两个动作的概率分布。互动时，选择概率最高的动作:
+
+![$$ {a}_t={\pi}_{\theta}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equb.png)
+
+决策的结果是，它在环境中动作，得到新的状态 *s*<sub>*t* + 1</sub> 和奖励 *r*<sub>*t*</sub> ，以此类推，直到游戏结束。
+
+![img/515226_1_En_14_Fig5_HTML.png](img/515226_1_En_14_Fig5_HTML.png)
+
+图 14-5 战略网络
+
+我们将策略网络实现为两层全连接网络。第一层将长度为 4 的向量转换为长度为 128 的向量，第二层将长度为 128 的向量转换为 2 的向量，这是动作的概率分布。就像普通神经网络的创建过程一样，代码如下:
+
+```py
+class Policy(keras.Model):
+    # Policy network, generating probability distribution of actions
+    def __init__(self):
+        super(Policy, self).__init__()
+        self.data = [] # Store track
+        # The input is a vector of length 4, and the output is two actions - left and right, specifying the initialization scheme of the W tensor
+        self.fc1 = layers.Dense(128, kernel_initializer='he_normal')
+        self.fc2 = layers.Dense(2, kernel_initializer='he_normal')
+        # Network optimizer
+        self.optimizer = optimizers.Adam(lr=learning_rate)
+
+    def call(self, inputs, training=None):
+        # The shape of the state input s is a vector:[4]
+        x = tf.nn.relu(self.fc1(inputs))
+        x = tf.nn.softmax(self.fc2(x), axis=1) # Get the probability distribution of the action
+        return x
+```
+
+在交互过程中，我们记录每个时间戳的状态输入 *s*<sub>*t*</sub>，动作分发输出 *a*<sub>*t*</sub> ，环境奖励 *r*<sub>*t*</sub> ，新状态 *s*<sub>*t*+1</sub> 作为训练策略网络的四元组项。
+
+```py
+    def put_data(self, item):
+        # Record r,log_P(a|s)
+        self.data.append(item)
+```
+
+### 梯度更新
+
+如果需要使用梯度下降算法优化网络，需要知道每个输入 *s*<sub>*t*</sub> 的标签信息 *a*<sub>*t*</sub> 并保证损耗值从输入到损耗连续可微。但是，强化学习并不等同于传统的监督学习，这主要体现在强化学习在每个时间戳 *t* 的动作 *a*<sub>*t*</sub> 并没有明确的好坏标准。奖励 *r*<sub>*t*</sub> 能在一定程度上反映动作的好坏，但不能直接决定动作的好坏。甚至有些游戏交互过程只有一个代表游戏结果的最终奖励 *r*<sub>*t*</sub> 信号，比如围棋。那么为每个状态定义一个最优动作 ![$$ {a}_t^{\ast } $$](img/515226_1_En_14_Chapter_TeX_IEq1.png) 作为神经网络输入 *s*<sub>*t*</sub> 的标签是否可行呢？首先是游戏中的状态总数通常是巨大的。比如围棋的总状态数大概是 10<sup>170</sup> 。此外，很难为每个状态定义一个最佳动作。虽然有些行动短期回报低，但长期回报更好，有时甚至人类都不知道哪个行动是最好的。
+
+因此，策略的优化目标不应该是使投入的产出 *s*<sub>*t*</sub> 尽可能接近标号动作，而是使总回报的期望值最大化。总奖励可以定义为从游戏开始到游戏结束的激励∑ *r*<sub>*t*</sub> 的总和。一个好的策略应该是能够在环境中获得总回报的最高期望值 *J*(*π*<sub>*θ*</sub>)。根据梯度上升算法的原理，如果能找到 ![$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_IEq2.png) ，那么策略网络只需要跟随:
+
+![$$ {\theta}^{\prime }=\theta +\eta \bullet \frac{\partial J\left(\theta \right)}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_Equc.png)
+
+更新网络参数以最大化期望回报。
+
+可惜总回报预期 *J*(*π*<sub>*θ*</sub>) 是游戏环境给定的。如果环境模型未知，则 ![$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_IEq3.png) 无法通过自动微分计算。那么即使 *J*(*π*<sub>*θ*</sub>) 的表达式未知，偏导数 ![$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_IEq4.png) 是否可以直接求解？
+
+答案是肯定的。我们这里直接给出 ![$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_IEq5.png) 的推导结果。具体的推导过程将在 14.3 中详细介绍:
+
+![$$ \frac{\partial J\left(\theta \right)}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[\left({\sum}_{t=1}^T\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\right)R\left(\tau \right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equd.png)
+
+利用前面的公式，只需要计算出 ![$$ \frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq6.png) ，再乘以 *R* ( *τ* ) 就可以更新计算出 ![$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_IEq7.png) 。根据 ![$$ {\theta}^{\prime }=\theta -\eta \bullet \frac{\partial L\left(\theta \right)}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_IEq8.png) 可以更新策略网络，最大化 *J* ( *θ* ) 函数，其中 *R* ( *τ* ) 为某次交互的总回报； *τ* 是交互轨迹 *s*1，*a*1，*r*1， *s*<sub>2</sub> ，*a*2， *r*<sub>2</sub> ， *T* 是交互的时间戳或步骤数；而 *log logπ*<sub>*θ*</sub>(*s*<sub>*t*</sub>) 是策略网络输出中 *a*<sub>*t*</sub> 动作的概率值的对数函数。![$$ \frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq9.png) 可通过 TensorFlow 自动微分解决。损失函数的代码实现为:
+
+```markdown
+## 14.1.5 动手平衡杆游戏
+
+我们总共训练 400 轮。在回合开始时，我们重置游戏状态，通过发送输入状态采样动作，与环境交互，记录每个时间戳的信息，直到游戏结束。
+
+代码的交互和培训部分如下:
+
+```python
+    for n_epi in range(10000):
+        s = env.reset() # Back to the initial state of the game, return to s0
+        with tf.GradientTape(persistent=True) as tape:
+            for t in range(501): # CartPole-v1 forced to terminates at 500 step.
+                # Send the state vector to get the strategy
+                s = tf.constant(s,dtype=tf.float32)
+                # s: [4] => [1,4]
+                s = tf.expand_dims(s, axis=0)
+                prob = pi(s) # Action distribution: [1,2]
+                # Sample 1 action from the category distribution, shape: [1]
+                a = tf.random.categorical(tf.math.log(prob), 1)[0]
+                a = int(a) # Tensor to integer
+                s_prime, r, done, info = env.step(a) # Interact with the environment
+                # Record action a and the reward r generated by the action
+                # prob shape:[1,2]
+                pi.put_data((r, tf.math.log(prob[0][a])))
+                s = s_prime # Refresh status
+                score += r # Cumulative reward
+
+                if done:  # The current episode is terminated
+                    break
+            # After the episode is terminated, train the network once
+            pi.train_net(tape)
+        del tape
+```
+
+模型的训练过程如图 14-6 所示。横轴是训练回合数，纵轴是回合的平均返回值。可以看出，随着训练的进行，网络获得的平均回报越来越高，策略也越来越好。事实上，强化学习算法对参数极其敏感，修改随机种子会导致完全不同的性能。在实现过程中，需要仔细选择参数，以实现算法的潜力。
+
+![img/515226_1_En_14_Fig6_HTML.jpg](img/515226_1_En_14_Fig6_HTML.jpg)
+
+图 14-6 平衡杆游戏训练流程
+
+通过这个例子，我们对强化学习算法和强化学习的交互过程有了初步的印象和了解，然后我们将对强化学习问题进行形式化描述。
+
+## 14.2 强化学习问题
+
+在强化学习问题中，具有感知和决策能力的对象称为智能体，它可以是一段算法代码，也可以是具有机械结构的机器人软硬件系统。代理通过与外部环境的交互来完成某项任务。这里的环境是指主体的行动所能影响并给予相应反馈的外部环境的总和。对于智能体来说，它通过感知环境的状态(`state`)来产生决策动作(`action`)。对于环境，它从一个初始状态 *s*<sub>1</sub> 开始，通过接受智能体的动作来动态改变其状态，并给出相应的奖励信号(`reward`)。
+
+我们从概率的角度描述强化学习过程。它包含以下五个基本对象:
+
+*   状态 *s* 反映环境的状态特征。时间戳上的状态 *t* 标记为 *s*<sub>*t*</sub>。可以是原始的视觉图像、语音波形、其他信号，也可以是经过高级抽象后的特征，比如汽车的速度、位置等。所有(有限)状态构成状态空间 `S`。
+
+*   动作 *a* 是代理采取的动作。时间戳 *t* 上的状态记录为 *a*<sub>*t*</sub>，可以是左右等离散动作，也可以是力度、位置等连续动作。所有(有限)动作构成动作空间 *A*。
+
+*   策略 `π(a|s)` 代表智能体的决策模型。它接受输入状态 *s*，并给出决策后执行动作的概率分布 `p(a|s)`，满足：
+
+    ![$$ {\sum}_{a\in A}\pi (s)=1 $$](img/515226_1_En_14_Chapter_TeX_Eque.png)
+
+这种具有一定随机性的行动概率输出称为随机策略。特别是当策略模型总是输出某个动作的概率为 1，其他为 0 时，这种策略模型称为确定性策略，即:
+
+![$$ a=\pi (s) $$](img/515226_1_En_14_Chapter_TeX_Equf.png)
+
+*   奖励 `r(s, a)` 表示在状态 *s* 下接受动作 *a* 后环境给出的反馈信号。一般是标量值，在一定程度上反映了动作的好坏。在时间戳 *t* 获得的奖励记为 *r*<sub>*t*</sub> (有些资料中记为 *r*<sub>*t*+1</sub>，因为奖励往往有一定的滞后性)。
+
+*   状态转移概率 `p(s'|s, a)` 表达了环境模型状态的变化规律，即当前状态 *s* 的环境接受动作 *a* 后，状态变为 *s*<sup>′</sup> 的概率分布满足：
+
+    ![$$ {\sum}_{s\prime \in S}p\left({s}^{\prime }|s,a\right)=1 $$](img/515226_1_En_14_Chapter_TeX_Equg.png)
+
+主体与环境的交互过程可以用图 14-7 来表示。
+
+![img/515226_1_En_14_Fig7_HTML.png](img/515226_1_En_14_Fig7_HTML.png)
+
+图 14-7 主体与环境之间的相互作用过程
+
+### 马尔可夫决策过程
+
+代理从环境的初始状态 *s*<sub>1</sub> 开始，通过策略模型 `π(a|s)` 执行一个特定的动作 *a*<sub>1</sub>。环境受动作 *a*<sub>1</sub> 影响，状态 *s*<sub>1</sub> 根据内部状态转移模型 `p(s'|s, a)` 变化为 *s*<sub>2</sub>。同时给出代理的反馈信号:奖励 *r*<sub>1</sub>，由奖励函数 `r(s1, a1)` 产生。这种循环互动一直持续到游戏达到终止状态 *s*<sub>*T*</sub>。这个过程产生一系列有序的数据:
+
+![$$ \tau ={s}_1,{a}_1,{r}_1,{s}_2,{a}_2,{r}_2,\cdots, {s}_T $$](img/515226_1_En_14_Chapter_TeX_Equh.png)
+
+这个序列代表了代理和环境之间的交换过程，称为轨迹，表示为 *τ*。一个交互过程称为一集，*T* 代表时间戳(或步骤数)。有些环境有明确的终端状态。比如《太空入侵者》中的小飞机被击中游戏就结束了，而有些环境没有明确的终止标志。比如，有些游戏只要保持健康就可以无限期玩下去。此时 *T* 代表∞。
+
+条件概率 `P(s_{t+1}|s_1, s_2, ..., s_t)` 非常重要，但是需要多个历史状态，计算起来非常复杂。为简单起见，我们假设下一个时间戳上的状态 *s*<sub>*t*+1</sub> 只受当前时间戳 *s*<sub>*t*</sub> 影响，与其他历史状态 *s*<sub>1</sub>、*s*<sub>2</sub>、…、*s* 无关。
+
+下一个状态 *s*<sub>*t* + 1</sub> 只与当前状态 *s*<sub>*t*</sub> 相关的性质称为马尔可夫性质，具有马尔可夫性质的序列 *s*<sub>1</sub>、*s*<sub>2</sub>、…、*s*<sub>*T*</sub> 称为马尔可夫链。
+
+如果将动作 *a* 也考虑到状态转移概率，则马尔可夫假设也被应用:下一个时间戳的状态 *s*<sub>t+1</sub> 只与当前状态 *s*<sub>*t*</sub> 相关，并且动作 *a*<sub>*t*</sub> 对当前状态执行，则条件概率变为 `p(s_{t+1}|s_t, a_t)`。
+
+我们把状态和动作的序列 *s*<sub>1</sub>，*a*<sub>1</sub>，…，*s*<sub>*T*</sub> 称为马尔可夫决策过程(`MDP`)。在某些场景下，智能体只能观察到环境的部分状态，这被称为部分可观测马尔可夫决策过程(`POMDP`)。虽然马尔可夫假设不一定对应实际情况，但它是强化学习中大量理论推导的基石。我们将在以后的推导中看到马尔可夫性的应用。
+
+现在让我们考虑一个确定的轨迹:
+
+![$$ \tau ={s}_1,{a}_1,{r}_1,{s}_2,{a}_2,{r}_2,\cdots, {s}_T $$](img/515226_1_En_14_Chapter_TeX_Equk.png)
+
+就是发生的概率 `P(τ)`:
+
+![$$ P\left(\tau \right)=P\left({s}_1,{a}_1,{s}_2,{a}_2,\cdots, {s}_T\right) $$](img/515226_1_En_14_Chapter_TeX_Equl.png)
+
+![$$ =P\left({s}_1\right)\pi \left({s}_1\right)P\left({s}_1,{a}_1\right)\pi \left({s}_2\right)P\left({s}_1,{a}_1,{s}_2,{a}_2\right)\cdots $$](img/515226_1_En_14_Chapter_TeX_Equm.png)
+
+![$$ =P\left({s}_1\right){\prod}_{t=1}^{T-1}\pi \left({s}_t\right)p\left({s}_1,{a}_1,\dots, {s}_t,{a}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equn.png)
+
+应用马尔可夫性后，我们将前面的表达式简化为:
+
+![$$ P\left(\tau \right)=P\left({s}_1\right){\prod}_{t=1}^{T-1}\pi \left({s}_t\right)p\left({s}_t,{a}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equo.png)
+
+马尔可夫决策过程图如图 14-8 所示。
+
+![img/515226_1_En_14_Fig8_HTML.png](img/515226_1_En_14_Fig8_HTML.png)
+
+图 14-8 马尔可夫决策过程
+
+如果可以得到环境的状态转移概率 `p(s'|s, a)` 和报酬函数 `r(s, a)`，就可以直接迭代计算价值函数。这种已知环境模型的方法统称为基于模型的强化学习。然而，现实世界中的环境模型大多是复杂和未知的。这种模型未知的方法统称为无模型强化学习。接下来主要介绍无模型强化学习算法。
+
+### 目标函数
+
+智能体每次与环境交互，都会得到一个(滞后的)奖励信号:
+
+![$$ {r}_t=r\left({s}_t,{a}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equp.png)
+
+一个交互轨迹 *τ* 的累积回报称为总回报:
+
+![$$ R\left(\tau \right)={\sum}_{t=1}^{T-1}{r}_t $$](img/515226_1_En_14_Chapter_TeX_Equq.png)
+
+其中 *T* 是轨迹中的步数。如果只考虑从轨迹的中间状态 *s*<sub>*t*</sub> 开始的累计收益，可以记为:
+
+![$$ R\left({s}_t\right)={\sum}_{k=1}^{T-t-1}{r}_{t+k} $$](img/515226_1_En_14_Chapter_TeX_Equr.png)
+
+在某些环境下，刺激信号是很稀疏的，比如围棋，上一步棋的刺激是 0，只有在比赛结束时才会有代表胜负的奖励信号。
+
+因此，为了权衡短期和长期回报的重要性，可以使用随时间衰减的贴现回报(贴现回报):
+
+![$$ R\left(\tau \right)={\sum}_{t=1}^{T-1}{\gamma}^{t-1}{r}_t $$](img/515226_1_En_14_Chapter_TeX_Equs.png)
+
+其中 *γ* ∈ [0，1]称为折现率。可以看出，近期激励 *r*<sub>1</sub> 全部用于总回报，而长期激励 *R*<sub>*T*-1</sub> 可以用来贡献衰减 *γ*<sup>*T*-2</sup> 后的总回报 *R*(*τ*)。当 *γ* ≈ 1 时，短期和长期奖励权重大致相同，算法更具前瞻性；当 *γ* ≈ 0 时，后期长期回报衰减接近 0，短期回报变得更重要。对于没有终止状态的环境，即 *T* = ∞，折现回报变得非常重要，因为 ![$$ {\sum}_{t=1}^{\infty }{\gamma}^{t-1}{r}_t $$](img/515226_1_En_14_Chapter_TeX_IEq10.png) 可能增加到无穷大，对于长期奖励可以近似忽略折现回报，以方便算法实现。
+
+我们希望找到一个策略 `π(a|s)` 模型，使得策略 `π(a|s)` 控制下的智能体与环境相互作用产生的轨迹 *τ* 的总收益 *R*(*τ*) 越高越好。由于环境状态转移和策略的随机性，同样的策略模型作用于初始状态相同的环境，也可能产生完全不同的轨迹序列 *τ*。因此，强化学习的目标是期望收益最大化。
+```
+
+![$$ J\left({\pi}_{\theta}\right)={E}_{\tau \sim p\left(\tau \right)}\left[R\left(\tau \right)\right]={E}_{\tau \sim p\left(\tau \right)}\left[{\sum}_{t=1}^{T-1}{\gamma}^{t-1}{r}_t\right] $$](img/515226_1_En_14_Chapter_TeX_Equt.png)
+
+训练的目标是找到一组参数`θ`所代表的策略网络`π_θ`，使得`J(π_θ)`最大:
+
+![$$ {\theta}^{\ast }={E}_{\tau \sim p\left(\tau \right)}\left[R\left(\tau \right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equu.png)
+
+其中`p(τ)`代表轨迹`τ`的分布，由状态转移概率`p(s'|s, a)`和策略`π(a|s)`共同决定。策略`π`的好坏可以用`J(π_θ)`来衡量。预期收益越大，政策越好；否则，策略越糟糕。
+
+## 14.3 政策梯度法
+
+由于强化学习的目标是找到一个最优策略`π_θ(s)`，使得期望收益`J(θ)`最大，这类优化问题类似于监督学习。需要用网络参数`∂J/∂θ`求解期望收益的偏导数，用梯度上升算法更新网络参数:
+
+![$$ {\theta}^{\prime }=\theta +\eta \bullet \frac{\partial J}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_Equv.png)
+
+即其中`η`为学习率。
+
+策略模型`π_θ(s)`可以使用多层神经网络参数化`π_θ(s)`。网络的输入是状态`s`，输出是动作`a`的概率分布。这种网络被称为政策网络。
+
+为了优化这个网络，你只需要获得每个参数的偏导数`∂J/∂θ`。现在我们来推导一下`∂J/∂θ`的表达式。先按轨迹分布展开:
+
+![$$ \frac{\partial J}{\partial \theta }=\frac{\partial }{\partial \theta}\int {\pi}_{\theta}\left(\tau \right)R\left(\tau \right) d\tau $$](img/515226_1_En_14_Chapter_TeX_Equw.png)
+
+将导数符号移动到整数符号:
+
+![$$ =\int \left(\frac{\partial }{\partial \theta }{\pi}_{\theta}\left(\tau \right)\right)R\left(\tau \right) d\tau $$](img/515226_1_En_14_Chapter_TeX_Equx.png)
+
+添加`π_θ(τ) * (1/π_θ(τ))`不改变结果:
+
+![$$ =\int {\pi}_{\theta}\left(\tau \right)\left(\frac{1}{\pi_{\theta}\left(\tau \right)}\frac{\partial }{\partial \theta }{\pi}_{\theta}\left(\tau \right)\right)R\left(\tau \right) d\tau $$](img/515226_1_En_14_Chapter_TeX_Equy.png)
+
+考虑:
+
+![$$ \frac{dlog\left(f(x)\right)}{dx}=\frac{1}{f(x)}\frac{df(x)}{dx} $$](img/515226_1_En_14_Chapter_TeX_Equz.png)
+
+所以:
+
+![$$ \frac{1}{\pi_{\theta}\left(\tau \right)}\frac{\partial }{\partial \theta }{\pi}_{\theta}\left(\tau \right)=\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left(\tau \right) $$](img/515226_1_En_14_Chapter_TeX_Equaa.png)
+
+我们可以得到:
+
+![$$ =\int {\pi}_{\theta}\left(\tau \right)\left(\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)\right)R\left(\tau \right) d\tau $$](img/515226_1_En_14_Chapter_TeX_Equab.png)
+
+也就是:
+
+![$$ \frac{\partial J}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)R\left(\tau \right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equac.png)
+
+其中`log π_θ(τ)`代表轨迹的对数概率值`τ = s_1, a_1, s_2, a_2, ...`。考虑到`R(τ)`可以通过采样得到，关键就变成了求解`∂/∂θ log π_θ(τ)`，我们可以分解`π_θ(τ)`得到:
+
+![$$ \frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)=\frac{\partial }{\partial \theta } loglog\ \left(p\left({s}_1\right){\prod}_{t=1}^{T-1}{\pi}_{\theta}\left({s}_t\right)p\left({s}_t,{a}_t\right)\right) $$](img/515226_1_En_14_Chapter_TeX_Equad.png)
+
+将`log ∏`转换为`∑ log()`:
+
+![$$ =\frac{\partial }{\partial \theta}\left( loglog\ p\ \left({s}_1\right)+{\sum}_{t=1}^{T-1} loglog\ {\pi}_{\theta }\ \left({s}_t\right)+ loglog\ p\ \left({s}_t,{a}_t\right)\right) $$](img/515226_1_En_14_Chapter_TeX_Equae.png)
+
+考虑到`log p(s_t, a_t)`和`log p(s_1)`都与`θ`无关，前面的公式变成:
+
+![$$ \frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)={\sum}_{t=1}^{T-1}\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equaf.png)
+
+可以看出，偏导数`∂/∂θ log π_θ(τ)`最终可以转化为`log π_θ(s_t)`即策略网络输出对网络参数`θ`的导数。与状态概率转移`p(s'|s, a)`无关，即不知道环境模型`∂/∂θ log p_θ(τ)`即可求解。
+
+把它分成`∂J/∂θ`:
+
+![$$ \frac{\partial J\left(\theta \right)}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)R\left(\tau \right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equag.png)
+
+![$$ ={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[\left({\sum}_{t=1}^{T-1}\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\right)R\left(\tau \right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equah.png)
+
+让我们直观地理解前面的公式。当某一轮的总回报`R(τ) > 0`、`∂J(θ)/∂θ`和`∂/∂θ log π_θ(τ)`同向时。根据梯度上升算法，`θ`参数朝着增加`J(θ)`的方向更新，也朝着增加`log π_θ(s_t)`的方向更新，这鼓励了更多这样的轨迹`τ`。当总回报`R(τ) < 0`、`∂J(θ)/∂θ`和`∂/∂θ log π_θ(τ)`反转时，那么当`θ`参数根据梯度上升算法更新时。朝着增加`J(θ)`和减少`log π_θ(s_t)`的方向更新，即避免产生更多这样的轨迹`τ`。通过这一点，可以直观地了解网络如何自我调整以获得更大的预期回报。
+
+有了前面的`∂J/∂θ`表达式，我们就可以通过 TensorFlow 的自动微分工具轻松求解`∂/∂θ log π_θ(s_t)`来计算`∂J/∂θ`。最后，我们可以使用梯度上升算法来更新参数。策略梯度算法的一般流程如图 14-9 所示。
+
+![img/515226_1_En_14_Fig9_HTML.png](img/515226_1_En_14_Fig9_HTML.png)
+
+图 14-9 政策梯度法培训流程
+
+### 14.3.1 加固算法
+
+根据大数定律，将期望写成多个采样轨迹的平均值`τ^N`，`N ∈ [1, N]`:
+
+![$$ \frac{\partial J\left(\theta \right)}{\partial \theta}\approx \frac{1}{N}{\sum}_{n=1}^N\left(\left({\sum}_{t=1}^{T-1}\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t^{(n)}\right)\right)R\left({\tau}^{(n)}\right)\right) $$](img/515226_1_En_14_Chapter_TeX_Equai.png)
+
+其中`N`为轨迹数，`a_t^(n)`和`s_t^(n)`代表第 N 条轨迹的第 t 个时间戳的动作和输入状态`τ^N`。然后通过梯度上升算法更新`θ`参数。这个算法被称为加强算法[4]，也是最早使用策略梯度思想的算法。
+
+| **算法 1:加固算法** |
+| :--- |
+| 随机初始化`θ` |
+| **重复** |
+| 根据策略`π_θ(s_t)`与环境交互，生成多条轨迹`{τ^(n)}` |
+| 计算`R(τ^(n))` |
+| **算出** `∂J(θ)/∂θ ≈ (1/N) * Σ_{n=1}^N [ (Σ_{t=1}^{T-1} ∂/∂θ log π_θ(s_t^(n))) * R(τ^(n)) ]` |
+| **更新参数** `θ' ← θ + η * ∂J/∂θ` |
+| **直到达到一定的训练次数** |
+| **输出**: 策略网络`π_θ(s_t)` |
+
+### 14.3.2 对原有政策梯度法的改进
+
+由于原有的强化算法在优化轨迹之间的方差较大，收敛速度较慢，训练过程不够平滑。我们可以利用方差缩减的思想，从因果关系和基线的角度进行改进。
+
+**因果关系**。考虑到`$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$`的偏导数表达式，对于时间戳为`t`的动作`a_t`，对`τ_{1:T-1}`没有影响，仅对后续轨迹`τ_{t:T}`有影响。所以对于`π_θ(s_t)`，我们只考虑从时间戳`t`开始的累计回报`R(τ_{t:T})`。`$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$`的表达式由
+
+`$$ \frac{\partial J\left(\theta \right)}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[\left({\sum}_{t=1}^{T-1}\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\right)R\left({\tau}_{1:T}\right)\right] $$`
+
+给出
+
+可以写成:
+
+`$$ \frac{\partial J\left(\theta \right)}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\sum}_{t=1}^{T-1}\left(\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)R\left({\tau}_{t:T}\right)\right)\right] $$`
+
+`$$ ={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\sum}_{t=1}^{T-1}\left(\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\hat{Q}\left({s}_t,{a}_t\right)\right)\right] $$`
+
+其中`$$ \hat{Q}\left({s}_t,{a}_t\right) $$`函数代表从状态`s_t`执行`a_t`动作后`π_θ`的预计奖励值。Q 函数的定义也将在 14.4 节中介绍。由于只考虑从`a_t`开始的轨迹`τ_{t:T}`，所以`R(τ_{t:T})`的方差变小。
+
+**偏置**。真实环境中的奖励`r_t`并不是围绕 0 分布的。很多游戏的奖励都是正的，以至于`R(τ)`总是大于 0。网络倾向于增加所有采样动作的概率。未采样动作的概率相对降低。这不是我们想要的。我们希望`R(τ)`能分布在 0 附近，所以我们引入一个偏差变量`b`，叫做基线，它代表平均收益水平`R(τ)`。`$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$`的表达式转换为:
+
+`$$ \frac{\partial J\left(\theta \right)}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\sum}_{t=1}^{T-1}\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\left(R\left(\tau \right)-b\right)\right] $$`
+
+考虑到因果关系，`$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$`可以写成:
+
+`$$ \frac{\partial J\left(\theta \right)}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\sum}_{t=1}^{T-1}\left(\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\left(\hat{Q}\left({s}_t,{a}_t\right)-b\right)\right)\right] $$`
+
+其中`δ = R(τ) - b`称为优势函数，代表当前动作序列相对于平均收益的优势。
+
+加上 bias `b` 后，`$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$`的值会发生变化吗？要回答问题，我们只需要考虑`$$ {E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\nabla}_{\theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)\bullet b\right] $$`能否为 0。如果是 0，那么`$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$`的值不会改变。将`$$ {E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\nabla}_{\theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)\bullet b\right] $$`展开为:
+
+`$$ {E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\nabla}_{\theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)\bullet b\right]=\int {\pi}_{\theta}\left(\tau \right){\nabla}_{\theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)\bullet b\ d\tau $$`
+
+因为:
+
+`$$ {\pi}_{\theta}\left(\tau \right){\nabla}_{\theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)={\nabla}_{\theta }{\pi}_{\theta}\left(\tau \right) $$`
+
+我们有:
+
+`$$ {E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\nabla}_{\theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)\bullet b\right]=\int {\nabla}_{\theta }{\pi}_{\theta}\left(\tau \right) bd\tau $$`
+
+`$$ =b{\nabla}_{\theta}\int {\pi}_{\theta}\left(\tau \right) d\tau $$`
+
+考虑`∫π_θ(τ)dτ = 1`，
+
+`$$ {E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\nabla}_{\theta } loglog\ {\pi}_{\theta }\ \left(\tau \right)\bullet b\right]=b{\nabla}_{\theta }1=0 $$`
+
+因此，增加 bias `b` 并不会改变`$$ \frac{\partial J\left(\theta \right)}{\partial \theta } $$`的值，但确实减少了`$$ {\sum}_{t=1}^{T-1}\left(\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\left(\hat{Q}\left({s}_t,{a}_t\right)-b\right)\right) $$`的方差。
+
+### 14.3.3 用偏差加强算法
+
+偏差`b`可以用蒙特卡罗方法估计:
+
+`$$ b=\frac{1}{N}{\sum}_{n=1}^NR\left({\tau}^{(n)}\right) $$`
+
+如果考虑因果关系，那么:
+
+`$$ b=\frac{1}{N}{\sum}_{n=1}^NR\left({\tau}_{t:T}^{(n)}\right) $$`
+
+偏差`b`也可以使用另一个神经网络来估计，这也是 14.5 节中介绍的行动者-评论家方法。事实上，许多政策梯度算法经常使用神经网络来估计偏差`b`。算法可以灵活调整，掌握算法思路最重要。在算法 2 中示出了具有偏差增强算法流程。
+
+| **算法 2:用偏差加强算法流程** |
+| --- |
+| **随机初始化**`θ`<br>**重复**<br>**根据策略与环境交互**`π_θ(s_t)`，**生成多条轨迹**`{τ^{(n)}}`<br>**算出**`$$ \hat{\boldsymbol{Q}}\left({\boldsymbol{s}}_{\boldsymbol{t}},{\boldsymbol{a}}_{\boldsymbol{t}}\right) $$`<br>**通过蒙特卡罗方法估计偏差**`b`<br>**算出**`$$ \frac{\boldsymbol{\partial J}\left(\boldsymbol{\theta} \right)}{\boldsymbol{\partial \boldsymbol{\theta}}}\approx \frac{\mathbf{1}}{\boldsymbol{N}}{\sum}_{\boldsymbol{n}=\mathbf{1}}^{\boldsymbol{N}}\left(\left({\sum}_{\boldsymbol{t}=\mathbf{1}}^{\boldsymbol{T}-\mathbf{1}}\frac{\boldsymbol{\partial}}{\boldsymbol{\partial \boldsymbol{\theta}}}\boldsymbol{loglog}\ {\boldsymbol{\pi}}_{\boldsymbol{\theta}}\ \left({\boldsymbol{s}}_{\boldsymbol{t}}^{\left(\boldsymbol{n}\right)}\right)\right)\left(\hat{\boldsymbol{Q}}\left({\boldsymbol{s}}_{\boldsymbol{t}},{\boldsymbol{a}}_{\boldsymbol{t}}\right)-\boldsymbol{b}\right)\right) $$`<br>**更新参数**`$$ {\boldsymbol{\theta}}^{\prime}\boldsymbol{\leftarrow}\boldsymbol{\theta } +\boldsymbol{\eta} \bullet \frac{\boldsymbol{\partial J}}{\boldsymbol{\partial \boldsymbol{\theta}}} $$`<br>**直到**达到训练次数<br>**输出:**政策网`π_θ(s_t)` |
+
+### 重要性抽样
+
+使用策略梯度法更新网络参数后，策略网络`π_θ(s)`也发生了变化，必须使用新的策略网络进行采样。导致之前的历史轨迹数据无法重用，采样效率很低。如何提高采样效率，复用旧策略生成的轨迹数据？
+
+在统计学中，重要抽样技术可以从另一个分布`q`估计原始分布`p`的期望值。考虑到轨迹`τ`是从原始分布`p`中采样的，我们希望估计出轨迹`τ ~ p`函数的期望`E_{τ∽p}[f(τ)]`。
+
+`$$ {E}_{\tau \sim p}\left[f\left(\tau \right)\right]=\int p\left(\tau \right)f\left(\tau \right) d\tau $$`
+
+`$$ =\int \frac{p\left(\tau \right)}{q\left(\tau \right)}q\left(\tau \right)f\left(\tau \right) d\tau $$`
+
+`$$ ={E}_{\tau \sim q}\left[\frac{p\left(\tau \right)}{q\left(\tau \right)}f\left(\tau \right)\right] $$`
+
+通过推导，我们发现`f(τ)`的期望可以不从原始分布`p`中采样，而是从另一个分布`q`中采样，只需要乘以比例`$$ \frac{p\left(\tau \right)}{q\left(\tau \right)} $$`。这在统计学中称为重要抽样。
+
+设目标政策分布为`p_θ(τ)`，某个历史政策分布为`$$ {p}_{\underset{\_}{\theta }}\left(\tau \right) $$`，我们希望用历史采样轨迹`$$ \tau \sim {p}_{\underset{\_}{\theta }}\left(\tau \right) $$`来估计目标政策网络的预期收益:
+
+`$$ J\left(\theta \right)={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[R\left(\tau \right)\right] $$`
+
+![$$ ={\sum}_{t=1}^{T-1}{E}_{\left({s}_t,{a}_t\right)\sim {p}_{\theta}\left({s}_t,{a}_t\right)}\left[r\left({s}_t,{a}_t\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equaz.png)
+
+![$$ ={\sum}_{t=1}^{T-1}{E}_{s_t\sim {p}_{\theta}\left({s}_t\right)}{E}_{a_t\sim {\pi}_{\theta}\left({s}_t\right)}\left[r\left({s}_t,{a}_t\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equba.png)
+
+应用重要性抽样技术，我们可以得到:
+
+![$$ {J}_{\underset{\_}{\theta }}\left(\theta \right)={\sum}_{t=1}^{T-1}{E}_{s_t\sim {p}_{\underset{\_}{\theta }}\left({s}_t\right)}\left[\frac{p_{\theta}\left({s}_t\right)}{p_{\underset{\_}{\theta }}\left({s}_t\right)}{E}_{a_t\sim {\pi}_{\underset{\_}{\theta }}\left({s}_t\right)}\left[\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)}r\left({s}_t,{a}_t\right)\right]\right] $$](img/515226_1_En_14_Chapter_TeX_Equbb.png)
+
+其中![$$ {J}_{\underset{\_}{\theta }}\left(\theta \right) $$](img/515226_1_En_14_Chapter_TeX_IEq47.png)代表原始分布`p_θ(τ)`通过分布![$$ {p}_{\underset{\_}{\theta }}\left(\tau \right) $$](img/515226_1_En_14_Chapter_TeX_IEq48.png)估算的`J(θ)`的值。在近似忽略![$$ \frac{p_{\theta}\left({s}_t\right)}{p_{\underset{\_}{\theta }}\left({s}_t\right)} $$](img/515226_1_En_14_Chapter_TeX_IEq49.png)项的假设下，认为状态`s_t`在不同策略下出现的概率近似相等，即![$$ \frac{p_{\theta}\left({s}_t\right)}{p_{\underset{\_}{\theta }}\left({s}_t\right)}\approx 1 $$](img/515226_1_En_14_Chapter_TeX_IEq50.png)，所以:
+
+![$$ {J}_{\underset{\_}{\theta }}\left(\theta \right)={\sum}_{t=1}^{T-1}{E}_{s_t\sim {p}_{\underset{\_}{\theta }}\left({s}_t\right)}\left[{E}_{a_t\sim {\pi}_{\underset{\_}{\theta }}\left({s}_t\right)}\left[\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)}r\left({s}_t,{a}_t\right)\right]\right] $$](img/515226_1_En_14_Chapter_TeX_Equbc.png)
+
+![$$ ={\sum}_{t=1}^{T-1}{E}_{\left({s}_t,{a}_t\right)\sim {p}_{\underset{\_}{\theta }}\left({s}_t,{a}_t\right)}\left[\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)}r\left({s}_t,{a}_t\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbd.png)
+
+要优化的采样策略![$$ {p}_{\underset{\_}{\theta }}\left(\tau \right) $$](img/515226_1_En_14_Chapter_TeX_IEq51.png)和目标策略`p_θ(τ)`不相同的方法称为偏策略方法。相反，采样策略和要优化的目标策略是同一策略的方法称为 on-policy 方法。强化算法属于策略方法范畴。off-policy 方法可以使用历史采样数据来优化当前策略网络，这大大提高了数据利用率，但也引入了计算复杂性。特别地，当用蒙特卡罗抽样方法实施重要性抽样时，如果分布 p 和 q 之间的差值太大，期望估计就会有很大的偏差。因此，实现需要确保 p 和 q 的分布尽可能相似，例如添加 KL 散度约束来限制 p 和 q 之间的差异。
+
+我们也称原政策梯度法的训练目标函数`L^PG(θ)`:
+
+![$$ {L}^{PG}\left(\theta \right)={\hat{E}}_t\left[ loglog\ {\pi}_{\theta }\ \left({s}_t\right){\hat{A}}_t\right] $$](img/515226_1_En_14_Chapter_TeX_Eqube.png)
+
+其中 PG 代表政策梯度，![$$ {\hat{E}}_t $$](img/515226_1_En_14_Chapter_TeX_IEq52.png)和![$$ {\hat{A}}_t $$](img/515226_1_En_14_Chapter_TeX_IEq53.png)代表经验估计值。基于重要性抽样的目标函数称为![$$ {L}_{\underset{\_}{\theta}}^{IS}\left(\theta \right) $$](img/515226_1_En_14_Chapter_TeX_IEq54.png) :
+
+![$$ {L}_{\underset{\_}{\theta}}^{IS}\left(\theta \right)={\hat{E}}_t\left[\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)}{\hat{A}}_t\right] $$](img/515226_1_En_14_Chapter_TeX_Equbf.png)
+
+其中 IS 代表重要性抽样，`θ`代表目标策略分布`p_θ`，![$$ \underset{\_}{\theta } $$](img/515226_1_En_14_Chapter_TeX_IEq55.png)代表抽样策略分布![$$ {p}_{\underset{\_}{\theta }} $$](img/515226_1_En_14_Chapter_TeX_IEq56.png)。
+
+### PPO 算法
+
+应用重要性采样后，策略梯度算法大大提高了数据利用率，大大提高了性能和训练稳定性。比较流行的离策梯度算法有 TRPO 算法和 PPO 算法，其中 TRPO 是 PPO 算法的前身，PPO 算法可以看作是 TRPO 算法的近似简化版。
+
+**TRPO 算法** 为了约束目标策略`π`距离期望被用作优化问题的约束项。TRPO 算法的实现更加复杂并且计算量大。TRPO 算法的优化目标是:
+
+![$$ {\theta}^{\ast }={\hat{E}}_t\left[\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)}{\hat{A}}_t\right] $$](img/515226_1_En_14_Chapter_TeX_Equbg.png)
+
+![$$ s.t.{\hat{\ E}}_t\left[{D}_{KL}\left({\pi}_{\theta}\left({s}_t\right)\Big\Vert {\pi}_{\underset{\_}{\theta }}\left({s}_t\right)\right)\right]\le \delta $$](img/515226_1_En_14_Chapter_TeX_Equbh.png)
+
+**PPO 算法**。为了解决 TRPO 计算成本高的缺点，PPO 算法在损失函数中增加了 KL 散度约束作为惩罚项。优化目标是:
+
+![$$ {\theta}^{\ast }={\hat{E}}_t\left[\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)}{\hat{A}}_t\right]-\beta {\hat{E}}_t\left[{D}_{KL}\left({\pi}_{\theta}\left({s}_t\right)\Big\Vert {\pi}_{\underset{\_}{\theta }}\left({s}_t\right)\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbi.png)
+
+其中![$$ {D}_{KL}\left({\pi}_{\theta}\left({s}_t\right)\Big\Vert {\pi}_{\underset{\_}{\theta }}\left({s}_t\right)\right) $$](img/515226_1_En_14_Chapter_TeX_IEq59.png)是指保单分布`π_θ(s_t)`与![$$ {\pi}_{\underset{\_}{\theta }}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq60.png)之间的距离，超参数`β`用于平衡原损失项和 KL 散度惩罚项。
+
+**自适应 KL 惩罚算法**。通过设置 KL 散度的阈值`KL_max`来动态调整超参数`β`。调整规则如下:如果![$$ {\hat{E}}_t\left[{D}_{KL}\left({\pi}_{\theta}\left({s}_t\right)\Big\Vert {\pi}_{\underset{\_}{\theta }}\left({s}_t\right)\right)\right]&gt;K{L}_{max} $$](img/515226_1_En_14_Chapter_TeX_IEq61.png)，增加`β`；如果![$$ {\hat{E}}_t\left[{D}_{KL}\left({\pi}_{\theta}\left({s}_t\right)\Big\Vert {\pi}_{\underset{\_}{\theta }}\left({s}_t\right)\right)\right]&lt;K{L}_{max} $$](img/515226_1_En_14_Chapter_TeX_IEq62.png)，则减小`β`。
+
+**PPO2 算法**。基于 PPO 算法，PPO2 算法调整损失函数:
+
+![$$ {L}_{\underset{\_}{\theta}}^{CLIP}\left(\theta \right)={\hat{E}}_t\left[\left(\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)}{\hat{A}}_t, clip\left(\frac{\pi_{\theta}\left({s}_t\right)}{\pi_{\underset{\_}{\theta }}\left({s}_t\right)},1-\epsilon, 1+\epsilon \right){\hat{A}}_t\right)\ \right] $$](img/515226_1_En_14_Chapter_TeX_Equbj.png)
+
+误差函数的原理图如图 14-10 所示。
+
+![img/515226_1_En_14_Fig10_HTML.jpg](img/515226_1_En_14_Fig10_HTML.jpg)
+
+图 14-10
+
+PPO2 算法误差函数示意图
+
+### 14.3.6 动手 PPO
+
+在本节中，我们实现了基于重要性采样技术的 PPO 算法，并在平衡杆游戏环境中测试了 PPO 算法的性能。
+
+**政策网**。政策网络也称为行动者网络。策略网络的输入是状态`s_t`，四个输入节点，输出是动作`a_t`的概率分布`π_θ(s_t)`，由两层全连通网络实现。
+
+```py
+class Actor(keras.Model):
+    def __init__(self):
+        super(Actor, self).__init__()
+        # The policy network is also called the Actor network. Output probability p(a|s)
+        self.fc1 = layers.Dense(100, kernel_initializer='he_normal')
+        self.fc2 = layers.Dense(2, kernel_initializer='he_normal')
+
+    def call(self, inputs):
+        # Forward propagation
+        x = tf.nn.relu(self.fc1(inputs))
+        x = self.fc2(x)
+        # Output action probability
+        x = tf.nn.softmax(x, axis=1) # Convert to probability
+        return x
+```
+
+**偏差** `b` **网络** 偏差`b`网络也叫评论家网络，或 V 值函数网络。网络的输入是状态`s_t`，四个输入节点，输出是标量值`b`。使用两层全连接网络来估计`b`。代码实现如下:
+
+```py
+class Critic(keras.Model):
+    def __init__(self):
+        super(Critic, self).__init__()
+        # Bias b network is also called Critic network, output is v(s)
+        self.fc1 = layers.Dense(100, kernel_initializer='he_normal')
+        self.fc2 = layers.Dense(1, kernel_initializer='he_normal')
+
+    def call(self, inputs):
+        x = tf.nn.relu(self.fc1(inputs))
+        x = self.fc2(x)  # Output b's estimate
+        return x
+```
+
+接下来，完成策略网络和价值函数网络的创建，并分别创建两个优化器来优化策略网络和价值函数网络的参数。我们在 PPO 算法的主类的初始化方法中创建它。
+
+```py
+class PPO():
+    # PPO algorithm
+    def __init__(self):
+        super(PPO, self).__init__()
+        self.actor = Actor() # Create Actor network
+        self.critic = Critic() # Create Critic network
+        self.buffer = [] # Data buffer
+        self.actor_optimizer = optimizers.Adam(1e-3) # Actor optimizer
+        self.critic_optimizer = optimizers.Adam(3e-3) # Critic optimizer
+```
+
+**动作采样**。`select_action`函数可以计算当前状态的动作分布`π_θ(s_t)`，并根据概率随机抽取动作，返回动作及其概率。
+
+```markdown
+## 14.4 价值函数法
+
+使用策略梯度方法，通过直接优化策略网络参数，可以获得更好的策略模型。在强化学习领域，除了策略梯度法，还有一类方法是通过对价值函数建模来间接获取策略的，我们统称为价值函数法。
+
+接下来，我们将介绍常见价值函数的定义，如何估计价值函数，以及价值函数如何帮助生成策略。
+
+### 价值函数
+
+在强化学习中，有两种类型的价值函数：状态价值函数和状态-动作价值函数，这两种函数都表示策略π下期望收益轨迹起点的定义不同。
+
+**状态值函数**（简称 V 函数），定义为在策略π:
+
+![$$ {V}^{\pi}\left({s}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[R\left({\tau}_{t:T}\right)|{\tau}_{s_t}={s}_t\right] $$](img/515226_1_En_14_Chapter_TeX_Equbk.png)
+
+的控制下，从状态*s*<sub>t</sub>所能获得的期望收益值
+
+展开*R*(*τ*<sub>T:*T*??)为:</sub>
+
+![$$ R\left(\left({\tau}_{t:T}\right)\right)={r}_t+\gamma {r}_{t+1}+{\gamma}²{r}_{t+2}+\dots $$](img/515226_1_En_14_Chapter_TeX_Equbl.png)
+
+![$$ ={r}_t+\gamma \left({r}_{t+1}+{\gamma}¹{r}_{t+2}+\dots \right) $$](img/515226_1_En_14_Chapter_TeX_Equbm.png)
+
+![$$ ={r}_t+\gamma R\left(\left({\tau}_{t+1:T}\right)\right) $$](img/515226_1_En_14_Chapter_TeX_Equbn.png)
+
+所以:
+
+![$$ {V}^{\pi}\left({s}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[{r}_t+\gamma R\left({\tau}_{t+1:T}\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbo.png)
+
+![$$ ={E}_{\tau \sim p\left(\tau \right)}\left[{r}_t+\gamma {V}^{\pi}\left({s}_{t+1}\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbp.png)
+
+这也被称为状态值函数的贝尔曼方程。在所有策略中，最优策略*π*<sup>∫</sup>是指能够获得*V*<sup>*π*</sup>(*s*)最大值的策略，即:
+
+![$$ {\pi}^{\ast }={V}^{\pi }(s)\kern0.5em \forall s\in S $$](img/515226_1_En_14_Chapter_TeX_Equbq.png)
+
+此时，状态值函数达到最大值:
+
+![$$ {V}^{\ast }(s)={V}^{\pi }\ (s)\forall s\in S $$](img/515226_1_En_14_Chapter_TeX_Equbr.png)
+
+对于最优策略，贝尔曼方程也得到满足:
+
+![$$ {V}^{\ast}\left({s}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[{r}_t+\gamma {V}^{\ast}\left({s}_{t+1}\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbs.png)
+
+该方程被称为状态值函数的贝尔曼最优方程。
+
+考虑图 14-12 中的迷宫问题。在 3 × 4 网格中，坐标为(2，2)的网格不可通行，坐标为(4，2)的网格奖励为-10，坐标为(4，3)的网格奖励为 10。代理人可以从任何位置开始，每增加一步，奖励为-1。游戏的目标是回报最大化。对于这个简单的迷宫，可以直接画出每个位置的最优向量，即在任意起点，最优策略*π*∫(*a*|*s*)是确定性策略，动作如图 14-12(b) 所示。设 *γ* = 0.9，则:
+
+*   从 *s* <sub>(4，3)</sub> 出发，即坐标(4，3)，最优策略为*V*<sup>∫</sup>(*s*<sub>【4，3】</sub>)= 10
+
+*   从 *s* <sub>(3，3)</sub>*V*<sup>∫</sup>(*s*<sub>【4，3】</sub>)= 1+0.9 10 = 8
+
+从 *s* <sub>(2，1)</sub> 、*V*<sup>∫</sup>(*s*<sub>(2，1)</sub>)= 1 0.9 1 0.9<sup>2</sup>1 0.9<sup>3</sup>1+0.9<sup>4</sup>10 = 3.122
+
+需要注意的是，状态值函数的前提是在某个策略π下，前面所有的计算都是为了计算最优策略下的状态值函数。
+
+![img/515226_1_En_14_Fig12_HTML.png](img/515226_1_En_14_Fig12_HTML.png)
+
+图 14-12
+
+迷宫问题-V 函数
+```
+
+状态值函数的值反映了当前策略下状态的质量。`V^π(s_t)`越大，当前状态的总回报预期越大。以更符合实际情况的太空入侵者游戏为例。代理人需要向飞碟、鱿鱼、螃蟹、章鱼和其他物体开火，并在击中它们时得分。同时，它必须避免被这些物体集中。红色护盾可以保护特工，但是护盾会被击中逐渐破坏。在图 14-13 中，游戏初始状态下，图中有很多物体。在一个好的政策π下，应该获得一个较大的`V^π(s)`值。图 14-14 中，物体较少。再好的政策也不可能获得更大的`V^π(s)`。策略的好坏也会影响`V^π(s)`的值。如图 14-15 所示，一个不好的策略(比如向右移动)会导致代理被击中。因此，`V^π(s)= 0`。好的政策可以击落画面中的物体，获得一定的奖励。
+
+![img/515226_1_En_14_Fig15_HTML.jpg](img/515226_1_En_14_Fig15_HTML.jpg)
+
+图 14-15
+
+不好的政策(如向右)会结束博弈`V^π(s)= 0`，好的政策还是可以获得小回报的
+
+![img/515226_1_En_14_Fig14_HTML.jpg](img/515226_1_En_14_Fig14_HTML.jpg)
+
+图 14-14
+
+`V^π(s)`在任何政策下都是小π
+
+![img/515226_1_En_14_Fig13_HTML.jpg](img/515226_1_En_14_Fig13_HTML.jpg)
+
+图 14-13
+
+`V^π(s)`在政策π下可能更大
+
+**状态-动作值函数**(简称 Q 函数)，定义为状态`s_t`的双重设定和动作`a_t`:
+
+![$$ {Q}^{\pi}\left({s}_t,{a}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[R\left({\tau}_{t:T}\right)|{\tau}_{a_t}={a}_t,{\tau}_{s_t}={s}_t\right] $$](img/515226_1_En_14_Chapter_TeX_Equbt.png)
+
+的执行在策略π的控制下所能获得的期望返回值
+
+虽然 Q 函数和 V 函数都是预期返回值，但是 Q 函数的动作`a_t`是前提条件，和 V 函数的定义不同。将 Q 函数扩展为:
+
+![$$ {Q}^{\pi}\left({s}_t,{a}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[r\left({s}_t,{a}_t\right)+\gamma {r}_{t+1}+{\gamma}²{r}_{t+2}+\dots \right] $$](img/515226_1_En_14_Chapter_TeX_Equbu.png)
+
+![$$ ={E}_{\tau \sim p\left(\tau \right)}\left[r\left({s}_t,{a}_t\right)+{r}_t+\gamma \left({r}_{t+1}+{\gamma}¹{r}_{t+2}+\dots \right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbv.png)
+
+所以:
+
+![$$ {Q}^{\pi}\left({s}_t,{a}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[r\left({s}_t,{a}_t\right)+\gamma {V}^{\pi}\left({s}_{t+1}\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbw.png)
+
+因为`s_t`和`a_t`是固定的，`r(s_t, a_t)`也是固定的。
+
+Q 函数和 V 函数有如下关系:
+
+![$$ {V}^{\pi}\left({s}_t\right)={E}_{a_t\sim \pi \left({s}_t\right)}\left[{Q}^{\pi}\left(s_t,{a}_t\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equbx.png)
+
+即当`a_t`从策略`π(s_t)`中采样时，`Q^π(s_t, a_t)`的期望值等于`V^π(s_t)`。在最优策略下`π*(a|s)`，有如下关系:
+
+![$$ {Q}^{\ast}\left({s}_t,{a}_t\right)={Q}^{\pi}\left({s}_t,{a}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equby.png)
+
+![$$ {\pi}^{\ast }={Q}^{\ast}\left({s}_t,{a}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equbz.png)
+
+它也表示:
+
+![$$ {V}^{\ast}\left({s}_t\right){Q}^{\ast}\left({s}_t,{a}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equca.png)
+
+此时:
+
+![$$ {Q}^{\ast}\left({s}_t,{a}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[r\left({s}_t,{a}_t\right)+\gamma {V}^{\ast}\left({s}_{t+1}\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equcb.png)
+
+![$$ ={E}_{\tau \sim p\left(\tau \right)}\left[r\left({s}_t,{a}_t\right)+\gamma {Q}^{\ast}\left({s}_{t+1},{a}_{t+1}\right)\ \right] $$](img/515226_1_En_14_Chapter_TeX_Equcc.png)
+
+前面的公式称为 Q 函数的贝尔曼最优方程。
+
+我们定义`Q^π(s_t, a_t)`和`V^π(s)`为优势值函数:
+
+![$$ {A}^{\pi}\left(s,a\right)\triangleq {Q}^{\pi}\left(s,a\right)-{V}^{\pi }(s) $$](img/515226_1_En_14_Chapter_TeX_Equcd.png)
+
+表示在状态`s`中采取行动`a`超过平均水平的程度:`A^π(s, a) > 0`表示采取行动`a`优于平均水平；否则比平均水平差。事实上，我们已经将优势价值函数的思想应用于有偏强化算法部分。
+
+继续考虑迷宫的例子，设初始状态为`s_{【2，1】}`，`a_t`可右可左。对于函数`Q^π(s_t, a_t)`，`Q^π(s_{(2，1)}, 右) = 1`，`Q^π(s_{(2，1)}, 左) = 1`。我们已经计算出`V^π(s_{(2，1)}) = 3.122`，可以直观的看到它们满足`V^π(s_t)`。
+
+![img/515226_1_En_14_Fig16_HTML.png](img/515226_1_En_14_Fig16_HTML.png)
+
+图 14-16
+
+迷宫问题-Q 函数
+
+以太空入侵者游戏为例，直观理解 Q 函数的概念。在图 14-17 中，图中的药剂在防护罩下面。如果你选择在这个时候开火，通常被认为是一个糟糕的行动。因此，良策π下，`Q^π(s, 无火) > Q^π(s, 火)`。如果此时在图 14-18 中选择向左移动，可能会因为时间不够错过右边的物体，所以`Q^π(s, 左)`可能会小。如果代理向右移动并在图 14-19 中开火，`Q^π(s, 右)`会更大。
+
+![img/515226_1_En_14_Fig19_HTML.jpg](img/515226_1_En_14_Fig19_HTML.jpg)
+
+图 14-19
+
+在好的政策下`π`，`Q^π(s, 右)`还是可以获得一些奖励的
+
+![img/515226_1_En_14_Fig18_HTML.jpg](img/515226_1_En_14_Fig18_HTML.jpg)
+
+图 14-18
+
+`Q^π(s, 左)`可能会小一些
+
+![img/515226_1_En_14_Fig17_HTML.jpg](img/515226_1_En_14_Fig17_HTML.jpg)
+
+图 14-17
+
+`Q^π(s, 无火)`可能比`Q^π(s, 火)`大
+
+在介绍了 Q 函数和 V 函数的定义后，我们将主要回答以下两个问题:
+
+*   价值函数是如何估计的？
+
+*   如何从价值函数推导出政策？
+
+### 价值函数估计
+
+价值函数的估计主要有蒙特卡罗方法和时间差分方法。
+
+#### 蒙特卡洛法
+
+蒙特卡罗方法实际上就是通过采样策略`π(a|s)`产生的多个轨迹`{τ^(n)}`来估计 V 函数和 Q 函数。考虑一下 Q 函数的定义:
+
+![$$ {Q}^{\pi}\left(s,a\right)={E}_{\tau \sim p\left(\tau \right)}\left[R\left({\tau}_{s_0=s,{a}_0=a}\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equce.png)
+
+根据大数定律，可以通过抽样估算:
+
+![$$ {Q}^{\pi}\left(s,a\right)\approx {\hat{Q}}^{\pi}\left(s,a\right)=\frac{1}{N}{\sum}_{n=1}^NR\left({\tau}_{s_0=s,{a}_0=a}^{(n)}\right) $$](img/515226_1_En_14_Chapter_TeX_Equcf.png)
+
+其中`τ_{s_0=s, a_0=a}^{(n)}`代表第 N 个采样轨迹，`N∈【1， N】`。每个采样轨迹的实际状态为`s`，初始动作为`a`，`N`为轨迹总数。V 函数可以按照同样的方法估算:
+
+![$$ {V}^{\pi }(s)\approx {\hat{V}}^{\pi }(s)=\frac{1}{N}{\sum}_{n=1}^NR\left({\tau}_{s_0=s}^{(n)}\right) $$](img/515226_1_En_14_Chapter_TeX_Equcg.png)
+
+这种通过对轨迹的总收益进行采样来估计期望收益的方法被称为蒙特卡罗方法(简称 MC 方法)。
+
+当 Q 函数或 V 函数通过神经网络参数化时，网络的输出被记录为`Q^π(s, a)`或`V^π(s)`，其真实标号被记录为蒙特卡洛估计值`Q̂^π(s,a)`或`V̂^π(s)`，即网络输出值与梯度下降算法用于优化神经网络。从这个角度看，价值函数的估计可以理解为一个回归问题。蒙特卡罗方法简单易行，但需要获得完整的轨迹，因此计算效率较低，在某些环境下没有明确的结束状态。
+
+#### 时间差异
+
+时间差分法(简称 TD 法)利用了价值函数的贝尔曼方程性质。在计算公式中，只需要一步或多步就可以得到价值函数的误差，优化更新价值函数网络。卡罗方法计算效率更高。
+
+回忆一下 V 函数的贝尔曼方程:
+
+![$$ {V}^{\pi}\left({s}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[{r}_t+\gamma {V}^{\pi}\left({s}_{t+1}\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equch.png)
+
+因此，TD 误差项`δ = r_t + γV^π(s_{t+1}) - V^π(s_t)`。
+
+其中`α ∈ [0，1]`为更新步长。
+
+Q 函数的贝尔曼最优方程是:
+
+![$$ {Q}^{\ast}\left({s}_t,{a}_t\right)={E}_{\tau \sim p\left(\tau \right)}\left[r\left({s}_t,{a}_t\right)+\gamma {Q}^{\ast}\left({s}_{t+1},{a}_{t+1}\right)\ \right] $$](img/515226_1_En_14_Chapter_TeX_Equcj.png)
+
+同样，构造 TD 误差项`δ = r(s_t, a_t) + γQ^π(s_{t+1}, a_{t+1}) - Q^π(s_t, a_t)`。
+
+### 政策的改进
+
+价值函数估计法可以得到更精确的价值函数估计，但没有直接给出政策模型。因此，需要基于价值函数间接导出策略模型。
+
+首先看如何从 V 函数中导出策略模型:
+
+![$$ {\pi}^{\ast }={V}^{\pi }(s)\kern0.5em \forall s\in S $$](img/515226_1_En_14_Chapter_TeX_Equcl.png)
+
+考虑到状态空间 S 和动作空间 A 通常是巨大的，这种通过遍历来获得最优策略的方式是不可行的。那么政策模型可以从 Q 函数推导出来吗？考虑:
+
+![$$ {\pi}^{\prime }(s)=\mathit{\arg}\ \underset{a}{\mathit{\max}}\ {Q}^{\pi}\left(s,a\right) $$](img/515226_1_En_14_Chapter_TeX_Equcm.png)
+
+这样，可以通过在任何状态`s`下遍历离散动作空间 A 来选择动作。这个策略`π’(s)`是一个确定性的策略。因为:
+
+![$$ {V}^{\pi}\left({s}_t\right)={E}_{a_t\sim \pi \left({s}_t\right)}\left[{Q}^{\pi}\left(s_t,{a}_t\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equcn.png)
+
+所以:
+
+![$$ {V}^{\pi^{\prime }}\left({s}_t\right)\ge {V}^{\pi}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_Equco.png)
+
+即策略`π’`总是优于或等于策略`π`，从而实现政策改进。
+
+确定性策略在相同的状态下产生相同的动作，所以每次交互产生的轨迹可能是相似的。政策模型总是倾向于剥削而缺乏探索，从而使得政策模型局限于局部地区，缺乏对全球状况和行动的了解。为了能够给`π’(s)`确定性策略增加探索能力，我们可以让`π’(s)`策略有小概率`ϵ`采用随机策略来探索未知的动作和状态。
+
+![$$ {\pi}^{\epsilon}\left({s}_t\right)=\Big\{\mathit{\arg}\ \underset{a}{\mathit{\max}}\ {Q}^{\pi}\left(s,a\right),\kern0.5em probability\ of\ 1-\epsilon\ random\ action,\kern0.5em probability\ of\ \epsilon $$](img/515226_1_En_14_Chapter_TeX_Equcp.png)
+
+这个政策叫做`ϵ`——贪婪法。它在原有策略的基础上做了少量的修改，通过控制超参数`ϵ`来平衡利用和探索，简单高效。
+
+值函数的训练过程如图 14-20 所示。
+
+![img/515226_1_En_14_Fig20_HTML.png](img/515226_1_En_14_Fig20_HTML.png)
+
+图 14-20
+
+价值函数法培训流程
+
+### SARSA 算法
+
+SARSA 算法[5]用途:
+
+![$$ {Q}^{\pi}\left({s}_t,{a}_t\right)\leftarrow {Q}^{\pi}\left({s}_t,{a}_t\right)+\alpha \left(r\left({s}_t,{a}_t\right)+\gamma {Q}^{\pi}\left({s}_{t+1},{a}_{t+1}\right)-{Q}^{\pi}\left({s}_t,{a}_t\right)\right) $$](img/515226_1_En_14_Chapter_TeX_Equcq.png)
+
+估算 Q 函数的方法是，在轨迹的每一步，只有$s_t$，$a_t$，$r_t$，$s_{t+1}$，和$a_{t+1}$。
+
+### DQN 算法
+
+2015 年，DeepMind 提出了利用深度神经网络实现的 Q 学习[4]算法，发表在 Nature [1]上，并在 Atari 游戏环境下的 49 款迷你游戏上进行训练和学习，达到了相当于甚至优于人类的水平。人类水平的表现引起了业界和公众对强化学习研究的浓厚兴趣。
+
+Q 学习算法用途:
+
+![$$ {Q}^{\ast}\left({s}_t,{a}_t\right)\leftarrow {Q}^{\ast}\left({s}_t,{a}_t\right)+\alpha \left(r\left({s}_t,{a}_t\right)+\gamma {Q}^{\ast}\left({s}_{t+1},{a}_{t+1}\right)-{Q}^{\ast}\left({s}_t,{a}_t\right)\right) $$](img/515226_1_En_14_Chapter_TeX_Equcr.png)
+
+估算$Q^{\ast}(s_t, a_t)$函数并使用$\pi^{\epsilon}(s_t)$策略获得策略改进。深度 Q 网络(DQN)使用深度神经网络参数化$Q^{\ast}(s_t, a_t)$函数，并使用梯度下降算法更新 Q 网络。损失函数是:
+
+![$$ L={\left({r}_t+\gamma {Q}_{\theta}\left({s}_{t+1},a\right)-{Q}_{\theta}\left({s}_t,{a}_t\right)\right)}² $$](img/515226_1_En_14_Chapter_TeX_Equcs.png)
+
+由于既有训练目标值$r_t + \gamma Q_{\theta}(s_{t+1}, a)$和预测值$Q_{\theta}(s_t, a_t)$，并且训练数据具有很强的相关性，[1]提出了两种解决问题的措施:通过添加经验中继缓冲区来降低数据的强相关性和通过冻结目标网络技术来固定目标估计网络，稳定训练过程。
+
+重放缓冲池相当于一个大型数据样本缓冲池。每次训练时，最新策略生成的数据对($s$, $a$, $r$, $s'$)存储在重放缓冲池中，然后从缓冲池中随机抽取多个数据对($s$, $a$, $r$, $s'$)进行训练。这样，可以减少训练数据的强相关性。还可以发现，DQN 算法是一种采样效率高的非策略算法。
+
+冻结目标网络是一种训练技术。训练时，目标网络![$$ {Q}_{\underset{\_}{\theta }}\left({s}_{t+1},a\right) $$](img/515226_1_En_14_Chapter_TeX_IEq67.png)和预测网络$Q_{\theta}(s_t, a_t)$来自同一个网络，但![$$ {Q}_{\underset{\_}{\theta }}\left({s}_{t+1},a\right) $$](img/515226_1_En_14_Chapter_TeX_IEq68.png)网络的更新频率会在$Q_{\theta}(s_t, a_t)$更新多次后才更新一次。这相当于![$$ {Q}_{\underset{\_}{\theta }}\left({s}_{t+1},a\right) $$](img/515226_1_En_14_Chapter_TeX_IEq69.png)没有更新时处于冻结状态，然后在冻结结束后从$Q_{\theta}(s_t, a_t)$拉最新的网络参数。
+
+这样，训练过程可以变得更加稳定。
+
+DQN 算法如算法 3 所示。
+
+| **算法三:DQN 算法** |
+| :--- |
+| 随机初始化$\theta$<br>重复<br>复位并得到游戏初始状态$s$<br>重复<br>样本行动$a$<br>$a = \epsilon\text{-greedy}(Q(s, \cdot))$<br>与环境互动获得奖励$r$和状态$s'$<br>优化 Q 网络:<br>$L = (r + \gamma Q_{\bar{\theta}}(s', a') - Q_{\theta}(s, a))^2$<br>更新状态$s \leftarrow s'$<br>直到游戏结束<br>直到达到要求的训练次数<br>输出:策略网络$\pi(s)$ |
+
+### 14.4.6 DQN 变体
+
+虽然 DQN 算法在雅达利游戏平台上取得了巨大突破，但后续研究发现，DQN 的 Q 值往往被高估。鉴于 DQN 算法的缺陷，人们提出了一些不同的算法。
+
+**双 DQN** 在[6]中，根据损失函数:
+
+![$$ L={\left({r}_t+\gamma \underset{\_}{Q}\left({s}_{t+1},\underset{a}{\mathit{\max}}Q\left({s}_{t+1},a\right)\right)-Q\left({s}_t,{a}_t\right)\right)}² $$](img/515226_1_En_14_Chapter_TeX_Equcu.png)
+
+分离并更新目标![$$ {r}_t+\gamma \underset{\_}{Q}\left({s}_{t+1},\underset{a}{\mathit{\max}}Q\left({s}_{t+1},a\right)\right) $$](img/515226_1_En_14_Chapter_TeX_IEq71.png)的 Q 网络和估计![$$ \underset{\_}{Q} $$](img/515226_1_En_14_Chapter_TeX_IEq70.png)网络。
+
+**决斗 DQN** 。[7]将网络输出分成 $V(s)$ 和 $A(s, a)$，如图 14-21 所示。然后使用:
+
+![$$ Q\left(s,a\right)=V(s)+A\left(s,a\right) $$](img/515226_1_En_14_Chapter_TeX_Equcv.png)
+
+生成 Q 函数估计值 $Q(s, a)$。其余的和 DQN 保持不变。
+
+![img/515226_1_En_14_Fig21_HTML.jpg](img/515226_1_En_14_Fig21_HTML.jpg)
+
+图 14-21 DQN 网络(上)和决斗 DQN 网络(下)[7]
+
+### DQN 实践
+
+这里我们继续实现基于平衡杆游戏环境的 DQN 算法。
+
+**Q 网络**。平衡杆游戏的状态是一个长度为 4 的向量。因此，Q 网络的输入被设计为四个节点。经过 256-256-2 全连接层，得到输出节点数为 2 的 $Q(s, a)$ 函数估计的分布。网络的实现如下:
+
+```python
+class Qnet(keras.Model):
+    def __init__(self):
+        # Create a Q network, the input is the state vector, and the output is the Q value of the action
+        super(Qnet, self).__init__()
+        self.fc1 = layers.Dense(256, kernel_initializer='he_normal')
+        self.fc2 = layers.Dense(256, kernel_initializer='he_normal')
+        self.fc3 = layers.Dense(2, kernel_initializer='he_normal')
+
+    def call(self, x, training=None):
+        x = tf.nn.relu(self.fc1(x))
+        x = tf.nn.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+```
+
+**重放缓冲池**。DQN 算法中使用重放缓冲池来降低数据之间的强相关性。我们使用 `ReplayBuffer` 类中的 `Deque` 对象来实现缓冲池函数。训练时，最新的数据($s$, $a$, $r$, $s'$)通过 `put(transition)` 方法存储在 `Deque` 对象中，n 个数据($s$, $a$, $r$, $s'$)使用 `sample` 从 `Deque` 对象中随机抽取。重放缓冲池的实现如下:
+
+```python
+class ReplayBuffer():
+    # Replay buffer pool
+    def __init__(self):
+        # Deque
+        self.buffer = collections.deque(maxlen=buffer_limit)
+
+    def put(self, transition):
+        self.buffer.append(transition)
+
+    def sample(self, n):
+        # Sample n samples
+        mini_batch = random.sample(self.buffer, n)
+        s_lst, a_lst, r_lst, s_prime_lst, done_mask_lst = [], [], [], [], []
+        # Organize by category
+        for transition in mini_batch:
+            s, a, r, s_prime, done_mask = transition
+            s_lst.append(s)
+            a_lst.append([a])
+            r_lst.append([r])
+            s_prime_lst.append(s_prime)
+            done_mask_lst.append([done_mask])
+        # Convert to tensor
+        return tf.constant(s_lst, dtype=tf.float32),\
+                      tf.constant(a_lst, dtype=tf.int32), \
+                      tf.constant(r_lst, dtype=tf.float32), \
+                      tf.constant(s_prime_lst, dtype=tf.float32), \
+                      tf.constant(done_mask_lst, dtype=tf.float32)
+```
+
+**策略完善**。这里实现了$\epsilon$-贪婪方法。在对行动进行抽样时，有 $\epsilon$ 的概率选择 $\arg\max_a Q(s, a)$，以及 $1-\epsilon$ 的概率随机选择一个行动。
+
+```python
+    def sample_action(self, s, epsilon):
+        # Send the state vector to get the strategy: [4]
+        s = tf.constant(s, dtype=tf.float32)
+        # s: [4] => [1,4]
+        s = tf.expand_dims(s, axis=0)
+        out = self(s)[0]
+        coin = random.random()
+        # Policy improvement: e-greedy way
+        if coin < epsilon:
+            # epsilon larger
+            return random.randint(0, 1)
+        else:  # Q value is larger
+            return int(tf.argmax(out))
+```
+
+**网络主进程**。网络最多训练 10，000 轮。回合开始时，先将游戏复位得到初始状态 $s$，从当前 Q 网中采样一个动作与环境交互得到数据对($s$, $a$, $r$, $s'$)，存储在重放缓冲池中。如果当前重放缓冲池中的样本数量足够，则采样一批数据，根据 TD 误差优化 Q 网络的估计，直到比赛结束。
+
+```python
+for n_epi in range(10000):  # Training times
+        # The epsilon probability will also be attenuated by 8% to 1%. The more you go, the more you use the action with the highest Q value.
+        epsilon = max(0.01, 0.08 - 0.01 * (n_epi / 200))
+        s = env.reset()  # Reset environment
+        for t in range(600):  # Maximum timestamp of a round
+            # if n_epi>1000:
+            #     env.render()
+            # According to the current Q network, extract and improve the policy.
+            a = q.sample_action(s, epsilon)
+            # Use improved strategies to interact with the environment
+            s_prime, r, done, info = env.step(a)
+            done_mask = 0.0 if done else 1.0  # End flag mask
+            # Save
+            memory.put((s, a, r / 100.0, s_prime, done_mask))
+            s = s_prime  # Update state
+            score += r  # Record return
+            if done:  # End round
+                break
+        if memory.size() > 2000:  # train if size is greater than 2000
+            train(q, q_target, memory, optimizer)
+        if n_epi % print_interval == 0 and n_epi != 0:
+            for src, dest in zip(q.variables, q_target.variables):
+                dest.assign(src)  # weights come from Q
+```
+
+在训练过程中，只有 $Q_{\theta}$ 网络会被更新，而![$$ {Q}_{\underset{\_}{\theta }} $$](img/515226_1_En_14_Chapter_TeX_IEq72.png)网络会被冻结。在 $Q_{\theta}$ 网络多次更新后，使用下面的代码将最新的参数从 $Q_{\theta}$ 复制到![$$ {Q}_{\underset{\_}{\theta }} $$](img/515226_1_En_14_Chapter_TeX_IEq73.png)。
+
+```markdown
+for src, dest in zip(q.variables, q_target.variables):
+                dest.assign(src)  # weights come from Q
+
+```
+
+**优化 Q 网**。优化 Q 网的时候会一次训练更新十次。每次从重放缓冲池中随机取样，选择动作![$$ {Q}_{\underset{\_}{\theta }}\left({s}_{t+1},a\right) $$](img/515226_1_En_14_Chapter_TeX_IEq74.png)构造 TD 差。这里我们用平滑 L1 误差来构造 TD 误差:
+
+![$$ L=\Big\{0.5\ast {\left(x-y\right)}²,\kern0.5em \left|x-y\right|&lt;1\ \left|x-y\right|-0.5,\kern0.5em \left|x-y\right|\ge 1 $$](img/515226_1_En_14_Chapter_TeX_Equcw.png)
+
+在 TensorFlow 中，平滑 L1 误差可以使用 Huber 误差来实现，如下所示:
+
+```py
+def train(q, q_target, memory, optimizer):
+    # Construct the error of Bellman equation through Q network and shadow network.
+    # And only update the Q network, the update of the shadow network will lag behind the Q network
+    huber = losses.Huber()
+    for i in range(10):  # Train 10 times
+        # Sample from buffer pool
+        s, a, r, s_prime, done_mask = memory.sample(batch_size)
+        with tf.GradientTape() as tape:
+            # s: [b, 4]
+            q_out = q(s)  # Get Q(s,a) distribution
+            # Because TF’s gather_nd is different from pytorch’s gather, we need to the coordinates of gather_nd, indices:[b, 2]
+            # pi_a = pi.gather(1, a) # pytorch only needs one line.
+            indices = tf.expand_dims(tf.range(a.shape[0]), axis=1)
+            indices = tf.concat([indices, a], axis=1)
+            q_a = tf.gather_nd(q_out, indices) # The probability of action, [b]
+            q_a = tf.expand_dims(q_a, axis=1) # [b]=> [b,1]
+            # Get the maximum value of Q(s',a). It comes from the shadow network! [b,4]=>[b,2]=>[b,1]
+            max_q_prime = tf.reduce_max(q_target(s_prime),axis=1,keepdims=True)
+            # Construct the target value of Q(s,a_t)
+            target = r + gamma * max_q_prime * done_mask
+            # Calcualte error between Q(s,a_t) and target
+            loss = huber(q_a, target)
+        # Update network
+        grads = tape.gradient(loss, q.trainable_variables)
+        optimizer.apply_gradients(zip(grads, q.trainable_variables))
+
+```
+
+## 14.5 演员-评论家方法
+
+在引入原有的策略梯度算法时，为了减少方差，我们引入了偏差 b 机制:
+
+![$$ \frac{\partial J\left(\theta \right)}{\partial \theta }={E}_{\tau \sim {p}_{\theta}\left(\tau \right)}\left[{\sum}_{t=1}^{T-1}\frac{\partial }{\partial \theta } loglog\ {\pi}_{\theta }\ \left({s}_t\right)\left(R\left(\tau \right)-b\right)\right] $$](img/515226_1_En_14_Chapter_TeX_Equcx.png)
+
+其中 *b* 可以用蒙特卡罗方法![$$ b=\frac{1}{N}{\sum}_{n=1}^NR\left({\tau}^{(n)}\right) $$](img/515226_1_En_14_Chapter_TeX_IEq75.png)估算。如果将 *R* ( *τ* )理解为*Q*<sup>*π*</sup>(*s*<sub>*t*</sub>， *a* <sub>* t *</sub> )的估计值，则将偏差 b 理解为平均水平 *V* <sup> * π * 那么*R*(*τ*)—*b*就是(近似)优势值函数*A*<sup>*π*</sup>(*s*， *a* )。 其中，如果偏置值函数*V*<sup>*π*</sup>(*s*<sub>*t*</sub>)用神经网络估计，就是演员-评论家法(简称 AC 法)。策略网络*π*<sub>*θ*</sub>(*s*<sub>*t*</sub>)称为 Actor，用于生成策略并与环境交互。![$ {V}_{\phi}^{\pi}\left({s}_t\right) $](img/515226_1_En_14_Chapter_TeX_IEq76.png)价值网络叫 Critic，用来评价当前状态。 *θ* 和 *ϕ* 分别是演员网和评论家网的参数。</sup>
+
+对于演员网络*π*<sub>θ，目标是收益期望最大化，通过![$ \frac{\partial J\left(\theta \right)}{\partial \theta } $](img/515226_1_En_14_Chapter_TeX_IEq77.png)的偏导数更新策略网络的参数*θ*:</sub>
+
+![$$ {\theta}^{\prime}\leftarrow \theta +\eta \bullet \frac{\partial J}{\partial \theta } $$](img/515226_1_En_14_Chapter_TeX_Equcy.png)
+
+对于评论家网络![$$ {V}_{\phi}^{\pi } $$](img/515226_1_En_14_Chapter_TeX_IEq78.png)，目标是通过 MC 方法或 TD 方法获得准确的![$$ {V}_{\phi}^{\pi}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq79.png)价值函数估计:
+
+![$$ \phi = dist\left({V}_{\phi}^{\pi}\left({s}_t\right),{V}_{target}^{\pi}\left({s}_t\right)\right) $$](img/515226_1_En_14_Chapter_TeX_Equcz.png)
+
+其中 dist(a，b)是 a 和 b 的距离测量器，比如欧几里德距离。![$$ {V}_{target}^{\pi}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq80.png)是![$$ {V}_{\phi}^{\pi}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq81.png)的目标值。用 MC 法估算时，
+
+![$$ {V}_{target}^{\pi}\left({s}_t\right)=R\left({\tau}_{t:T}\right) $$](img/515226_1_En_14_Chapter_TeX_Equda.png)
+
+用 TD 法估算时，
+
+![$$ {V}_{target}^{\pi}\left({s}_t\right)={r}_t+\gamma {V}^{\pi}\left({s}_{t+1}\right) $$](img/515226_1_En_14_Chapter_TeX_Equdb.png)
+
+### 优势交流算法
+
+使用优势值函数*A*<sup>πT5(*s*， *a* )的演员-评论家算法称为优势演员-评论家算法。这是目前使用演员-评论家思想的主流算法之一。其实演员-评论家系列算法并不一定要用优势值函数*A*<sup>*π*</sup>(*s*， *a* )。还有其他变种。</sup>
+
+优势演员-评论家算法训练时，演员根据当前状态 *s* <sub>*t*</sub> 和策略 *π* <sub>*θ*</sub> 采样获得动作*a*<sub>t，然后与环境交互获得下一个状态*s*<sub>*t*+1</sub>和奖励</sub>TD 方法可以估计每一步的目标值![$$ {V}_{target}^{\pi}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq82.png)，从而更新 Critic 网络，使价值网络的估计更接近真实环境的期望收益。![$$ {\hat{A}}_t={r}_t+\gamma {V}^{\pi}\left({s}_{t+1}\right)-{V}^{\pi}\left({s}_t\right) $$](img/515226_1_En_14_Chapter_TeX_IEq83.png)用于估计当前动作的优势值，下面的等式用于计算演员网络的梯度 info。![$$ {L}^{PG}\left(\theta \right)={\hat{E}}_t\left[ loglog\ {\pi}_{\theta }\ \left({s}_t\right){\hat{A}}_t\right] $$](img/515226_1_En_14_Chapter_TeX_IEq84.png)
+
+重复这个过程，评论家网会越来越准，演员网也会调整政策，下次做得更好。
+
+### A3C 算法
+
+A3C 算法的全称是异步优势行动者-批评家算法。它是 DeepMind 基于优势行动者-批评家算法[8]提出的异步版本。演员-评论家网络部署在多个线程中进行同步训练，参数通过全局网络同步。。这种异步训练模式大大提高了训练效率；因此训练速度更快，算法性能更好。
+
+如图 14-22 所示，该算法将创建一个新的全局网络和 M 个工作线程。全球网络包含演员和评论家网络，每个线程创建一个新的交互环境，演员和评论家网络。在初始化阶段，全局网络随机初始化参数 *θ* 和 *ϕ* 。Worker 中的演员-评论家网络同步地从全局网络中提取参数来初始化网络。训练时，工人中的演员-评论家网络首先从全局网络中拉取最新参数，然后最新策略*π*θ(*s*tt17)将采样动作与私人环境进行交互，根据优势演员-评论家算法计算参数 *θ* 和 *ϕ* 的梯度。在完成梯度计算后，每个工人将梯度信息提交给全局网络，并使用全局网络的优化器来完成参数更新。在算法测试阶段，只有全局网络与环境交互。
+
+![img/515226_1_En_14_Fig22_HTML.png](img/515226_1_En_14_Fig22_HTML.png)
+
+图 14-22
+
+A3C 算法
+
+### A3C 动手实践
+
+接下来，我们实现异步 A3C 算法。像普通的 Advantage AC 算法一样，需要创建演员-评论家网络。它包含一个演员子网络和一个评论家子网络。有时演员和评论家会共享以前的网络层，以减少网络参数的数量。平衡杆游戏比较简单。我们用一个两层全连通网络来参数化 Actor 网络，另一个两层全连通网络来参数化 Critic 网络。
+
+演员-评论家网络代码如下:
+
+```py
+class ActorCritic(keras.Model):
+    # Actor-Critic model
+    def __init__(self, state_size, action_size):
+        super(ActorCritic, self).__init__()
+        self.state_size = state_size # state vector length
+        self.action_size = action_size # action size
+        # Policy network Actor
+        self.dense1 = layers.Dense(128, activation='relu')
+        self.policy_logits = layers.Dense(action_size)
+        # V network Critic
+        self.dense2 = layers.Dense(128, activation='relu')
+        self.values = layers.Dense(1)
+
+```
+
+演员-评论家正向传播过程分别计算策略分布*π*<sub>*θ*</sub>(*s*<sub>*t*</sub>)和 V 函数估计*V*<sup>*π*</sup>(*s*<sub>*t*</sub>)。代码如下:
+
+```py
+    def call(self, inputs):
+        # Get policy distribution Pi(a|s)
+        x = self.dense1(inputs)
+        logits = self.policy_logits(x)
+        # Get v(s)
+        v = self.dense2(inputs)
+        values = self.values(v)
+        return logits, values
+
+```
+
+**工作者线程类**。在 Worker 线程中，实现了与 Advantage AC 算法相同的计算过程，只是参数 *θ* 和 *ϕ* 的梯度信息不是直接用于更新 Worker 的演员-评论家网络，而是提交给全局网络进行更新。具体来说，在 Worker 类的初始化阶段，server 对象和 opt 对象分别代表全局网络模型和优化器，并创建私有 ActorCritic 类 client 和交互环境 env。
+
+```py
+class Worker(threading.Thread):
+    # The variables created here belong to the class, not to the instance, and are shared by all instances
+    global_episode = 0 # Round count
+    global_avg_return = 0 # Average return
+    def __init__(self,  server, opt, result_queue, idx):
+        super(Worker, self).__init__()
+        self.result_queue = result_queue # Shared queue
+        self.server = server # Central model
+        self.opt = opt # Central optimizer
+        self.client = ActorCritic(4, 2) # Thread private network
+        self.worker_idx = idx # Thread id
+        self.env = gym.make('CartPole-v0').unwrapped
+        self.ep_loss = 0.0
+
+```
+
+在线程运行阶段，每个线程最多与环境交互 400 轮。在该轮开始时，客户端网络采样动作用于与环境进行交互，并保存到内存对象中。回合结束，训练演员网络和评论家网络，获取参数 *θ* 和 *ϕ* 的梯度信息，调用 opt 优化器对象更新全局网络。
+```
+
+```py
+def run(self):
+    total_step = 1
+    mem = Memory()  # Each worker maintains a memory
+    while Worker.global_episode < 400:  # Maximum number of frames not reached
+        current_state = self.env.reset()  # Reset client state
+        mem.clear()
+        ep_reward = 0.
+        ep_steps = 0
+        self.ep_loss = 0
+        time_count = 0
+        done = False
+        while not done:
+            # Get Pi(a|s),no softmax
+            logits, _ = self.client(tf.constant(current_state[None, :],
+                                     dtype=tf.float32))
+            probs = tf.nn.softmax(logits)
+            # Random sample action
+            action = np.random.choice(2, p=probs.numpy()[0])
+            new_state, reward, done, _ = self.env.step(action)  # Interact
+            if done:
+                reward = -1
+            ep_reward += reward
+            mem.store(current_state, action, reward)  # Record
+
+            if time_count == 20 or done:
+                # Calculate the error of current client
+                with tf.GradientTape() as tape:
+                    total_loss = self.compute_loss(done, new_state, mem)
+                self.ep_loss += float(total_loss)
+                # Calculate error
+                grads = tape.gradient(total_loss, self.client.trainable_weights)
+                # Submit gradient info to server, and update gradient
+                self.opt.apply_gradients(zip(grads,
+                                             self.server.trainable_weights))
+                # Pull latest gradient info from server
+                self.client.set_weights(self.server.get_weights())
+                mem.clear()  # Clear Memory
+                time_count = 0
+
+                if done:  # Calcualte return
+                    Worker.global_avg_return = \
+                        record(Worker.global_episode, ep_reward, self.worker_idx,
+                               Worker.global_avg_return, self.result_queue,
+                               self.ep_loss, ep_steps)
+                    Worker.global_episode += 1
+            ep_steps += 1
+            time_count += 1
+            current_state = new_state
+            total_step += 1
+    self.result_queue.put(None)  # End thread
+```
+
+**影评误差计算**。当训练每个工人类时，演员和评论家网络的误差计算实现如下。这里我们用蒙特卡罗方法估计目标值`V_{target}^{\pi}(s_t)`，用`V_{target}^{\pi}(s_t)`和`V_{\phi}^{\pi}(s_t)`两者之间的距离作为评论家网络的误差函数值`_loss`。演员网的策略损失函数`policy_loss`来自`-L^{PG}(\theta)=-\hat{E}_t[ loglog\ \pi_{\theta}\ (s_t)\hat{A}_t]`
+
+其中`-\hat{E}_t[ loglog\ \pi_{\theta}\ (s_t)\hat{A}_t]`由 TensorFlow 的交叉熵函数实现。各种损失函数汇总后，形成总损失函数并返回。
+
+```py
+def compute_loss(self,
+                 done,
+                 new_state,
+                 memory,
+                 gamma=0.99):
+    if done:
+        reward_sum = 0.
+    else:
+        reward_sum = self.client(tf.constant(new_state[None, :],
+                                 dtype=tf.float32))[-1].numpy()[0]
+    # Calculate return
+    discounted_rewards = []
+    for reward in memory.rewards[::-1]:  # reverse buffer r
+        reward_sum = reward + gamma * reward_sum
+        discounted_rewards.append(reward_sum)
+    discounted_rewards.reverse()
+    # Get Pi(a|s) and v(s)
+    logits, values = self.client(tf.constant(np.vstack(memory.states),
+                             dtype=tf.float32))
+    # Calculate advantage = R() - v(s)
+    advantage = tf.constant(np.array(discounted_rewards)[:, None],
+                                     dtype=tf.float32) - values
+    # Critic network loss
+    value_loss = advantage ** 2
+    # Policy loss
+    policy = tf.nn.softmax(logits)
+    policy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+                    labels=memory.actions, logits=logits)
+    # When calculating the policy network loss, the V network is not calculated
+    policy_loss *= tf.stop_gradient(advantage)
+
+    entropy = tf.nn.softmax_cross_entropy_with_logits(labels=policy,
+                                             logits=logits)
+    policy_loss -= 0.01 * entropy
+    # Aggregate each error
+    total_loss = tf.reduce_mean((0.5 * value_loss + policy_loss))
+    return total_loss
+```
+
+**代理人**。代理负责整个 A3C 算法的训练。在初始化阶段，代理类创建一个新的全局网络对象服务器及其优化器对象`opt`。
+
+```py
+class Agent:
+    # Agent, include server
+    def __init__(self):
+        # server optimizer, no client, pull parameters from server
+        self.opt = optimizers.Adam(1e-3)
+        # Sever model
+        self.server = ActorCritic(4, 2)  # State vector, action size
+        self.server(tf.random.normal((2, 4)))
+```
+
+在训练开始时，创建每个工作者线程对象，并且开始每个线程对象与环境进行交互。当每个 `Worker` 对象交互时，它将从全局网络中拉出最新的网络参数，并使用最新的策略与环境进行交互，并计算自己的损失。最后，每个工人向全局网络提交梯度信息，并调用`opt`对象优化全局网络。培训代码如下:
+
+```py
+def train(self):
+    res_queue = Queue()  # Shared queue
+    # Create interactive environment
+    workers = [Worker(self.server, self.opt, res_queue, i)
+               for i in range(multiprocessing.cpu_count())]
+    for i, worker in enumerate(workers):
+        print("Starting worker {}".format(i))
+        worker.start()
+    # Plot return curver
+    moving_average_rewards = []
+    while True:
+        reward = res_queue.get()
+        if reward is not None:
+            moving_average_rewards.append(reward)
+        else:  # End
+            break
+    [w.join() for w in workers]  # Quit threads
+```
+
+## 14.6 摘要
+
+本章介绍了强化学习的问题设置和基本理论，并介绍了解决强化学习问题的两大系列算法:策略梯度法和价值函数法。策略梯度法直接优化策略模型，简单直接，但采样效率低。重要抽样技术可以提高算法的抽样效率。价值函数法采样效率高，易于训练，但需要从价值函数间接推导出策略模型。最后，介绍了结合政策梯度法和价值函数法的行动者-批评家法。我们还介绍了几种典型算法的原理，并利用平衡杆游戏环境进行了算法实现和测试。
+
+## 14.7 参考
+
+1.  Mnih, V., Kavukcuoglu, K., Silver, D., Rusu, A. A., Veness, J., Bellemare, M. G., ... & Hassabis, D. (2015). Human-level control through deep reinforcement learning. *Nature*, 518(7540), 529-533.
+2.  Silver, D., Huang, A., Maddison, C. J., Guez, A., Sifre, L., Van Den Driessche, G., ... & Hassabis, D. (2016). Mastering the game of Go with deep neural networks and tree search. *Nature*, 529(7587), 484-489.
+3.  Silver, D., Schrittwieser, J., Simonyan, K., Antonoglou, I., Huang, A., Guez, A., ... & Hassabis, D. (2017). Mastering the game of Go without human knowledge. *Nature*, 550(7676), 354-359.
+4.  Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. *Machine learning*, 8(3-4), 229-256.
+5.  Rummery, G. A., & Niranjan, M. (1994). On-line Q-learning using connectionist systems. *University of Cambridge, Technical Report CUED/F-INFENG/TR 166*.
+6.  Van Hasselt, H., Guez, A., & Silver, D. (2016). Deep reinforcement learning with double Q-learning. *CoRR*, abs/1509.06461.
+7.  Wang, Z., Schaul, T., Hessel, M., Hasselt, H., Lanctot, M., & Freitas, N. (2016). Dueling network architectures for deep reinforcement learning. *CoRR*, abs/1511.06581.
+8.  Mnih, V., Badia, A. P., Mirza, M., Graves, A., Lillicrap, T. P., Harley, T., ... & Kavukcuoglu, K. (2016). Asynchronous methods for deep reinforcement learning. *CoRR*, abs/1602.01783.
+9.  Watkins, C. J., & Dayan, P. (1992). Q-learning. *Machine learning*, 8(3-4), 279-292.
+10. Schulman, J., Levine, S., Abbeel, P., Jordan, M., & Moritz, P. (2015). Trust region policy optimization. In *Proceedings of the 32nd International Conference on Machine Learning* (pp. 1889-1897).
+11. Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017). Proximal policy optimization algorithms. *CoRR*, abs/1707.06347.

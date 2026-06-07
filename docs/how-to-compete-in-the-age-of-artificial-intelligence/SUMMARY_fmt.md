@@ -1,0 +1,16 @@
+
+# 人工智能时代的竞争指南
+
+- [引言](how-to-compete-in-the-age-of-artificial-intelligence_01.md)
+- [1. 人工智能的经济学](how-to-compete-in-the-age-of-artificial-intelligence_05.md)
+- [2. 在人工智能时代重新构想竞争优势](how-to-compete-in-the-age-of-artificial-intelligence_09.md)
+- [3. 董事会致 CEO：“你的 AI 战略是什么？”](how-to-compete-in-the-age-of-artificial-intelligence_10.md)
+- [4. 黑箱之内：理解人工智能的决策过程](how-to-compete-in-the-age-of-artificial-intelligence_11.md)
+- [5. 智能流程自动化 = RPA + AI](how-to-compete-in-the-age-of-artificial-intelligence_12.md)
+- [6. 网络安全与人工智能](how-to-compete-in-the-age-of-artificial-intelligence_13.md)
+- [7. 智联网 = 物联网 + 云计算 + 人工智能](how-to-compete-in-the-age-of-artificial-intelligence_14.md)
+- [8. IT 运维与人工智能](how-to-compete-in-the-age-of-artificial-intelligence_15.md)
+- [9. 去中心化自治组织 = 区块链 + AI + 物联网](how-to-compete-in-the-age-of-artificial-intelligence_16.md)
+- [10. 伦理与人工智能](how-to-compete-in-the-age-of-artificial-intelligence_17.md)
+- [11. 整合：迈向人机协作生态系统](how-to-compete-in-the-age-of-artificial-intelligence_18.md)
+- [索引](how-to-compete-in-the-age-of-artificial-intelligence_19.md)

@@ -1,0 +1,944 @@
+# 十一、循环神经网络
+
+> 人工智能的强大崛起可能是人类历史上最好的事情，也可能是最坏的事情。
+>
+> —史蒂芬·霍金
+
+卷积神经网络利用数据的局部相关性和权重共享的思想，大大减少了网络参数的数量。非常适合空间和局部相关的图片。它已经成功地应用于计算机视觉领域的一系列任务中。除了空间维度，自然信号还具有时间维度。具有时间维度的信号非常常见，比如我们正在阅读的文本，我们说话时发出的语音信号，以及随时间变化的股票市场。这类数据不一定具有局部相关性，数据在时间维度上的长度也是可变的。卷积神经网络不擅长处理这类数据。
+
+因此，分析和识别这种类型的信号是将人工智能推向通用人工智能必须解决的任务。本章将要介绍的循环神经网络可以较好地解决这类问题。在介绍循环神经网络之前，我们先介绍一下按时间顺序表示数据的方法。
+
+## 11.1 序列表示方法
+
+有顺序的数据一般称为序列，比如随时间变化的商品价格数据就是非常典型的序列。考虑到某商品 A 在 1 月至 6 月间的价格变化趋势，我们可以将其记录为一维向量：`[x_1, x_2, x_3, x_4, x_5, x_6]`。如果想表示 `b` 商品 1-6 月的价格变化趋势，可以记录为 2 维张量：
+
+![$$ \left[\left[{x}_1^{(1)},{x}_2^{(1)},\cdots, {x}_6^{(1)}\right],\left[{x}_1^{(2)},{x}_2^{(2)},\cdots, {x}_6^{(2)}\right],\cdots, \left[{x}_1^{(b)},{x}_2^{(b)},\cdots, {x}_6^{(b)}\right]\right] $$](img/515226_1_En_11_Chapter_TeX_Equa.png)
+
+其中 `b` 代表商品的数量，张量形状为 `[b, 6]`。
+
+这样，序列信号就不难表示了，只需要一个形状为 `[b, s]` 的张量，其中 `b` 是序列的个数，`s` 是序列的长度。然而，许多信号不能直接用标量值来表示。例如，为了表示由每个时间戳生成的长度为 `n` 的特征向量，需要形状为 `[b, s, n]` 的张量。考虑更复杂的文本数据：句子。每个时间戳上生成的字是一个字符，而不是一个数值，因此不能用标量直接表示。我们已经知道，神经网络本质上是一系列数学运算，如矩阵乘法和加法。它们不能直接处理字符串数据。如果希望神经网络用于自然语言处理任务，那么如何将单词或字符转换成数值就变得尤为关键。接下来，我们主要讨论文本序列的表示方法。其他非数字信号请参考文本序列的表示方法。
+
+对于包含 `n` 个单词的句子，表示单词的一种简单方法是我们前面介绍的一键编码方法。以英语句子为例；假设只考虑最常用的 10000 个单词，那么每个单词都可以表示为一个位置为 1，其他位置为 0，长度为 10000 的稀疏一热向量。如图 11-1 所示，如果只考虑 `n` 个位置名称，那么每个位置名称可以编码为一个长度为 `n` 的独热向量。
+
+![img/515226_1_En_11_Fig1_HTML.png](img/515226_1_En_11_Fig1_HTML.png)
+
+图 11-1 位置名称的一键编码
+
+我们把把文本编码成数字的过程称为单词嵌入。一键编码实现单词嵌入简单直观，编码过程不需要学习和训练。而一热编码向量是高维的，极其稀疏，大量位置为 0。因此，它在计算上是昂贵的，并且也不利于神经网络训练。从语义的角度来看，一键编码有一个严重的问题。它忽略了单词固有的语义相关性。例如，对于单词“喜欢”、“不喜欢”、“罗马”、“巴黎”、“喜欢”和“不喜欢”，从语义的角度来看是强烈相关的。两者都表示喜欢的程度。“罗马”和“巴黎”也密切相关。它们都显示了欧洲的两个地点。对于一组这样的词，如果采用一热编码，得到的向量之间没有相关性，不能很好的体现原文的语义相关性。因此，一键编码有明显的缺点。
+
+在自然语言处理领域，有一个关于词向量的专门研究领域，通过词向量可以很好地反映语义的相关程度。衡量词向量之间相关性的一种方法是余弦相似度：
+
+![$$ similarity\left(a,b\right)\triangleq coscos\ \left(\theta \right)=\frac{a\cdotp b}{\mid a\mid \bullet \mid b\mid } $$](img/515226_1_En_11_Chapter_TeX_Equb.png)
+
+其中 `a` 和 `b` 代表两个字向量。图 11-2 显示了单词“法兰西”和“意大利”之间的相似性，以及单词“球”和“鳄鱼”之间的相似性，并且 `θ` 是两个单词向量之间的角度。可见 `coscos(θ)` 更好的体现了语义相关性。
+
+![img/515226_1_En_11_Fig2_HTML.jpg](img/515226_1_En_11_Fig2_HTML.jpg)
+
+图 11-2 余弦相似图
+
+### 嵌入层
+
+在神经网络中，可以通过训练直接获得单词的表示向量。我们把单词的表示层叫做嵌入层。嵌入层负责将单词编码成单词向量 `v`。它接受使用数字编码的单词数 `i`，比如 2 代表“我”，3 代表“我”。系统的总字数记录为 `N_vocab`，输出为长度为 `n`：
+
+![$$ v={f}_{\theta}\left(i|{N}_{vocab},n\right) $$](img/515226_1_En_11_Chapter_TeX_Equc.png)
+
+的向量 `v`。
+
+嵌入层实现起来非常简单。用 `shape[N_vocab, n]` 构建查找表。对于任意字数 `i`，只需要查询相应位置的向量并返回：
+
+![$$ v= table\left[i\right] $$](img/515226_1_En_11_Chapter_TeX_Equd.png)
+
+嵌入层是可训练的。可以放在神经网络的前面，完成单词到向量的转换。得到的表征向量可以继续通过神经网络完成后续任务，计算误差 `L`。采用梯度下降算法实现端到端的训练。
+
+在 TensorFlow 中，一个单词嵌入层可以由层来定义。`Embedding(N_vocab, n)`，其中 `N_vocab` 参数指定单词的个数，`n` 指定单词向量的长度。例如：
+
+```py
+x = tf.range(10) # Generate a digital code of 10 words
+x = tf.random.shuffle(x) # Shuffle
+# Create a layer with a total of 10 words, each word is represented by a vector of length 4
+net = layers.Embedding(10, 4)
+out = net(x) # Get word vector
+```
+
+前面的代码创建了一个包含十个单词的嵌入层。每个单词由长度为 4 的向量表示。您可以传入一个数字代码为 0–9 的输入，以获得这四个单词的单词向量。这些字向量是随机初始化的，没有经过训练，例如：
+
+```py
+<tf.Tensor: id=96, shape=(10, 4), dtype=float32, numpy=
+array([[-0.00998075, -0.04006485,  0.03493755,  0.03328368],
+       [-0.04139598, -0.02630153, -0.01353856,  0.02804044],…
+```
+
+我们可以直接查看嵌入层内部的查询表：
+
+```py
+In [1]: net.embeddings
+Out[1]:
+<tf.Variable 'embedding_4/embeddings:0' shape=(10, 4) dtype=float32, numpy=
+array([[ 0.04112223,  0.01824595, -0.01841902,  0.00482471],
+       [-0.00428962, -0.03172196, -0.04929272,  0.04603403],…
+```
+
+`net.embeddings` 张量的可优化属性是真实的，这意味着它可以通过梯度下降算法来优化。
+
+```py
+In [2]: net.embeddings.trainable
+Out[2]:True
+```
+
+### 预先训练的单词向量
+
+嵌入层的查找表是随机初始化的，需要从头开始训练。事实上，我们可以使用预先训练的单词嵌入模型来获得单词表示。基于预训练模型的词向量相当于传递了整个语义空间的知识，往往可以获得更好的性能。
+
+目前广泛使用的预训练模型有 Word2Vec 和 GloVe。他们已经在大规模语料库上接受了训练，以获得更好的词向量表示，并可以直接导出学习到的词向量表，以便于迁移到其他任务。比如手套型号 GloVe.6B.50d 的词汇量为 40 万，每个单词用一个长度为 50 的向量表示。用户只需下载相应的模型文件即可使用。“glove6b50dtxt.zip”型号文件约 69MB。
+
+那么如何使用这些预先训练好的词向量模型来帮助提高 NLP 任务的性能呢？很简单。对于嵌入层，不再使用随机初始化。相反，我们使用预先训练的模型参数来初始化嵌入层的查询表。例如：
+
+```py
+# Load the word vector table from the pre-trained model
+embed_glove = load_embed('glove.6B.50d.txt')
+# Initialize the Embedding layer directly using the pre-trained word vector table
+net.set_weights([embed_glove])
+```
+
+预训练的词向量模型初始化的嵌入层可以设置为不参与训练：`net.trainable = False`，那么预训练的词向量直接应用于这个特定的任务。如果您还想从预训练的单词向量模型中学习不同的表示，则可以通过设置 `net.trainable = True` 将嵌入层包括在反向传播算法中，然后可以使用梯度下降来微调单词表示。
+
+## 11.2 循环神经网络
+
+现在让我们考虑如何处理序列信号。以一段文字序列为例，考虑一句话：
+
+> “我讨厌这部无聊的电影”
+
+通过嵌入层，可以转换成一个具有形状的张量 `[b, s, n]`，其中 `b` 是句子的数量，`s` 是句子的长度，`n` 是词向量的长度。前面的句子可以表示为形状为 `[1, 5, 10]` 的张量，其中 5 表示句子单词的长度，10 表示单词向量的长度。
+
+接下来，我们将逐步探索一种可以处理序列信号的网络模型。我们以情感分类任务为例，如图 11-3 所示。情感分类任务提取由文本数据表达的整体语义特征，并由此预测输入文本的情感类型：积极或消极。从分类的角度来看，情感分类是一个简单的二分类问题。与图像分类不同，由于输入是文本序列，传统的卷积神经网络无法达到很好的效果。那么什么类型的网络擅长处理序列数据呢？
+
+![img/515226_1_En_11_Fig3_HTML.png](img/515226_1_En_11_Fig3_HTML.png)
+
+图 11-3 情感分类任务
+
+### 11.2.1 全连接层是否可行？
+
+我们首先想到的是，对于每一个词向量，都可以用一个全连通的层网络。
+
+![$$ o=\sigma \left({W}_t{x}_t+{b}_t\right) $$](img/515226_1_En_11_Chapter_TeX_Eque.png)
+
+提取语义特征，如图 11-4 所示。通过 `s` 个全连接层分类网络 1 提取每个单词的单词向量。最后融合所有单词的特征，通过分类网络 2 输出序列的类别概率分布。对于长度为 `s` 的句子，至少需要 `s` 个全连接的网络层。
+
+![img/515226_1_En_11_Fig4_HTML.png](img/515226_1_En_11_Fig4_HTML.png)
+
+图 11-4 网络架构 1
+
+这种方案的缺点是：
+
+*   网络参数数量可观，内存占用和计算成本较高。同时，由于每个序列的长度 `s` 不相同，网络结构是动态变化的。
+*   各全连通层子网 `W_i` 和 `b_i` 只能感知当前词向量的输入，无法感知前后的上下文信息，导致句子整体语义缺失。每个子网络只能根据自己的输入提取高级特征。
+
+我们将逐一解决这两个缺点。
+
+### 共享重量
+
+在介绍卷积神经网络时，我们已经了解到，卷积神经网络之所以在处理局部相关数据方面优于全连接网络，是因为它充分利用了权重分担的思想，大大减少了网络参数的数量，使得网络训练更加高效。那么，我们在处理序列信号时，是否可以借鉴权重分担的思想呢？
+
+在图 11-4 的方案中，`s` 个全连通层的网络并没有实现权重分担。我们尝试共享这 `s` 个网络层参数，实际上相当于用一个全连通的网络来提取所有单词的特征信息，如图 11-5。
+
+![img/515226_1_En_11_Fig5_HTML.png](img/515226_1_En_11_Fig5_HTML.png)
+
+图 11-5 网络架构 2
+
+权重共享后，参数数量大大减少，网络训练变得更加稳定高效。但是，这种网络结构不考虑序列的顺序，通过打乱单词向量的顺序仍然可以获得相同的输出。因此，它不能获得有效的全局语义信息。
+
+### 全局语义
+
+如何赋予网络提取整体语义特征的能力？换句话说，网络如何将词向量的语义信息按顺序提取出来，并累积成整个句子的全局语义信息？我们想到了记忆机制。如果网络能够提供单独的记忆变量，每次提取词向量的特征并刷新记忆变量，直到最后一次输入完成，此时的记忆变量存储所有序列的语义特征，由于输入序列的顺序，记忆变量的内容与序列顺序密切相关。
+
+![img/515226_1_En_11_Fig6_HTML.png](img/515226_1_En_11_Fig6_HTML.png)
+
+图 11-6 循环神经网络（没有添加偏差）
+
+我们将前面的记忆机制实现为一个状态张量 `h`，如图 11-6 所示。除了原有的 `W_xh` 参数共享之外，这里增加了一个额外的 `W_hh` 参数。每个时间戳 `t` 的状态张量 `h` 刷新机制为：
+
+![$$ {h}_t=\sigma \left({W}_{xh}{x}_t+{W}_{hh}{h}_{t-1}+b\right) $$](img/515226_1_En_11_Chapter_TeX_Equf.png)
+
+其中状态张量 `h_0` 为初始内存状态，可以初始化为全 0。输入 `s` 个字向量后，得到网络的最终状态张量 `h_s`。`h_s` 更好的代表了句子的全局语义信息。将 `h_s` 通过一个全连通的层分类器就可以完成情感分类任务。
+
+### 4 循环神经网络
+
+通过一步步的探索，我们最终提出了一个“新”的网络结构，如图 11-7 所示。在每个时间戳 `t`，网络层接受当前时间戳的输入 `x_t` 和前一个时间戳的网络状态向量 `h_{t-1}`，之后：
+
+![$$ {h}_t={f}_{\theta}\left({h}_{t-1},{x}_t\right) $$](img/515226_1_En_11_Chapter_TeX_Equg.png)
+
+变换后得到当前时间戳的新状态向量 `h_t` 并写入内存状态，其中 `f_θ` 代表网络的运行逻辑，`θ` 为网络参数集。在每一个时间戳，网络层都有一个输出产生 `o_t`，`o_t = g_ϕ(h_t)`，就是输出网络变换后的状态向量。
+
+![img/515226_1_En_11_Fig7_HTML.png](img/515226_1_En_11_Fig7_HTML.png)
+
+图 11-7 扩展的 RNN 模型
+
+前面的网络结构折叠在时间戳上，如图 11-8 所示。网络循环接受序列的每个特征向量 `x_t`，刷新内部状态向量 `h_t`，同时形成输出 `o_t`。对于这种网络结构，我们称之为循环神经网络（RNN）。
+
+![img/515226_1_En_11_Fig8_HTML.png](img/515226_1_En_11_Fig8_HTML.png)
+
+图 11-8 折叠 RNN 模型
+
+更具体地说，如果我们用张量 `W_xh`，`W_hh` 和 bias `b` 来参数化 `f_θ` 网络，并使用以下方式更新记忆状态，我们称这类网络为基本循环神经网络，除非另有说明；一般来说，循环神经网络指的就是这种实现。
+
+![$$ {h}_t=\sigma \left({W}_{xh}{x}_t+{W}_{hh}{h}_{t-1}+b\right) $$](img/515226_1_En_11_Chapter_TeX_Equh.png)
+
+在循环神经网络中，激活函数更多使用的是 Tanh 函数，我们可以选择不使用 bias `b` 来进一步减少参数的数量。状态向量 `h_t` 可以直接作为输出，即 `o_t = h_t`，或者对 `h_t` 做一个简单的线性变换就可以做到 `o_t`。
+
+## 11.3 梯度传播
+
+通过循环神经网络的更新表达式可以看出，输出可导至张量 `W_xh`，`W_hh` 和 bias `b`，可以用自动梯度下降算法求解网络的梯度。这里我们简单推导 RNN 的梯度传播公式，并探讨其特性。
+
+考虑梯度`$$ \frac{\partial L}{\partial {W}_{hh}} $$`，其中 *L* 为网络的误差，只考虑 t 处最后输出 *o* <sub>* t *</sub> 与真值之差。由于 *W*
+
+其中`$$ \frac{\partial L}{\partial {o}_t} $$`可以根据损失函数直接得到，在`*o*<sub>*t*</sub>=*h*<sub>*t*</sub>`:
+
+`$$ \frac{\partial {o}_t}{\partial {h}_t}=I $$`
+
+的情况下
+
+而`$$ \frac{\partial^{+}{h}_i}{\partial {W}_{hh}} $$`的梯度也可以在展开后得到*h*<sub>*I*</sub>:
+
+`$$ \frac{\partial^{+}{h}_i}{\partial {W}_{hh}}=\frac{\partial \sigma \left({W}_{xh}{x}_t+{W}_{hh}{h}_{t-1}+b\right)}{\partial {W}_{hh}} $$`
+
+其中`$$ \frac{\partial^{+}{h}_i}{\partial {W}_{hh}} $$`只考虑一个时间戳的梯度传播，即“直接”偏导数，与`$$ \frac{\partial L}{\partial {W}_{hh}} $$`考虑所有时间戳的梯度传播不同 *i* = 1， *t* 。
+
+所以我们只需要推导出`$$ \frac{\partial {h}_t}{\partial {h}_i} $$`的表达式，就可以完成循环神经网络的梯度推导。利用链式法则，我们把`$$ \frac{\partial {h}_t}{\partial {h}_i} $$`分成连续时间戳的梯度表达式:
+
+`$$ \frac{\partial {h}_t}{\partial {h}_i}=\frac{\partial {h}_t}{\partial {h}_{t-1}}\frac{\partial {h}_{t-1}}{\partial {h}_{t-2}}\cdots \frac{\partial {h}_{i+1}}{\partial {h}_i}={\prod}_{k=i}^{t-1}\frac{\partial {h}_{k+1}}{\partial {h}_k} $$`
+
+考虑:
+
+`$$ {h}_{k+1}=\sigma \left({W}_{xh}{x}_{k+1}+{W}_{hh}{h}_k+b\right) $$`
+
+然后:
+
+`$$ \frac{\partial {h}_{k+1}}{\partial {h}_k}={W}_{hh}^T\mathit{\operatorname{diag}}\left({\sigma}^{\prime}\left({W}_{xh}{x}_{k+1}+{W}_{hh}{h}_k+b\right)\right) $$`
+
+`$$ ={W}_{hh}^T\mathit{\operatorname{diag}}\left({\sigma}^{\prime}\left({h}_{k+1}\right)\right) $$`
+
+其中 *diag* ( *x* )将向量*x的每个元素作为矩阵的对角元素，得到一个其他元素都为 0 的对角矩阵，例如:*
+
+`*![$$ \mathit{\operatorname{diag}}\left(\left[3,2,1\right]\right)=\left[3\ 0\ 0\ 0\ 2\ 0\ 0\ 0\ 1\ \right] $$](img/515226_1_En_11_Chapter_TeX_Equp.png)*`
+
+因此，
+
+`$$ \frac{\partial {h}_t}{\partial {h}_i}={\prod}_{j=i}^{t-1}\mathit{\operatorname{diag}}\left({\sigma}^{\prime}\left({W}_{xh}{x}_{j+1}+{W}_{hh}{h}_j+b\right)\right){W}_{hh} $$`
+
+至此，`$$ \frac{\partial L}{\partial {W}_{hh}} $$`的梯度推导完成。
+
+由于深度学习框架可以帮助我们自动导出梯度，所以我们只需要了解循环神经网络的梯度传播机制。在推导`$$ \frac{\partial L}{\partial {W}_{hh}} $$`的过程中，我们发现`$$ \frac{\partial {h}_t}{\partial {h}_i} $$`的梯度包含了*W*<sub>hh</sub>的连续乘法运算，这是造成循环神经网络训练困难的根本原因。我们以后再讨论。
+
+## 11.4 如何使用 RNN 图层
+
+在介绍了循环神经网络的原理之后，让我们学习如何在 TensorFlow 中实现 RNN 层。在 TensorFlow 中，*σ*(*W*<sub>xh</sub>*x*<sub>*t*</sub>+*W*<sub>*hh*</sub>*h*<sub>*t*—1</sub>+*b*)的计算可以分层完成。`SimpleRNNCell()`函数。需要注意的是，在 TensorFlow 中，RNN 代表一般意义上的循环神经网络。对于我们目前介绍的基本循环神经网络，一般称为 SimpleRNN。SimpleRNN 和 SimpleRNNCell 的区别在于，有 Cell 的层只完成一个时间戳的转发操作，而没有 cell 的层一般是基于 cell 层实现的，cell 层内部已经完成了多个时间戳循环。所以使用起来更加方便快捷。
+
+我们先介绍 SimpleRNNCell 的使用，再介绍 SimpleRNN 层的使用。
+
+### 简单电池
+
+以某个输入特征长度 n=4，细胞状态向量特征长度 h=3 为例。首先，我们创建一个 SimpleRNNCell，不指定序列长度 s。代码如下:
+
+```py
+In [3]:
+cell = layers.SimpleRNNCell(3) # Create RNN Cell, memory vector length is 3
+cell.build(input_shape=(None,4)) # Output feature length n=4
+cell.trainable_variables # Print wxh, whh, b tensor
+Out[3]:
+[<tf.Variable 'kernel:0' shape=(4, 3) dtype=float32, numpy=...>,
+ <tf.Variable 'recurrent_kernel:0' shape=(3, 3) dtype=float32, numpy=...>,
+ <tf.Variable 'bias:0' shape=(3,) dtype=float32, numpy=array([0., 0., 0.], dtype=float32)>]
+```
+
+可以看出 SimpleRNNCell 内部维护了三个张量，核变量是张量 *W* <sub>*xh*</sub> ，recurrent_kernel 变量是张量 *W* <sub>*hh*</sub> ，偏置变量是偏置向量 *b* 。但是 RNN 的内存向量 *h* 不是由 SimpleRNNCell 维护的，用户需要初始化向量 *h* <sub>0</sub> 并在每个时间戳上记录 *h* <sub>*t*</sub> 。
+
+通过调用单元格实例:
+
+`$$ {o}_t,\left[{h}_t\right]= Cell\left({x}_t,\left[{h}_{t-1}\right]\right) $$`
+
+可以完成正向操作
+
+对于 SimpleRNNCell，*o*<sub>*t*</sub>=*h*<sub>*t*</sub>，是同一个对象。没有额外的线性层转换。[*h*<sub>*t*</sub>]被包裹在一个列表中。此设置是为了与 RNN 变量(如 LSTM 和格鲁)保持一致。在循环神经网络的初始化阶段，状态向量 *h* <sub>0</sub> 通常被初始化为全零向量，例如:
+
+```py
+In [4]:
+# Initialize state vector. Wrap with list, unified format
+h0 = [tf.zeros([4, 64])]
+x = tf.random.normal([4, 80, 100]) # Generate input tensor, 4 sentences of 80 words
+xt = x[:,0,:] # The first word of all sentences
+# Construct a Cell with input feature n=100, sequence length s=80, state length=64
+cell = layers.SimpleRNNCell(64)
+out, h1 = cell(xt, h0) # Forward calculation
+print(out.shape, h1[0].shape)
+Out[4]: (4, 64) (4, 64)
+```
+
+可以看出，经过一次时间戳计算，输出的形状和状态张量都是[b，h]，两者的 id 打印如下:
+
+```py
+In [5]:print(id(out), id(h1[0]))
+Out[5]:2154936585256 2154936585256
+```
+
+两个 id 是一样的，就是直接用状态向量作为输出向量。对于长度为 s 的训练，需要遍历信元类 s 次，才能完成网络层的一次正向操作。例如:
+
+```py
+h = h0 # Save a list of state vectors on each time stamp
+# Unpack the input in the dimension of the sequence length to get xt:[b,n]
+for xt in tf.unstack(x, axis=1):
+    out, h = cell(xt, h) # Forward calculation, both out and h are covered
+# The final output can aggregate the output on each time stamp, or just take the output of the last time stamp
+out = out
+```
+
+最后时间戳之外的输出变量将是网络的最终输出。实际上，你也可以在每个时间戳上保存输出，然后求和或平均，作为网络的最终输出。
+
+### 11.4.2 多层简单网络
+
+和卷积神经网络一样，循环神经网络虽然在时间轴上扩展了很多倍，但也只能算作一个网络层。通过在深度方向堆叠多个细胞类，网络可以达到与深度卷积神经网络相同的效果，大大提高了网络的表达能力。但是，相比于数十或数百个卷积神经网络的深层层数，循环神经网络容易出现梯度扩散和梯度爆炸。深度循环神经网络非常难以训练。目前常见的循环神经网络模型的层数一般小于 10 层。
+
+这里我们以一个两层循环神经网络为例来介绍使用细胞类来构建一个多层 RNN 网络。首先创建两个 SimpleRNNCell 单元格，如下所示:
+
+```py
+x = tf.random.normal([4,80,100])
+xt = x[:,0,:] # Take first timestamp of the input x0
+# Construct 2 Cells, first cell0, then cell1, the memory state vector length is 64
+cell0 = layers.SimpleRNNCell(64)
+cell1 = layers.SimpleRNNCell(64)
+h0 = [tf.zeros([4,64])] # initial state vector of cell0
+h1 = [tf.zeros([4,64])] # initial state vector of cell1
+```
+
+在时间轴上多次计算，实现整个网络的正向运行。每个时间戳上的输入 xt 先经过第一层得到输出 out0，再经过第二层得到输出 out1。代码如下:
+
+```py
+for xt in tf.unstack(x, axis=1):
+    # xt is input and output is out0
+    out0, h0 = cell0(xt, h0)
+    # The output out0 of the previous cell is used as the input of this cell
+    out1, h1 = cell1(out0, h1)
+```
+
+上述方法首先在所有图层上完成一个时间戳的输入传播，然后在一个循环中计算所有时间戳的输入。
+
+其实也可以先完成第一层输入的所有时间戳的计算，并保存第一层在所有时间戳上的输出列表，再计算第二层、第三层等的传播。如下所示:
+
+```py
+# Save the output above all timestamps of the previous layer
+middle_sequences = []
+# Calculate the output on all timestamps of the first layer and save
+for xt in tf.unstack(x, axis=1):
+    out0, h0 = cell0(xt, h0)
+    middle_sequences.append(out0)
+# Calculate the output on all timestamps of the second layer
+# If it is not the last layer, you need to save the output above all timestamps
+for xt in middle_sequences:
+    out1, h1 = cell1(xt, h1)
+```
+
+这样我们就需要一个额外的列表来保存上一层所有时间戳的信息:`middle_sequences.append(out0)`。这两种方法效果相同，可以选择自己喜欢的编码风格。
+
+应该注意的是，在每个时间戳，循环神经网络的每一层都有一个状态输出。对于后续任务，我们应该收集哪种状态输出最有效？一般来说，末级单元的状态可能保留了高层的全局语义特征，所以一般将末级的输出作为后续任务网络的输入。更具体地说，每一层的最后时间戳上的状态输出包含整个序列的全局信息。如果只想用一个状态变量来完成后续任务，比如情感分类问题，一般最后一层在最后一个时间戳的输出是最合适的。
+
+### 11.4.3 SimpleRNN 图层
+
+通过使用 SimpleRNNCell 层，我们可以了解循环神经网络正向操作的每个细节。在实际使用中，为了简单起见，我们不希望手动实现循环神经网络的内部计算过程，比如各层状态向量的初始化以及时间轴上各层的运算。使用 SimpleRNN 高级接口可以帮助我们非常方便地实现这个目标。
+
+例如，如果我们想完成一个单层循环神经网络的正向运算，可以很容易地实现如下:
+
+```py
+In [6]:
+layer = layers.SimpleRNN(64) # Create a SimpleRNN layer with a state vector length of 64
+x = tf.random.normal([4, 80, 100])
+out = layer(x) # Like regular convolutional networks, one line of code can get the output
+out.shape
+Out[6]: TensorShape([4, 64])
+```
+
+可以看到，SimpleRNN 只用一行代码就可以完成整个正向操作过程，默认情况下返回最后一个时间戳的输出。如果您想要返回所有时间戳的输出列表，您可以如下设置 `return_sequences=True`:
+
+```markdown
+# 11.5 RNN 情感分类实践
+
+现在让我们使用基本的 RNN 网络来解决情感分类问题。网络结构如图 11-9 所示。RNN 网络有两层。循环提取序列信号的语义特征。第二 RNN 层的最后时间戳的状态向量![$$ {h}_s^{(2)} $$](img/515226_1_En_11_Chapter_TeX_IEq12.png)被用作句子的全局语义特征表示。送到全连通层构成的分类网络 3，得到样本 x 是正面情绪 P 的概率(x 是正面情绪│x) ∈[0，1]。
+
+![img/515226_1_En_11_Fig9_HTML.png](img/515226_1_En_11_Fig9_HTML.png)
+
+图 11-9
+
+情感分类任务的网络结构
+
+## 数据集
+
+这里使用经典的 IMDB 电影评论数据集来完成情感分类任务。IMDB 电影评论数据集包含 50，000 条用户评论。评估标签分为负面和正面。IMDB 评分< 5 的用户评论标记为 0，表示负面；IMDB 评分≥7 的用户评论标为 1，表示正面。25，000 条电影评论用于训练集，25，000 条用于测试集。
+
+可以通过 Keras 提供的数据集工具加载 IMDB 数据集，如下所示:
+
+```py
+In [8]:
+batchsz = 128 # Batch size
+total_words = 10000 # Vocabulary size N_vocab
+max_review_len = 80 # The maximum length of the sentence s, the sentence part greater than will be truncated, and the sentence less than will be filled
+embedding_len = 100 # Word vector feature length n
+# Load the IMDB data set, the data here is coded with numbers, and a number represents a word
+(x_train, y_train), (x_test, y_test) = keras.datasets.imdb.load_data(num_words=total_words)
+# Print the input shape, the shape of the label
+print(x_train.shape, len(x_train[0]), y_train.shape)
+print(x_test.shape, len(x_test[0]), y_test.shape)
+Out[8]:
+(25000,) 218 (25000,)
+(25000,) 68 (25000,)
+```
+
+可以看到，`x_train` 和 `x_test` 是一维数组，长度为 25000。数组中的每个元素都是一个长度不定的列表，其中存储了用数字编码的每个句子。例如，训练集的第一句共有 218 个单词，测试集的第一句有 68 个单词，每个句子都包含句子开始标记 ID。
+
+那么每个单词是如何编码成数字的呢？我们可以通过查看其编码表来获得编码方案，例如:
+
+```py
+In [9]:
+# Digital code table
+word_index = keras.datasets.imdb.get_word_index()
+# Print out the words and corresponding numbers in the coding table
+for k,v in word_index.items():
+   print(k,v)
+Out[10]:
+   ...diamiter 88301
+   moveis 88302
+   mardi 14352
+   wells' 11583
+   850pm 88303...
+```
+
+由于编码表的关键字是一个字，值是一个 ID，所以编码表被翻转，并加上标志位的编码 ID。代码如下:
+
+```py
+# The first 4 IDs are special bits
+word_index = {k:(v+3) for k,v in word_index.items()}
+word_index["<PAD>"] = 0  # Fill flag
+word_index["<START>"] = 1 # Start flag
+word_index["<UNK>"] = 2  # Unknown word sign
+word_index["<UNUSED>"] = 3
+# Flip code table
+reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+```
+
+对于数字编码的句子，通过以下函数将其转换为字符串数据:
+
+```py
+def decode_review(text):
+    return ' '.join([reverse_word_index.get(i, '?') for i in text])
+```
+
+例如，要转换一个句子，代码如下:
+
+```py
+In [11]:decode_review(x_train[0])
+Out[11]:
+"<START> this film was just brilliant casting location scenery story direction everyone's...<UNK> father came from...
+```
+
+对于长短不齐的句子，人为设置一个阈值。对于大于这个长度的句子，选择一些要截断的单词，可以选择截掉句首或者句尾。对于小于此长度的句子，可以选择在句首或句尾填充。句子截断功能可以通过 `keras.preprocessing.sequence.pad_sequences()` 函数方便地实现，例如:
+
+```py
+# Truncate and fill sentences so that they are of equal length, here long sentences retain the part behind the sentence, and short sentences are filled in front
+x_train = keras.preprocessing.sequence.pad_sequences(x_train, maxlen=max_review_len)
+x_test = keras.preprocessing.sequence.pad_sequences(x_test, maxlen=max_review_len)
+```
+
+截断或填充到相同长度后，通过 `dataset` 类将其包装成 `Dataset` 对象，并添加常用的数据集处理流程，代码如下:
+
+```py
+In [12]:
+# Build a data set, break up, batch, and discard the last batch that is not enough batchsz
+db_train = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+db_train = db_train.shuffle(1000).batch(batchsz, drop_remainder=True)
+db_test = tf.data.Dataset.from_tensor_slices((x_test, y_test))
+db_test = db_test.batch(batchsz, drop_remainder=True)
+# Statistical data set attributes
+print('x_train shape:', x_train.shape, tf.reduce_max(y_train), tf.reduce_min(y_train))
+print('x_test shape:', x_test.shape)
+Out[12]:
+x_train shape: (25000, 80) tf.Tensor(1, shape=(), dtype=int64) tf.Tensor(0, shape=(), dtype=int64)
+x_test shape: (25000, 80)
+```
+
+可以看出，截断填充后的句子长度统一为 80，这是设定的句子长度阈值。`drop_remainder=True` 参数丢弃最后一个批次，因为它的实际批次大小可能小于预设的批次大小。
+
+## 网络模型
+
+我们创建一个自定义模型类 `MyRNN`，继承自模型基类，我们需要创建一个新的嵌入层、两个 RNN 层和一个分类层，如下所示:
+
+```py
+class MyRNN(keras.Model):
+    # Use Cell method to build a multi-layer network
+    def __init__(self, units):
+        super(MyRNN, self).__init__()
+        # [b, 64], construct Cell initialization state vector, reuse
+        self.state0 = [tf.zeros([batchsz, units])]
+        self.state1 = [tf.zeros([batchsz, units])]
+        # Word vector encoding [b, 80] => [b, 80, 100]
+        self.embedding = layers.Embedding(total_words, embedding_len,
+                                          input_length=max_review_len)
+        # Construct 2 Cells and use dropout technology to prevent overfitting
+        self.rnn_cell0 = layers.SimpleRNNCell(units, dropout=0.5)
+        self.rnn_cell1 = layers.SimpleRNNCell(units, dropout=0.5)
+        # Construct a classification network to classify the output features of CELL, 2 classification
+        # [b, 80, 100] => [b, 64] => [b, 1]
+        self.outlayer = layers.Dense(1)
+```
+
+单词向量被编码为长度 `n=100`，RNN 的状态向量长度是 `h = units`。分类网络完成一个二元分类任务，所以输出节点设置为 1。
+
+正向传播逻辑如下:输入序列通过嵌入层完成词向量编码，循环通过两个 RNN 层提取语义特征，取最后一层最后一个时间戳的状态向量输出，送入分类网络。输出概率在 Sigmoid 激活函数之后获得，如下所示:
+
+```py
+    def call(self, inputs, training=None):
+        x = inputs # [b, 80]
+        # Word vector embedding: [b, 80] => [b, 80, 100]
+        x = self.embedding(x)
+        # Pass 2 RNN CELLs,[b, 80, 100] => [b, 64]
+        state0 = self.state0
+        state1 = self.state1
+        for word in tf.unstack(x, axis=1): # word: [b, 100]
+            out0, state0 = self.rnn_cell0(word, state0, training)
+            out1, state1 = self.rnn_cell1(out0, state1, training)
+        # Last layer's last time stamp as the network output: [b, 64] => [b, 1]
+        x = self.outlayer(out1, training)
+        # Pass through activation function, p(y is pos|x)
+        prob = tf.sigmoid(x)
+
+        return prob
+```
+
+## 培训和测试
+
+为简单起见，这里我们使用 Keras 的 `Compile&Fit` 方法来训练网络。设置优化器为 `Adam` optimizer，学习率为 0.001，误差函数使用二类交叉熵损失函数 `BinaryCrossentropy`，测试度量使用准确率。代码如下:
+
+```py
+def main():
+    units = 64 # RNN state vector length n
+    epochs = 20 # Training epochs
+
+    model = MyRNN(units) # Create the model
+    # Compile
+    model.compile(optimizer = optimizers.Adam(0.001),
+                  loss = losses.BinaryCrossentropy(),
+                  metrics=['accuracy'])
+    # Fit and validate
+    model.fit(db_train, epochs=epochs, validation_data=db_test)
+    # Test
+    model.evaluate(db_test)
+```
+
+经过 20 次历元训练，网络在测试数据集上达到了 80.1%的准确率。
+
+# 11.6 渐变消失和渐变爆炸
+
+循环神经网络的训练并不稳定，网络的深度不能任意加深。为什么循环神经网络训练困难？我们来简单回顾一下梯度求导中的关键表达式:
+
+![$$ \frac{\partial {h}_t}{\partial {h}_i}={\prod}_{j=i}^{t-1}\mathit{\operatorname{diag}}\left({\sigma}^{\prime}\left({W}_{xh}{x}_{j+1}+{W}_{hh}{h}_j+b\right)\right){W}_{hh} $$](img/515226_1_En_11_Chapter_TeX_Equs.png)
+
+换句话说，从时间戳 *i* 到时间戳 *t* 的渐变![$$ \frac{\partial {h}_t}{\partial {h}_i} $$](img/515226_1_En_11_Chapter_TeX_IEq13.png)包含了 *W* <sub>* hh *</sub> 的连续乘法运算。当*W*<sub>*hh*</sub>的最大特征值小于 1 时，多次连续的乘法运算会使![$$ \frac{\partial {h}_t}{\partial {h}_i} $$](img/515226_1_En_11_Chapter_TeX_IEq14.png)的元素值接近于零；当![$$ \frac{\partial {h}_t}{\partial {h}_i} $$](img/515226_1_En_11_Chapter_TeX_IEq15.png)的值大于 1 时，多次连续的乘法运算会使![$$ \frac{\partial {h}_t}{\partial {h}_i} $$](img/515226_1_En_11_Chapter_TeX_IEq16.png)的值爆炸式增加。
+
+我们可以从下面两个例子直观感受到渐变消失和渐变爆炸的产生:
+```
+
+```markdown
+# 11.7 RNN 短期记忆
+
+除了循环神经网络的训练难度，还有一个更严重的问题，就是短时记忆。考虑一个长句子:
+
+今天的天气真好，尽管路上发生了一件不愉快的事情...，我马上调整好状态，开心地准备迎接美好的一天。
+
+按照我们的理解，我们之所以“高高兴兴地准备迎接美好的一天”，是因为句首提到的“今天的天气真美”。可见，人类可以很好地理解长句，但循环神经网络不是必须的。研究人员发现，循环神经网络在处理长句时，只能理解有限长度内的信息，而更大范围内的有用信息却不能很好地利用。我们称这种现象为短期记忆。
+
+那么，这种短时记忆是否可以延长，以便循环神经网络可以在更长的范围内有效地使用训练数据，从而提高模型性能？1997 年，瑞士人工智能科学家 Jürgen Schmidhuber 提出了长短期记忆(LSTM)模型。与基本的 RNN 网络相比，LSTM 拥有更长的内存，更擅长处理更长的序列数据。LSTM 被提出后，已经广泛应用于序列预测、自然语言处理等任务，几乎取代了基本的 RNN 模型。
+
+接下来，我们将介绍更受欢迎和强大的 LSTM 网络。
+
+# 11.8 LSTM 原则
+
+RNN 的基本网络结构如图 11-13 所示。前一个时间戳的状态向量`h_{t-1}`与当前时间戳的输入 `x_t` 进行线性变换后，通过激活函数 `tanh` 得到新的状态向量 `h_t` 。与只有一个状态向量 `h_t` 的基本 RNN 网络相比，LSTM 增加了一个新的状态向量 `C_t` ，同时引入了门控机制，通过门控单元控制信息的遗忘和更新，如图 11-14 所示。
+
+![img/515226_1_En_11_Fig14_HTML.png](img/515226_1_En_11_Fig14_HTML.png)
+
+图 11-14
+
+LSM 结构
+
+![img/515226_1_En_11_Fig13_HTML.png](img/515226_1_En_11_Fig13_HTML.png)
+
+图 11-13
+
+基本 RNN 结构
+
+在 LSTM 中，有两个状态向量 `c` 和 `h` ，其中 `c` 是 LSTM 的内部状态向量，可以理解为 LSTM 的内存状态向量， `h` 代表 LSTM 的输出向量。与基本的 RNN 相比，LSTM 将内部存储器和输出分成两个变量，并使用三个门，输入门、遗忘门和输出门，来控制内部信息流。
+
+闸门机制可以理解为控制数据流的一种方式，类似于水阀:当水阀全开时，水流畅通无阻；当水阀完全关闭时，水流被完全阻断。在 LSTM，阀门开度由闸门控制值向量 `g` 表示，如图 11-15 所示，通过 `σ(g)` 激活函数，闸门控制被压缩到[0，1]之间的区间。当 `σ(g) = 0` 时，所有门关闭，输出为 `o = 0`。当 `σ(g) = 1` 时，所有门打开，输出为 `o = x` 。通过 gate 机制，可以更好地控制数据流。
+
+![img/515226_1_En_11_Fig15_HTML.png](img/515226_1_En_11_Fig15_HTML.png)
+
+图 11-15
+
+闸门机制
+
+下面，我们分别介绍这三种门的原理和功能。
+
+## 忘记入口
+
+遗忘门作用于 LSTM 状态向量 `c` 来控制前一时间戳的存储器`c_{t-1}`对当前时间戳的影响。如图 11-16 所示，遗忘门的控制变量 `g_f` 由
+
+```math
+g_f = σ(W_f[h_{t-1}, x_t] + b_f)
+```
+
+决定
+
+其中 `W_f` 和 `b_f` 为遗忘门的参数张量，可以通过反向传播算法自动优化。 `σ` 为激活函数，一般使用 Sigmoid 函数。当`g_f = 1` 时，遗忘门全部打开，LSTM 接受前一状态`c_{t-1}`的所有信息。当门控`g_f = 0` 时，忘记门关闭，LSTM 直接忽略`c_{t-1}`，输出为 0 的向量。这就是它被称为遗忘之门的原因。
+
+通过遗忘门后，LSTM 的状态向量变成了`g_f * c_{t-1}`。
+
+![img/515226_1_En_11_Fig16_HTML.png](img/515226_1_En_11_Fig16_HTML.png)
+
+图 11-16
+
+忘记大门
+
+## 输入门
+
+输入门用于控制 LSTM 接收输入的程度。首先，通过对当前时间戳的输入 `x_t` 和前一时间戳的输出`h_{t-1}`
+
+```math
+\tilde{c}_t = tanh(W_c[h_{t-1}, x_t] + b_c)
+```
+
+进行非线性变换，得到新的输入向量`$\tilde{c}_t$`
+```
+
+其中`W_c`和`b_c`为输入门的参数，需要反向传播算法自动优化，`Tanh`为激活函数，用于将输入归一化为[-1，1]。`$$ \tilde{c}_{t} $$`不完全刷新进入 LSTM 的存储器，但控制通过输入门接收的输入量。输入门的控制变量也来自输入`x_t`和输出`h_{t-1}`:
+
+```
+![$$ {g}_i=\sigma \left({W}_i\left[{h}_{t-1},{x}_t\right]+{b}_i\right) $$](img/515226_1_En_11_Chapter_TeX_Equz.png)
+```
+
+其中`W_i`和`b_i`为输入门的参数，需要反向传播算法自动优化，`σ`为激活函数，一般使用 Sigmoid 函数。输入门控制变量`g_i`决定 LSTM 如何接受当前时间戳的新输入`$$ \tilde{c}_{t} $$`:当`g_I`= 0 时，LSTM 不接受任何新输入`$$ \tilde{c}_{t} $$`；当`g_I`= 1 时，LSTM 接受所有新输入`$$ \tilde{c}_{t} $$`，如图 11-17 所示。
+
+通过输入门后，要写入内存的向量是`$$ {g}_i\tilde{c}_{t} $$`。
+
+![img/515226_1_En_11_Fig17_HTML.png](img/515226_1_En_11_Fig17_HTML.png)
+
+图 11-17
+
+输入门
+
+### 更新存储器
+
+在遗忘门和输入门的控制下，LSTM 选择性地读取前一个时间戳的存储器`c_{t-1}`和当前时间戳的新输入`$$ \tilde{c}_{t} $$`。状态向量`c_t`的刷新方式为:
+
+```
+![$$ {c}_t={g}_i\tilde{c}_{t}+{g}_f{c}_{t-1} $$](img/515226_1_En_11_Chapter_TeX_Equaa.png)
+```
+
+得到的新的状态向量`c_t`就是当前时间戳的状态向量，如图 11-17 所示。
+
+### 输出门
+
+LSTM 的内部状态向量`c_t`不直接用于输出，与基本的 RNN 不同。基本 RNN 网络的状态向量`h`同时用于存储和输出，所以基本 RNN 可以理解为状态向量`c`和输出向量`h`是同一个对象。在 LSTM 中，状态向量不是全部输出，而是在输出门的作用下有选择地输出。输出门的门变量`g_o`是:
+
+```
+![$$ {g}_o=\sigma \left({W}_o\left[{h}_{t-1},{x}_t\right]+{b}_o\right) $$](img/515226_1_En_11_Chapter_TeX_Equab.png)
+```
+
+其中`W_o`和`b_o`为输出门的参数，也需要反向传播算法自动优化。`σ`为激活函数，一般使用 Sigmoid 函数。当输出门`g_o`= 0 时，输出关闭，LSTM 内部存储器被完全封锁，不能作为输出使用。此时输出的是 0 的向量；当输出门`g_o`= 1 时，输出全开，LSTM 状态向量`c_t`全部用于输出。LSTM 的输出由:
+
+```
+![$$ {h}_t={g}_o\bullet tanhtanh\ \left({c}_t\right) $$](img/515226_1_En_11_Chapter_TeX_Equac.png)
+```
+
+组成
+
+即内存向量`c_t`通过 Tanh 激活函数后与输入门交互，得到 LSTM 的输出。由于`g_o`∈【0，1】和`tanh tanh`(`c_t`)∈【1，1】，LSTM 的输出为`h_t`∈【1，1】。
+
+![img/515226_1_En_11_Fig18_HTML.png](img/515226_1_En_11_Fig18_HTML.png)
+
+图 11-18
+
+输出门
+
+### 总结
+
+虽然 LSTM 有大量的状态向量和门，但计算过程相对复杂。但是由于每个门的控制功能都很清楚，所以每个状态的作用也更容易理解。这里列出了典型的门控行为，并解释了代码的 LSTM 行为，如表 11-1 所示。
+
+表 11-1
+
+输入门和遗忘门的典型行为
+
+| 输入门控 | 忘记门控 | LSTM 行为 |
+| --- | --- | --- |
+| Zero | one | 仅使用内存 |
+| one | one | 集成输入和存储器 |
+| Zero | Zero | 清除存储器 |
+| one | Zero | 输入覆盖内存 |
+
+## 11.9 如何使用 LSTM 层
+
+在 TensorFlow 中，也有两种实现 LSTM 网络的方法。可以使用`LSTMCell`手动完成时间戳的循环操作，也可以通过 LSTM 层一步完成正向操作。
+
+### LSTMCell
+
+`LSTMCell`的用法和`SimpleRNNCell`基本相同。不同的是 LSTM 有两个状态变量——list，即[`h_t`，`c_t`]，需要分别初始化。列表的第一个元素是`h_t`，第二个元素是`c_t`。当调用单元格来完成正向操作时，将返回两个元素。第一个元素是单元格的输出，是`h_t`，第二个元素是单元格更新后的状态列表:[`h_t`，`c_t`]。首先创建一个状态向量长度为`h` = 64 的新`LSTMCell`，其中状态向量`c_t`和输出向量`h_t`的长度都是`h`。代码如下:
+
+```py
+In [18]:
+x = tf.random.normal([2,80,100])
+xt = x[:,0,:] # Get a timestamp input
+cell = layers.LSTMCell(64) # Create LSTM Cell
+# Initialization state and output List,[h,c]
+state = [tf.zeros([2,64]),tf.zeros([2,64])]
+out, state = cell(xt, state) # Forward calculation
+# View the id of the returned element
+id(out),id(state[0]),id(state[1])
+Out[18]: (1537587122408, 1537587122408, 1537587122728)
+```
+
+可以看出，返回的 output `out`与 list 的第一个元素`h_t`的 id 相同，这与基本 RNN 的初衷是一致的，是为了格式的统一。
+
+通过在时间戳上展开循环操作，可以完成一层的前向传播，写入方法与基本 RNN 相同。例如:
+
+```py
+# Untie it in the sequence length dimension, and send it to the LSTM Cell unit in a loop
+for xt in tf.unstack(x, axis=1):
+    # Forward calculation
+    out, state = cell(xt, state)
+```
+
+输出可以只使用最后一个时间戳的输出，也可以聚合所有时间戳的输出向量。
+
+### 11.9.2 LSTM 层
+
+穿过层层。LSTM 层，整个序列的操作可以方便地一次性完成。首先创建一个新的 LSTM 网络层，例如:
+
+```py
+# Create an LSTM layer with a memory vector length of 64
+layer = layers.LSTM(64)
+# The sequence passes through the LSTM layer and returns the output h of the last time stamp by default
+out = layer(x)
+```
+
+通过 LSTM 层向前传播后，默认情况下将只返回最后一个时间戳的输出。如果需要返回每个时间戳以上的输出，需要设置`return_sequences=True`。例如:
+
+```py
+# When creating the LSTM layer, set to return the output on each timestamp
+layer = layers.LSTM(64, return_sequences=True)
+# Forward calculation, the output on each timestamp is automatically concated to form a tensor
+out = layer(x)
+```
+
+此时返回的`out`包含所有时间戳之上的状态输出，其形状为[2，80，64]，其中 80 代表 80 个时间戳。
+
+对于多层神经网络，可以用顺序容器包装多个 LSTM 层，设置所有非最终层网络`return_sequences=True`，因为非最终 LSTM 层需要上一层所有时间戳的输出作为输入。例如:
+
+```py
+# Like the CNN network, LSTM can also be simply stacked layer by layer
+net = keras.Sequential([
+    layers.LSTM(64, return_sequences=True), # The non-final layer needs to return all timestamp output
+    layers.LSTM(64)
+])
+# Once through the network model, you can get the output of the last layer and the last time stamp
+out = net(x)
+```
+
+## 11.10 GRU 简介
+
+LSTM 有更长的记忆容量，并且在大多数序列任务上比基本的 RNN 模型有更好的表现。更重要的是，LSTM 不容易出现梯度消失。但是，LSTM 结构相对复杂，计算成本高，模型参数大。因此，科学家们试图简化 LSTM 内部的计算过程，特别是减少门的数量。研究发现遗忘门是 LSTM 中最重要的门控制[2]，甚至发现仅具有遗忘门的网络的简化版本在多个基准数据集上优于标准的 LSTM 网络。在 LSTM 的许多简化版本中，门控循环单位(GRU)是使用最广泛的 RNN 变体之一。GRU 将内部状态向量和输出向量合并成一个状态向量`h`，门的数量也减少为两个，复位门和更新门，如图 11-19 所示。
+
+![img/515226_1_En_11_Fig19_HTML.png](img/515226_1_En_11_Fig19_HTML.png)
+
+图 11-19
+
+GRU 网络结构
+
+下面我们分别介绍一下复位门和更新门的原理和作用。
+
+### 11.10.1 重置时间为
+
+复位门用于控制上一个时间戳的状态`h_{t-1}`进入 GRU 的数量，门控向量`g_r`是通过变换当前时间戳输入`x_t`和上一个时间戳状态`h_{t-1}`得到的
+
+其中`W_r`和`b_r`为复位门的参数，由反向传播算法自动优化，`σ`为激活函数，一般使用 Sigmoid 函数。门控向量`g_r`只控制状态`h_{t-1}`，不控制输入`x_t`:
+
+```
+![$$ \tilde{h}_{t}= tanhtanh\ \left({W}_h\left[{g}_r{h}_{t-1},{x}_t\right]+{b}_h\right) $$](img/515226_1_En_11_Chapter_TeX_Equae.png)
+```
+
+当`g_r`= 0 时，新的输入`$$ \tilde{h}_{t} $$`全部来自输入`x_t`，`h_{t-1}`不被接受，相当于复位`h_{t-1}`。当`g_r`= 1，`h_{t-1}`与输入`x_t`共同生成一个新的输入`$$ \tilde{h}_{t} $$`，如图 11-20 所示。
+
+![img/515226_1_En_11_Fig20_HTML.png](img/515226_1_En_11_Fig20_HTML.png)
+
+图 11-20
+
+复位门
+
+### 更新门
+
+更新门控制最后时间戳状态`h_{t-1}`和新输入`$$ \tilde{h}_{t} $$`对新状态向量`h_t`的影响程度。更新门控向量`g_z`由:
+
+```
+![$$ {g}_z=\sigma \left({W}_z\left[{h}_{t-1},{x}_t\right]+{b}_z\right) $$](img/515226_1_En_11_Chapter_TeX_Equaf.png)
+```
+
+其中`W_z`和`b_z`为更新门的参数，由反向传播算法自动优化，`σ`为激活函数，一般使用 Sigmoid 函数。`g_z`用于控制新输入的`$$ \tilde{h}_{t} $$`信号，1`g_z`用于控制状态`h_{t-1}`信号:
+
+```
+![$$ {h}_t=\left(1-{g}_z\right){h}_{t-1}+{g}_z\tilde{h}_{t} $$](img/515226_1_En_11_Chapter_TeX_Equag.png)
+```
+
+可以看出`$$ \tilde{h}_{t} $$`和`h_{t-1}`到`h_t`的更新处于相互竞争的状态。当更新门`g_z`= 0 时，所有`h_t`来自上一次时间戳状态`h_{t-1}`；当更新门`g_z`= 1 时，所有的`h_t`都来自新的输入`$$ \tilde{h}_{t} $$`。
+
+![img/515226_1_En_11_Fig21_HTML.png](img/515226_1_En_11_Fig21_HTML.png)
+
+图 11-21
+
+更新门
+
+### 如何使用 GRU
+
+同样，在 TensorFlow 中，也有单元和层方法来实现 GRU 网络。格鲁塞尔和 GRU 层的用法与前面的`SimpleRNNCell`、`LSTMCell`、`SimpleRNN`和`LSTM`非常相似。首先，使用`GRUCell`创建一个 GRU 单元格对象，并在时间轴上循环展开操作。例如:
+
+```py
+In [19]:
+# Initialize the state vector, there is only one GRU
+h = [tf.zeros([2,64])]
+cell = layers.GRUCell(64) # New GRU Cell, vector length is 64
+# Untie in the timestamp dimension, loop through the cell
+for xt in tf.unstack(x, axis=1):
+    out, h = cell(xt, h)
+# Out shape
+out.shape
+Out[19]:TensorShape([2, 64])
+```
+
+您可以通过图层轻松创建 GRU 网络图层。`GRU`类，并通过顺序容器堆叠多个 GRU 层的网络。例如:
+
+```py
+net = keras.Sequential([
+    layers.GRU(64, return_sequences=True),
+    layers.GRU(64)
+])
+out = net(x)
+```
+
+## 11.11 LSTM/GRU 情感分类实践
+
+前面我们介绍了情感分类问题，并使用 `SimpleRNN` 模型来解决这个问题。在引入更强大的 LSTM 和 GRU 网络后，我们升级了网络模型。得益于 TensorFlow 循环神经网络相关接口的统一格式，只需对原代码进行少量修改，就可以完美升级到 LSTM 或 GRU 模型。
+
+### 11.11.1 LSTM 模型
+
+首先，让我们使用细胞方法。LSTM 网络有两个状态表，每层的 `h` 和 `c` 向量需要分别初始化。例如:
+
+```py
+        self.state0 = [tf.zeros([batchsz, units]),tf.zeros([batchsz, units])]
+        self.state1 = [tf.zeros([batchsz, units]),tf.zeros([batchsz, units])]
+```
+
+将模型修改为 `LSTMCell` 模型，如下所示:
+
+```py
+        self.rnn_cell0 = layers.LSTMCell(units, dropout=0.5)
+        self.rnn_cell1 = layers.LSTMCell(units, dropout=0.5)
+```
+
+其他代码无需修改即可运行。对于层方法，仅需要修改网络模型的一部分，如下所示:
+
+```py
+        # Build RNN, replace with LSTM class
+        self.rnn = keras.Sequential([
+            layers.LSTM(units, dropout=0.5, return_sequences=True),
+            layers.LSTM(units, dropout=0.5)
+        ])
+```
+
+### GRU 模型
+
+对于单元格方法，只有一个 GRU 状态列表。与基本 RNN 一样，您只需修改创建的单元类型。代码如下:
+
+```py
+        # Create 2 Cells
+        self.rnn_cell0 = layers.GRUCell(units, dropout=0.5)
+        self.rnn_cell1 = layers.GRUCell(units, dropout=0.5)
+```
+
+对于图层方法，只需修改网络层类型，如下所示:
+
+```py
+        # Create RNN
+        self.rnn = keras.Sequential([
+            layers.GRU(units, dropout=0.5, return_sequences=True),
+            layers.GRU(units, dropout=0.5)
+        ])
+```
+
+## 11.12 预先训练的单词向量
+
+在情感分类任务中，嵌入层是从头开始训练的。事实上，对于文本处理任务，大部分领域知识是共享的，因此我们可以利用在其他任务上训练的词向量来初始化嵌入层，以完成领域知识的传递。基于预先训练好的嵌入层开始训练，用少量的样本就可以达到很好的效果。
+
+我们以预训练的手套词向量为例，演示如何使用预训练的词向量模型来提高任务绩效。首先从官网下载预先训练好的手套词向量表。我们选择特征长度为 100 的文件 `glove.6B.100d.txt`，每个单词用长度为 100 的向量表示，下载后可以解压。
+
+![img/515226_1_En_11_Fig22_HTML.jpg](img/515226_1_En_11_Fig22_HTML.jpg)
+
+图 11-22
+
+手套字向量模型文件
+
+使用 Python 文件 IO 代码读取单词编码向量表，存储在 Numpy 数组中。代码如下所示:
+
+```py
+print('Indexing word vectors.')
+embeddings_index = {} # Extract words and their vectors and save them in a dictionary
+# Word vector model file storage path
+GLOVE_DIR = r'C:\Users\z390\Downloads\glove6b50dtxt'
+with open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt'),encoding='utf-8') as f:
+    for line in f:
+        values = line.split()
+        word = values[0]
+        coefs = np.asarray(values[1:], dtype='float32')
+        embeddings_index[word] = coefs
+print('Found %s word vectors.' % len(embeddings_index))
+```
+
+`GloVe.6B` 版本存储了总共 40 万字的向量表。我们只考虑了 10，000 个常用词。我们根据单词的数字代码表从手套模型中获得单词向量，并将其写入相应的位置，如下所示:
+
+```py
+num_words = min(total_words, len(word_index))
+embedding_matrix = np.zeros((num_words, embedding_len)) # Word vector table
+for word, i in word_index.items():
+    if i >= MAX_NUM_WORDS:
+        continue # Filter out other words
+    embedding_vector = embeddings_index.get(word) # Query word vector from GloVe
+    if embedding_vector is not None:
+        # words not found in embedding index will be all-zeros.
+        embedding_matrix[i] = embedding_vector # Write the corresponding location
+print(applied_vec_count, embedding_matrix.shape)
+```
+
+获得词汇数据后，使用词汇初始化嵌入层，设置嵌入层不参与梯度优化，如下:
+
+```py
+        # Create Embedding layer
+        self.embedding = layers.Embedding(total_words, embedding_len, input_length=max_review_len,
+        trainable=False)# Does not participate in gradient updates
+        self.embedding.build(input_shape=(None, max_review_len))
+        # Initialize the Embedding layer using the GloVe model
+        self.embedding.set_weights([embedding_matrix])# initialization
+```
+
+其他部分是一致的。我们可以简单地将预训练手套模型初始化的嵌入层的训练结果与随机初始化的嵌入层的训练结果进行比较。训练 50 个历元后，预训练模型的准确率达到 84.7%，提高了约 2%。
+
+## 11.13 总结
+
+在这一章中，我们介绍了循环神经网络(RNN)，它适用于处理序列相关的问题，如语音和股票市场信号。讨论了几种序列表示方法，包括一键编码和单词嵌入。然后我们介绍了开发 RNN 结构的动机以及 `SimpleRNNCell` 网络的例子。使用 RNN 实现了动手情感分类，以帮助我们熟悉使用 RNN 解决现实世界的问题。梯度消失和爆炸是 RNN 训练过程中的常见问题。幸运的是，梯度裁剪方法可以用来克服梯度爆炸问题。RNN 的不同变体，例如 LSTM 和 GRU，可以用来避免梯度消失的问题。情感分类实例表明，使用 LSTM 和 GRU 模型具有更好的性能，因为它们能够避免梯度爆炸问题。
+
+## 11.14 参考
+
+1.  I. Goodfellow，Y. Bengio 和 a .库维尔，《深度学习》，麻省理工学院出版社，2016 年。
+
+2.  J.Westhuizen 和 J. Lasenby，《遗忘门的不合理效力》， *CoRR，* abs/1804.04849，2018。
