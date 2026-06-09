@@ -1,5 +1,5 @@
 
-# 使用 Google Colab 构建您的第一个神经网络
+# 2. 使用 Google Colab 构建您的第一个神经网络
 
 在 Google Colab 云服务中，使用 Python 的 TensorFlow 2.x 库，通过一个完整的深度学习示例进行操作。我们还演示了如何将您的 Google Drive 与 Colab 云服务链接起来。
 

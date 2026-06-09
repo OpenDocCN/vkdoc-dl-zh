@@ -1,6 +1,6 @@
 +   [协作云上的 TensorFlow 2.x 指南](README.md)
 +   [1. 深度学习简介](tf2x-colab-cld_01_fmt.md)
-+   [使用 Google Colab 构建您的第一个神经网络](tf2x-colab-cld_02_fmt.md)
++   [2. 使用 Google Colab 构建您的第一个神经网络](tf2x-colab-cld_02_fmt.md)
 +   [3. 与 TensorFlow 数据一起工作](tf2x-colab-cld_03_fmt.md)
 +   [4. 与其他数据一起工作](tf2x-colab-cld_04_fmt.md)
 +   [5. 分类](tf2x-colab-cld_05_fmt.md)
