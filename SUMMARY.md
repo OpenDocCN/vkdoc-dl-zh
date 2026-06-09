@@ -37,7 +37,6 @@
 +   [可解释AI秘籍](docs/explainable-ai-recipes/README.md)
 +   [自然语言处理的基础模型](docs/fund-mdl-nlp/README.md)
 +   [生成新现实](docs/generating-a-new-reality/README.md)
-+   [LangChain 和 Python 的生成式 AI 应用](docs/generative-ai-apps-with-langchain-and-python/README.md)
 +   [GPU 加速的人工智能](docs/gpu-acc-dl/README.md)
 +   [AIOps 实用指南](docs/hands-on-aiops/README.md)
 +   [Azure 认知服务实用指南](docs/hands-on-azure-cognitive-services/README.md)

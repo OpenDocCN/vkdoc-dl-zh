@@ -1,1 +1,0 @@
-# `claude = AnthropicLLM(model="claude-2.1", anthropic_api_key="ANTHROPIC_API_KEY")`
