@@ -5,7 +5,6 @@
 +   [3. 深度伪造骗局](how-algorithms-create-and-prevent-fake-news_11_fmt.md)
 +   [4. 自动播放的独裁者](how-algorithms-create-and-prevent-fake-news_13_fmt.md)
 +   [5. 推诿与测谎仪](how-algorithms-create-and-prevent-fake-news_14_fmt.md)
-+   [摘要](how-algorithms-create-and-prevent-fake-news_15_fmt.md)
 +   [6. 倾向谷歌](how-algorithms-create-and-prevent-fake-news_16_fmt.md)
 +   [7. 广告的贪婪](how-algorithms-create-and-prevent-fake-news_17_fmt.md)
 +   [8. 社交传播](how-algorithms-create-and-prevent-fake-news_18_fmt.md)
