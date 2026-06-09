@@ -1,4 +1,4 @@
-# 深入探究 TensorFlow
+# 2. 深入探究 TensorFlow
 
 在上一章中，你了解了 TensorFlow 平台的能力。在领略了 TensorFlow 的强大功能之后，现在是时候学习如何将这些能力应用到你自己的实际应用中去了。
 
