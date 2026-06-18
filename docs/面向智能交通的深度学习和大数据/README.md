@@ -1,53 +1,6 @@
 
 # 面向智能交通的深度学习和大数据
 
-
-# Khaled R. Ahmed
-Aboul Ella Hassanien 编
-## 启用技术和未来趋势
-
-系列“计算智能研究”（SCI）快速出版并具有高质量，出版新的发展和进步在计算智能的各个领域。目的是涵盖计算智能的理论，应用和设计方法，嵌入在工程，计算机科学，物理学和生命科学领域，以及背后的方法论。该系列包含神经网络，连接主义系统，遗传算法，进化计算，人工智能，细胞自动机，自组织系统，软计算，模糊系统和混合智能系统等计算智能领域的专著，讲义和编辑卷。对于投稿者和读者来说，短时间出版和全球分发都具有特别的价值，这使得研究成果能够广泛而迅速地传播。
-
-被SCOPUS、DBLP、WTI Frankfurt eG、zbMATH、SCImago索引。
-
-该系列中的所有图书都提交给Web of Science进行考虑。
-
-有关该系列的更多信息，请访问 [http://www.springer.com/series/7092](http://www.springer.com/series/7092)
-
-# 编辑
-
-**Khaled R. Ahmed**
-计算机学院
-南伊利诺伊大学
-卡本代尔，美国
-
-**Aboul Ella Hassanien**
-信息技术系
-计算机与人工智能学院
-开罗大学
-吉萨，埃及
-
-埃及科学研究小组（SRGE）
-吉萨，埃及
-
-ISSN 1860-949X
-计算智能研究
-ISBN 978-3-030-65660-7
-[https://doi.org/10.1007/978-3-030-65661-4](https://doi.org/10.1007/978-3-030-65661-4)
-
-ISSN 1860-9503（电子版）
-ISBN 978-3-030-65661-4（电子书）
-
-© 版权所有编辑（如适用）和作者，独家许可给 Springer Nature Switzerland AG 2021
-本作品受版权保护。所有权利仅由出版商独家许可，无论是整体还是部分材料，特别是翻译权、再版权、插图重用权、朗读权、广播权、微缩胶片复制权或以任何其他实体方式复制权、传输或信息存储和检索权、电子适应权、计算机软件权利，或通过类似或不同的已知或今后开发的方法。
-
-本出版物中使用的一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有特定声明的情况下，这些名称不受相关保护法律和法规的约束，因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。出版商、作者或编辑对本文所含材料不提供明示或暗示的保证，也不对可能存在的任何错误或遗漏承担责任。出版商在已发表的地图和机构隶属方面保持中立。
-
-这本施普林格印记由注册公司施普林格自然瑞士出版
-注册公司地址为：瑞士Cham市Gewerbestrasse 11号
-
 # 前言
 
 深度学习和大数据是当今技术非常有活力和重要的研究课题。本书对智能交通的进展做出了贡献，如全自动驾驶汽车。它强调了新的数据管理和机器学习方法，如大数据、深度学习和强化学习。道路传感器、无人机、GPS、闭路电视和事故报告是决策交通问题的重要数据来源。由于这些大量和高速的数据，基于机器学习方法和传统关系数据库构建可靠的预测模型是具有挑战性的。
@@ -96,48 +49,6 @@ ISBN 978-3-030-65661-4（电子书）
 Khaled R. Ahmed
 Aboul Ella Hassanien
 
-# 目录
-
-## 大数据和自动驾驶
-
-- 具有计算模型的大数据技术使用Hadoop解决调度挑战 . . . 3
-E. B. Priyanka, S. Thangavel, B. Meenakshipriya, D. Venkatesa Prabu, 和N. S. Sivakumar
-
-- 用于自动驾驶的大数据 . 21
-Rinki Sharma
-
-## 深度学习和目标检测用于安全驾驶
-
-- 智能视觉的目标检测和跟踪分析系统 . . . 51
-K. Kalirajan, K. Balaji, D. Venugopal和V. Seethalakshmi
-
-- 使用深度卷积网络的增强型自动驾驶端到端系统 81
-
-- 深度学习技术减少鹿车碰撞 . . . 103
-Md. Jawad Siddique和Khaled R. Ahmed
-
-- 使用具有结构相似性损失的生成对抗网络进行夜间到白天道路场景转换以提升驾驶安全 . . . 119
-Igi Ardiyanto, Indah Soesanti和Dwiyan Cahya Qairawan
-
-- 更安全的驾驶：应用深度迁移学习构建智能交通系统 . 135
-Ramazan Ünlü
-
-- 利用CNN深度学习模型进行智能停车场 . . . . 151
-Guruvareddiyur Rangaraju Karpagam, Abishek Ganapathy, Aadhavan Chellamuthu Kavin Raj, Saravanan Manigandan, J. R. Neeraj Julian和S. Raaja Vignesh
-
-- 使用深度学习估计公共场所监控的人群规模 175
-Deevesh Chaudhary， Sunil Kumar和Vijaypal Singh Dhaka
-
-## 智能交通的深度学习和大数据技术以及未来趋势
-
-- 基于物联网的智能标志牌区域限速系统 201
-P. Madhumathy， H. K. Nitish Kumar， Pankhuri和D. S. Supreeth Narayan
-
-- 物联网与云计算、人工智能和区块链的协同作用赋予自动驾驶汽车更强大的能力 225
-C. Muralidharan， Y. Mohamed Sirajudeen和R. Anitha
-
-- 将人工智能与机器人流程自动化相结合——智能自动化方法 . . 245
-Nishant Jha， Deepak Prashar和Amandeep Nagpal
 
 ## 大数据和自动驾驶
 

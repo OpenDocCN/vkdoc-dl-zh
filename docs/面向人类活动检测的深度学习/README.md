@@ -1,57 +1,6 @@
 
 # 面向人类活动检测的深度学习
 
-
-## 计算机与信息科学通讯 1370
-
-第二届深度学习与人类活动识别国际研讨会，DL-HAR 2020 与IJCAI-PRICAI 2020同期举办
-2021年1月8日，日本京都
-论文集
-
-Springer
-
-## 通讯
-计算机与信息科学
-
-## 编辑委员会成员
-- Joaquim Filipe
-  塞图巴尔理工学院，塞图巴尔，葡萄牙
-- Ashish Ghosh
-  印度统计研究所，加尔各答，印度
-- Raquel Oliveira Prates
-  巴西米纳斯吉拉斯联邦大学（UFMG），贝洛奥里藏特，巴西
-- Lizhu Zhou
-  清华大学，北京，中国
-
-有关本系列更多信息，请访问http://www.springer.com/series/7899
-
-## 编辑
-- Xiaoli Li
-  新加坡资讯通信研究所，A*STAR，新加坡
-- Min Wu
-  新加坡资讯通信研究所，A*STAR，新加坡
-- Zhenghua Chen
-  新加坡资讯通信研究所，A*STAR，新加坡
-- 张乐
-  新加坡资讯通信研究所，A*STAR，新加坡
-
-ISSN 1865-0929
-ISSN 1865-0937（电子版）
-计算机与信息科学通讯
-ISBN 978-981-16-0574-1
-ISBN 978-981-16-0575-8（电子书）
-https://doi.org/10.1007/978-981-16-0575-8
-
-© Springer Nature Singapore Pte Ltd. 2021
-
-本作品受版权保护。出版商保留所有权利，无论是全部还是部分材料，特别是翻译、重印、插图重用、朗读、广播、微缩胶片复制或以任何其他实体方式复制，以及信息传输或存储和检索，电子适应、计算机软件，或通过现有或今后开发的类似或不同的方法。
-
-在本出版物中使用一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有具体声明的情况下，这些名称也不受相关保护法律和法规的约束，因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。出版商、作者或编辑对本文所包含的材料不提供明示或暗示的保证，也不对可能存在的任何错误或遗漏负责。出版商在发表的地图和机构关系上保持中立。
-
-这个Springer印记由注册公司Springer Nature Singapore Pte Ltd.出版。注册公司地址为：152 Beach Road, #21-01/04 Gateway East, Singapore 189721, Singapore
-
 ## 前言
 
 ## 1 引言
@@ -121,19 +70,6 @@ Gudur和Perepu的《面向资源受限的异构标签和模型的联邦学习》
 | 卡尔•苏尔马兹 | Zimmer Biomet, 英国 |
 | 吴科宇 | A*STAR, 新加坡 |
 | 崔伟 | A*STAR, 新加坡 |
-
-## 目录
-- 利用可穿戴传感器进行人类活动识别：综述，挑战 评估基准 (Reem Abdel-Salam, Rana Mostafa和Mayada Hadhood)
-- 用于可视化人行道可达性的轮椅行为识别 通过深度神经网络 (渡边拓海，高桥宏树，佐藤豪，岩沢祐介，松尾豊和江口伊久子)
-- 面向传感器的数据增强和解释 细粒度手部活动识别 (Jinqi Luo, Xiang Li和Rabih Younes)
-- 个性化模型用于具有分布匹配的人类活动识别 基于匹配的度量 (Huy Thong Nguyen, Hyeokhyen Kwon, Harish Haresamudram, Andrew F. Peterson和Thomas Plötz)
-- 资源受限的异构标签联合学习 和人类活动识别模型 (Gautham Krishna Gudur和Satheesh Kumar Perepu)
-- ARID：一个用于在黑暗环境中识别动作的新数据集 (徐越聪，杨建飞，曹浩智，毛克志，尹建雄，和西蒙・西)
-- 单次运行的视频流动作检测器 - 一种隐私 保护方法 (Anbumalar Saravanan, Justin Sanchez, Hassan Ghasemzadeh, Aurelia Macabasco-O’Connell和Hamed Tabkhi)
-- 模型微调在个性化动态手势识别中的有效性 姿势识别 (郭俊尧, Unmesh Kurup和Mohak Shah)
-- 由词编码和嵌入引导的全卷积网络 和智能家居中的活动识别 (Damien Bouchabou, Sao Mai Nguyen, Christophe Lohr, Benoit LeDuc, 和Ioannis Kanellos)
-- 使用实体增强的用户友好药物映射 双塔神经网络 . . 126 (袁少庆, Parminder Bhatia, Busra Celikkaya, Haiyang Liu, 和 Kyunghwan Choi)
-- 作者索引 . 139
 
 ## 利用可穿戴传感器进行人类活动识别: 综述、挑战和评估基准
 Reem Abdel-Salam, Rana Mostafa, and Mayada Hadhood

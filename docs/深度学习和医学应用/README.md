@@ -1,65 +1,6 @@
 
 # 深度学习和医学应用
 
-
-# 工业4.0中的数学
-
-Jin Keun Seo 编辑
-
-![](img/59d1a246838625583b2477b9b40b4232_0_0.png)
-
-# 工业中的数学
-
-# 第40卷
-
-# 系列编辑
-
-- Hans Georg Bock，德国海德堡大学跨学科科学计算中心IWR，德国海德堡
-- Frank de Hoog，澳大利亚堪培拉CSIRO
-- Avner Friedman，美国俄亥俄州立大学哥伦布分校
-- Arvind Gupta，加拿大不列颠哥伦比亚大学温哥华
-- Andr Nachbin，巴西里约热内卢IMPA
-- Tohru Ozawa，日本早稻田大学东京
-- William R. Pulleyblank，美国西点军校
-- Torgeir Rusten，挪威Hoevik Det Norske Veritas
-- Fadil Santosa，美国明尼苏达大学明尼阿波利斯
-- Jin Keun Seo，韩国（大韩民国）延世大学首尔
-- Anna-Karin Tornberg，瑞典斯德哥尔摩皇家理工学院（KTH）
-
-工业中的数学侧重于研究和教育方面的数学在工业和其他商业企业中的应用。《工业中的数学》的图书分为以下几类：研究专著、问题导向的多作者集合、以问题为导向的教材和会议论文集。所有稿件在接受前都要经过严格的同行评审。与数学在工业中的实际应用相关性是该系列图书的显著特点。
-
-# 深度学习和医疗应用
-
-编辑
-Jin Keun Seo
-韩国（大韩民国）首尔延世大学数学与计算学院（计算科学与工程）
-
-ISSN 1612-3956
-ISSN 2198-3283（电子版）
-
-# 工业中的数学
-
-ISBN 978-981-99-1838-6
-ISBN 978-981-99-1839-3 (电子书)
-
-https://doi.org/10.1007/978-981-99-1839-3
-
-数学主题分类：00A06、00A69、00B10、15A29、35R30、49N45、65F22、68U10、68T05、78A70
-
-© 编辑（如适用）和作者，独家许可给 Springer Nature Singapore Pte Ltd. 2023
-本作品受版权保护。出版商独家授权所有权，无论是全部还是部分材料，包括翻译、重印、重用插图、朗诵、广播、微缩胶片复制或以任何其他实体方式复制、传输或信息存储和检索、电子适应、计算机软件，或通过类似或不同的已知或今后开发的方法。
-
-在本出版物中使用一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有明确声明的情况下，这些名称也不受相关保护法律和法规的约束，因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。出版商、作者或编辑对本文中包含的材料不提供明示或暗示的保证，也不对可能存在的任何错误或遗漏负责。出版商在已发表的地图和机构隶属方面保持中立。
-
-这本Springer印记由注册公司Springer Nature Singapore Pte Ltd.出版。
-注册公司地址是：152 Beach Road，#21-01/04 Gateway East，Singapore 189721，Singapore
-
-> > 这本书献给了伟大的教师，
-> Eugene Fabes（1937-1997），他为了
-> 他人而活。
-
 # 前言 I
 
 这本书涉及基于人工智能的医学图像分析，由于深度学习技术的显著和快速进步，正在经历一次范式转变。最近，已经开发出了许多创新的基于人工智能的程序，这些程序帮助医生大大减轻了疲劳并改善了临床工作流程。这些人工智能技术将继续发展，通过减少医生的繁琐工作和检查患者所花费的时间，提高医生和患者的满意度。这本书是为专业人士和研究生写的，他们希望开发具有实际意义和价值的基于人工智能的医学图像分析程序。这本书非常实用，提供了深度学习技术和算法实现细节，以及对临床环境、数据采集系统和计算数学的深入了解。
@@ -101,39 +42,6 @@ Jin Keun Seo
 
 首先，编辑要感谢所有为本书做出贡献的作者。其次，所有作者要感谢三星科学技术基金会（编号SRFC-IT1902-09）的支持。非常感谢HDXWIIL提供CBCT仪器和地面真实数据。此外，我们还要深深地感谢一些人，他们帮助使本书实用而不啰嗦。
 
-# 目录
-
-1 非线性表示和降维 ……………………………. 1 Hye Sun Yun，Ariungerel Jargal，Chang Min Hyun和Jin Keun Seo
-
-2 医学图像分割的深度学习技术和物体识别 ……………………………. 51 Kang Cheol Kim，Tae Jun JANG和Jin Keun Seo
-
-3 牙科锥形束计算机断层扫描的深度学习 ……………………………. 101 Chang Min Hyun，Taigyntuya Bayaraa，Sung Min Lee，Hong Jung和Jin Keun Seo
-
-4 数字牙科的人工智能 ……………………………. 177 Tae Jun Jang，Sang-Hwy Lee，Hye Sun Yun和Jin Keun Seo
-
-5 胎儿超声的人工智能 ……………………………. 215 Hyun Cheol Cho，Siyu Sun，Sung Wook Park，Ja-Young Kwon和Jin Keun Seo
-
-6 电阻抗成像 ……………………………. 283 Hyeuknam Kwon，Ariungerel Jargal和Jin Keun Seo
-
-7 深度学习用于不适定逆问题医学成像 ……………………………. 319 Chang Min Hyun和Jin Keun Seo
-
-# 贡献者
-
-Taigyntuya Bayaraa 蒙古科技大学应用科学学院数学系，乌兰巴托，蒙古
-Hyun Cheol Cho 三星Medison AI Vision Group，首尔，韩国
-Chang Min Hyun 延世大学数学与计算学院（计算科学与工程），首尔，韩国
-Tae Jun Jang 延世大学数学与计算学院（计算科学与工程），首尔，韩国
-Ariungerel Jargal 蒙古科技大学应用科学学院数学系，乌兰巴托，蒙古
-Hong Jung HDXWILL，首尔，韩国
-Kang Cheol Kim 延世大学数学与计算学院（计算科学与工程），首尔，韩国
-Hyeuknam Kwon 软件部，延世大学，韩国原州
-Ja-Young Kwon 妇产科，延世大学医学院妇女生命医学研究所，韩国首尔
-Sang-Hwy Lee 口腔颌面外科，口腔科学研究中心，牙科学院，延世大学，韩国首尔
-Sung Min Lee 数学与计算机学院（计算科学与工程），延世大学，韩国首尔
-Sung Wook Park AI视觉组，三星Medison，韩国首尔
-Jin Keun Seo 数学与计算机学院（计算科学与工程），延世大学，韩国首尔
-Siyu Sun 数学与计算机学院（计算科学与工程），延世大学，韩国首尔
-Hye Sun Yun 数学与计算机学院（计算科学与工程），延世大学，韩国首尔
 
 # 首字母缩略词
 

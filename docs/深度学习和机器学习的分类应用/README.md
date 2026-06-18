@@ -1,56 +1,6 @@
 
 # 深度学习和机器学习的分类应用
 
-
-# 计算智能研究 1071
-
-Laith Abualigah编辑
-
-Springer
-
-# 计算智能研究
-
-# 第1071卷
-
-# 系列编辑
-
-Janusz Kacprzyk，波兰科学院，华沙，波兰
-
-系列“计算智能研究”（SCI）出版了计算智能各个领域的新发展和进步，速度快，质量高。目的是涵盖计算智能的理论、应用和设计方法，嵌入到工程、计算机科学、物理学和生命科学等领域，以及背后的方法论。该系列包含神经网络、连接主义系统、遗传算法、进化计算、人工智能、细胞自动机、自组织系统、软计算、模糊系统和混合智能系统等计算智能领域的专著、讲义和编辑卷。对于贡献者和读者来说，短时间的出版周期和全球分发都具有特殊价值，可以广泛而迅速地传播研究成果。
-
-被SCOPUS、DBLP、WTI Frankfurt eG、zbMATH、SCImago索引。
-
-该系列中的所有图书都提交给Web of Science进行考虑。
-
-Laith Abualigah 编辑
-
-# 具有深度学习和机器学习技术的分类应用
-
-编辑
-Laith Abualigah
-Hourani应用科学研究中心
-
-阿曼阿利亚大学
-阿曼，约旦
-
-中东大学信息技术学院阿曼，约旦
-
-马来西亚理工大学计算机科学学院乔治市，槟城，马来西亚
-
-ISSN 1860-949X            ISSN 1860-9503 (电子版)
-计算智能研究
-ISBN 978-3-031-17575-6    ISBN 978-3-031-17576-3 (电子书)
-https://doi.org/10.1007/978-3-031-17576-3
-
-© 编辑 (如适用) 和作者，独家许可给 Springer Nature
-Switzerland AG 2023
-本作品受版权保护。 所有权利仅由出版商独家许可，无论是全部还是部分材料，特别是翻译、再版、重用插图、朗读、广播、微缩胶片复制或以任何其他物理方式、以及传输或信息存储和检索、电子适应、计算机软件，或通过类似或不同的已知或今后开发的方法。
-本出版物中使用的一般描述性名称、注册名称、商标、服务标志等并不意味着，即使在没有特定声明的情况下，这些名称不受相关保护法律和法规的限制，因此可以自由使用。
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。 出版商、作者或编辑对本文所含材料不作任何明示或暗示的保证，也不对可能存在的任何错误或遗漏负责。 出版商在发表的地图和机构关系中保持中立。
-
-这个Springer印记由注册公司Springer Nature Switzerland AG出版
-注册公司地址是： Gewerbestrasse 11, 6330 Cham, Switzerland
-
 # 前言
 
 如今，随着深度学习和机器学习分类方法的显著增长，涵盖了许多现实世界问题，如Artocarpus分类、Rambutan分类、Mango品种分类、Salak分类、图像处理、Sapodilla迁移学习技术的识别、Jackfruit Artocarpus整数和Artocarpus heterophyllus的分类、Markisa/Passion Fruit分类、大数据分类和阿拉伯文本分类。深度学习和机器学习已成为当前时代不可或缺的技术，这是人工智能的时代。 这些技术在数据分析、文本挖掘、分类问题、计算机视觉、图像分析、模式识别、医学等领域发挥着作用。数据的流动是持续不断的，因此无法手动管理和分析这些数据。 结果取决于对高维数据的处理。 其中大部分是不规则和无序的，以文本、图像、视频、音频、图形等各种形式存在。水果图像识别系统用于对不同类型的水果进行分类，并区分单一水果类型的不同变种。 红毛丹是一种异国情调的水果，主要分布在东南亚地区，是马来西亚的主要水果。 它有不同的品种或栽培品种。 这些栽培品种在肉眼中看起来很相似。 因此，由深度学习方法驱动的图像识别系统可以准确地对红毛丹栽培品种进行分类。 目前，对芒果栽培品种的分类和分类是通过观察芒果的特征或属性（如大小、皮肤颜色、形状、甜度和肉色）手动完成的。 通常，有经验的分类学专家可以识别不同的物种。 然而，对于大多数人来说，区分这些芒果并不容易。 如今，社会在科学和技术方面不断进步。 有很多技术可以解决这个问题，可以让人们轻松区分栽培品种。 我们想提出的解决方案是计算机视觉技术。 人工智能训练计算机解释和理解视觉世界，如图像和视频。 深度学习，也称为深度神经网络或深度神经理解，用于处理数据并通过模仿人脑进行决策。 它使用在分层神经网络中相互连接的神经编码来分析传入的数据。 图像识别是最受欢迎的深度学习应用之一，帮助许多人特别是在水果农业领域，用于识别水果的分类。本书提案旨在汇集来自学术领域和全球各行业的研究人员和开发人员，致力于深度学习和机器学习的广泛领域，以进行全面讨论，共同探讨将影响和促进该领域持续研究的思想，以更好地造福人类。本书强调引入一些基于技术的革命性解决方案，使分类过程更加高效。通过从给定章节中获取信息，本书还提供了对分类技术的深入洞察。
@@ -59,79 +9,6 @@ Switzerland AG 2023
 
 Laith Abualigah
 
-## 目录
-
-## 基于深度学习的Artocarpus分类技术卷积神经网络
-
-李志平, 孔贤贤, 程凤友, 王瑞豪, 普特拉·苏马里, 莱斯·阿布阿利加, 阿布萨隆·埃祖古, 穆罕默德·阿尔·沙因万, 法伊扎·古尔和阿拉·穆盖德
-
-1
-
-## 使用各种深度学习进行红毛丹图像分类方法
-
-Nur Alia Anuar, Loganathan Muniandy, Khairul Adli Bin Jaafar, Yi Lim, Al Lami Lamyaa Sabeeh, Putra Sumari, Laith Abualigah, Mohamed Abd Elaziz, Anas Ratib Alsoud, 和Ahmad MohdAziz Hussein
-
-23
-
-## 基于迁移学习的芒果品种分类优化学习和深度学习方法
-
-Chen Ke, Ng Tee Weng, Yifan Yang, Zhang Ming Yang, Putra Sumari, Laith Abualigah, Salah Kamel, Mohsen Ahmadi, Mohammed A. A. Al-Qaness, Agostino Forestiero, 和Anas Ratib Alsoud
-
-45
-
-## 基于深度学习的沙拉克图像分类方法使用两个迁移学习模型的技术
-
-Lau Wei Theng, Moo Mei San, Ong Zhi Cheng, Wong Wei Shen, Putra Sumari, Laith Abualigah, Raed Abu Zitar, Davut Izci, Mehdi Jamei, 和Shadi Al-Zu’bi
-
-67
-
-## 使用卷积进行沙梨图像处理识别神经网络（CNN）和迁移学习技术
-
-Ali Khazalah, Boppana Prasanthi, Dheniesh Thomas, Nishathinee Vello, Suhanya Jayaprakasam, Putra Sumari, Laith Abualigah, Absalom E. Ezugwu, Essam Said Hanandeh, 和Nima Khodadadi
-
-107
-
-预训练和卷积神经网络的比较
-用于菠萝蜜Artocarpus integer和 Artocarpus heterophyllus
-
-Song-Quan Ong, Gomesh Nair, Ragheed Duraid Al Dabbagh,
-Nur Farihah Aminuddin, Putra Sumari, Laith Abualigah,
-Heming Jia, Shubham Mahajan, Abdelazim G. Hussien,
-和Diaa Salama Abd Elminaam
-
-基于改进的深度学习的Markisa/热情果图像分类
-使用迁移学习的学习方法
-
-Ahmed Abdo, Chin Jun Hong, Lee Meng Kuan,
-Maisarah Mohamed Pauzi, Putra Sumari, Laith Abualigah,
-Raed Abu Zitar, 和 Diego Oliva
-
-增强的分布式并行MapReduce性能
-计算: 大数据应用
-
-Nathier Milhem, Laith Abualigah, Mohammad H. Nadimi-Shahraki,
-Heming Jia, Absalom E. Ezugwu, 和 Abdelazim G. Hussien
-
-一种新的大数据分类技术用于医疗应用, 使用支持向量机, 随机森林和J48
-
-Hitham Al-Manaseer, Laith Abualigah, Anas Ratib Alsoud,
-Raed Abu Zitar, Absalom E. Ezugwu, 和 Heming Jia
-
-阿拉伯文本分类的比较研究: 挑战和机会
-
-Mohammed K. Bani Melhem, Laith Abualigah, Raed Abu Zitar,
-Abdelazim G. Hussien, 和Diego Oliva
-
-使用前馈神经网络的行人速度预测
-
-Abubakar Dayyabu, Hashim Mohammed Alhassan, 和Laith Abualigah
-
-使用改进的人工蜜蜂群算法的阿拉伯文本分类
-情感分析算法: 以约旦方言为例
-
-Abdallah Habeeb, Mohammed A. Otair, Laith Abualigah,
-Anas Ratib Alsoud, Diaa Salama Abd Elminaam, Raed Abu Zitar,
-Absalom E. Ezugwu, 和Heming Jia
 
 # 基于深度学习的Artocarpus分类技术使用卷积神经网络
 

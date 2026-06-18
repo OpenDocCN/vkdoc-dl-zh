@@ -2,74 +2,6 @@
 
 # 面向生物医学和健康信息的深度学习技术
 
-大数据研究 68
-
-Sujata Dash · Biswa Ranjan Acharya · Mamta Mittal · Ajith Abraham · Arpad Kelemen 编辑
-
-![](img/ef0d094a1d03d7ea56d71f0cde432d0b_0_0.png)
-
-### 大数据研究
-
-## 第68卷
-
-## 系列编辑
-
-Janusz Kacprzyk，波兰科学院，华沙，波兰
-
-该系列“大数据研究”(SBD)快速出版并以高质量发布大数据领域的新发展和进展。其目的是涵盖大数据的理论、研究、开发和应用，以及其嵌入在工程、计算机科学、物理学、经济学和生命科学等领域中的应用。
-
-该系列的书籍涉及对最近的数字来源生成的大型、复杂和/或分布式数据集的分析和理解，这些数字来源来自传感器或其他物理仪器，以及模拟、众包、社交网络或其他互联网交易，如电子邮件或视频点击流等。该系列包含大数据领域的专著、讲义和编辑的专著，涵盖计算智能领域，包括神经网络、进化计算、软计算、模糊系统，以及人工智能、数据挖掘、现代统计学和运筹学，以及自组织系统。对于投稿者和读者来说，短时间的出版周期和全球范围的分发都具有特殊的价值，这使得研究成果能够广泛而迅速地传播。
-
-**索引：**本系列图书已提交至ISI Web of Science、DBLP、Ulrichs、MathSci Net、Current Mathematical Publications、Mathematical Reviews、Zentralblatt Math: MetaPress和Springerlink。
-
-更多关于本系列的信息，请访问http://www.springer.com/series/11970
-
-Sujata Dash · Biswa Ranjan Acharya · Mamta Mittal · Ajith Abraham · Arpad Kelemen 编辑
-
-# 深度学习技术在生物医学和健康信息学中的应用
-
-编辑
-
-Sujata Dash
-计算机科学系
-北奥里萨大学
-塔卡特普尔，奥里萨邦，印度
-
-Biswa Ranjan Acharya
-计算机科学与工程学院
-Kalinga Institute of Industrial Technology Deemed to be University 布巴内斯瓦尔，
-奥里萨邦，印度
-
-Mamta Mittal
-计算机科学与工程系
-G. B. Pant政府工程学院
-新德里，德里，印度
-
-Ajith Abraham
-创新和研究卓越的科学网络机器智能研究实验室
-奥本，阿拉巴马州，美国
-
-Arpad Kelemen
-马里兰大学组织系统与成人健康系
-美国马里兰州巴尔的摩
-
-ISSN 2197-6503
-ISSN 2197-6511 （电子版）
-大数据研究
-ISBN 978-3-030-33965-4
-ISBN 978-3-030-33966-1（电子书）
-https://doi.org/10.1007/978-3-030-33966-1
-
-© Springer Nature Switzerland AG 2020
-
-本作品受版权保护。出版商保留所有权利，包括全部或部分材料的翻译、重印、插图的再利用、朗读、广播、微缩胶片复制或以任何其他实体方式复制、传输或信息存储和检索、电子适应、计算机软件或类似或不同的已知或今后开发的方法。
-
-在本出版物中使用一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有具体声明的情况下，这些名称也不受相关保护法律和法规的约束，因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。出版商、作者或编辑对本文中包含的材料不提供明示或暗示的保证，也不对可能存在的任何错误或遗漏负责。出版商对已发表的地图和机构隶属不持立场。
-
-这本Springer印记由注册公司Springer Nature Switzerland AG出版，注册地址为：瑞士Cham市Gewerbestrasse 11号。
-
 ## 前言
 
 ### 概述
@@ -121,48 +53,6 @@ https://doi.org/10.1007/978-3-030-33966-1
 | 美国阿本，阿拉巴马州 | 阿吉斯·亚伯拉罕 |
 | 美国马里兰州巴尔的摩 | 阿尔帕德·凯莱曼 |
 
-## 目录
-
-# 生物医学工程和健康信息学的深度学习
-
-- MedNLU: 医学文本的自然语言理解器 . 3
-  H. B.巴拉蒂·加内什，U.雷什玛，K. P. 索曼和 M.安德库马尔
-- 基于深度学习的生物医学命名实体识别系统 23
-  普拉加蒂卡·米什拉，西塔纳斯·比斯瓦斯和苏贾塔·达什
-- 生物医学命名实体识别的消歧模型 . . . 41
-  A. 库马尔
-- 深度学习在医疗保健和生物医学中的应用 . . . 57
-  Shubham 米塔尔和Yasha 哈西贾
-- 临床决策支持系统的深度学习: 一项综述来自智能医疗全景 79
-  E. Sandeep 库马尔和Pappu Satya Jayadev
-- 基于机器学习和深度学习的综述 健康信息学中的推荐系统 101
-  Jayita Saha, Chandreyee Chowdhury和Suparna Biswas
-
-### 深度学习和电子健康记录
-
-- 使用电子健康记录的深度学习和可解释人工智能在医疗保健中的应用 . . . . 129
-  Sujata Khedkar, Priyanka Gandhi, Gayatri Shinde 和Vignesh Subramanian
-- 分析电子健康记录 (EHR) 的深度学习 . . 149
-  Pawan Singh Gangwar和Yasha 哈西贾
-- 深度架构在生物信息学中的应用 . 167
-  Sagnik Sen, Rangan Das, Swaraj Dasgupta和Ujjwal Maulik
-- 使用深度学习的智能安全大健康数据管理和区块链技术: 概述 187
-  Sohail Saif, Suparna Biswas和Samiran Chattopadhyay
-- 使用CNN技术和SGD的疟疾疾病检测 RMSprop和ADAM优化器 211
-  Avinash Kumar, Sobhangi Sarkar和Chittaranjan Pradhan
-- 基于深度强化学习的个性化健康推荐 推荐 231
-  Jayraj Mulani, Sachin Heda, Kalpan Tumdi, Jitali Patel, Hitesh Chhinkaniwala和Jigna Patel
-- 使用基于深度学习的自然语言处理技术 用于临床决策支持与电子病历 257
-  Runjie Zhu, Xinhui Tu和Jimmy Huang
-
-### 医学图像处理中的深度学习
-
-- 使用ECG信号进行糖尿病检测: 概述 299
-  G. Swapna, K. P. Soman和R. Vinayakumar
-- 深度学习与生物医学图像分析的未来 329
-  Monika Jyotiyana和Nishtha Kesswani
-- 使用深度学习的MRI图像中的自动化脑肿瘤分割 学习: 概述、挑战和未来 347
-  Minakshi Sharma和Neha Miglani
 
 ## 编辑和贡献者
 

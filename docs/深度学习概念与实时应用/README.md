@@ -1,85 +1,6 @@
 
 # 深度学习概念与实时应用
 
-
-# EAI/Springer通信和计算创新
-
-Smriti Srivastava · Manju Khari
-Ruben Gonzalez Crespo
-Gopal Chaudhary · Parul Arora编辑
-
-![](img/0e73e3a17a47b561804fe37a4d9cc1af_0_0.png)
-
-# 通信和计算创新
-EAI/Springer通信
-
-系列编辑
-Imrich Chlamtac，欧洲创新联盟，比利时根特
-
-# # 编辑的说明
-
-信息技术的影响正在创造一个尚未完全理解的新世界。在日常生活中已经感受到的经济、生活方式和社会变化的程度和速度，如果不了解其背后的技术驱动力，很难估计。本系列介绍了在这一过程中起关键作用的各种信息工程技术的最新研究和发展成果。
-
-主要关注通信和计算工程的主题范围包括但不限于无线网络；移动通信；设计和学习；游戏；交互；电子健康和普遍医疗保健；能源管理；智能电网；物联网；认知无线电网络；计算；云计算；无处不在的连接性，以及更多的智能生活、智能城市、物联网等。该系列出版了一系列扩展论文，这些论文是从欧洲创新联盟（EAI）主办和赞助的会议中精选出来的，既呈现了尖端的全球研究，又提供了对传统相关工程领域的新视角。这些内容与对书名和单独章节的贡献的公开征集相结合，共同维护了Springer和EAI的高学术水准。这些书籍的受众包括研究人员、行业专业人士、高级学生以及相关领域的从业人员，包括信息和通信专家、安全专家、经济学家、城市规划师、医生，以及总体上受到和为信息革命做出贡献的各行各业的代表。
-
-索引：该系列在Scopus、Ei Compendex和zbMATH中有索引。
-
-# # 关于EAI
-
-EAI是一个由企业、公共机构、私营机构和政府机构合作发起的基层会员组织，旨在应对欧洲未来竞争力的全球挑战，并将欧洲研究社区与全球同行联系起来。EAI覆盖全球各大洲的数十万个个人订阅者，并与包括财富500强公司、政府机构和教育机构在内的机构会员基础展开合作，提供免费的研究和创新平台。
-
-通过其开放的免费会员模式，EAI推动了一种基于合作、连接和卓越认可的新型研究和创新文化。
-
-有关该系列的更多信息，请访问http://www.springer.com/series/15427
-
-Smriti Srivastava · Manju Khari
-Ruben Gonzalez Crespo
-Gopal Chaudhary · Parul Arora
-编辑
-
-# 深度学习的概念与实时应用
-
-![](img/0e73e3a17a47b561804fe37a4d9cc1af_3_0.png)
-
-编辑
-Smriti Srivastava
-仪器与控制工程
-Netaji Subhas技术大学
-印度德里新德里
-
-Manju Khari
-计算机与系统科学学院
-贾瓦哈拉尔尼赫鲁大学
-印度德里新德里
-
-Ruben Gonzalez Crespo计算机科学
-与技术系拉里奥哈国际大学洛格罗尼奥，拉里奥哈，西班牙
-
-Gopal Chaudhary电子与
-通信工程系巴拉蒂维德亚佩斯学院印度德里新德里
-
-Parul Arora电子与通信工程系杰
-伊皮信息技术学院印度诺伊达
-
-ISSN 2522-8595
-EAI/Springer通信和计算创新
-ISBN 978-3-030-76166-0
-https://doi.org/10.1007/978-3-030-76167-7
-
-ISSN 2522-8609（电子版）
-ISBN 978-3-030-76167-7（电子书）
-
-© The Editor(s)（如适用）和The Author(s)，在Springer Nature
-Switzerland AG 2021独家许可下
-本作品受版权所有权保护。 所有权利仅由出版商独家许可，无论是整体还是部分材料，特别是翻译权、再版权、插图重用权、朗读权、广播权、微缩胶片复制权或以任何其他实体方式复制权，以及传输或信息存储和检索权、电子适应权、计算机软件权利，或通过类似或不同的已知或今后开发的方法。
-
-本出版物中使用的一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有特定声明的情况下，这些名称免于相关的保护法律和法规，并因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。 出版商、作者或编辑对本文所含材料不作任何明示或暗示的保证，也不对可能存在的任何错误或遗漏作出保证。 出版商在已发表的地图和机构隶属方面保持中立。
-
-这本施普林格印记由注册公司施普林格自然瑞士股份公司出版
-注册公司地址为：瑞士洪堡街11号，6330 Cham
-
 ## 前言
 
 本书将为读者提供关于深度学习及其多学科应用的全面而最新的阐述。深度学习由于其在大规模数据集和广泛的应用领域中的高准确性而受到广泛关注。深度学习的计算能力的核心在于其架构。本书将重点介绍深度学习架构及其库的进展。基于深度学习架构的各种人工智能（AI）技术具有令人兴奋的应用，如自然语言处理、生物医学、语义知识、预测等等。
@@ -122,42 +43,6 @@ Switzerland AG 2021独家许可下
 | 印度新德里 | Gopal Chaudhary |
 | 印度诺伊达 | Parul Arora |
 
-## 目录
-
-# 第一部分 深度学习概念：识别系统
-
-- 使用深度神经网络进行情感识别的语音
-Stuti Juyal, Chirag Killa, Gurvinder Pal Singh, Nishant Gupta和Vedika Gupta
-- 使用深度学习的文本无关说话人识别
-Smriti Srivastava, Gopal Chaudhary和Chandrakesh Shukla
-- 机器的定性和定量研究
-用于步态分析和识别的学习算法
-Sudhanshu Dalela, Shubham Singh Yadav, Prakriti Ailavadi和Smriti Srivastava
-- 使用机器学习和深度学习技术从语音信号中识别情绪
-Gaurav Kataria, Akansh Gupta, V. Sirish Kaushik和Gopal Chaudhary
-- 使用主方向极大差分分析（MDMD）方法进行微表情检测
-Rohit Mohta, Raghav Singla, Paras Thareja和Puneet Singh Lamba
-
-# 第二部分 深度学习概念：医疗保健系统
-
-- 使用机器学习预测癌症患者的生存率
-Anjali Raghav, Sharad Vaish和Monika Gupta
-- 使用深度卷积网络进行皮肤病变分割
-Parul Arora, Nikhil Sharma, Prakhar Bhatt和Abhishek Saxena
-- 使用KNN和遗传算法进行骨癌生存率预测
-Saravanan Muthaiyah和Vivek Ajit Singh
-- BeamAtt：使用基于采样的智能从胸部X射线图像生成医学诊断 135
-Aman Sawarn, Shefali Srivastava, Monika Gupta和Smriti Srivastava
-
-# 第三部分 深度学习的实时应用
-
-- 基于CNN的司机疲劳检测系统 153
-Pritesh Kumar Singh, Mayank Upadhyay, Archit Gupta和Puneet Singh Lamba
-- 使用深度学习方法进行预测 167
-B. Vijayalakshmi, M. Kaliappan, K. Ramar, K. Vijayalakshmi和S. Vimal
-- 低成本的物联网和深度学习支持的精密印度多样化环境下的农业支持系统 187
-Amit Bhati, Sandeep Joshi和Ashish Gupta
-- 索引 205
 
 # 第一部分 深度学习概念：识别系统
 

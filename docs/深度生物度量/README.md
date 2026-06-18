@@ -1,55 +1,6 @@
 
 # 深度生物度量
 
-
-# 无监督和半监督学习
-系列编辑: M. Emre Celebi
-
-- Richard Jiang
-- Chang-Tsun Li
-- Danny Crookes
-- Weizhi Meng
-- Christophe Rosenberger 编辑
-
-## 编辑
-
-Richard Jiang
-计算与通信学院
-InfoLab21，兰卡斯特大学
-兰卡斯特，英国
-
-Chang-Tsun Li
-信息技术学院
-迪肯大学
-沃恩庞兹，维多利亚州，澳大利亚
-
-Danny Crookes
-电气工程和计算机科学
-电子学院，女王大学
-贝尔法斯特，贝尔法斯特，英国
-
-Weizhi Meng
-丹麦技术大学
-Kgs. Lyngby，丹麦
-
-Christophe Rosenberger
-GREYC研究实验室
-ENSICAEN，卡昂，法国
-
-- ISSN 2522-848X
-- ISSN 2522-8498（电子版）
-- 无监督和半监督学习
-- ISBN 978-3-030-32582-4
-- ISBN 978-3-030-32583-1（电子书）
-- https://doi.org/10.1007/978-3-030-32583-1
-
-© Springer Nature Switzerland AG 2020
-本作品受版权保护。出版商保留所有权利，无论是全部还是部分材料，特别是翻译、复制、插图重用、朗诵、广播、微缩胶片复制或以任何其他实体方式复制、传输或信息存储和检索、电子适应、计算机软件，或类似或不同的方法，现在已知或今后开发的方法。在本出版物中使用一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有明确声明的情况下，这些名称也不受相关保护法律和法规的约束，因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。出版商、作者或编辑对本文所包含的材料不提供任何明示或暗示的保证，也不对可能存在的任何错误或遗漏承担责任。出版商在已发表的地图和机构隶属方面保持中立。
-
-这本 Springer 印记由注册公司 Springer Nature Switzerland AG 出版。注册公司地址为：Gewerbestrasse 11, 6330 Cham, Switzerland
-
 ## 前言
 
 生物特征识别伴随着机器学习和计算的迅猛发展，在当今数字经济中成为最广泛使用的新技术之一。
@@ -82,60 +33,6 @@ ENSICAEN，卡昂，法国
 第三，随着生物特征技术的成功发展，许多新的应用已经成功开发。章节“生物特征区块链：智能车辆数据共享的安全解决方案”利用了一种新型的区块链，即生物特征区块链，以使先前匿名的协议具有人类身份。章节“光流估计与深度学习：近期进展综述”试图将光流和深度学习结合到这个主题中。章节“基于云的移动智能触摸行为认证开发”研究了一种基于云的移动生物特征应用。章节“数据驱动模型在防御演示攻击中的崛起”报告了一种保护云平台上数据免受攻击的生物特征方法。
 
 本书的目标读者包括研究生、工程师、研究人员、学者、法医科学家、警察部队、刑事律师、IT从业人员和对生物特征安全和隐私问题感兴趣的开发人员。编辑们要向所有杰出的贡献者表示衷心的感谢，正是他们使得本书成为可能，并且感谢那些提供了有见地评论以提高每章质量的审稿人。Springer出版社的一支专业团队从开始到最终出版本书期间一直提供专业的帮助。我们感谢他们在生产的各个阶段的辛勤努力。我们还要感谢我们的读者们选择阅读本书，并分享生物特征研究的令人兴奋的进展。
-
-## 目录
-
-使用年龄信息作为面部软生物特征图像分析
-王浩一，Victor Sanchez，欧阳万里和李昌村
-1
-
-通过软生物特征进行人员再识别深度学习
-林山和李昌村
-21
-
-使用堆叠沙漏网络进行非典型面部标志定位网络：关于医学诊断的3D面部建模研究
-Gary Storey, Ahmed Bouridane, Richard Jiang, 和 Chang-Tsun Li
-37
-
-人脸识别中的反欺骗：深度学习和图像基于质量评估的方法
-Wael Elloumi, Aladine Chetouani, Tarek Ben Charrada, 和 Emna Fourati
-51
-
-深度学习用于生物特征人脸识别：实验基准数据集研究
-Natalya Selitskaya, S. Sielicki, L. Jakaite, V. Schetinin, F. Evans, M. Conrad, 和 P. Sant
-71
-
-用于人脸识别的深度学习模型：一项比较研究分析
-Arindam Chaudhuri
-99
-
-基于云的智能触摸行为开发移动电话上的身份验证
-Zhi Lin, Weizhi Meng, Wenjuan Li和Duncan S. Wong
-141
-
-基于星座的深度耳识别
-Dejan tepec, iga Emer ič, Peter Peer和Vitomir truc
-161
-
-使用深度软生物特征在监控视频中检索人物
-Hiren J. Galiyawala, Mehul S. Raval和Anand Laddha
-191
-
-## 深度光谱生物特征识别：概述和开放问题
-Rumaisah Munir和Rizwan Ahmed Khan
-
-## 生物特征区块链：智能车辆的安全解决方案
-数据共享
-Bing Xu，Tobechukwu Agbele和Richard Jiang
-
-## 最近关于深度学习的光流估计调查
-进展
-Stefano Savian，Mehdi Elahi和Tammam Tillo
-
-## 数据驱动模型在演示攻击检测中的崛起
-Luis A. M. Pereira, Allan Pinto, Fernanda A. Andal , Alexandre M. Ferreira, Bahram Lavi, Aurea Soriano-Vargas, Marcos V. M. Cirne和Anderson Rocha
-
-## 索引
 
 ## 使用年龄信息作为软生物特征进行面部图像分析
 王浩一，Victor Sanchez，欧阳万里和李昌村

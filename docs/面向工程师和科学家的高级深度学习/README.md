@@ -2,90 +2,6 @@
 # 面向工程师和科学家的高级深度学习
 
 
-## EAI/Springer 通信和计算创新
-
-**编辑**
-Kolla Bhanu Prakash
-Ramani Kannan
-S. Albert Alexander
-G. R. Kanagachidambaresan
-
----
-
-## 系列编辑
-EAI/Springer 通信和计算创新
-
-Imrich Chlamtac，欧洲创新联盟，比利时根特
-
----
-
-## 编辑注
-
-信息技术的影响正在创造一个尚未完全理解的新世界。在日常生活中已经感受到的经济、生活方式和社会变化的程度和速度，如果不了解其背后的技术驱动力，很难估计。本系列介绍了在这一过程中起关键作用的各种信息工程技术的最新研究和发展。
-
-主要关注通信和计算工程的主题范围包括但不限于无线网络；移动通信；设计和学习；游戏；交互；电子健康和普遍医疗保健；能源管理；智能电网；物联网；认知无线电网络；计算；云计算；无处不在的连接性，以及更多。该系列出版了一系列扩展论文，这些论文是从欧洲创新联盟（EAI）主办和赞助的会议中精选出来的，既呈现了尖端的全球研究，又提供了对传统相关工程领域的新视角。这些内容与对书名和单独章节的征稿相结合，共同维护了 Springer 和 EAI 的高学术水准。这些书籍的受众包括研究人员、行业专业人士、高级水平的学生，以及相关领域的从业人员，包括信息和通信专家、安全专家、经济学家、城市规划师、医生，以及总体上受到和为信息革命做出贡献的各行各业的代表。
-
-索引：该系列在 Scopus、Ei Compendex 和 zbMATH 中有索引。
-
-## 关于 EAI
-
-EAI 是一个由企业、公共机构、私营机构和政府机构合作发起的基层会员组织，旨在应对欧洲未来竞争力的全球挑战，并将欧洲研究社区与全球同行联系起来。EAI 与全球各大洲的数十万个个人订阅者保持联系，并与包括财富 500 强公司、政府机构和教育机构在内的机构会员基础展开合作，提供免费的研究和创新平台。
-
-通过其开放的免费会员模式，EAI 推动了一种基于合作、连接和卓越认可的新型研究和创新文化。
-
-有关该系列的更多信息，请访问 http://www.springer.com/series/15427
-
----
-
-## 编辑信息
-
-Kolla Bhanu Prakash • Ramani Kannan
-S. Albert Alexander
-G. R. Kanagachidambaresan
-
-编辑
-
-## 高级深度学习
-### 实用方法
-
-## 编辑
-
-Kolla Bhanu Prakash
-KL Deemed to be University
-Vijayawada, AP, India
-
-S. Albert Alexander
-Kongu Engineering College
-Perundurai, Tamil Nadu, India
-
-Ramani Kannan
-电气与电子工程
-Universiti Teknologi Petronas
-Seri Iskandar, Perak, Malaysia
-
-G. R. Kanagachidambaresan
-计算机科学与工程系
-Vel Tech Rangarajan Dr Sagunthala R&D
-科学与技术研究所
-印度泰米尔纳德邦钦奈
-
-ISSN 2522-8595
-ISSN 2522-8609 (电子版)
-EAI/Springer 通信和计算创新
-ISBN 978-3-030-66518-0
-ISBN 978-3-030-66519-7 (电子书)
-https://doi.org/10.1007/978-3-030-66519-7
-
-© 编辑（如适用）和作者，独家许可给 Springer Nature Switzerland AG 2021
-本作品受版权保护。出版商保留所有权利，无论是全部还是部分材料，特别是翻译、重印、插图重用、背诵、广播、胶片复制或以任何其他方式复制，以及信息传输或存储和检索，电子适应、计算机软件，或类似或不同的方法现在已知或今后开发。
-在本出版物中使用一般描述性名称、注册名称、商标、服务标志等并不意味着，即使在没有特定声明的情况下，这些名称免于相关保护法律和法规的约束，因此可以自由使用。
-出版商、作者和编辑可以安全地假设书中的建议和信息在出版日期时是真实准确的。出版商、作者或编辑对本书中所含材料不提供明示或暗示的保证，也不对可能存在的任何错误或遗漏负责。出版商在已发表的地图和机构关系方面保持中立。
-
-这个 Springer 印记是由注册公司 Springer Nature Switzerland AG 出版的
-注册地址是：瑞士 Cham 市 Gewerbestrasse 11 号，6330
-
----
-
 ## 致谢
 
 我们感谢全能者、我们的父母和我们的配偶在我们的生活各个阶段给予我们无尽的支持、指导和爱。我们感谢我们亲爱的家人在我们整个职业生涯中一直站在我们身边，通过编辑这本书来推动我们的职业发展。
@@ -110,33 +26,6 @@ Kolla Bhanu Prakash Ramani Kannan S. Albert Alexander G. R. Kanagachidambaresan
 
 ---
 
-# 目录
-
-- 深度学习介绍 .................................................................................. 1
-  R. Indrakumari, T. Poongodi 和 Kiran Singh
-- 使用 Python 的深度学习应用 ............................................................ 23
-  Nahil Ahmed Hassan, Abhigith Neil Abraham 和 Ajeesh Ramanujan
-- 用于字符识别的深度学习 ............................................................... 61
-  B. R. Kavitha, Govindaraj Ramya 和 P. Kumaresan
-- Keras 和 TensorFlow: 实践经验 ........................................................ 85
-  Ferdin Joe John Joseph, Sarayut Nonsiri 和 Annop Monsakul
-- 部署深度学习模型以应用于各种实时应用使用 Keras ................... 113
-  D. Sumathi 和 Kumarraju Alluri
-- 高级深度学习技术 .......................................................................... 145
-  Yellapragada Sai Srinivasa Bharadwaj
-- 深度学习在生物信息学中的潜在应用大数据分析 ...................... 183
-  Jayakishan Meher
-- 动态映射和可视化马来西亚的登革热发生情况使用机器学习技术 .. 195
-  Nirbhay Mathur, Vijanth S. Asirvadam, Sarat C. Dass 和 Balvinder Singh Gill
-- 使用机器学习进行矢量传播疾病爆发预测技术 .......................... 227
-  Sandali Raizada, Shuchi Mala 和 Achyut Shankar
-- 从人类 GPCR 预测真核质膜胆固醇使用支持向量机的 K-Means ... 243
-  Ramamani Tripathy 和 Rudra Kalyan Nayak
-- 早期检测糖尿病视网膜病变技术调查 .......................................... 259
-  D. Vanusha, B. Amutha, Siddhartha Dhar Choudhury 和 Aayush Agarwal
-- 索引 ................................................................................................... 275
-
----
 
 ## 关于编辑
 

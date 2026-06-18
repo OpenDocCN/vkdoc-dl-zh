@@ -1,68 +1,6 @@
 
 # 区块链和深度学习
 
-
-大数据研究105辑
-
-Khaled R. Ahmed
-Henry Hexmoor编辑
-
-未来趋势和支持技术
-
-## 大数据研究
-
-### 第105辑
-
-### 系列编辑
-
-Janusz Kacprzyk, 波兰科学院, 华沙, 波兰
-
-《大数据研究》系列（SBD）快速出版并以高质量出版物的形式发布大数据领域的新发展和进展。其目的是涵盖大数据在工程学、计算机科学、物理学、经济学和生命科学等领域的理论、研究、开发和应用。
-
-该系列的书籍涉及对最近的数字来源产生的大型、复杂和/或分布式数据集的分析和理解，这些来源包括传感器或其他物理仪器生成的数据、模拟、众包、社交网络或其他互联网交易，如电子邮件或视频点击流等。该系列包含大数据领域的专著、讲义和编辑的专著，涵盖了计算智能领域，包括神经网络、进化计算、软计算、模糊系统，以及人工智能、数据挖掘、现代统计学和运筹学，以及自组织系统。对于投稿者和读者来说，短时间的出版周期和全球分发都具有特殊的价值，这使得研究成果能够广泛而迅速地传播。
-
-这个系列的书籍经过单盲同行评审过程进行审查。
-
-被SCOPUS、EI Compendex、SCIMAGO和zbMATH索引。
-
-该系列中的所有书籍都提交给Web of Science进行考虑。
-
-有关该系列的更多信息，请访问https://link.springer.com/bookseries/11970
-
-## 区块链和深度学习
-
-未来趋势和启用技术
-
-### 编辑
-
-Khaled R. Ahmed
-计算机学院
-南伊利诺伊大学
-卡本代尔，伊利诺伊州，美国
-
-Henry Hexmoor
-计算机科学
-南伊利诺伊大学
-卡本代尔，伊利诺伊州，美国
-
-ISSN 2197-6503
-大数据研究
-ISBN 978-3-030-95418-5
-https://doi.org/10.1007/978-3-030-95419-2
-
-ISSN 2197-6511 (电子版)
-ISBN 978-3-030-95419-2 (电子书)
-
-© 版权所有编辑（如适用）和作者，独家许可给Springer Nature Switzerland AG 2022
-本作品受版权保护。 所有权利仅由出版商独家许可，无论是整体还是部分材料，特别是翻译、再版、插图重用、朗诵、广播、微缩胶片复制或以任何其他实体方式复制、传输或信息存储和检索、电子适应、计算机软件或类似或不同的已知或今后开发的方法。
-
-本出版物中使用的一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有明确声明的情况下，这些名称免于相关的保护法律和法规，并因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。 出版商、作者或编辑对本文所含材料不提供明示或暗示的保证，也不对可能存在的任何错误或遗漏承担责任。 出版商在已发表的地图和机构隶属方面保持中立。
-
-这本Springer印记由注册公司Springer Nature Switzerland AG出版
-注册公司地址为: Gewerbestrasse 11, 6330 Cham, Switzerland
-
 ## 前言
 
 本书分为三个不同的部分，包含当代的投稿文章。
@@ -105,60 +43,6 @@ ISBN 978-3-030-95419-2 (电子书)
 Khaled R. Ahmed
 Henry Hexmoor
 
-## 目录
-
-# 启用技术
-
-- ShareCert：在区块链上共享和验证证书和凭证
-Vasista Sai Venkata Durga Prasad Lodagala和Pallav Kumar Baruah
-
-- 语义网和区块链技术的前景在图书馆
-Faiza Bashir和Nosheen Fatima Warraich
-
-- 基于工作量证明的区块链的可扩展性分析
-Diksha Malhotra, Shilpa Dhiman, Poonam Saini, 和Awadhesh Kumar Singh
-
-- 智能合约：现代数字世界的一种方式
-A. D. N. Sarma
-
-- 以太坊上的分散式公共分发系统区块链与MyEtherWallet的互动
-C. Devi Parameswari和M. Ilayaraja
-
-# 应用
-
-- 采用与机器学习集成的区块链在智能交通系统中
-Mahadev A. Gawas和Aishwarya R. Parab
-
-- 通过集成物联网的赋能区块链技术的整合
-C. Muralidharan, Y. Mohamed Sirajudeen和Y. Rajkumar
-
-- 应用机器学习算法于混乱的语音
-Seedahmed S. Mahmoud, Qiang Fang, Musleh Alsulami, 和 Akshay Kumar
-
-- 通过深度学习模型的深入分析生成对抗网络
-Alankrita Aggarwal, Shivani Gaba, Shally Nagpal, 和 Anoopa Arya
-
-- 一种用于语义集成异构蛋白质组学数据的中介方法
-Chaimaa Messaoudi, Rachida Fissoune, 和 Hassan Badir
-
-- 区块链对技术和思维方式的革命: 阿曼苏丹国的定性研究
-Salam Saif Said Al-Riyami 和 Smitha Sunil Kumaran Nair
-
-- 深度学习、大数据在生物信息学中的最新进展和挑战
-Ajay Sharma 和 Raj Kumar
-
-- 医学信息学和公共卫生的深度学习
-K. Aditya Shastry, H. A. Sanjay, M. Lakshmi, 和 N. Preetham
-
-- 使用卷积神经网络进行过渡系外行星探测
-Dhruv Kaliraman, Gopal Joshi和Suchitra Khoje
-
-# 新兴技术
-
-- 区块链技术的未来，最新进展和挑战
-Ajay Sharma, Vandana Guleria和Varun Jaiswal
-
-# 启用技术
 
 ## ShareCert: 在区块链上共享和验证证书和证件
 
