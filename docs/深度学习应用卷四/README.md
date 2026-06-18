@@ -1,42 +1,5 @@
 # 深度学习应用卷四
 
-## 智能系统与计算进展
-
-M. Arif Wani  
-Vasile Palade 编辑
-
-![](img/d60c326e91e769cc5f5c10f57def6e27_0_0.png)
-
-## 智能系统与计算进展
-
-第1434卷
-
-## 系列编辑
-
-Janusz Kacprzyk，波兰科学院系统研究所，  
-华沙，波兰
-
-## 咨询编辑
-
-Nikhil R. Pal，印度统计研究所，加尔各答，印度  
-Rafael Bello Perez，数学、物理和计算学院，  
-Universidad Central de Las Villas，圣克拉拉，古巴  
-Emilio S. Corchado，萨拉曼卡大学，萨拉曼卡，西班牙  
-Hani Hagras，计算机科学与电子工程学院，  
-埃塞克斯大学，科尔切斯特，英国  
-László T. Kóczy，自动化系，Széchenyi István大学，  
-Györ，匈牙利  
-Vladik Kreinovich，计算机科学系，德克萨斯大学  
-在埃尔帕索，埃尔帕索，德克萨斯州，美国  
-林金腾，电机工程系，国立交通大学，新竹，台湾  
-陆洁，工程与信息技术学院，悉尼科技大学，悉尼，新南威尔士  
-，澳大利亚帕特里夏·梅林，计算机科学研究生项目，蒂华纳  
-技术学院，蒂华纳，墨西哥  
-纳迪亚·内迪亚，电子工程系，里约热内卢大学，里约热内卢，巴西  
-阮玉清，计算机科学与管理学院，弗罗茨瓦夫理工大学，弗罗茨  
-瓦夫，波兰王军，机械与自动化工程系，香港中文大学，沙田  
-，香港
-
 ## 前言
 
 深度学习系统是一类多层网络，能够从各种结构化和非结构化数据中自动学习有意义的分层表示。深度学习的突破使我们能够从原始图像、视频流、文本和语音、时间序列和其他复杂数据类型中生成新的表示、提取知识和进行推理。这些强大的深度学习方法正在应用于医学诊断、工厂自动化、公共安全、环境科学、自主交通、军事应用等新颖而令人兴奋的现实世界问题。
@@ -84,65 +47,6 @@ GGN试图自动找到噪声检测的所需特征。
 M. Arif Wani  
 Vasile Palade
 
-## 目录
-
-使用深度学习架构生成的超分辨率  
-显微图像中的人乳头瘤病毒鉴定........................... 1  
-Xiaohong W. Gao, Xuesong Wen, Dong Li, Weiping Liu,  
-Jichuan Xiong, Bin Xu, Juan Liu, Heng Zhang, and Xuefeng Liu
-
-顺序和时间嵌入深度评估  
-学习模型用于健康结果预测............................... 21  
-Omar Boursalie, Reza Samavi, and Thomas E. Doyle
-
-从随访中进行抑郁症筛查的迁移学习  
-临床访谈问题........................................... 53  
-Ricardo Flores, M. L. Tlachac, Ermal Toto, and Elke Rundensteiner
-
-使用短脚本进行早期心理健康揭示  
-和非脚本语音录音....................................... 79  
-M. L. Tlachac, Ricardo Flores, Ermal Toto和Elke Rundensteiner
-
-面向方面的建议的全面分析  
-从在线评论中提取....................................... 111  
-T. K. Jayasekara, A. R. Weerasinghe和W. V. Welgama
-
-深度学习编程的语言模型：案例研究  
-使用Keras............................................... 135  
-Connor Shorten和Taghi M. Khoshgoftaar
-
-通过利用文本信息、元数据和个性化关注机制进行下一个工作申请预测  
-信息、元数据和个性化关注机制的提取................... 163  
-Jun Zhu, Gautier Viaud和Clérence Hudelot
-
-工业质量检测的逆否多尺度异常检测方法  
-质量检查............................................. 193  
-Matías Tailanian, Pablo Mus 和 Ivaro Pardo
-
-通过核岭重构进行异常检测和调试........................ 217  
-Yasutaka Furusho, Shuhei Nitta和Yukinobu Sakata
-
-用于优化卷积神经网络的感受野分析  
-无需训练的网络架构................................... 235  
-Mats L. Richter, Julius Schöning, Anna Wiedenroth和Ulf Krumnack
-
-资源感知胶囊网络....................................... 263  
-Pouya Shiri, Ramin Sharifi和Amirali Baniasadi
-
-引导生成网络：一种新的用于蒙特卡洛渲染中噪声特征化的鲁棒深度学习架构................... 293  
-Jérôme Buisine, Fabien Teytaud, Samuel Delepoulle和Christophe Renaud
-
-使用卷积循环神经网络高效学习光纤中的Kerr非线性  
-通道中的卷积循环神经网络用于高效学习Kerr非线性........ 317  
-Abtin Shahkarami, Mansoor Isvand Yousefi和Yves Jaouen
-
-多层小波变换用于图像超分辨率：  
-应用于基于体素的深度学习和面积密度  
-碳纳米管薄片地图..................................... 339  
-刘颖南和兰迪·克林顿·帕芬罗斯
-
-用于时间序列分类的深度半监督学习....................... 361  
-简·戈申霍弗
 
 ## 编辑和贡献者
 
