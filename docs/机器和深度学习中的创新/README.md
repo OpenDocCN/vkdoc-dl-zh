@@ -2,59 +2,6 @@
 # 机器和深度学习中的创新
 
 
-# 大数据研究（第134辑）
-
-吉尔伯托·里维拉
-亚历杭德罗·罗塞特
-贝尔纳贝·多龙索罗
-纳尔逊·兰格尔-瓦尔德斯 编辑
-
-# # 大数据研究
-
-第134卷
-
-## 系列编辑
-
-Janusz Kacprzyk，波兰科学院，华沙，波兰
-
-《大数据研究》（SBD）系列出版物快速而高质量地发布大数据各个领域的新发展和进展。意图是涵盖大数据嵌入工程、计算机科学、物理学、经济学和生命科学等领域的理论、研究、开发和应用。
-
-该系列的图书涉及对最近的数字来源生成的大型、复杂和/或分布式数据集的分析和理解，这些数字来源来自传感器或其他物理仪器，以及模拟、众包、社交网络或其他互联网交易，如电子邮件或视频点击流等。该系列包含大数据领域的专著、讲义和编辑卷，涵盖计算智能领域，包括神经网络、进化计算、软计算、模糊系统，以及人工智能、数据挖掘、现代统计学和运筹学，以及自组织系统。对于投稿者和读者来说，短时间的出版周期和全球分发都具有特殊价值，可以广泛而迅速地传播研究成果。
-
-这个系列的书籍经过单盲同行评审过程进行审查。
-被SCOPUS、EI Compendex、SCIMAGO和zbMATH索引。
-该系列中的所有书籍都提交给Web of Science进行考虑。
-
-Gilberto Rivera · Alejandro Rosete · Bernabé Dorronsoro · Nelson Rangel-Valdez 编辑
-
-# 机器和深度学习的创新：案例研究和应用
-
-编辑：吉尔伯托·里维拉 城市多学科分部 墨西哥华雷斯自治大学 奇瓦瓦州
-
-贝尔纳贝·多龙索罗 工程学院 加的斯大学 加的斯，西班牙
-
-亚历杭德罗·罗塞特 哈瓦那“何塞·安东尼奥·埃切韦里亚”技术大学 哈瓦那，古巴
-
-纳尔逊·兰格尔-瓦尔德斯 墨西哥塔毛利帕斯国家理工学院 塔毛利帕斯，墨西哥
-
-ISSN 2197-6503
-大数据研究
-ISBN 978-3-031-40687-4
-https://doi.org/10.1007/978-3-031-40688-1
-
-ISSN 2197-6511（电子版）
-ISBN 978-3-031-40688-1（电子书）
-
-© 版权所有编辑（如适用）和作者，独家许可给 Springer Nature Switzerland AG 2023
-
-本作品受版权保护。所有权利仅由出版商独家许可，无论是全部还是部分材料，特别是翻译、重印、重用插图、朗诵、广播、微缩胶片复制或以任何其他物理方式复制，以及传输或信息存储和检索、电子适应、计算机软件或类似或不同的已知或今后开发的方法。
-
-在本出版物中使用的一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有明确声明的情况下，这些名称也不受相关保护法律和法规的约束，因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设本书中的建议和信息在出版日期时被认为是真实和准确的。出版商、作者或编辑对本文所包含的材料不提供明示或暗示的保证，也不对可能存在的任何错误或遗漏负责。出版商在已发表的地图和机构隶属方面保持中立。
-
-这本Springer印记由注册公司Springer Nature Switzerland AG出版，注册公司地址为：瑞士Cham市Gewerbestrasse 11号。
-
 # # 前言
 
 机器学习（ML）是人工智能（AI）的一个分支，不断变化和适应新兴挑战。自计算机的早期概念以来，人类一直在努力开发更有能力的思考机器。
@@ -82,74 +29,6 @@ ISBN 978-3-031-40688-1（电子书）
 亚历杭德罗·罗塞特
 贝尔纳贝·多龙索罗
 纳尔逊·兰格尔-瓦尔德斯
-
-## 目录
-
-# 面向分析的应用
-
-- 递归多步时间序列预测：用于残差反馈人工神经网络的调查
-  Waddah Saeed 和 Rozaida Ghazali
-
-- 特征选择：传统和包装技术使用禁忌搜索
-  Laurentino Benito-Epigmenio, Salvador Ibarra-Martínez, Mirna Ponce-Flores 和 José Antonio Castán-Rocha
-
-- 全息神经网络的模式分类：一种新的用于特征选择的工具
-  Luis Diago, Hiroe Abe, Atsushi Minamihata 和 Ichiro Hagiwara
-
-- K最近邻变体的可重用性分析用于分类模型
-  José ngel Villarreal-Hernández, Mar a Lucila Morales-Rodr guez, Nelson Rangel-Valdez 和 Claudia G mez-Santill n
-
-- 使用深度CNN进行语音情感识别训练：基于对数频谱图的
-  Mainak Biswas, Mridu Sahu, Maroi Agrebi, Pawan Kumar Singh, 和 Youakim Badr
-
-# 面向医疗保健的应用
-
-- 用于ADHD检测的机器和深度学习算法：一篇评论
-  Jonathan Hern ndez-Capistran, Laura Nely S nchez-Morales, Giner Alor-Hern ndez, Maritza Bustos-L pez, 和 Jos Luis S nchez-Cervantes
-
-- 使用深度学习的蚊子在人体皮肤上的分类
-  C. S. Ayush Kumar, Advaith Das Maharana, Srinath Murali Krishnan, Sannidhi Sri Sai Hanuma, V. Sowmya, 和 Vinayakumar Ravi
-
-- 使用分析和解释深度卷积特征自组织映射
-  Diego Sebastián Comas, Gustavo Javier Meschino, Agustín Amalfitano, 和 Virginia Laura Ballarin
-
-- 基于混合深度学习的人体活动识别方法：使用可穿戴传感器的人体活动识别
-  Deepak Sharma, Arup Roy, Sankar Prasad Bag, Pawan Kumar Singh, 和 Youakim Badr
-
-- Predirol：使用大数据预测胆固醇饱和度，逻辑回归和耗散粒子动力学模拟
-  Reyna Nohemy Soriano-Machorro, Jos Luis S nchez-Cervantes, Lisbeth Rodr guez-Mazahua 和 Luis Rolando Guarneros-Nolasco
-
-- 基于卷积神经网络的癌症检测：组织病理学图像
-  Jayesh Soni, Nagarajan Prabakar 和 Himanshu Upadhyay
-
-- 基于人工神经网络的模型对特征进行表征：新生儿孵化器混响时间的基于人工神经网络的模型
-  Virginia Puyana-Romero, Lender Michael Tamayo-Guamán, Daniel N ez-Solano, Ricardo Hern ndez-Molina, 和 Giuseppe Ciaburro
-
-- 机器学习方法预测COVID-19的比较研究
-  J. Patricia S nchez-Sols, Juan D. Mata Gallegos, Karla M. Olmos S nchez 和 Victoria Gonz lez Demoss
-
-# 可持续发展导向的应用
-
-- 多产品库存供应和分销模型：带非线性CO₂排放模型以改善经济和货运的环境方面
-  Santiago Omar Caballero-Morales, Jose Luis Martinez-Flores, 和 Irma Delia Rojas-Cuevas
-
-- 用于种植系统检测的卷积神经网络：橄榄园
-  Cristina Mart nez-Ruedas, Samuel Yanes Luis, Juan Manuel D az-Cabrera, Daniel Guti rrez Reina, Adela P. Galván, 和 Isabel Luisa Castillejo-Gonz lez
-
-- 通过植物疾病分析的概念模型EfficientNet：走向精准农业
-  Roneeta Purkayastha 和 Subhasish Mohapatra
-
-- 使用计算机视觉预训练模型进行姜病检测模型
-  Olga Kolesnikova, Mesay Gemeda Yigezu, Atnafu Lambebo Tonja, Michael Meles Woldeyohannis, Grigori Sidorov 和 Alexander Gelbukh
-
-- 农业低成本传感器异常检测：基于具有季节性变化的时间序列的应用
-  Adri n Rocha igo, Jos Manuel Garc a Campos, 和 Daniel Guti rrez Reina
-
-- 使用深度学习模型进行椰树检测
-  Deepthi Sudharsan, K. Harish, U. Asmitha, S. Roshan Tushar, H. Theivaprakasham, V. Sowmya, V. V. Sajith Variyar, Krishnamoorthy Deva Kumar, 和 Vinayakumar Ravi
-
-- 用于解决大规模问题的混合神经网络元启发式算法：旅行推销员问题
-  Santiago Omar Caballero-Morales, Gladys Bonilla-Enriquez, 和 Diana Sanchez-Partida
 
 # # 面向分析的应用
 

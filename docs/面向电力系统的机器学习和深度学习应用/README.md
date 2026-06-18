@@ -2,74 +2,6 @@
 
 # 面向电力系统的机器学习和深度学习应用
 
-编辑
-Morteza Nazari-Heris
-Somayeh Asadi
-Behnam Mohammadi-Ivatloo
-Moloud Abdar
-Houtan Jebelli
-Milad Sadat-Mohammadi
-
-## 丛书介绍
-
-多年来，电力一直是工业社会的技术基础。尽管提供和应用电能的系统已经达到了很高的成熟度，但仍然不断遇到意想不到的问题，这需要基于新技术设计更高效、可靠的系统。《电力系统》系列图书旨在提供关于电力工程中这些新发展的详细、准确和可靠的技术信息。它涵盖了发电、储能和输电以及电机等主题。该系列的专著和高级教材面向电气工程的研究人员、讲师、工业工程师和高年级学生。
-
-**电力系统已被 Scopus 索引**
-
-更多关于该系列的信息，请访问 http://www.springer.com/series/4622
-
-## 编辑信息
-
-**Morteza Nazari-Heris**
-建筑工程系
-宾夕法尼亚州立大学
-宾夕法尼亚州大学公园分校，美国
-
-**Somayeh Asadi**
-建筑工程系
-宾夕法尼亚州立大学
-宾夕法尼亚州大学公园分校，美国
-
-**Behnam Mohammadi-Ivatloo**
-能源技术系
-奥尔堡大学
-奥尔堡，丹麦
-
-**Moloud Abdar**
-电气与计算机工程学院
-大不里士大学
-大不里士，维多利亚州，澳大利亚
-迪肯大学
-吉朗，维多利亚州，澳大利亚
-
-**Houtan Jebelli**
-建筑工程系
-宾夕法尼亚州立大学
-宾夕法尼亚州大学公园分校，美国
-
-**Milad Sadat-Mohammadi**
-建筑工程系
-宾夕法尼亚州立大学
-宾夕法尼亚州大学公园校区，美国
-
-ISSN 1612-1287
-电力系统
-ISBN 978-3-030-77695-4
-https://doi.org/10.1007/978-3-030-77696-1
-
-ISSN 1860-4676 (电子版)
-ISBN 978-3-030-77696-1 (电子书)
-
-© 编辑 (如适用) 和作者，独家许可给 Springer Nature Switzerland AG 2022
-
-本作品受版权保护。出版商独家授权，无论是全部还是部分内容，特别是翻译、重印、插图重用、朗读、广播、微缩胶片复制、或以任何其他实体方式复制、传输或存储和检索信息、电子适应、计算机软件，或通过已知或今后开发的类似或不同的方法。
-
-在本出版物中使用一般描述性名称、注册名称、商标、服务标志等，并不意味着即使在没有具体声明的情况下，这些名称也不受相关保护法律和法规的限制，因此可以自由使用。
-
-出版商、作者和编辑可以安全地假设书中的建议和信息在出版日期时被认为是真实和准确的。出版商、作者或编辑对本文所包含的材料不提供任何明示或暗示的保证，也不对可能存在的任何错误或遗漏承担责任。出版商在已发布的地图和机构关系中保持中立。
-
-这个 Springer 印记由注册公司 Springer Nature Switzerland AG 出版，注册地址为：Gewerbestrasse 11, 6330 Cham, Switzerland
-
 ## 前言
 
 考虑到现代电力系统及其在智能运行、可再生能源源高度集成和电力系统中新兴技术方面的发展，电力系统的效率和质量指标的重要性、数据预测和能源自由化，应该进行电力网络的运行、计划和控制的研究。此外，考虑到负荷需求的增长速度和该行业中竞争的增加，电力行业出现了新的问题。因此，应用各种机器学习和深度学习方法，如人工神经网络 (ANNs)、专家系统、模糊系统、基于进化的方法、深度神经网络 (DNN)、卷积神经网络 (CNN) 和长短期记忆 (LSTM) 已被引入为处理建模电力系统的决策过程的有效方法。机器学习和深度学习的使用这些是用于构建各种分析模型的数据分析技术主题 (例如能源、医疗保健、生物信息学、交通)，是克服电力系统当前挑战的有希望的解决方案。机器学习和深度学习作为人工智能家族的一部分，是非常有效的方法，通过学习原始数据、识别模式和做出决策，最大程度地减少人为干预，促进电力系统运行、规划和控制的决策过程。
@@ -95,43 +27,6 @@ ISBN 978-3-030-77696-1 (电子书)
 | 美国宾夕法尼亚州大学公园 | Houtan Jebelli |
 | 美国宾夕法尼亚州大学公园 | Milad Sadat-Mohammadi |
 
-## 目录
-
-- 1 电力系统挑战和问题
-  - Ali Sharifzadeh, Mohammad Taghi Ameli, 和 Sasan Azad (页 1)
-- 2 电力系统的介绍和文献综述：挑战和问题
-  - Ali Ardeshiri, Amir Lotfi, Reza Behkam, Arash Moradzadeh, 和 Ashkan Barzkar (页 19)
-- 3 机器学习和电力系统规划：机遇和挑战
-  - Mohammad Hosein Asgharinejad Keisami, Sasan Azad, Reza Mohammadi Chabanloo, Morteza Nazari-Heris, 和 Somayeh Asadi (页 45)
-- 4 能源中的机器学习方法简介
-  - Arash Moradzadeh, Behnam Mohammadi-Ivatloo, Kazem Pourhossein, Morteza Nazari-Heris, 和 Somayeh Asadi (页 61)
-- 5 机器学习/深度学习在控制问题中的应用简介和文献综述
-  - Samira Sadeghi, Ali Hesami Naghshbandy, Parham Moradi, 和 Navid Rezaei (页 83)
-- 6 机器学习/深度学习在负荷预测中的应用简介和文献综述
-  - Arash Moradzadeh, Amin Mansour-Saatloo, Morteza Nazari-Heris, Behnam Mohammadi-Ivatloo, 和 Somayeh Asadi (页 119)
-- 7 最近基于粒子群优化 (PSO) 的聚类方法在能源效率方面的调查：在无线传感器网络中
-  - Emrah Hancer (页 137)
-- 8 使用创新机器进行电力系统聚类：学习/深度学习方法
-  - Mohammad Hossein Rezaeian Koochi, Mohammad Hasan Hemmatpour, 和 Payman Dehghanian (页 151)
-- 9 使用电力网格进行电压稳定性评估：基于新颖的机器学习方法
-  - Ali Mollaiee, Sasan Azad, Mohammad Taghi Ameli, 和 Morteza Nazari-Heris (页 177)
-- 10 级联故障发生的评估和分类：由于线路故障引起的潜在问题
-  - Morteza Abedi, Mohammad Reza Aghamohammadi, 和 Mohammad Taghi Ameli (页 211)
-- 11 LSTM 辅助的供暖能源需求管理：在住宅建筑中
-  - Amin Mansour-Saatloo, Arash Moradzadeh, Sahar Zakeri, 和 Behnam Mohammadi-Ivatloo (页 237)
-- 12 使用创新回归进行风速预测：机器学习技术的应用
-  - Arash Moradzadeh, Amin Mansour-Saatloo, Morteza Nazari-Heris, Behnam Mohammadi-Ivatloo, 和 Somayeh Asadi (页 249)
-- 13 通过基于事件驱动处理的智能电表数据处理实现有效负荷模式分类和机器学习
-  - Saeed Mian Qaisar 和 Futoon Alsharif (页 265)
-- 14 基于动态决策树的同步发电机失步条件预测：通过 WAMS/PMU 数据
-  - Morteza Abedi, Mohammad Reza Aghamohammadi, Sasan Azad, Morteza Nazari-Heris 和 Somayeh Asadi (页 289)
-- 15 自适应神经模糊推理系统模型用于短期负荷、价格和拓扑预测配电系统
-  - Mehrdad Setayesh Nazar 和 Ashkan Eslami Fard (页 321)
-- 16 应用机器学习预测用户的智能家电最佳调度中的用户偏好
-  - Milad Sadat-Mohammadi, Morteza Nazari-Heris, Alireza Ameli, Somayeh Asadi, Behnam Mohammadi-Ivatloo 和 Houtan Jebelli (页 345)
-- 17 在实际电力系统中的机器学习方法和电力市场
-  - Peyman Razmi 和 Mahdi Ghaemi Asl (页 357)
-- 索引 (页 379)
 
 # 第 1 章 电力系统挑战和问题
 
